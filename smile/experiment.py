@@ -23,6 +23,9 @@ from state import Serial
 
 # set up the basic timer
 now = clock._default.time
+def event_time(time, time_error=0.0):
+    return {'time':time, 'time_error':time_error}
+
 # import time
 # if sys.platform == 'win32':
 #     now = time.clock
@@ -73,6 +76,9 @@ class ExpWindow(Window):
 class Experiment(Serial):
     def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
                  pyglet_vsync=True, background_color=(0,0,0,1)):
+
+        # parse args
+
         # set up the state
         super(Experiment, self).__init__(parent=None, duration=0)
 
@@ -103,10 +109,13 @@ class Experiment(Serial):
         self._parents = []
 
         # we have not flipped yet
-        self.last_flip_time = None
+        self.last_flip = event_time(0.0)
 
         # get flip interval
         self.flip_interval = self._calc_flip_interval()
+
+        # event time
+        self.last_event = event_time(0.0)
         
     def run(self, initial_state=None):
         """
@@ -124,17 +133,24 @@ class Experiment(Serial):
         # process events until done
         self._last_time = now()
         while not self.done and not self.window.has_exit:
-            # get the new events and record the time range
+            # record the time range
             self._new_time = now()
+            time_err = (self._new_time - self._last_time)/2.
+            self.event_time = event_time(self._last_time+time_err,
+                                         time_err)
+
+            # process the events that occurred in that range
             self.window.dispatch_events()
 
-            # handle all scheduled events
+            # handle all scheduled callbacks
             dt = clock.tick(poll=True)
 
             # put in sleeps if necessary
-            if self._new_time - self._last_time < .0001:
-                # do a usleep
+            if dt < .0001:
+                # do a usleep for half a ms (might need to tweak)
                 self.clock.sleep(500)
+
+            # save the time
             self._last_time = self._new_time
 
     def _calc_flip_interval(self, nflips=20, nignore=5):
@@ -157,7 +173,7 @@ class Experiment(Serial):
             # perform the flip and record the flip interval
             cur_time = self.blocking_flip()
             if last_time > 0.0 and i >= nignore:
-                diffs += cur_time-last_time
+                diffs += cur_time['time']-last_time['time']
                 count += 1
             last_time = cur_time
 
@@ -190,12 +206,12 @@ class Experiment(Serial):
                 glFinish()
 
             # return when it happened
-            self.last_flip_time = now()
+            self.last_flip = event_time(now(),0.0)
 
             # no need for flip anymore
             self.window.need_flip = False
 
-        return self.last_flip_time
+        return self.last_flip
 
             
 if __name__ == '__main__':

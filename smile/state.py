@@ -7,7 +7,7 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from __future__ import with_statement
+#from __future__ import with_statement
 from pyglet import clock
 
 # # get the last instance of the experiment class
@@ -15,7 +15,7 @@ from pyglet import clock
 # exp = Experiment.last_instance
 #from experiment import Experiment
 
-# custom schedule functions
+# custom schedule functions (add delays)
 def _schedule_interval_callback(dt, func, interval, *args, **kwargs):
     # schedule it
     if interval > 0:
@@ -36,6 +36,7 @@ def schedule_delayed(func, delay, *args, **kwargs):
 class State(object):
     def __init__(self, interval=0, parent=None, duration=0.0, reset_clock=False):
         self.state_time = None
+        self.start_time = None
         self.interval = interval
         self.duration = duration
         self.parent = parent
@@ -73,6 +74,7 @@ class State(object):
     def enter(self):
         # get the starting time from the parent
         self.state_time = self.get_parent_state_time()
+        self.start_time = self.state_time
 
         # add the callback to the schedule
         delay = self.state_time - clock._default.time()
@@ -103,7 +105,7 @@ class State(object):
     def leave(self):
         # update the parent state time to actual elapsed time if necessary
         if self.duration < 0:
-            self.advance_parent_state_time(clock._default.time()-self.state_time)
+            self.advance_parent_state_time(clock._default.time()-self.start_time)
 
         # remove the callback from the schedule
         clock.unschedule(self.callback)

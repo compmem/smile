@@ -52,7 +52,7 @@ class VisualState(State):
 
     def _callback(self, dt):
         # call the flip, recording the time
-        self.last_flip_time = self.exp.blocking_flip()
+        self.last_flip = self.exp.blocking_flip()
         
     def schedule_update(self, flip_delay):
         # the show will be 1/2 of a flip interval before the flip
@@ -95,7 +95,9 @@ class Unshow(VisualState):
 class Text(VisualState):
     def __init__(self, textstr, x=0, y=0, anchor_x='center', anchor_y='center',
                  font_name=None, font_size=None, color=(255,255,255,255),
-                 parent=None, reset_clock=False, **kwargs):
+                 bold=False, italic=False, halign='center', multiline=False,
+                 dpi=None, group=None,
+                 parent=None, reset_clock=False):
         super(Text, self).__init__(interval=0, parent=parent, 
                                    duration=0, reset_clock=reset_clock)
 
@@ -107,13 +109,12 @@ class Text(VisualState):
         self.y = y
         self.anchor_x = anchor_x
         self.anchor_y = anchor_y
-        # self.bold = bold
-        # self.italic = italic
-        # self.align = align
-        # self.multiline = multiline
-        # self.dpi = dpi
-        # self.group = group
-        self.kwargs = kwargs
+        self.bold = bold
+        self.italic = italic
+        self.halign = halign
+        self.multiline = multiline
+        self.dpi = dpi
+        self.group = group
         pass
 
     def _update_callback(self, dt):
@@ -130,14 +131,13 @@ class Text(VisualState):
                                            x=self.x, y=self.y,
                                            anchor_x=self.anchor_x, 
                                            anchor_y=self.anchor_y,
-                                           # bold=self.bold,
-                                           # italic=self.italic,
-                                           # halign=self.halign,
-                                           # multiline=self.multiline,
-                                           # dpi=self.dpi,
-                                           # group=self.group,
-                                           batch=self.exp.window.batch,
-                                           **self.kwargs)
+                                           bold=self.bold,
+                                           italic=self.italic,
+                                           halign=self.halign,
+                                           multiline=self.multiline,
+                                           dpi=self.dpi,
+                                           group=self.group,
+                                           batch=self.exp.window.batch)
         return self.shown
 
 
