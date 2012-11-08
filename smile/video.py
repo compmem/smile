@@ -9,6 +9,7 @@
 
 from state import State, Wait, Serial
 from state import schedule_delayed_interval, schedule_delayed
+from utils import rindex
 
 # get the last instance of the experiment class
 from experiment import Experiment
@@ -187,6 +188,10 @@ class Show(Serial):
                                    reset_clock=reset_clock)
 
         # append the show, wait, and unshow states
+        # remove vstate from parent if it exists
+        if vstate.parent:
+            # pull the last one
+            del vstate.parent.children[rindex(vstate.parent.children,vstate)]
         # with this as the parent
         vstate.parent = self
         self.children.append(vstate)

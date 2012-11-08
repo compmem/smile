@@ -105,8 +105,10 @@ class Experiment(Serial):
         # set up instance for access throughout code
         self.__class__.last_instance = weakref.ref(self)
 
-        # init parents
-        self._parents = []
+        # init parents (with self at top)
+        self._parents = [self]
+        #global state._global_parents
+        #state._global_parents.append(self)
 
         # we have not flipped yet
         self.last_flip = event_time(0.0)

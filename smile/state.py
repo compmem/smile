@@ -9,6 +9,10 @@
 
 #from __future__ import with_statement
 from pyglet import clock
+now = clock._default.time
+
+from ref import Ref, val
+from utils import rindex
 
 # # get the last instance of the experiment class
 # from .experiment import Experiment
@@ -33,6 +37,8 @@ def _schedule_callback(dt, func, *args, **kwargs):
 def schedule_delayed(func, delay, *args, **kwargs):
     clock.schedule_once(_schedule_callback, delay, func, *args, **kwargs)
 
+_global_parents = []
+
 class State(object):
     def __init__(self, interval=0, parent=None, duration=0.0, reset_clock=False):
         self.state_time = None
@@ -44,16 +50,41 @@ class State(object):
         self.reset_next = False
         self.active = False
         self.done = False
+
+        # get the exp reference
+        from experiment import Experiment
+        try:
+            self.exp = Experiment.last_instance()
+        except AttributeError:
+            self.exp = None
+
+        #if self.parent is None and len(_global_parents) > 0: #not self.exp is None:
+        if self.parent is None and not self.exp is None:
+            # try and get it from the exp
+            self.parent = self.exp._parents[-1]
+            #self.parent = _global_parents[-1]
+
+        # add self to children if we have a parent
         if self.parent:
             # append to children
             self.parent.children.append(self)
+        self.log = {'state':self.__class__.__name__}
+
+    def __getitem__(self, index):
+        return Ref(self, index)
 
     def _callback(self, dt):
         pass
         
     def callback(self, dt):
+        # log when we've entered the callback the first time
+        if not self.log.has_key('first_call_time'):
+            self.log['first_call_time'] = now()
+
         # call the user-defined callback
         self._callback(dt)
+
+        # see if done
         if self.interval == 0:
             # we're done
             self.leave()
@@ -62,7 +93,7 @@ class State(object):
         if not self.reset_clock and self.parent:
             return self.parent.get_state_time()
         else:
-            return clock._default.time()
+            return now()
 
     def advance_parent_state_time(self, duration):
         if self.parent:
@@ -76,8 +107,11 @@ class State(object):
         self.state_time = self.get_parent_state_time()
         self.start_time = self.state_time
 
+        # save the starting state time
+        self.log['start_time'] = self.start_time
+
         # add the callback to the schedule
-        delay = self.state_time - clock._default.time()
+        delay = self.state_time - now()
         if delay < 0:
             delay = 0
         if self.interval < 0:
@@ -105,7 +139,7 @@ class State(object):
     def leave(self):
         # update the parent state time to actual elapsed time if necessary
         if self.duration < 0:
-            self.advance_parent_state_time(clock._default.time()-self.start_time)
+            self.advance_parent_state_time(now()-self.start_time)
 
         # remove the callback from the schedule
         clock.unschedule(self.callback)
@@ -119,6 +153,7 @@ class State(object):
         # call custom leave code
         self._leave()
 
+        print self.log
         pass
     
 
@@ -143,11 +178,20 @@ class ParentState(State):
 
     def __enter__(self):
         # push self as current parent
-        #Experiment.last_instance._parents.append(self)
+        # global _global_parents
+        # if len(_global_parents) > 0:
+        #     _global_parents.append(self)
+        if not self.exp is None:
+            self.exp._parents.append(self)
         return self
 
     def __exit__(self, type, value, tb):
-        #state = Experiment.last_instance._parents.pop()
+        # pop self off
+        # global _global_parents
+        # if len(_global_parents) > 0:
+        #     state = _global_parents.pop()
+        if not self.exp is None:
+            state = self.exp._parents.pop()
         pass
 
 class Parallel(ParentState):
@@ -212,11 +256,71 @@ class Serial(ParentState):
                 self.interval = 0
         pass
 
-class Conditional(ParentState):
+    
+class If(ParentState):
     """
     Parent state to implement branching.
+
+    key = KeyResponse(['Y','N'])
+    If((key['rt']>2.0)&(key['resp'] != None), stateA, stateB)
+
+    When()
+
+    The issue is that key['rt'] must be evaluated when IfElse is entered.
     """
-    pass
+    def __init__(self, conditional, true_state, false_state=None, 
+                 parent=None, reset_clock=False):
+
+        # init the parent class
+        super(If, self).__init__(parent=parent, duration=-1, 
+                                 reset_clock=reset_clock)
+
+        # save the cond
+        self.cond = conditional
+        self.outcome = None
+        self.true_state = true_state
+        self.false_state = false_state
+
+        # make sure to set this as the parent of the true state
+        if self.true_state.parent:
+            ind = rindex(self.true_state.parent.children,self.true_state)
+            del self.true_state.parent.children[ind]
+        self.true_state.parent = self
+
+        # append the true state
+        self.children.append(true_state)
+
+        # process the false state similarly
+        if false_state:
+            if self.false_state.parent:
+                ind = rindex(self.false_state.parent.children,self.false_state)
+                del self.false_state.parent.children[ind]
+            self.false_state.parent = self
+            self.children.append(false_state)
+
+    def _callback(self, dt):
+        if self.check:
+            done = False
+            # evaluate the conditional
+            if self.outcome is None:
+                self.outcome = val(self.cond)
+
+            # process the outcome
+            if self.outcome:
+                # get the first state
+                c = self.true_state
+            else:
+                c = self.false_state
+
+            if c is None or c.done:
+                done = True
+            elif not c.active:
+                # start the winning state
+                c.enter()
+
+            # check if done
+            if done:
+                self.interval = 0
 
 class Wait(State):
     def __init__(self, duration=0.0, stay_active=False, 
@@ -227,7 +331,7 @@ class Wait(State):
         self.stay_active = stay_active
 
     def _callback(self, dt):
-        if not self.stay_active or clock._default.time() >= self.state_time+self.duration:
+        if not self.stay_active or now() >= self.state_time+self.duration:
             # we're done
             self.interval = 0
     
@@ -251,29 +355,56 @@ class Func(State):
     def _callback(self, dt):
         self.dt = dt
         self.res = self.func(self, *self.args, **self.kwargs)
-        if self.interval == 0:
-            # we're done
-            self.leave()
 
 if __name__ == '__main__':
 
     from experiment import Experiment
+    import experiment
 
     def print_dt(state, txt):
-        print txt, clock._default.time(), state.state_time, state.dt
+        print txt, now(), state.state_time, state.dt
 
     exp = Experiment()
-    Func(print_dt, args=["one"], interval=0.0, parent=exp)
-    Wait(2.0, parent=exp)
-    Func(print_dt, args=["two"], interval=0.0, parent=exp)
-    Wait(3.0, parent=exp)
-    with Parallel(parent=exp) as trial:
-        with Serial(parent=trial) as x:
-            Wait(1.0, parent=x)
-            Func(print_dt, args=['three'], interval=0.0, parent=x)
-        Func(print_dt, args=['four'], interval=0.0, parent=trial)
-        print trial.children
-    Wait(2.0, stay_active=True, parent=exp)
+
+    # # with explicit parents
+    # If(True, 
+    #    Func(print_dt, args=["True"], interval=0.0),
+    #    Func(print_dt, args=["False"], interval=0.0),
+    #    parent=exp)
+    # Wait(1.0, parent=exp)
+    # If(False, 
+    #    Func(print_dt, args=["True"], interval=0.0),
+    #    Func(print_dt, args=["False"], interval=0.0),
+    #    parent=exp)
+    # Wait(2.0, parent=exp)
+    # Func(print_dt, args=["two"], interval=0.0, parent=exp)
+    # Wait(3.0, parent=exp)
+    # with Parallel(parent=exp) as trial:
+    #     with Serial(parent=trial) as x:
+    #         Wait(1.0, parent=x)
+    #         Func(print_dt, args=['three'], interval=0.0, parent=x)
+    #     Func(print_dt, args=['four'], interval=0.0, parent=trial)
+    #     print trial.children
+    # Wait(2.0, stay_active=True, parent=exp)
+
+
+    # with implied parents
+    If(True, 
+       Func(print_dt, args=["True"], interval=0.0),
+       Func(print_dt, args=["False"], interval=0.0))
+    Wait(1.0)
+    If(False, 
+       Func(print_dt, args=["True"], interval=0.0),
+       Func(print_dt, args=["False"], interval=0.0))
+    Wait(2.0)
+    Func(print_dt, args=["two"], interval=0.0)
+    Wait(3.0)
+    with Parallel():
+        with Serial():
+            Wait(1.0)
+            Func(print_dt, args=['three'], interval=0.0)
+        Func(print_dt, args=['four'], interval=0.0)
+    Wait(2.0, stay_active=True)
 
     exp.run()
 
