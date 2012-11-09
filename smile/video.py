@@ -10,6 +10,7 @@
 from state import State, Wait, Serial
 from state import schedule_delayed_interval, schedule_delayed
 from utils import rindex
+from ref import Ref, val
 
 # get the last instance of the experiment class
 from experiment import Experiment
@@ -125,18 +126,18 @@ class Text(VisualState):
             pass
         else:
             # make the new shown and return it
-            self.shown = pyglet.text.Label(self.textstr,
-                                           font_name=self.font_name,
-                                           font_size=self.font_size,
-                                           color=self.color,
-                                           x=self.x, y=self.y,
-                                           anchor_x=self.anchor_x, 
-                                           anchor_y=self.anchor_y,
-                                           bold=self.bold,
-                                           italic=self.italic,
-                                           halign=self.halign,
-                                           multiline=self.multiline,
-                                           dpi=self.dpi,
+            self.shown = pyglet.text.Label(val(self.textstr),
+                                           font_name=val(self.font_name),
+                                           font_size=val(self.font_size),
+                                           color=val(self.color),
+                                           x=val(self.x), y=val(self.y),
+                                           anchor_x=val(self.anchor_x), 
+                                           anchor_y=val(self.anchor_y),
+                                           bold=val(self.bold),
+                                           italic=val(self.italic),
+                                           halign=val(self.halign),
+                                           multiline=val(self.multiline),
+                                           dpi=val(self.dpi),
                                            group=self.group,
                                            batch=self.exp.window.batch)
         return self.shown
@@ -167,15 +168,15 @@ class Image(VisualState):
             pass
         else:
             # make the new shown and return it
-            self.img = pyglet.resource.image(self.imgstr, 
-                                             flip_x=self.flip_x,
-                                             flip_y=self.flip_y)
+            self.img = pyglet.resource.image(val(self.imgstr), 
+                                             flip_x=val(self.flip_x),
+                                             flip_y=val(self.flip_y))
             self.shown = pyglet.sprite.Sprite(self.img,
-                                              x=self.x, y=self.y,
+                                              x=val(self.x), y=val(self.y),
                                               batch=self.exp.window.batch)
-            self.shown.scale = self.scale
-            self.shown.rotation = self.rotation
-            self.shown.opacity = self.opacity
+            self.shown.scale = val(self.scale)
+            self.shown.rotation = val(self.rotation)
+            self.shown.opacity = val(self.opacity)
         return self.shown
 
         
@@ -187,14 +188,10 @@ class Show(Serial):
         super(Show, self).__init__(parent=parent, duration=duration, 
                                    reset_clock=reset_clock)
 
-        # append the show, wait, and unshow states
         # remove vstate from parent if it exists
-        if vstate.parent:
-            # pull the last one
-            del vstate.parent.children[rindex(vstate.parent.children,vstate)]
-        # with this as the parent
-        vstate.parent = self
-        self.children.append(vstate)
+        self.claim_child(vstate)
+
+        # add the wait and unshow states
         Wait(duration, parent=self)
         Unshow(vstate, parent=self)
 

@@ -153,7 +153,7 @@ class State(object):
         # call custom leave code
         self._leave()
 
-        print self.log
+        #print self.log
         pass
     
 
@@ -170,6 +170,13 @@ class ParentState(State):
 
     def advance_state_time(self, duration):
         self.state_time += duration
+
+    def claim_child(self, child):
+        if not child.parent is None:
+            ind = rindex(child.parent.children,child)
+            del child.parent.children[ind]
+        child.parent = self
+        self.children.append(child)
 
     def _enter(self):
         # set all children to not done
@@ -282,21 +289,11 @@ class If(ParentState):
         self.false_state = false_state
 
         # make sure to set this as the parent of the true state
-        if self.true_state.parent:
-            ind = rindex(self.true_state.parent.children,self.true_state)
-            del self.true_state.parent.children[ind]
-        self.true_state.parent = self
-
-        # append the true state
-        self.children.append(true_state)
+        self.claim_child(self.true_state)
 
         # process the false state similarly
-        if false_state:
-            if self.false_state.parent:
-                ind = rindex(self.false_state.parent.children,self.false_state)
-                del self.false_state.parent.children[ind]
-            self.false_state.parent = self
-            self.children.append(false_state)
+        if self.false_state:
+            self.claim_child(self.false_state)
 
     def _callback(self, dt):
         if self.check:
@@ -322,6 +319,78 @@ class If(ParentState):
             if done:
                 self.interval = 0
 
+class LoopItem(object):
+    def __init__(self, item):
+        self.item = item
+
+    def __getitem__(self, index):
+        # modify so that we're accessing item
+        return Ref(gfunc = lambda : self.item[index])
+        
+class Loop(Serial):
+    """
+    with Loop(block) as trial:
+        Show(Image(trial.current['image']), 2.0)
+        Wait(.5)
+    """
+    def __init__(self, dictlist, parent=None, reset_clock=False):
+        super(Loop, self).__init__(parent=parent, duration=-1, 
+                                   reset_clock=reset_clock)
+
+        # otherwise, assume it's a list of dicts
+        self.dictlist = dictlist
+        
+        # set to first in loop
+        if len(self.dictlist) == 0:
+            raise ValueError('The dictlist can not be zero length.')
+        self._i = 0
+        self.current = LoopItem(self.dictlist[self._i])
+        
+    def _callback(self, dt):
+        if self.check:
+            # process the children
+            
+            # start those that are not active and not done
+            reset_next = False
+            num_done = 0
+            for i,c in enumerate(self.children):
+                if c.done:
+                    num_done += 1
+                    # set whether we should reset the next
+                    reset_next = c.reset_next
+                    continue
+                if not c.active:
+                    if i > 0 and \
+                            not self.children[i-1].done and \
+                            self.children[i-1].duration < 0:
+                        # we have to wait until it's done
+                        break
+
+                    # start the next one
+                    if reset_next:
+                        c.reset_clock = True
+                    c.enter()
+                    break
+
+                # set whether we should reset the next
+                reset_next = c.reset_next
+
+            if num_done == len(self.children):
+                # we're done with this sequence
+                self._i += 1
+                if self._i >= len(self.dictlist):
+                    # we're really done
+                    self.interval = 0
+                else:
+                    # set to next
+                    self.current.item = self.dictlist[self._i]
+                    
+                    # reset all the child states
+                    self._enter()
+                    
+        pass
+
+        
 class Wait(State):
     def __init__(self, duration=0.0, stay_active=False, 
                  interval=0, parent=None, reset_clock=False):
@@ -354,7 +423,10 @@ class Func(State):
 
     def _callback(self, dt):
         self.dt = dt
-        self.res = self.func(self, *self.args, **self.kwargs)
+        # process the refs
+        args = [val(a) for a in self.args]
+        kwargs = {key: val(value) for (key, value) in self.kwargs}
+        self.res = self.func(self, *args, **kwargs)
 
 if __name__ == '__main__':
 
@@ -362,7 +434,7 @@ if __name__ == '__main__':
     import experiment
 
     def print_dt(state, txt):
-        print txt, now(), state.state_time, state.dt
+        print txt, now()-state.state_time, state.dt
 
     exp = Experiment()
 
@@ -390,20 +462,28 @@ if __name__ == '__main__':
 
     # with implied parents
     If(True, 
-       Func(print_dt, args=["True"], interval=0.0),
-       Func(print_dt, args=["False"], interval=0.0))
+       Func(print_dt, args=["True"]),
+       Func(print_dt, args=["False"]))
     Wait(1.0)
     If(False, 
-       Func(print_dt, args=["True"], interval=0.0),
-       Func(print_dt, args=["False"], interval=0.0))
+       Func(print_dt, args=["True"]),
+       Func(print_dt, args=["False"]))
     Wait(2.0)
-    Func(print_dt, args=["two"], interval=0.0)
+    If(False, Func(print_dt, args=["True"])) # won't do anything
+    Func(print_dt, args=["two"])
     Wait(3.0)
     with Parallel():
         with Serial():
             Wait(1.0)
-            Func(print_dt, args=['three'], interval=0.0)
-        Func(print_dt, args=['four'], interval=0.0)
+            Func(print_dt, args=['three'])
+        Func(print_dt, args=['four'])
+    Wait(2.0)
+
+    block = [{'text':'a'},{'text':'b'},{'text':'c'}]
+    with Loop(block) as trial:
+        Func(print_dt, args=[trial.current['text']])
+        Wait(1.0)
+
     Wait(2.0, stay_active=True)
 
     exp.run()
