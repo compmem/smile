@@ -5,12 +5,12 @@ from distutils.sysconfig import get_config_var
 import os
 import sys
 
-setup(name='pygie', 
+setup(name='smile', 
       version='0.0.1',
-      package_dir={"pygie":"pygie"},
-      packages=['pygie'],
+      package_dir={"smile":"smile"},
+      packages=['smile'],
       author=['Per B. Sederberg'],
       maintainer=['Per B. Sederberg'],
       maintainer_email=['psederberg@gmail.com'],
-      url=['http://github.com/compmem/pygie'])
+      url=['http://github.com/compmem/smile'])
 
