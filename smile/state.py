@@ -211,6 +211,9 @@ class Parallel(ParentState):
             # start those that are not active and not done
             num_done = 0
             for c in self.children:
+                # if any of the children ask to reset next, self should too
+                if c.reset_next:
+                    self.reset_next = True
                 if c.done:
                     num_done += 1
                     continue
@@ -237,6 +240,9 @@ class Serial(ParentState):
             reset_next = False
             num_done = 0
             for i,c in enumerate(self.children):
+                # if any of the children ask to reset next, self should too
+                if c.reset_next:
+                    self.reset_next = True
                 if c.done:
                     num_done += 1
                     # set whether we should reset the next
@@ -393,7 +399,7 @@ class Loop(Serial):
         
 class Wait(State):
     def __init__(self, duration=0.0, stay_active=False, 
-                 interval=0, parent=None, reset_clock=False):
+                 parent=None, reset_clock=False):
         # init the parent class
         super(Wait, self).__init__(interval=-1, parent=parent, 
                                    duration=duration, reset_clock=reset_clock)
@@ -431,7 +437,6 @@ class Func(State):
 if __name__ == '__main__':
 
     from experiment import Experiment
-    import experiment
 
     def print_dt(state, txt):
         print txt, now()-state.state_time, state.dt

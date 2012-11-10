@@ -15,9 +15,14 @@ Approximately in order of importance:
   - Create a Log state that can pick and choose from other state logs
     to make custom event logs.
 
+- Variables
+  - For custom tracking of stuff throughout the experiment
+    (e.g., counting up the num correct for a block)
+  - Implemented as Set and Get states
+
 - Keyboard input
-  - Add event hooks
-  - Tracking individual keys
+  - (DONE) Add event hooks
+  - (DONE) Tracking individual keys
   - Track extended text input
 
 - Mouse input
@@ -25,9 +30,9 @@ Approximately in order of importance:
   - Movement (A list of dicts for each movement during an active
     state)
 
-- Conditional state to allow branching
+- (DONE) Conditional state to allow branching
 
-- Loop state (to allow looping without unraveling into a big sequence)
+- (DONE) Loop state (to allow looping without unraveling into a big sequence)
 
 - Tests (especially to verify timing)
 
@@ -35,6 +40,7 @@ Approximately in order of importance:
 
 - Audio playback and recording
   - Should we just use pyaudio b/c we need recording?
+  - It would also give us the ability to use JACK.
 
 - Movie playback (sync with audio)
 

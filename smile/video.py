@@ -9,7 +9,6 @@
 
 from state import State, Wait, Serial
 from state import schedule_delayed_interval, schedule_delayed
-from utils import rindex
 from ref import Ref, val
 
 # get the last instance of the experiment class

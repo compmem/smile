@@ -25,13 +25,6 @@ from state import Serial
 now = clock._default.time
 def event_time(time, time_error=0.0):
     return {'time':time, 'time_error':time_error}
-
-# import time
-# if sys.platform == 'win32':
-#     now = time.clock
-# else:
-#     now = time.time
-
     
 class ExpWindow(Window):
     def __init__(self, exp, *args, **kwargs):
@@ -44,6 +37,10 @@ class ExpWindow(Window):
         # set up easy key logging
         self.keys = key.KeyStateHandler()
         self.push_handlers(self.keys)
+
+        # set empty list of key and mouse handler callbacks
+        self.key_callbacks = []
+        self.mouse_callbacks = []
 
         # set up a batch for fast rendering
         # eventually we'll need multiple groups
@@ -70,8 +67,14 @@ class ExpWindow(Window):
     def on_key_press(self, symbol, modifiers):
         if symbol == key.ESCAPE:
             self.has_exit = True
-        else:
-            pass
+
+        # call the registered callbacks
+        for c in self.key_callbacks:
+            # pass it the key, mod, and event time
+            c(symbol, modifiers, self.exp.event_time)
+
+    def on_key_release(self, symbol, modifiers):
+        pass
 
 class Experiment(Serial):
     def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
@@ -94,6 +97,9 @@ class Experiment(Serial):
             
         # set the clear color
         self.window.set_clear_color(background_color)
+
+        # set the mouse as desired
+        #self.window.set_exclusive_mouse()
 
         # some gl stuff (must look up to remember why we want them)
         glEnable(GL_BLEND)
