@@ -7,7 +7,7 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-#from __future__ import with_statement
+from collections import OrderedDict
 from pyglet import clock
 now = clock._default.time
 
@@ -43,6 +43,9 @@ class State(object):
     def __init__(self, interval=0, parent=None, duration=0.0, reset_clock=False):
         self.state_time = None
         self.start_time = None
+        self.end_time = None
+        self.first_call_time = None
+        self.dt = None
         self.interval = interval
         self.duration = duration
         self.parent = parent
@@ -68,8 +71,20 @@ class State(object):
         if self.parent:
             # append to children
             self.parent.children.append(self)
-        self.log = {'state':self.__class__.__name__}
 
+        # start the log
+        self.state = self.__class__.__name__
+        self.log_attrs = ['state','start_time','first_call_time','first_call_error',
+                          'end_time', 'duration']
+
+        # create vars container
+        self.vars = {}
+
+    def get_log(self):
+        keyvals = [(a,val(getattr(self,a))) if hasattr(self,a) 
+                   else (a,None) for a in self.log_attrs]
+        return OrderedDict(keyvals)
+        
     def __getitem__(self, index):
         return Ref(self, index)
 
@@ -78,11 +93,17 @@ class State(object):
         
     def callback(self, dt):
         # log when we've entered the callback the first time
-        if not self.log.has_key('first_call_time'):
-            self.log['first_call_time'] = now()
+        #if not self.log.has_key('first_call_time'):
+        #    self.log['first_call_time'] = now()
+        if self.first_call_time is None:
+            self.first_call_time = now()
+            self.first_call_error = self.first_call_time - self.start_time
 
         # call the user-defined callback
         self._callback(dt)
+
+        # save the dt
+        self.dt = dt
 
         # see if done
         if self.interval == 0:
@@ -108,7 +129,7 @@ class State(object):
         self.start_time = self.state_time
 
         # save the starting state time
-        self.log['start_time'] = self.start_time
+        #self.log['start_time'] = self.start_time
 
         # add the callback to the schedule
         delay = self.state_time - now()
@@ -137,12 +158,17 @@ class State(object):
         pass
 
     def leave(self):
+        # get the end time
+        self.end_time = now()
+        
         # update the parent state time to actual elapsed time if necessary
         if self.duration < 0:
             if isinstance(self, ParentState):
+                # advance the duration the children moved the this parent
                 self.advance_parent_state_time(self.state_time-self.start_time)
             else:
-                self.advance_parent_state_time(now()-self.start_time)
+                # advance the duration of this state
+                self.advance_parent_state_time(self.end_time-self.start_time)
 
         # remove the callback from the schedule
         clock.unschedule(self.callback)
@@ -156,10 +182,9 @@ class State(object):
         # call custom leave code
         self._leave()
 
-        #print self.log
+        print self.get_log()
         pass
     
-
 
 class ParentState(State):
     def __init__(self, parent=None, duration=-1, reset_clock=False):
@@ -304,6 +329,9 @@ class If(ParentState):
         if self.false_state:
             self.claim_child(self.false_state)
 
+        # append outcome to log
+        self.log_attrs.append('outcome')
+        
     def _enter(self):
         # reset outcome so we re-evaluate if called in loop
         self.outcome = val(self.cond)
@@ -361,7 +389,10 @@ class Loop(Serial):
             if len(self.iterable) == 0:
                 raise ValueError('The iterable can not be zero length.')
             self.current = LoopItem(self.iterable[self.i])
-        
+
+        # append outcome to log
+        self.log_attrs.extend(['outcome','i'])
+
     def _enter(self):
         # reset outcome so we re-evaluate if called in loop
         self.outcome = val(self.cond)
@@ -451,7 +482,6 @@ class Func(State):
             self.kwargs = {}
 
     def _callback(self, dt):
-        self.dt = dt
         # process the refs
         args = [val(a) for a in self.args]
         kwargs = {key: val(value) for (key, value) in self.kwargs}
@@ -473,8 +503,7 @@ if __name__ == '__main__':
         Wait(1.0)
         If(trial.current.value==block[-1],
            Wait(2.))
-        
-    
+
     If(True, 
        Func(print_dt, args=["True"]),
        Func(print_dt, args=["False"]))

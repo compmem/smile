@@ -105,7 +105,7 @@ class KeyPress(State):
 if __name__ == '__main__':
 
     from experiment import Experiment
-    from state import Wait, Func
+    from state import Wait, Func, Loop
 
     def print_dt(state, *args):
         print args, state.dt
@@ -114,6 +114,9 @@ if __name__ == '__main__':
     
     Func(print_dt, args=['Key Press Test'])
 
+    #kp = KeyPress(keys=[key.J,key.K], correct_resp=key.K)
+    #with Loop(cond=kp['pressed']!='K'):
+    
     kp = KeyPress(keys=[key.J,key.K], correct_resp=key.K)
     Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
     Wait(1.0)
