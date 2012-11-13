@@ -75,10 +75,7 @@ class State(object):
         # start the log
         self.state = self.__class__.__name__
         self.log_attrs = ['state','start_time','first_call_time','first_call_error',
-                          'end_time', 'duration']
-
-        # create vars container
-        self.vars = {}
+                          'end_time']
 
     def get_log(self):
         keyvals = [(a,val(getattr(self,a))) if hasattr(self,a) 
@@ -105,8 +102,8 @@ class State(object):
         # save the dt
         self.dt = dt
 
-        # see if done
-        if self.interval == 0:
+        # see if done (check to make sure we didn't already call leave)
+        if not self.done and self.interval == 0:
             # we're done
             self.leave()
 
@@ -164,11 +161,12 @@ class State(object):
         # update the parent state time to actual elapsed time if necessary
         if self.duration < 0:
             if isinstance(self, ParentState):
+                duration = self.state_time-self.start_time
                 # advance the duration the children moved the this parent
-                self.advance_parent_state_time(self.state_time-self.start_time)
             else:
                 # advance the duration of this state
-                self.advance_parent_state_time(self.end_time-self.start_time)
+                duration = self.end_time-self.start_time
+            self.advance_parent_state_time(duration)
 
         # remove the callback from the schedule
         clock.unschedule(self.callback)
@@ -235,6 +233,7 @@ class Parallel(ParentState):
     """        
     def _callback(self, dt):
         if self.check:
+            self.check = False
             # process the children
             # start those that are not active and not done
             num_done = 0
@@ -249,7 +248,8 @@ class Parallel(ParentState):
                     c.enter()
             if num_done == len(self.children):
                 # we're done
-                self.interval = 0
+                #self.interval = 0
+                self.leave()
         pass
 
     def advance_state_time(self, duration):
@@ -263,6 +263,7 @@ class Serial(ParentState):
     """
     def _callback(self, dt):
         if self.check:
+            self.check = False
             # process the children
             # start those that are not active and not done
             reset_next = False
@@ -294,7 +295,8 @@ class Serial(ParentState):
 
             if num_done == len(self.children):
                 # we're done
-                self.interval = 0
+                #self.interval = 0
+                self.leave()
         pass
 
     
@@ -339,6 +341,7 @@ class If(ParentState):
         
     def _callback(self, dt):
         if self.check:
+            self.check = False
             done = False
 
             # process the outcome
@@ -356,8 +359,9 @@ class If(ParentState):
 
             # check if done
             if done:
-                self.interval = 0
-
+                #self.interval = 0
+                self.leave()
+                
 class LoopItem(object):
     def __init__(self, item):
         self.item = item
@@ -400,10 +404,12 @@ class Loop(Serial):
 
     def _callback(self, dt):
         if self.check:
+            self.check = False
             # check the outcome each time
             if not self.outcome:
                 # we should stop now
-                self.interval = 0
+                #self.interval = 0
+                self.leave()
                 return
                 
             # process the children            
@@ -439,7 +445,8 @@ class Loop(Serial):
                     # see if we're done with the loop
                     if self.i >= len(self.iterable):
                         # we're really done
-                        self.interval = 0
+                        #self.interval = 0
+                        self.leave()
                     else:
                         # set to next
                         self.current.item = self.iterable[self.i]
@@ -462,7 +469,8 @@ class Wait(State):
     def _callback(self, dt):
         if not self.stay_active or now() >= self.state_time+self.duration:
             # we're done
-            self.interval = 0
+            #self.interval = 0
+            self.leave()
     
 
 class Func(State):

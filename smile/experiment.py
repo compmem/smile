@@ -19,7 +19,8 @@ from pyglet import clock
 from pyglet.window import key,Window
 
 # local imports
-from state import Serial
+from state import Serial, State
+from ref import val, Ref
 
 # set up the basic timer
 now = clock._default.time
@@ -69,6 +70,7 @@ class ExpWindow(Window):
             self.has_exit = True
 
         # call the registered callbacks
+        print self.key_callbacks
         for c in self.key_callbacks:
             # pass it the key, mod, and event time
             c(symbol, modifiers, self.exp.event_time)
@@ -77,13 +79,13 @@ class ExpWindow(Window):
         pass
 
 class Experiment(Serial):
-    def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
+    def __init__(self, fullscreen=False, resolution=(640,480), name="Smile",
                  pyglet_vsync=True, background_color=(0,0,0,1)):
 
         # parse args
 
         # set up the state
-        super(Experiment, self).__init__(parent=None, duration=0)
+        super(Experiment, self).__init__(parent=None, duration=-1)
 
         # set up the window
         self.pyglet_vsync = pyglet_vsync
@@ -223,6 +225,35 @@ class Experiment(Serial):
             self.window.need_flip = False
 
         return self.last_flip
+
+
+class Set(State):
+    def __init__(self, variable, value, parent=None):
+        # init the parent class
+        super(Set, self).__init__(interval=0, parent=parent, 
+                                  duration=0, reset_clock=False)
+        self.variable = variable
+        self.val = value
+        self.value = None
+
+        # append log vars
+        self.log_attrs.extend(['variable','value'])
+        
+    def _callback(self, dt):
+        # set the exp var
+        self.value = val(self.val)
+        self.exp._vars[self.variable] = self.value
+
+
+def Get(variable):
+    gfunc = lambda : Experiment.last_instance()._vars[variable]
+    return Ref(gfunc=gfunc)
+
+class Get2(Ref):
+    def __init__(self, variable):
+        self.variable = variable
+        gfunc = lambda : Experiment.last_instance()._vars[self.variable]
+        #super(Get, self).__init__(obj=None, attr=None, gfunc=gfunc)
 
             
 if __name__ == '__main__':

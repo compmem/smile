@@ -13,7 +13,7 @@ from state import State
 from ref import Ref, val
 
 # get the last instance of the experiment class
-from experiment import Experiment, now
+from experiment import Experiment, now, Get, Set
 
 class KeyPress(State):
     def __init__(self, keys=None, correct_resp=None, base_time=None,
@@ -24,8 +24,10 @@ class KeyPress(State):
 
         # save the keys we're watching (None for all)
         self.keys = keys
+        self.keysym = None
         self.correct_resp = correct_resp
-        self.base_time = base_time  # for calc rt
+        self.base_time_src = base_time  # for calc rt
+        self.base_time = None
         self.wait_duration = duration
         
         # if wait duration is -1 wait indefinitely
@@ -44,33 +46,42 @@ class KeyPress(State):
         # we're not waiting yet
         self.waiting = False
 
-        # set defaults
-        self.pressed = None
-        self.press_time = None
-        self.correct = False
-        self.rt = None
+        # append log vars
+        self.log_attrs.extend(['keys', 'correct_resp', 'base_time',
+                               'pressed', 'press_time', 
+                               'correct', 'rt'])
 
     def _enter(self):
         # process any possible refs in the provided args
         self.keys = val(self.keys)
-        if not self.keys is None and not isinstance(self.keys, list):
-            # turn into list
-            self.keys = [self.keys]
+        if not self.keys is None:
+            if not isinstance(self.keys, list):
+                # turn into list
+                self.keys = [self.keys]
+            self.keysym = [getattr(key,k) for k in self.keys]
+
         self.correct_resp = val(self.correct_resp)
         if not self.correct_resp is None and \
           not isinstance(self.correct_resp, list):
             # turn into list
             self.correct_resp = [self.correct_resp]
 
-        self.base_time = val(self.base_time)
+        self.base_time = val(self.base_time_src)
         if self.base_time is None:
             # set it to the state time
             self.base_time = self.state_time
+
+        # set defaults
+        self.pressed = ''
+        self.press_time = None
+        self.correct = False
+        self.rt = None
+
         pass
 
     def _key_callback(self, symbol, modifiers, event_time):
         # check the key and time (if this is needed)
-        if self.keys is None or symbol in self.keys:
+        if self.keysym is None or symbol in self.keysym:
             # it's all good!, so save it
             self.pressed = key.symbol_string(symbol)
             self.press_time = event_time
@@ -79,11 +90,11 @@ class KeyPress(State):
 
             if not (self.keys is None or self.correct_resp is None):
                 # process if it's correct
-                if symbol in self.correct_resp:
+                if self.pressed in self.correct_resp:
                     self.correct = True
 
             # let's leave b/c we're all done
-            self.interval = 0
+            #self.interval = 0
             self.leave()
             
     def _callback(self, dt):
@@ -92,7 +103,8 @@ class KeyPress(State):
             self.waiting = True
         if self.wait_duration > 0 and now() >= self.state_time+self.wait_duration:
             # we're done
-            self.interval = 0
+            self.leave()
+            #self.interval = 0
             
     def _leave(self):
         # remove the keyboard callback
@@ -114,10 +126,13 @@ if __name__ == '__main__':
     
     Func(print_dt, args=['Key Press Test'])
 
-    #kp = KeyPress(keys=[key.J,key.K], correct_resp=key.K)
-    #with Loop(cond=kp['pressed']!='K'):
+    Set('last_pressed','')
+    with Loop(conditional=(Get('last_pressed')!='K')):
+        kp = KeyPress(keys=['J','K'], correct_resp='K')
+        Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
+        Set('last_pressed',kp['pressed'])
     
-    kp = KeyPress(keys=[key.J,key.K], correct_resp=key.K)
+    kp = KeyPress(keys=['J','K'], correct_resp='K')
     Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
     Wait(1.0)
 
