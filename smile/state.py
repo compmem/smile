@@ -7,7 +7,6 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from collections import OrderedDict
 from pyglet import clock
 now = clock._default.time
 
@@ -80,7 +79,7 @@ class State(object):
     def get_log(self):
         keyvals = [(a,val(getattr(self,a))) if hasattr(self,a) 
                    else (a,None) for a in self.log_attrs]
-        return OrderedDict(keyvals)
+        return dict(keyvals)
         
     def __getitem__(self, index):
         return Ref(self, index)
@@ -309,9 +308,19 @@ class If(ParentState):
 
     When()
 
-    The issue is that key['rt'] must be evaluated when IfElse is entered.
+    True and false states are created if they are not
+    passed in.  That way we can do
+
+    with If((key['rt']>2.0)&(key['resp'] != None)) as if_state:
+        with if_state.true_state:
+            # fill the true state
+            pass
+        with if_state.false_state:
+            # fill the false state
+            pass
+
     """
-    def __init__(self, conditional, true_state, false_state=None, 
+    def __init__(self, conditional, true_state=None, false_state=None, 
                  parent=None, reset_clock=False):
 
         # init the parent class
@@ -324,12 +333,19 @@ class If(ParentState):
         self.true_state = true_state
         self.false_state = false_state
 
-        # make sure to set this as the parent of the true state
-        self.claim_child(self.true_state)
+        if self.true_state:
+            # make sure to set this as the parent of the true state
+            self.claim_child(self.true_state)
+        else:
+            # create the true state
+            self.true_state = Serial(parent=self)
 
         # process the false state similarly
         if self.false_state:
             self.claim_child(self.false_state)
+        else:
+            # create the true state
+            self.false_state = Serial(parent=self)
 
         # append outcome to log
         self.log_attrs.append('outcome')
@@ -361,6 +377,7 @@ class If(ParentState):
             if done:
                 #self.interval = 0
                 self.leave()
+
                 
 class LoopItem(object):
     def __init__(self, item):

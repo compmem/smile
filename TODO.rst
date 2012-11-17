@@ -15,7 +15,7 @@ Approximately in order of importance:
   - Create a Log state that can pick and choose from other state logs
     to make custom event logs.
 
-- Variables
+- (DONE) Variables
   - For custom tracking of stuff throughout the experiment
     (e.g., counting up the num correct for a block)
   - Implemented as Set and Get states

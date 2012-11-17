@@ -249,12 +249,6 @@ def Get(variable):
     gfunc = lambda : Experiment.last_instance()._vars[variable]
     return Ref(gfunc=gfunc)
 
-class Get2(Ref):
-    def __init__(self, variable):
-        self.variable = variable
-        gfunc = lambda : Experiment.last_instance()._vars[self.variable]
-        #super(Get, self).__init__(obj=None, attr=None, gfunc=gfunc)
-
             
 if __name__ == '__main__':
     exp = Experiment(fullscreen=False, pyglet_vsync=False)

@@ -36,6 +36,9 @@ class VisualState(State):
         # we haven't shown anything yet
         self.shown = None
 
+        # set the log attrs
+        self.log_attrs.extend(['last_draw', 'last_update', 'last_flip'])
+                               
     def _update_callback(self, dt):
         # children must implement drawing the showable to make it shown
         pass
@@ -43,6 +46,7 @@ class VisualState(State):
     def update_callback(self, dt):
         # call the user-defined show
         self.shown = self._update_callback(dt)
+        self.last_update = now()
 
         # tell the exp window we need a draw
         self.exp.window.need_draw = True
@@ -50,6 +54,7 @@ class VisualState(State):
     def draw_callback(self, dt):
         # call the draw (not forced, so it can skip it)
         self.exp.window.on_draw()
+        self.last_draw = now()
 
     def _callback(self, dt):
         # call the flip, recording the time
@@ -116,6 +121,11 @@ class Text(VisualState):
         self.multiline = multiline
         self.dpi = dpi
         self.group = group
+
+        self.log_attrs.extend(['textstr', 'font_name', 'font_size', 'color',
+                               'x', 'y', 'anchor_x', 'anchor_y', 'bold',
+                               'italic', 'halign', 'multiline'])
+
         pass
 
     def _update_callback(self, dt):
@@ -142,7 +152,6 @@ class Text(VisualState):
         return self.shown
 
 
-
 class Image(VisualState):
     def __init__(self, imgstr, x=0, y=0, flip_x=False, flip_y=False,
                  rotation=0, scale=1.0, opacity=255,
@@ -158,6 +167,11 @@ class Image(VisualState):
         self.y = y
         self.flip_x = flip_x
         self.flip_y = flip_y
+
+        # append log attrs
+        self.log_attrs.extend(['imgstr', 'rotation', 'scale', 'opacity',
+                               'x', 'y', 'flip_x', 'flip_y'])
+        
         pass
 
     def _update_callback(self, dt):
@@ -196,7 +210,6 @@ class Show(Serial):
 
         # expose the shown
         self.shown = vstate.shown
-        
 
 
 if __name__ == '__main__':
