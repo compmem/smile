@@ -10,7 +10,9 @@
 # import main modules
 #from __future__ import with_statement
 import sys
+import os
 import weakref
+import argparse
 
 # pyglet imports
 import pyglet
@@ -82,8 +84,9 @@ class Experiment(Serial):
     def __init__(self, fullscreen=False, resolution=(640,480), name="Smile",
                  pyglet_vsync=True, background_color=(0,0,0,1)):
 
-        # parse args
-
+        # first process the args
+        self._process_args()
+        
         # set up the state
         super(Experiment, self).__init__(parent=None, duration=-1)
 
@@ -129,6 +132,23 @@ class Experiment(Serial):
 
         # place to save experimental variables
         self._vars = {}
+
+        # add log locs (state.yaml, experiment.yaml)
+
+    def _process_args(self):
+        # set up the arg parser
+        parser = argparse.ArgumentParser(description='Run a SMILE experiment.')
+        parser.add_argument("-s", "--subject", 
+                            help="unique subject id", 
+                            default='test000')        
+        # do the parsing
+        args = parser.parse_args()
+
+        # set up the subject and subj dir
+        self.subj = args.subject
+        self.subj_dir = os.path.join('data',self.subj)
+        if not os.path.exists(self.subj_dir):
+            os.makedirs(self.subj_dir)
         
     def run(self, initial_state=None):
         """
@@ -249,6 +269,25 @@ def Get(variable):
     gfunc = lambda : Experiment.last_instance()._vars[variable]
     return Ref(gfunc=gfunc)
 
+def Log(State):
+    def __init__(self, log_file, parent=None, **log_items):
+        # init the parent class
+        super(Log, self).__init__(interval=0, parent=parent, 
+                                  duration=0, reset_clock=False)
+        self.log_file = log_file
+        if self.log_file is None:
+            # set it to the experiment's log
+            self.log_file = "experiment.yaml"
+        self.log_items = log_items
+        
+    def _callback(self, dt):
+        # eval the log_items and write the log
+        keyvals = [(k,val(v)) for k,v in self.log_attrs]
+        log = dict(keyvals)
+        # log it to the correct file
+        
+        pass
+    
             
 if __name__ == '__main__':
     exp = Experiment(fullscreen=False, pyglet_vsync=False)

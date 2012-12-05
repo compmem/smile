@@ -12,7 +12,7 @@ from state import schedule_delayed_interval, schedule_delayed
 from ref import Ref, val
 
 # get the last instance of the experiment class
-from experiment import Experiment
+from experiment import Experiment, now
 
 from pyglet import clock
 import pyglet
