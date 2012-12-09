@@ -9,7 +9,7 @@
 
 
 import yaml
-import sys
+#import sys
 
 # set up a dumper that does not do anchors or aliases
 Dumper = yaml.SafeDumper

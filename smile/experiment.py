@@ -23,6 +23,7 @@ from pyglet.window import key,Window
 # local imports
 from state import Serial, State
 from ref import val, Ref
+from log import dump
 
 # set up the basic timer
 now = clock._default.time
@@ -134,6 +135,10 @@ class Experiment(Serial):
         self._vars = {}
 
         # add log locs (state.yaml, experiment.yaml)
+        self.state_log = os.path.join(self.subj_dir,'state.yaml')
+        self.state_log_stream = open(self.state_log,'a')
+        self.exp_log = os.path.join(self.subj_dir,'exp.yaml')
+        self.exp_log_stream = open(self.exp_log,'a')
 
     def _process_args(self):
         # set up the arg parser
@@ -269,23 +274,28 @@ def Get(variable):
     gfunc = lambda : Experiment.last_instance()._vars[variable]
     return Ref(gfunc=gfunc)
 
-def Log(State):
-    def __init__(self, log_file, parent=None, **log_items):
+class Log(State):
+    def __init__(self, log_file=None, parent=None, **log_items):
         # init the parent class
         super(Log, self).__init__(interval=0, parent=parent, 
                                   duration=0, reset_clock=False)
         self.log_file = log_file
-        if self.log_file is None:
-            # set it to the experiment's log
-            self.log_file = "experiment.yaml"
         self.log_items = log_items
+
+    def _get_stream(self):
+        if self.log_file is None:
+            stream = self.exp.exp_log_stream
+        else:
+            # make it from the name
+            stream = open(os.path.join(self.exp.subj_dir,self.log_file),'a')
+        return stream
         
     def _callback(self, dt):
         # eval the log_items and write the log
-        keyvals = [(k,val(v)) for k,v in self.log_attrs]
+        keyvals = [(k,val(v)) for k,v in self.log_items.iteritems()]
         log = dict(keyvals)
         # log it to the correct file
-        
+        dump([log], self._get_stream())
         pass
     
             

@@ -13,7 +13,7 @@ from state import State
 from ref import Ref, val
 
 # get the last instance of the experiment class
-from experiment import Experiment, now, Get, Set
+from experiment import Experiment, now
 
 class KeyPress(State):
     def __init__(self, keys=None, correct_resp=None, base_time=None,
@@ -116,7 +116,7 @@ class KeyPress(State):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
+    from experiment import Experiment, Get, Set, Log
     from state import Wait, Func, Loop
 
     def print_dt(state, *args):
@@ -131,6 +131,7 @@ if __name__ == '__main__':
         kp = KeyPress(keys=['J','K'], correct_resp='K')
         Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
         Set('last_pressed',kp['pressed'])
+        Log(pressed=kp['pressed'], rt=kp['rt'])
     
     kp = KeyPress(keys=['J','K'], correct_resp='K')
     Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])

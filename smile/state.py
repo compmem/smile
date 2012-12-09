@@ -12,6 +12,7 @@ now = clock._default.time
 
 from ref import Ref, val
 from utils import rindex
+from log import dump
 
 # # get the last instance of the experiment class
 # from .experiment import Experiment
@@ -80,6 +81,12 @@ class State(object):
         keyvals = [(a,val(getattr(self,a))) if hasattr(self,a) 
                    else (a,None) for a in self.log_attrs]
         return dict(keyvals)
+
+    def get_log_stream(self):
+        if self.exp is None:
+            return None
+        else:
+            return self.exp.state_log_stream
         
     def __getitem__(self, index):
         return Ref(self, index)
@@ -145,6 +152,10 @@ class State(object):
         if self.duration > 0:
             self.advance_parent_state_time(self.duration)
 
+        # if we don't have the exp reference, get it now
+        #if self.exp is None:
+        #    self.exp = Experiment.last_instance()
+            
         # custom enter code
         self._enter()
 
@@ -179,7 +190,9 @@ class State(object):
         # call custom leave code
         self._leave()
 
-        print self.get_log()
+        # write log to the state log
+        #print self.get_log()
+        dump([self.get_log()],self.get_log_stream())
         pass
     
 
