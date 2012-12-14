@@ -5,10 +5,10 @@ Smile To Do List
 
 Approximately in order of importance:
 
-- Subject processing (i.e., put the log files from a subj in their own
-  directory.)
+- (DONE) Subject processing (i.e., put the log files from a subj in
+  their own directory.)
 
-- Logging
+- (DONE) Logging
   - Each State is responsible for creating a dictionary to log the
     most important aspect of that state and write that to a YAML file
     for each experiment.
