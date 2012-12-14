@@ -93,8 +93,8 @@ class Experiment(Serial):
 
         # set up the window
         self.pyglet_vsync = pyglet_vsync
-        if fullscreen:
-            self.window = ExpWindow(self, fullscreen=fullscreen, 
+        if fullscreen or self.fullscreen:
+            self.window = ExpWindow(self, fullscreen=True, 
                                     caption=name, vsync=pyglet_vsync)
         else:
             self.window = ExpWindow(self, *resolution,
@@ -146,6 +146,9 @@ class Experiment(Serial):
         parser.add_argument("-s", "--subject", 
                             help="unique subject id", 
                             default='test000')        
+        parser.add_argument("-f", "--fullscreen", 
+                            help="toggle fullscreen", 
+                            action='store_true')   
         # do the parsing
         args = parser.parse_args()
 
@@ -154,6 +157,9 @@ class Experiment(Serial):
         self.subj_dir = os.path.join('data',self.subj)
         if not os.path.exists(self.subj_dir):
             os.makedirs(self.subj_dir)
+
+        # check for fullscreen
+        self.fullscreen = args.fullscreen
         
     def run(self, initial_state=None):
         """
