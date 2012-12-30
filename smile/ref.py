@@ -79,6 +79,14 @@ def val(x):
     # possibly put this in a for loop if we run into infinite recursion issues
     while isinstance(x,Ref) or inspect.isfunction(x) or inspect.isbuiltin(x):
         x = x()
+    if isinstance(x,list):
+        # make sure we get value of all the items
+        for i in xrange(len(x)):
+            x[i] = val(x[i])
+    elif isinstance(x,dict):
+        for k in x:
+            x[k] = val(x[k])
+        
     return x
 
 if __name__ == '__main__':
@@ -111,3 +119,12 @@ if __name__ == '__main__':
 
     e[2] = 3
     print val(g)
+
+    x = Jubba([])
+    y = Ref(x,'x')
+    print val(y)
+    y = y + [b]
+    print val(y)
+    y = y + [d]
+    y = y + [f]
+    print val(y)
