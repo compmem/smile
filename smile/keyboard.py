@@ -40,9 +40,6 @@ class KeyPress(State):
         # its timeline
         self.reset_next = True 
 
-        # get the exp reference
-        self.exp = Experiment.last_instance()
-
         # we're not waiting yet
         self.waiting = False
 
@@ -66,11 +63,6 @@ class KeyPress(State):
             # turn into list
             self.correct_resp = [self.correct_resp]
 
-        self.base_time = val(self.base_time_src)
-        if self.base_time is None:
-            # set it to the state time
-            self.base_time = self.state_time
-
         # set defaults
         self.pressed = ''
         self.press_time = None
@@ -85,6 +77,13 @@ class KeyPress(State):
             # it's all good!, so save it
             self.pressed = key.symbol_string(symbol)
             self.press_time = event_time
+
+            # fill the base time val
+            self.base_time = val(self.base_time_src)
+            if self.base_time is None:
+                # set it to the state time
+                self.base_time = self.state_time
+            
             # calc RT if something pressed
             self.rt = event_time['time']-self.base_time
 

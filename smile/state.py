@@ -14,33 +14,53 @@ from ref import Ref, val
 from utils import rindex
 from log import dump
 
-# # get the last instance of the experiment class
-# from .experiment import Experiment
-# exp = Experiment.last_instance
-#from experiment import Experiment
-
 # custom schedule functions (add delays)
 def _schedule_interval_callback(dt, func, interval, *args, **kwargs):
+    """
+    Schedule a callback with specified interval.
+    """
     # schedule it
     if interval > 0:
         clock.schedule_interval(func, interval, *args, **kwargs)
     # call it
     func(dt, *args, **kwargs)
 def schedule_delayed_interval(func, delay, interval, *args, **kwargs):
+    """
+    Schedule a callback with specified interval to begin after the
+    specified delay.
+    """
     clock.schedule_once(_schedule_interval_callback, delay, func, interval, *args, **kwargs)
     
 def _schedule_callback(dt, func, *args, **kwargs):
+    """
+    Schedule a callback to occur every event loop.
+    """
     # schedule it
     clock.schedule(func, *args, **kwargs)
     # call it
     func(dt, *args, **kwargs)
 def schedule_delayed(func, delay, *args, **kwargs):
+    """
+    Schedule a callback to occur every event loop after the specified
+    initial delay.
+    """
     clock.schedule_once(_schedule_callback, delay, func, *args, **kwargs)
 
 _global_parents = []
 
 class State(object):
+    """
+    Base State object for the hierarchical state machine.
+
+    Provides framework for entering, processing, and leaving states.
+
+    Subclasses can customize behavior by implementing the _enter,
+    _callback, and _leave methods.
+    """
     def __init__(self, interval=0, parent=None, duration=0.0, reset_clock=False):
+        """
+        interval of 0 means once, -1 means every frame.
+        """
         self.state_time = None
         self.start_time = None
         self.end_time = None
@@ -75,7 +95,8 @@ class State(object):
         # start the log
         self.state = self.__class__.__name__
         self.log_attrs = ['state','start_time','first_call_time','first_call_error',
-                          'end_time']
+                          'end_time',
+                          'reset_clock','duration']
 
     def get_log(self):
         keyvals = [(a,val(getattr(self,a))) if hasattr(self,a) 
@@ -153,8 +174,9 @@ class State(object):
             self.advance_parent_state_time(self.duration)
 
         # if we don't have the exp reference, get it now
-        #if self.exp is None:
-        #    self.exp = Experiment.last_instance()
+        if self.exp is None:
+            from experiment import Experiment
+            self.exp = Experiment.last_instance()
             
         # custom enter code
         self._enter()
@@ -171,8 +193,8 @@ class State(object):
         # update the parent state time to actual elapsed time if necessary
         if self.duration < 0:
             if isinstance(self, ParentState):
-                duration = self.state_time-self.start_time
                 # advance the duration the children moved the this parent
+                duration = self.state_time-self.start_time
             else:
                 # advance the duration of this state
                 duration = self.end_time-self.start_time
@@ -197,10 +219,15 @@ class State(object):
     
 
 class ParentState(State):
+    """
+    Base state for parents that can hold children states. Only parent
+    states can contain other states.
+    """
     def __init__(self, parent=None, duration=-1, reset_clock=False):
         super(ParentState, self).__init__(interval=-1, parent=parent, 
                                           duration=duration, reset_clock=reset_clock)
         self.children = []
+        self.check = False
 
     def get_state_time(self):
         return self.state_time
@@ -220,6 +247,7 @@ class ParentState(State):
         for c in self.children:
             c.done = False
         self.check = True
+        self._advanced = 0 # for Parallel children
 
     def __enter__(self):
         # push self as current parent
@@ -241,7 +269,8 @@ class ParentState(State):
 
 class Parallel(ParentState):
     """
-    A Parallel State is done when all its children have finished.
+    A Parallel Parent State is done when all its children have
+    finished.
     """        
     def _callback(self, dt):
         if self.check:
@@ -261,17 +290,23 @@ class Parallel(ParentState):
             if num_done == len(self.children):
                 # we're done
                 #self.interval = 0
+                # advance the state_time
+                self.state_time += self._advanced
                 self.leave()
         pass
 
     def advance_state_time(self, duration):
-        # we don't advance state time in parallel parents
-        pass
+        # advance the longest duration
+        to_advance = duration - self._advanced
+        if to_advance > 0:
+            #self.state_time += to_advance
+            self._advanced += to_advance
 
 
 class Serial(ParentState):
     """
-    A Serial State is done when the last state in the chain is finished.
+    A Serial Parent State is done when the last state in the chain is
+    finished.
     """
     def _callback(self, dt):
         if self.check:
@@ -314,12 +349,10 @@ class Serial(ParentState):
     
 class If(ParentState):
     """
-    Parent state to implement branching.
+    Parent state to implement conditional branching.
 
     key = KeyResponse(['Y','N'])
     If((key['rt']>2.0)&(key['resp'] != None), stateA, stateB)
-
-    When()
 
     True and false states are created if they are not
     passed in.  That way we can do
@@ -399,10 +432,14 @@ class LoopItem(object):
         
     def __getitem__(self, index):
         # modify so that we're accessing item
+        #return Ref(obj=self.item, attr=index)
         return Ref(gfunc = lambda : self.item[index])
         
 class Loop(Serial):
     """
+    Loop state that can loop over an iterable or run repeatedly while
+    a conditional evaluates to True.
+    
     with Loop(block) as trial:
         Show(Image(trial.current['image']), 2.0)
         Wait(.5)
@@ -416,21 +453,30 @@ class Loop(Serial):
         self.iterable = iterable
         self.cond = conditional
         self.outcome = True
-        
+
         # set to first in loop
         self.i = 0
         if not self.iterable is None:
-            if len(self.iterable) == 0:
-                raise ValueError('The iterable can not be zero length.')
+            # make sure to evaluate it
+            #self.iterable = val(self.iterable)
+            #if len(self.iterable) == 0:
+            #    raise ValueError('The iterable can not be zero length.')
             self.current = LoopItem(self.iterable[self.i])
-
+                    
         # append outcome to log
         self.log_attrs.extend(['outcome','i'])
 
     def _enter(self):
+        # get the parent enter
+        super(Loop, self)._enter()
+
+        # set to current item
+        if not self.iterable is None:
+            self.current.item = val(self.iterable[self.i])
+
         # reset outcome so we re-evaluate if called in loop
         self.outcome = val(self.cond)
-        super(Loop, self)._enter()
+
 
     def _callback(self, dt):
         if self.check:
@@ -471,24 +517,32 @@ class Loop(Serial):
             if num_done == len(self.children):
                 # we're done with this sequence
                 self.i += 1
+                finished = False
                 if not self.iterable is None:
                     # see if we're done with the loop
-                    if self.i >= len(self.iterable):
+                    if self.i >= len(val(self.iterable,recurse=False)):
                         # we're really done
-                        #self.interval = 0
+                        # reset to start
+                        self.i = 0
+                        finished = True
                         self.leave()
                     else:
                         # set to next
-                        self.current.item = self.iterable[self.i]
-
-                if self.interval != 0:
-                    # reset all the child states and update outcome
+                        self.current.item = val(self.iterable[self.i])
+                        
+                # update everything for the next loop
+                if not finished:
                     self._enter()
                     
         pass
 
         
 class Wait(State):
+    """
+    State that will wait a specified time in seconds.  It is possible
+    to keep the state active or simply move the parent's state time
+    ahead.
+    """
     def __init__(self, duration=0.0, stay_active=False, 
                  parent=None, reset_clock=False):
         # init the parent class
@@ -504,6 +558,10 @@ class Wait(State):
     
 
 class Func(State):
+    """
+    State that will call a Python function, passing this state as the
+    first argument.
+    """
     def __init__(self, func, args=None, kwargs=None, 
                  interval=0, parent=None, duration=0.0, reset_clock=False):
         # init the parent class

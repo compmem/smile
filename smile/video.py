@@ -17,24 +17,25 @@ from experiment import Experiment, now
 from pyglet import clock
 import pyglet
 
-"""
-Show, Draw, Flip
-
-The issue is that we only want to Draw once
-
-"""
 
 class VisualState(State):
+    """
+    Parent state that handles drawing and showing of a visual
+    stimulus.
+
+    The key is to register that we want a flip, but only flip once if
+    multiple stimuli are to be shown at the same time.
+    """
     def __init__(self, interval=0, duration=1.0, parent=None, reset_clock=False):
         # init the parent class
         super(VisualState, self).__init__(interval=interval, parent=parent, 
                                           duration=duration, reset_clock=reset_clock)
 
-        # get the exp reference
-        self.exp = Experiment.last_instance()
-
         # we haven't shown anything yet
         self.shown = None
+        self.last_update = 0
+        self.last_flip = 0
+        self.last_draw = 0
 
         # set the log attrs
         self.log_attrs.extend(['last_draw', 'last_update', 'last_flip'])
@@ -63,11 +64,20 @@ class VisualState(State):
     def schedule_update(self, flip_delay):
         # the show will be 1/2 of a flip interval before the flip
         update_delay = flip_delay - self.exp.flip_interval/2
-        schedule_delayed_interval(self.update_callback, update_delay, self.interval)
+        if update_delay <= 0:
+            # do it now
+            self.update_callback(0)
+        else:
+            schedule_delayed_interval(self.update_callback, 
+                                      update_delay, self.interval)
 
-        # the draw will be 1/4 of a flip interval before the flip
+        # the window draw will be 1/4 of a flip interval before the flip
         draw_delay = flip_delay - self.exp.flip_interval/4
-        schedule_delayed_interval(self.draw_callback, draw_delay, self.interval)
+        if draw_delay <= 0:
+            self.draw_callback(0)
+        else:
+            schedule_delayed_interval(self.draw_callback, 
+                                      draw_delay, self.interval)
 
     def _enter(self):
         # the flip will already be scheduled
@@ -83,6 +93,9 @@ class VisualState(State):
         clock.unschedule(self.draw_callback)
 
 class Unshow(VisualState):
+    """
+    Visual state to unshow a shown item.
+    """
     def __init__(self, vstate, parent=None, reset_clock=False):
         # init the parent class
         super(Unshow, self).__init__(interval=0, parent=parent, 
@@ -96,11 +109,16 @@ class Unshow(VisualState):
         # children must implement drawing the showable to make it shown
         self.shown = self.vstate.shown
         self.shown.delete()
+        self.shown = None
+        self.vstate.shown = None
         return self.shown
 
 class Text(VisualState):
+    """
+    Visual state to present text.
+    """
     def __init__(self, textstr, x=0, y=0, anchor_x='center', anchor_y='center',
-                 font_name=None, font_size=None, color=(255,255,255,255),
+                 font_name=None, font_size=18, color=(255,255,255,255),
                  bold=False, italic=False, halign='center', multiline=False,
                  dpi=None, group=None,
                  parent=None, reset_clock=False):
@@ -153,6 +171,9 @@ class Text(VisualState):
 
 
 class Image(VisualState):
+    """
+    Visual state to present an image.
+    """
     def __init__(self, imgstr, x=0, y=0, flip_x=False, flip_y=False,
                  rotation=0, scale=1.0, opacity=255,
                  parent=None, reset_clock=False):
@@ -176,7 +197,7 @@ class Image(VisualState):
 
     def _update_callback(self, dt):
         # children must implement drawing the showable to make it shown
-        if self.shown:
+        if not self.shown is None:
             # update with the values
             pass
         else:
@@ -195,6 +216,8 @@ class Image(VisualState):
         
 class Show(Serial):
     """
+    Show a visual state for a specified duration before unshowing it.
+    
     Show(Text("jubba"), duration=2.0)
     """
     def __init__(self, vstate, parent=None, duration=1.0, reset_clock=False):
@@ -205,31 +228,73 @@ class Show(Serial):
         self.claim_child(vstate)
 
         # add the wait and unshow states
-        Wait(duration, parent=self)
-        Unshow(vstate, parent=self)
+        self._show_state = vstate
+        self._wait_state = Wait(duration, parent=self)
+        self._unshow_state = Unshow(vstate, parent=self)
 
         # expose the shown
         self.shown = vstate.shown
 
+        # save the show and hide times
+        self.show_time = Ref(self._show_state,'last_flip')
+        self.unshow_time = Ref(self._unshow_state,'last_flip')
 
+        # append times to log
+        self.log_attrs.extend(['show_time','unshow_time'])
+
+        
 if __name__ == '__main__':
 
-    from experiment import Experiment
+    from experiment import Experiment, Get, Set
     import pyglet
-    from state import Parallel
+    from state import Parallel, Loop, Func
 
     exp = Experiment()
 
-    Show(Text('Jubba!!!', x=exp.window.width//2, y=exp.window.height//2), 
-         duration=1.0, parent=exp)
-    Wait(2.0, parent=exp)
-    with Parallel(parent=exp) as same:
-        Show(Text('Wubba!!!', x=exp.window.width//2, y=exp.window.height//2, 
-                  color=(255,0,0,255)), 
-             duration=1.0, parent=same)
-        Show(Image('face-smile.png', x=exp.window.width//2, y=exp.window.height//2), 
-             duration=2.0, parent=same)
-    Wait(1.0, parent=exp, stay_active=True)
+    Wait(.5)
+    
+    # Show(Text('Jubba!!!', x=exp.window.width//2, y=exp.window.height//2), 
+    #      duration=1.0)
+    # Wait(1.0)
+    # with Parallel():
+    #     Show(Text('Wubba!!!', x=exp.window.width//2, y=exp.window.height//2, 
+    #               color=(255,0,0,255)), 
+    #          duration=1.0)
+    #     Show(Image('face-smile.png', x=exp.window.width//2, y=exp.window.height//2), 
+    #          duration=2.0)
+
+    # Wait(1.0)
+
+
+    def print_dt(state, *txt):
+        for t in txt:
+            print t
+        print now()-state.state_time, state.dt
+        print
+    
+    block = [{'text':['a','b','c']},
+             {'text':['d','e','f']},
+             {'text':['g','h','i']}]
+    with Loop(block) as trial:
+        Set('stim_times',[])
+        with Loop(trial.current['text']) as item:
+            ss = Show(Text(item.current.value, 
+                      x=exp.window.width//2, 
+                      y=exp.window.height//2, 
+                      color=(255,0,0,255)),
+                      duration=1.0)
+            #Wait(1.0)
+            #Unshow(ss)
+            Wait(.5)
+            #Set('stim_times',Get('stim_times')+[ss['last_flip']])
+            #Set('stim_times',Get('stim_times')+[ss['show_time']])
+            Set('stim_times',Get('stim_times').append(ss.show_time))
+            #Set('stim_times',
+            #    Get('stim_times')+Ref(gfunc=lambda : list(ss.show_time)))
+
+            Func(print_dt, args=[ss.show_time,Get('stim_times')])
+                        
+    Wait(1.0, stay_active=True)
     exp.run()
 
 

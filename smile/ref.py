@@ -10,22 +10,42 @@
 import inspect
 
 class Ref():
-    def __init__(self, obj=None, attr=None, gfunc=None):
+    def __init__(self, obj=None, attr=None, gfunc=None, gfunc_args=None):
         self.gfunc = gfunc
-        if self.gfunc is None:
-            # try and define it based on the obj and attr
-            if not obj is None and not attr is None:
-                if isinstance(attr,str) and hasattr(obj, attr):
-                    # treat as attr
-                    self.gfunc = lambda : getattr(obj, attr)
-                else:
-                    # access with getitem
-                    self.gfunc = lambda : obj[attr]
+        self.gfunc_args = gfunc_args
+        self.obj = obj
+        self.attr = attr
+        # if self.gfunc is None:
+        #     # try and define it based on the obj and attr
+        #     if not obj is None and not attr is None:
+        #         if isinstance(attr,str) and hasattr(obj, attr):
+        #             # treat as attr
+        #             self.gfunc = lambda : getattr(obj, attr)
+        #         else:
+        #             # access with getitem
+        #             self.gfunc = lambda : obj[attr]
 
     def __call__(self):
         if self.gfunc:
-            return self.gfunc()
+            if self.gfunc_args is None:
+                return self.gfunc()
+            else:
+                # process the args and pass them in
+                return self.gfunc(val(self.gfunc_args))
+        else:
+            # try and define it based on the obj and attr
+            if not self.obj is None and not self.attr is None:
+                if isinstance(self.attr,str) and hasattr(self.obj, self.attr):
+                    # treat as attr
+                    return getattr(self.obj, self.attr)
+                else:
+                    # access with getitem
+                    return self.obj[self.attr]
         #return self.obj #getattr(self.obj, self.attr)
+        
+    def __getitem__(self, index):
+        return Ref(gfunc=lambda : val(self)[index])
+        
     def __lt__(self, o):
         return Ref(gfunc=lambda : val(self)<val(o))
     def __le__(self, o):
@@ -74,18 +94,21 @@ class Ref():
         return self
     def __neg__(self):
         return Ref(gfunc=lambda : -val(self))
+    def append(self,o):
+        return Ref(gfunc=lambda : val(self)+[val(o)])
         
-def val(x):
+def val(x, recurse=True):
     # possibly put this in a for loop if we run into infinite recursion issues
     while isinstance(x,Ref) or inspect.isfunction(x) or inspect.isbuiltin(x):
         x = x()
-    if isinstance(x,list):
-        # make sure we get value of all the items
-        for i in xrange(len(x)):
-            x[i] = val(x[i])
-    elif isinstance(x,dict):
-        for k in x:
-            x[k] = val(x[k])
+    if recurse:
+        if isinstance(x,list):
+            # make sure we get value of all the items
+            for i in xrange(len(x)):
+                x[i] = val(x[i])
+        elif isinstance(x,dict):
+            for k in x:
+                x[k] = val(x[k])
         
     return x
 

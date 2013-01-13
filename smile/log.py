@@ -12,7 +12,10 @@ import yaml
 #import sys
 
 # set up a dumper that does not do anchors or aliases
-Dumper = yaml.SafeDumper
+if hasattr(yaml,'CSafeDumper'):
+    Dumper = yaml.CSafeDumper
+else:
+    Dumper = yaml.SafeDumper
 Dumper.ignore_aliases = lambda self, data: True
 def dump(logline, stream=None):
     return yaml.dump(logline, stream, Dumper=Dumper)

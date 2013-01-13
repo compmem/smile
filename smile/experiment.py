@@ -28,7 +28,7 @@ from log import dump
 # set up the basic timer
 now = clock._default.time
 def event_time(time, time_error=0.0):
-    return {'time':time, 'time_error':time_error}
+    return {'time':time, 'error':time_error}
     
 class ExpWindow(Window):
     def __init__(self, exp, *args, **kwargs):
@@ -73,7 +73,7 @@ class ExpWindow(Window):
             self.has_exit = True
 
         # call the registered callbacks
-        print self.key_callbacks
+        #print self.key_callbacks
         for c in self.key_callbacks:
             # pass it the key, mod, and event time
             c(symbol, modifiers, self.exp.event_time)
@@ -102,6 +102,7 @@ class Experiment(Serial):
                                     caption=name, vsync=pyglet_vsync)
             
         # set the clear color
+        self._background_color = background_color
         self.window.set_clear_color(background_color)
 
         # set the mouse as desired
@@ -127,7 +128,8 @@ class Experiment(Serial):
 
         # get flip interval
         self.flip_interval = self._calc_flip_interval()
-
+        print "Monitor Flip Interval is %f (%f Hz)"%(self.flip_interval,1./self.flip_interval)
+        
         # event time
         self.last_event = event_time(0.0)
 
@@ -197,7 +199,7 @@ class Experiment(Serial):
             # save the time
             self._last_time = self._new_time
 
-    def _calc_flip_interval(self, nflips=20, nignore=5):
+    def _calc_flip_interval(self, nflips=25, nignore=5):
         """
         Calculate the mean flip interval.
         """
@@ -224,9 +226,14 @@ class Experiment(Serial):
             # add in sleep of something definitely less than the refresh rate
             self.clock.sleep(5000)  # 5ms for 200Hz
 
+        # reset the background color
+        self.window.set_clear_color(self._background_color)
+        self.window.on_draw(force=True)
+        self.blocking_flip()
+        
         # take the mean and return
         return diffs/count
-
+        
     def blocking_flip(self):
         # only flip if we've drawn
         if self.window.need_flip:
@@ -306,7 +313,7 @@ class Log(State):
     
             
 if __name__ == '__main__':
-    exp = Experiment(fullscreen=False, pyglet_vsync=False)
-    print exp.flip_interval
-    exp.run()
+    # can't run inside this file
+    #exp = Experiment(fullscreen=False, pyglet_vsync=False)
+    #exp.run()
     
