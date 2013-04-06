@@ -26,10 +26,13 @@ class VisualState(State):
     The key is to register that we want a flip, but only flip once if
     multiple stimuli are to be shown at the same time.
     """
-    def __init__(self, interval=0, duration=1.0, parent=None, reset_clock=False):
+    def __init__(self, interval=0, duration=1.0, parent=None, 
+                 reset_clock=False, save_log=True):
         # init the parent class
         super(VisualState, self).__init__(interval=interval, parent=parent, 
-                                          duration=duration, reset_clock=reset_clock)
+                                          duration=duration, 
+                                          reset_clock=reset_clock,
+                                          save_log=save_log)
 
         # we haven't shown anything yet
         self.shown = None
@@ -62,8 +65,8 @@ class VisualState(State):
         self.last_flip = self.exp.blocking_flip()
         
     def schedule_update(self, flip_delay):
-        # the show will be 1/2 of a flip interval before the flip
-        update_delay = flip_delay - self.exp.flip_interval/2
+        # the show will be 3/4 of a flip interval before the flip
+        update_delay = flip_delay - self.exp.flip_interval*3/4.
         if update_delay <= 0:
             # do it now
             self.update_callback(0)
@@ -71,8 +74,8 @@ class VisualState(State):
             schedule_delayed_interval(self.update_callback, 
                                       update_delay, self.interval)
 
-        # the window draw will be 1/4 of a flip interval before the flip
-        draw_delay = flip_delay - self.exp.flip_interval/4
+        # the window draw will be 1/2 of a flip interval before the flip
+        draw_delay = flip_delay - self.exp.flip_interval/2.
         if draw_delay <= 0:
             self.draw_callback(0)
         else:
@@ -92,14 +95,43 @@ class VisualState(State):
         clock.unschedule(self.update_callback)
         clock.unschedule(self.draw_callback)
 
+
+class Update(VisualState):
+    """
+    Visual state to update a shown item.
+    """
+    def __init__(self, vstate, attr, value,
+                 parent=None, reset_clock=False, save_log=True):
+        # init the parent class
+        super(Update, self).__init__(interval=0, parent=parent, 
+                                     duration=0, reset_clock=reset_clock,
+                                     save_log=save_log)
+
+        # we haven't shown anything yet
+        self.shown = None
+        self.vstate = vstate
+        self.attr = attr
+        self.value = value
+
+        # update more log attrs
+        self.log_attrs.extend(['attr', 'value'])
+
+    def _update_callback(self, dt):
+        self.shown = val(self.vstate).shown
+        setattr(self.shown,
+                val(self.attr),
+                val(self.value))
+
+
 class Unshow(VisualState):
     """
     Visual state to unshow a shown item.
     """
-    def __init__(self, vstate, parent=None, reset_clock=False):
+    def __init__(self, vstate, parent=None, reset_clock=False, save_log=True):
         # init the parent class
         super(Unshow, self).__init__(interval=0, parent=parent, 
-                                     duration=0, reset_clock=reset_clock)
+                                     duration=0, reset_clock=reset_clock,
+                                     save_log=save_log)
 
         # we haven't shown anything yet
         self.shown = None
@@ -107,6 +139,7 @@ class Unshow(VisualState):
 
     def _update_callback(self, dt):
         # children must implement drawing the showable to make it shown
+        self.vstate = val(self.vstate)
         self.shown = self.vstate.shown
         self.shown.delete()
         self.shown = None
@@ -119,11 +152,13 @@ class Text(VisualState):
     """
     def __init__(self, textstr, x=0, y=0, anchor_x='center', anchor_y='center',
                  font_name=None, font_size=18, color=(255,255,255,255),
-                 bold=False, italic=False, halign='center', multiline=False,
+                 bold=False, italic=False, halign='center', 
+                 width=None, height=None, multiline=False,
                  dpi=None, group=None,
-                 parent=None, reset_clock=False):
+                 parent=None, reset_clock=False, save_log=True):
         super(Text, self).__init__(interval=0, parent=parent, 
-                                   duration=0, reset_clock=reset_clock)
+                                   duration=0, reset_clock=reset_clock,
+                                   save_log=save_log)
 
         self.textstr = textstr
         self.font_name = font_name
@@ -136,13 +171,15 @@ class Text(VisualState):
         self.bold = bold
         self.italic = italic
         self.halign = halign
+        self.width = width
+        self.height = height
         self.multiline = multiline
         self.dpi = dpi
         self.group = group
 
         self.log_attrs.extend(['textstr', 'font_name', 'font_size', 'color',
                                'x', 'y', 'anchor_x', 'anchor_y', 'bold',
-                               'italic', 'halign', 'multiline'])
+                               'italic', 'halign', 'width', 'height', 'multiline'])
 
         pass
 
@@ -163,6 +200,8 @@ class Text(VisualState):
                                            bold=val(self.bold),
                                            italic=val(self.italic),
                                            halign=val(self.halign),
+                                           width=val(self.width),
+                                           height=val(self.height),
                                            multiline=val(self.multiline),
                                            dpi=val(self.dpi),
                                            group=self.group,
@@ -176,9 +215,10 @@ class Image(VisualState):
     """
     def __init__(self, imgstr, x=0, y=0, flip_x=False, flip_y=False,
                  rotation=0, scale=1.0, opacity=255,
-                 parent=None, reset_clock=False):
+                 parent=None, reset_clock=False, save_log=True):
         super(Image, self).__init__(interval=0, parent=parent, 
-                                    duration=0, reset_clock=reset_clock)
+                                    duration=0, reset_clock=reset_clock,
+                                    save_log=save_log)
 
         self.imgstr = imgstr
         self.rotation = rotation
@@ -220,9 +260,11 @@ class Show(Serial):
     
     Show(Text("jubba"), duration=2.0)
     """
-    def __init__(self, vstate, parent=None, duration=1.0, reset_clock=False):
+    def __init__(self, vstate, parent=None, duration=1.0, 
+                 reset_clock=False, save_log=True):
         super(Show, self).__init__(parent=parent, duration=duration, 
-                                   reset_clock=reset_clock)
+                                   reset_clock=reset_clock,
+                                   save_log=save_log)
 
         # remove vstate from parent if it exists
         self.claim_child(vstate)

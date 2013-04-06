@@ -57,7 +57,8 @@ class State(object):
     Subclasses can customize behavior by implementing the _enter,
     _callback, and _leave methods.
     """
-    def __init__(self, interval=0, parent=None, duration=0.0, reset_clock=False):
+    def __init__(self, interval=0, parent=None, duration=0.0, 
+                 reset_clock=False, save_log=True):
         """
         interval of 0 means once, -1 means every frame.
         """
@@ -73,6 +74,7 @@ class State(object):
         self.reset_next = False
         self.active = False
         self.done = False
+        self.save_log = save_log
 
         # get the exp reference
         from experiment import Experiment
@@ -214,7 +216,8 @@ class State(object):
 
         # write log to the state log
         #print self.get_log()
-        dump([self.get_log()],self.get_log_stream())
+        if self.save_log:
+            dump([self.get_log()],self.get_log_stream())
         pass
     
 
@@ -223,9 +226,11 @@ class ParentState(State):
     Base state for parents that can hold children states. Only parent
     states can contain other states.
     """
-    def __init__(self, parent=None, duration=-1, reset_clock=False):
+    def __init__(self, parent=None, duration=-1, reset_clock=False, save_log=True):
         super(ParentState, self).__init__(interval=-1, parent=parent, 
-                                          duration=duration, reset_clock=reset_clock)
+                                          duration=duration, 
+                                          reset_clock=reset_clock,
+                                          save_log=save_log)
         self.children = []
         self.check = False
 
@@ -367,11 +372,11 @@ class If(ParentState):
 
     """
     def __init__(self, conditional, true_state=None, false_state=None, 
-                 parent=None, reset_clock=False):
+                 parent=None, reset_clock=False, save_log=True):
 
         # init the parent class
         super(If, self).__init__(parent=parent, duration=-1, 
-                                 reset_clock=reset_clock)
+                                 reset_clock=reset_clock, save_log=save_log)
 
         # save the cond
         self.cond = conditional
@@ -445,9 +450,10 @@ class Loop(Serial):
         Wait(.5)
     """
     def __init__(self, iterable=None, conditional=True, 
-                 parent=None, reset_clock=False):
+                 parent=None, reset_clock=False, save_log=True):
         super(Loop, self).__init__(parent=parent, duration=-1, 
-                                   reset_clock=reset_clock)
+                                   reset_clock=reset_clock,
+                                   save_log=save_log)
 
         # otherwise, assume it's a list of dicts
         self.iterable = iterable
@@ -516,18 +522,21 @@ class Loop(Serial):
 
             if num_done == len(self.children):
                 # we're done with this sequence
-                self.i += 1
                 finished = False
                 if not self.iterable is None:
                     # see if we're done with the loop
-                    if self.i >= len(val(self.iterable,recurse=False)):
+                    if self.i+1 >= len(val(self.iterable,recurse=False)):
                         # we're really done
-                        # reset to start
-                        self.i = 0
                         finished = True
                         self.leave()
+                        # reset to start if inside another loop
+                        self.i = 0
                     else:
+                        # dump log
+                        dump([self.get_log()],self.get_log_stream())
+
                         # set to next
+                        self.i += 1
                         self.current.item = val(self.iterable[self.i])
                         
                 # update everything for the next loop
@@ -544,10 +553,12 @@ class Wait(State):
     ahead.
     """
     def __init__(self, duration=0.0, stay_active=False, 
-                 parent=None, reset_clock=False):
+                 parent=None, reset_clock=False, save_log=True):
         # init the parent class
         super(Wait, self).__init__(interval=-1, parent=parent, 
-                                   duration=duration, reset_clock=reset_clock)
+                                   duration=duration, 
+                                   reset_clock=reset_clock,
+                                   save_log=save_log)
         self.stay_active = stay_active
 
     def _callback(self, dt):
@@ -563,10 +574,13 @@ class Func(State):
     first argument.
     """
     def __init__(self, func, args=None, kwargs=None, 
-                 interval=0, parent=None, duration=0.0, reset_clock=False):
+                 interval=0, parent=None, duration=0.0, 
+                 reset_clock=False, save_log=True):
         # init the parent class
         super(Func, self).__init__(interval=interval, parent=parent, 
-                                   duration=duration, reset_clock=reset_clock)
+                                   duration=duration, 
+                                   reset_clock=reset_clock,
+                                   save_log=save_log)
 
         # set up the state
         self.func = func

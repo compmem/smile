@@ -9,7 +9,7 @@
 
 import inspect
 
-class Ref():
+class Ref(object):
     def __init__(self, obj=None, attr=None, gfunc=None, gfunc_args=None):
         self.gfunc = gfunc
         self.gfunc_args = gfunc_args
@@ -25,6 +25,17 @@ class Ref():
         #             # access with getitem
         #             self.gfunc = lambda : obj[attr]
 
+    def set(self, value):
+        if not self.obj is None and not self.attr is None:
+            if isinstance(self.attr,str) and hasattr(self.obj, self.attr):
+                # treat as attr
+                setattr(self.obj, self.attr, value)
+            else:
+                # access with getitem
+                self.obj[self.attr] = value
+        else:
+            raise ValueError('You can only set a reference with a known obj and attr')
+                
     def __call__(self):
         if self.gfunc:
             if self.gfunc_args is None:
@@ -35,16 +46,23 @@ class Ref():
         else:
             # try and define it based on the obj and attr
             if not self.obj is None and not self.attr is None:
-                if isinstance(self.attr,str) and hasattr(self.obj, self.attr):
+                obj = val(self.obj)
+                attr = val(self.attr)
+                if isinstance(attr,str) and hasattr(obj, attr):
                     # treat as attr
-                    return getattr(self.obj, self.attr)
+                    return getattr(obj, attr)
                 else:
                     # access with getitem
-                    return self.obj[self.attr]
+                    return obj[attr]
         #return self.obj #getattr(self.obj, self.attr)
         
     def __getitem__(self, index):
-        return Ref(gfunc=lambda : val(self)[index])
+        return Ref(gfunc=lambda : val(self)[val(index)])
+
+    #def __getattribute__(self, attr):
+    def __getattr__(self, attr):
+        #return Ref(gfunc=lambda : getattr(val(self),val(attr)))
+        return Ref(gfunc=lambda : object.__getattribute__(val(self), val(attr)))
         
     def __lt__(self, o):
         return Ref(gfunc=lambda : val(self)<val(o))

@@ -17,10 +17,11 @@ from experiment import Experiment, now
 
 class KeyPress(State):
     def __init__(self, keys=None, correct_resp=None, base_time=None,
-                 duration=-1, parent=None, reset_clock=False):
+                 duration=-1, parent=None, reset_clock=False, save_log=True):
         # init the parent class
         super(KeyPress, self).__init__(interval=-1, parent=parent, 
-                                       duration=-1, reset_clock=reset_clock)
+                                       duration=-1, reset_clock=reset_clock,
+                                       save_log=save_log)
 
         # save the keys we're watching (None for all)
         self.keys = keys

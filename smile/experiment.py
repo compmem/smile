@@ -83,7 +83,7 @@ class ExpWindow(Window):
 
 class Experiment(Serial):
     def __init__(self, fullscreen=False, resolution=(640,480), name="Smile",
-                 pyglet_vsync=True, background_color=(0,0,0,1)):
+                 pyglet_vsync=True, background_color=(0,0,0,1), screen_ind=0):
 
         # first process the args
         self._process_args()
@@ -92,14 +92,20 @@ class Experiment(Serial):
         super(Experiment, self).__init__(parent=None, duration=-1)
 
         # set up the window
+        screens = pyglet.window.get_platform().get_default_display().get_screens()
+        if screen_ind != self.screen_ind:
+            # command line overrides
+            screen_ind = self.screen_ind
         self.pyglet_vsync = pyglet_vsync
         if fullscreen or self.fullscreen:
             self.window = ExpWindow(self, fullscreen=True, 
-                                    caption=name, vsync=pyglet_vsync)
+                                    caption=name, vsync=pyglet_vsync,
+                                    screen=screens[screen_ind])
         else:
             self.window = ExpWindow(self, *resolution,
                                     fullscreen=fullscreen, 
-                                    caption=name, vsync=pyglet_vsync)
+                                    caption=name, vsync=pyglet_vsync,
+                                    screen=screens[screen_ind])
             
         # set the clear color
         self._background_color = background_color
@@ -142,6 +148,18 @@ class Experiment(Serial):
         self.exp_log = os.path.join(self.subj_dir,'exp.yaml')
         self.exp_log_stream = open(self.exp_log,'a')
 
+        # # grab the nice
+        # import psutil
+        # self._current_proc = psutil.Process(os.getpid())
+        # cur_nice = self._current_proc.get_nice()
+        # print "Current nice: %d" % cur_nice
+        # if hasattr(psutil,'HIGH_PRIORITY_CLASS'):
+        #     new_nice = psutil.HIGH_PRIORITY_CLASS
+        # else:
+        #     new_nice = -10
+        # self._current_proc.set_nice(new_nice)
+        # print "New nice: %d" % self._current_proc.get_nice()
+
     def _process_args(self):
         # set up the arg parser
         parser = argparse.ArgumentParser(description='Run a SMILE experiment.')
@@ -151,6 +169,11 @@ class Experiment(Serial):
         parser.add_argument("-f", "--fullscreen", 
                             help="toggle fullscreen", 
                             action='store_true')   
+        parser.add_argument("-si", "--screen", 
+                            help="screen index", 
+                            type=int,
+                            default=0)        
+
         # do the parsing
         args = parser.parse_args()
 
@@ -162,6 +185,9 @@ class Experiment(Serial):
 
         # check for fullscreen
         self.fullscreen = args.fullscreen
+
+        # check screen ind
+        self.screen_ind = args.screen
         
     def run(self, initial_state=None):
         """
@@ -266,10 +292,11 @@ class Experiment(Serial):
 
 
 class Set(State):
-    def __init__(self, variable, value, parent=None):
+    def __init__(self, variable, value, parent=None, save_log=True):
         # init the parent class
         super(Set, self).__init__(interval=0, parent=parent, 
-                                  duration=0, reset_clock=False)
+                                  duration=0, reset_clock=False, 
+                                  save_log=save_log)
         self.variable = variable
         self.val = value
         self.value = None
@@ -280,9 +307,16 @@ class Set(State):
     def _callback(self, dt):
         # set the exp var
         self.value = val(self.val)
-        self.exp._vars[self.variable] = self.value
+        if isinstance(self.variable,str):
+            # set the experiment variable
+            self.exp._vars[self.variable] = self.value
+        elif isinstance(self.variable, Ref):
+            # set the ref
+            self.variable.set(self.value)
+        else:
+            raise ValueError('Unrecognized variable type. Must either be string or Ref')
 
-
+        
 def Get(variable):
     gfunc = lambda : Experiment.last_instance()._vars[variable]
     return Ref(gfunc=gfunc)
@@ -291,7 +325,8 @@ class Log(State):
     def __init__(self, log_file=None, parent=None, **log_items):
         # init the parent class
         super(Log, self).__init__(interval=0, parent=parent, 
-                                  duration=0, reset_clock=False)
+                                  duration=0, reset_clock=False,
+                                  save_log=False)
         self.log_file = log_file
         self.log_items = log_items
 
