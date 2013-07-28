@@ -1,6 +1,6 @@
 smile - State Machine Interface Library for Experiments
 
-Copyright (C) 2012
+Copyright (C) 2012-2013
 Per B. Sederberg <psederberg@gmail.com>
 
 Authors: Per B. Sederberg
@@ -18,5 +18,5 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program. It can be found in the file license.txt which
-is part of the ptsa package and online at
+is part of the smile package and online at
 <http://www.gnu.org/licenses/>.
