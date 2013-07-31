@@ -36,7 +36,7 @@ Approximately in order of importance:
 
 - Tests (especially to verify timing)
 
-- Plot the DAG with pydot
+- (DONE) Plot the DAG with pydot
 
 - Audio playback and recording
   - Should we just use pyaudio b/c we need recording?
@@ -52,7 +52,7 @@ Approximately in order of importance:
 
 - Example experiments
 
-- Upload to github
+- (DONE) Upload to github
 
 - Find good smile logo/icon
 
