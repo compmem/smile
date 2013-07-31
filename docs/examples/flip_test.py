@@ -12,9 +12,11 @@ from smile import *
 import random
 
 # create an experiment
-exp = Experiment(screen_ind=0)
+exp = Experiment(screen_ind=0, pyglet_vsync=False)
 
+# define the trials for the experiment
 trials = [{'txt':str(i)} for i in range(50)]
+
 Set('stim',False)
 Set('stim_shown',False)
 Wait(1.0, reset_clock=True)

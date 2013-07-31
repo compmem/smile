@@ -131,10 +131,6 @@ class Experiment(Serial):
 
         # we have not flipped yet
         self.last_flip = event_time(0.0)
-
-        # get flip interval
-        self.flip_interval = self._calc_flip_interval()
-        print "Monitor Flip Interval is %f (%f Hz)"%(self.flip_interval,1./self.flip_interval)
         
         # event time
         self.last_event = event_time(0.0)
@@ -193,6 +189,9 @@ class Experiment(Serial):
         """
         Run the experiment.
         """
+        # get flip interval
+        self.flip_interval = self._calc_flip_interval()
+        print "Monitor Flip Interval is %f (%f Hz)"%(self.flip_interval,1./self.flip_interval)
 
         # first clear and do a flip
         #glClear(GL_COLOR_BUFFER_BIT)
