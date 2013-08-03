@@ -37,7 +37,7 @@ with Loop(trials) as trial:
             stim = Text(trial.current['txt'], 
                         x=300, 
                         #x=exp.window.width//2, 
-                        y=exp.window.height//2,
+                        y=Ref(exp['window'],'height')//2,
                         bold=True)
             Set('stim', stim, save_log=False)
             Set('stim_shown', stim['shown'], save_log=False)
@@ -49,8 +49,8 @@ with Loop(trials) as trial:
 Unshow(stim)
 Wait(2.0, reset_clock=True)
 Show(Text('Done!!!', 
-          x=exp.window.width//2, 
-          y=exp.window.height//2,),
+          x=Ref(exp['window'],'width')//2, 
+          y=Ref(exp['window'],'height')//2,),
           duration=2.0)
 Wait(2.0, stay_active=True)
 

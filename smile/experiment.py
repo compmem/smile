@@ -96,27 +96,15 @@ class Experiment(Serial):
         if screen_ind != self.screen_ind:
             # command line overrides
             screen_ind = self.screen_ind
+        self.screen = screens[screen_ind]
         self.pyglet_vsync = pyglet_vsync
-        if fullscreen or self.fullscreen:
-            self.window = ExpWindow(self, fullscreen=True, 
-                                    caption=name, vsync=pyglet_vsync,
-                                    screen=screens[screen_ind])
-        else:
-            self.window = ExpWindow(self, *resolution,
-                                    fullscreen=fullscreen, 
-                                    caption=name, vsync=pyglet_vsync,
-                                    screen=screens[screen_ind])
-            
+        self.fullscreen = fullscreen or self.fullscreen
+        self.resolution = resolution
+        self.name = name
+        self.window = None   # will create when run
+
         # set the clear color
         self._background_color = background_color
-        self.window.set_clear_color(background_color)
-
-        # set the mouse as desired
-        #self.window.set_exclusive_mouse()
-
-        # some gl stuff (must look up to remember why we want them)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
         # get a clock for sleeping 
         self.clock = pyglet.clock._default
@@ -189,6 +177,29 @@ class Experiment(Serial):
         """
         Run the experiment.
         """
+        # create the window
+        if self.fullscreen:
+            self.window = ExpWindow(self, fullscreen=True, 
+                                    caption=self.name, 
+                                    vsync=self.pyglet_vsync,
+                                    screen=self.screen)
+        else:
+            self.window = ExpWindow(self, *(self.resolution),
+                                    fullscreen=self.fullscreen, 
+                                    caption=self.name, 
+                                    vsync=self.pyglet_vsync,
+                                    screen=self.screen)
+            
+        # set the clear color
+        self.window.set_clear_color(self._background_color)
+
+        # set the mouse as desired
+        #self.window.set_exclusive_mouse()
+
+        # some gl stuff (must look up to remember why we want them)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
         # get flip interval
         self.flip_interval = self._calc_flip_interval()
         print "Monitor Flip Interval is %f (%f Hz)"%(self.flip_interval,1./self.flip_interval)
@@ -223,6 +234,10 @@ class Experiment(Serial):
 
             # save the time
             self._last_time = self._new_time
+
+        # close the window and clean up
+        self.window.close()
+        self.window = None
 
     def _calc_flip_interval(self, nflips=25, nignore=5):
         """
