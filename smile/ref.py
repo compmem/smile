@@ -106,8 +106,12 @@ class Ref(object):
         return Ref(gfunc=lambda : val(o)*val(self))
     def __div__(self, o):
         return Ref(gfunc=lambda : val(self)/val(o))
+    def __floordiv__(self, o):
+        return Ref(gfunc=lambda : val(self)//val(o))
     def __rdiv__(self, o):
         return Ref(gfunc=lambda : val(o)/val(self))
+    def __rfloordiv__(self, o):
+        return Ref(gfunc=lambda : val(o)//val(self))
     def __pos__(self):
         return self
     def __neg__(self):
