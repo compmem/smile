@@ -50,7 +50,7 @@ Approximately in order of importance:
 
 - Docs (in code and with Sphinx)
 
-- Example experiments
+- (In Progress) Example experiments
 
 - (DONE) Upload to github
 

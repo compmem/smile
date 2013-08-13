@@ -56,6 +56,20 @@ class State(object):
 
     Subclasses can customize behavior by implementing the _enter,
     _callback, and _leave methods.
+
+    Parameters
+    ----------
+    interval : {0, -1, float}
+        The number of seconds between each call.
+    parent : {None, ``ParentState``}
+        ???
+    duration : {0.0, float}
+        Duration of the state.
+    reset_clock : bool
+        Whether to reset the clock when entering the state.
+    save_log : bool
+        Whether the state logs itself.
+    
     """
     def __init__(self, interval=0, parent=None, duration=0.0, 
                  reset_clock=False, save_log=True):
