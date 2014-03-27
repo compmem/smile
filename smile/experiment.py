@@ -157,6 +157,9 @@ class Experiment(Serial):
                             help="screen index", 
                             type=int,
                             default=0)        
+        parser.add_argument("-i", "--info", 
+                            help="additional run info", 
+                            default='')        
 
         # do the parsing
         args = parser.parse_args()
@@ -172,6 +175,9 @@ class Experiment(Serial):
 
         # check screen ind
         self.screen_ind = args.screen
+
+        # set the additional info
+        self.info = args.info
         
     def run(self, initial_state=None):
         """
@@ -249,9 +255,13 @@ class Experiment(Serial):
         count = 0.0
         for i in range(nflips):
             # must draw something so the flip happens
-            color = (random.uniform(0,1),
-                     random.uniform(0,1),
-                     random.uniform(0,1),
+            #color = (random.uniform(0,1),
+            #         random.uniform(0,1),
+            #         random.uniform(0,1),
+            #         1.0)
+            color = (0,
+                     0,
+                     0,
                      1.0)
             self.window.set_clear_color(color)
             self.window.on_draw(force=True)
