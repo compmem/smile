@@ -245,7 +245,7 @@ class Experiment(Serial):
         self.window.close()
         self.window = None
 
-    def _calc_flip_interval(self, nflips=25, nignore=5):
+    def _calc_flip_interval(self, nflips=35, nignore=5):
         """
         Calculate the mean flip interval.
         """
