@@ -16,7 +16,7 @@ from ref import Ref, val
 from experiment import Experiment, now
 
 class KeyPress(State):
-    def __init__(self, keys=None, correct_resp=None, base_time=None,
+    def __init__(self, keys=None, correct_resp=None, base_time=None, until=None,
                  duration=-1, parent=None, reset_clock=False, save_log=True):
         # init the parent class
         super(KeyPress, self).__init__(interval=-1, parent=parent, 
@@ -30,6 +30,7 @@ class KeyPress(State):
         self.base_time_src = base_time  # for calc rt
         self.base_time = None
         self.wait_duration = duration
+        self.wait_until = until
         
         # if wait duration is -1 wait indefinitely
 
@@ -101,7 +102,8 @@ class KeyPress(State):
         if not self.waiting:
             self.exp.window.key_callbacks.append(self._key_callback)
             self.waiting = True
-        if self.wait_duration > 0 and now() >= self.state_time+self.wait_duration:
+        if ((self.wait_duration > 0 and now() >= self.state_time+self.wait_duration) or
+            (val(self.wait_until))):
             # we're done
             self.leave()
             #self.interval = 0
