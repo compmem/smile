@@ -39,6 +39,9 @@ class VisualState(State):
         self.last_update = 0
         self.last_flip = 0
         self.last_draw = 0
+        self.first_update = 0
+        self.first_flip = 0
+        self.first_draw = 0
 
         # set the log attrs
         self.log_attrs.extend(['last_draw', 'last_update', 'last_flip'])
@@ -51,6 +54,8 @@ class VisualState(State):
         # call the user-defined show
         self.shown = self._update_callback(dt)
         self.last_update = now()
+        if self.first_update == 0:
+            self.first_update = self.last_update
 
         # tell the exp window we need a draw
         self.exp.window.need_draw = True
@@ -59,10 +64,14 @@ class VisualState(State):
         # call the draw (not forced, so it can skip it)
         self.exp.window.on_draw()
         self.last_draw = now()
+        if self.first_draw == 0:
+            self.first_draw = self.last_draw
 
     def _callback(self, dt):
         # call the flip, recording the time
         self.last_flip = self.exp.blocking_flip()
+        if self.first_flip == 0:
+            self.first_flip = self.last_flip
         
     def schedule_update(self, flip_delay):
         # the show will be 3/4 of a flip interval before the flip
@@ -70,6 +79,12 @@ class VisualState(State):
         if update_delay <= 0:
             # do it now
             self.update_callback(0)
+            
+            # if interval, must still schedule it
+            if self.interval > 0:
+                schedule_delayed_interval(self.update_callback, 
+                                          self.interval - self.exp.flip_interval*3/4., 
+                                          self.interval)
         else:
             schedule_delayed_interval(self.update_callback, 
                                       update_delay, self.interval)
@@ -77,12 +92,27 @@ class VisualState(State):
         # the window draw will be 1/2 of a flip interval before the flip
         draw_delay = flip_delay - self.exp.flip_interval/2.
         if draw_delay <= 0:
+            # do it now
             self.draw_callback(0)
+
+            # if interval, must still schedule it
+            if self.interval > 0:
+                schedule_delayed_interval(self.draw_callback, 
+                                          self.interval - self.exp.flip_interval/2., 
+                                          self.interval)
         else:
             schedule_delayed_interval(self.draw_callback, 
                                       draw_delay, self.interval)
 
     def _enter(self):
+        # reset times
+        self.last_update = 0
+        self.last_flip = 0
+        self.last_draw = 0
+        self.first_update = 0
+        self.first_flip = 0
+        self.first_draw = 0
+
         # the flip will already be scheduled
         # schedule the show
         update_delay = self.state_time - clock._default.time()
@@ -141,10 +171,12 @@ class Unshow(VisualState):
         # children must implement drawing the showable to make it shown
         self.vstate = val(self.vstate)
         self.shown = self.vstate.shown
-        self.shown.delete()
-        self.shown = None
-        self.vstate.shown = None
+        if self.shown:
+            self.shown.delete()
+            self.shown = None
+            self.vstate.shown = None
         return self.shown
+
 
 class Text(VisualState):
     """
@@ -253,6 +285,113 @@ class Image(VisualState):
             self.shown.opacity = val(self.opacity)
         return self.shown
 
+
+class Movie(VisualState):
+    """
+    Visual state to present an movie.
+    """
+    def __init__(self, movstr, x=0, y=0,
+                 rotation=0, scale=1.0, opacity=255, framerate=1/30.,
+                 parent=None, reset_clock=False, save_log=True):
+        super(Movie, self).__init__(interval=framerate, parent=parent, 
+                                    duration=-1, reset_clock=reset_clock,
+                                    save_log=save_log)
+
+        self.movstr = movstr
+        self.rotation = rotation
+        self.scale = scale
+        self.opacity = opacity
+        self.x = x
+        self.y = y
+
+        self._player = pyglet.media.Player()
+        self._player.eos_action = self._player.EOS_PAUSE
+
+        # append log attrs
+        self.log_attrs.extend(['movstr', 'rotation', 'scale', 'opacity',
+                               'x', 'y'])
+        
+        pass
+
+    def _enter(self):
+        # load the media
+        self._source = pyglet.media.load(val(self.movstr))
+
+        # pop off any current sources
+        while self._player.source:
+            self._player.next()
+
+        # queue source
+        self._player.queue(self._source)
+
+        # process enter from parent (VisualState)
+        super(Movie, self)._enter()
+
+
+    def _update_callback(self, dt):
+        # children must implement drawing the showable to make it shown
+        if not self.shown is None:
+            # update with the values
+            if not self._player.playing:
+                if self.shown:
+                    self.shown.delete()
+                    self.shown = None
+                self.leave()
+                return None
+                
+            if self._player.source: 
+                img = self._player.get_texture()
+            else:
+                img = None
+            if img is None:
+                self._player.pause()
+                if self.shown:
+                    self.shown.delete()
+                    self.shown = None
+                self.leave()
+                return None
+            self.shown.image = img
+        else:
+            # if playing, then stopped from outside
+            if self._player.playing:
+                # we need to leave
+                self._player.pause()
+                self.leave()
+                return None
+            # make the new shown and return it
+            # star the player
+            self._player.play()
+
+            # get the image
+            img = self._player.get_texture()
+            
+            if img is None:
+                self._player.pause()
+                if self.shown:
+                    self.shown.delete()
+                    self.shown = None
+                self.leave()
+                return None
+            self.shown = pyglet.sprite.Sprite(img,
+                                              x=val(self.x), y=val(self.y),
+                                              batch=self.exp.window.batch)
+            self.shown.scale = val(self.scale)
+            self.shown.rotation = val(self.rotation)
+            self.shown.opacity = val(self.opacity)
+
+        return self.shown
+
+    def _leave(self):
+        # process leave from parent (VisualState)
+        super(Movie, self)._leave()
+
+        # stop playing if not already
+        self._player.pause()
+
+        # pop off any current sources
+        while self._player.source:
+            self._player.next()
+
         
 class Show(Serial):
     """
@@ -278,8 +417,8 @@ class Show(Serial):
         self.shown = vstate.shown
 
         # save the show and hide times
-        self.show_time = Ref(self._show_state,'last_flip')
-        self.unshow_time = Ref(self._unshow_state,'last_flip')
+        self.show_time = Ref(self._show_state,'first_flip')
+        self.unshow_time = Ref(self._unshow_state,'first_flip')
 
         # append times to log
         self.log_attrs.extend(['show_time','unshow_time'])
