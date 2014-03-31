@@ -51,9 +51,10 @@ class DAG(object):
                 uname,first_uname,last_uname = self._add_cluster(clust, c)
 
                 # save in node list
-                nodes.append({'uname':uname,
-                              'first_uname': first_uname,
-                              'last_uname': last_uname})
+                if not uname is None:
+                    nodes.append({'uname':uname,
+                                  'first_uname': first_uname,
+                                  'last_uname': last_uname})
             else:
                 # add the child node
                 name,uname = get_class_name(c)
@@ -93,18 +94,21 @@ class DAG(object):
                 else:
                     self.edges.append(pydot.Edge(ledge, redge))
 
-        
-        # insert the cluster to the graph
-        graph.add_subgraph(clust)
+        if len(nodes) > 0:
+            # insert the cluster to the graph
+            graph.add_subgraph(clust)
 
-        if nodes[0]['first_uname']:
-            first_uname = nodes[0]['first_uname']
+            if nodes[0]['first_uname']:
+                first_uname = nodes[0]['first_uname']
+            else:
+                first_uname = nodes[0]['uname']
+            if nodes[-1]['last_uname']:
+                last_uname = nodes[-1]['last_uname']
+            else:
+                last_uname = nodes[-1]['uname']
         else:
-            first_uname = nodes[0]['uname']
-        if nodes[-1]['last_uname']:
-            last_uname = nodes[-1]['last_uname']
-        else:
-            last_uname = nodes[-1]['uname']
+            clust, first_uname, last_uname = None,None,None
+
         # return the cluster uname for connections
         return clust, first_uname, last_uname
 
