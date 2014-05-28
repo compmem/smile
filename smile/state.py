@@ -9,6 +9,7 @@
 
 from pyglet import clock
 now = clock._default.time
+import random
 
 from ref import Ref, val
 from utils import rindex
@@ -196,6 +197,11 @@ class State(object):
             
         # custom enter code
         self._enter()
+
+        # update the parent time if necessary
+        # moved to after _enter in case we update duration
+        if self.duration > 0:
+            self.advance_parent_state_time(self.duration)
 
         pass
 
@@ -566,14 +572,24 @@ class Wait(State):
     to keep the state active or simply move the parent's state time
     ahead.
     """
-    def __init__(self, duration=0.0, stay_active=False, 
+    def __init__(self, duration=0.0, jitter=0.0, stay_active=False, 
                  parent=None, reset_clock=False, save_log=True):
         # init the parent class
         super(Wait, self).__init__(interval=-1, parent=parent, 
-                                   duration=duration, 
+                                   duration=val(duration), 
                                    reset_clock=reset_clock,
                                    save_log=save_log)
         self.stay_active = stay_active
+        self.jitter = jitter
+        self.wait_duration = duration
+
+    def _enter(self):
+        # get the parent enter
+        super(Wait, self)._enter()
+
+        # set the duration
+        self.duration = random.uniform(val(self.wait_duration),
+                                       val(self.wait_duration)+val(self.jitter))
 
     def _callback(self, dt):
         if not self.stay_active or now() >= self.state_time+self.duration:
