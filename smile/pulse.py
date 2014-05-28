@@ -20,6 +20,7 @@ except ImportError:
 
 from state import State
 from ref import Ref, val
+from experiment import now,event_time
 
 
 class Pulse(State):
@@ -73,7 +74,7 @@ class Pulse(State):
         # send the code
         if have_parallel:
             start_time = now()
-            self.pport.setData(ncode)
+            self._pport.setData(ncode)
             end_time = now()
 
             # set the pulse time
@@ -82,11 +83,11 @@ class Pulse(State):
                                          time_err)
 
             # schedule the off time
-            clock.schedule_once(self._pulse_off_callback, val(self.duration))
+            clock.schedule_once(self._pulse_off_callback, val(self.pulse_duration))
 
-    def _pulse_off_callback(dt):
+    def _pulse_off_callback(self, dt):
         start_time = now()
-        self.pport.setData(0)
+        self._pport.setData(0)
         end_time = now()
 
         # set the pulse time
