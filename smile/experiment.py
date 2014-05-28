@@ -201,6 +201,7 @@ class Experiment(Serial):
 
         # set the mouse as desired
         #self.window.set_exclusive_mouse()
+        self.window.set_mouse_visible(False)
 
         # some gl stuff (must look up to remember why we want them)
         glEnable(GL_BLEND)
