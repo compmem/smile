@@ -25,10 +25,11 @@ trials_copy = trials[:]
 trials_copy.reverse()
 trials.extend(trials_copy)
 
+# set initially to black
 BackColor(color=(0,0,0,1.0))
 Wait(2.0, reset_clock=True)
 with Loop(trials) as trial:
-    #Wait(.005)
+    Wait(.200)
     # turn it on
     onstim = BackColor(color=(1,1,1,1.0), reset_clock=True)
     # wait the dur
