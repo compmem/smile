@@ -177,6 +177,20 @@ class Unshow(VisualState):
             self.vstate.shown = None
         return self.shown
 
+class BackColor(VisualState):
+    """Set the background color."""
+    def __init__(self, color=(0,0,0,1.0), parent=None, 
+                 reset_clock=False, save_log=True):
+        super(BackColor, self).__init__(interval=0, parent=parent, 
+                                        duration=0, reset_clock=reset_clock,
+                                        save_log=save_log)
+
+        self.color = color
+        self.log_attrs.extend(['color'])
+
+    def _update_callback(self, dt):
+        self.exp.window.set_clear_color(val(self.color))
+
 
 class Text(VisualState):
     """

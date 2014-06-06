@@ -10,6 +10,6 @@
 from experiment import Experiment, Set, Get, Log
 from state import Parallel, Serial, If, Loop, Wait, Func
 from keyboard import KeyPress
-from video import Show, Update, Unshow, Text, Image, Movie
+from video import Show, Update, Unshow, Text, Image, Movie, BackColor
 from ref import Ref,val
 
