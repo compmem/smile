@@ -81,6 +81,9 @@ class State(object):
         self.start_time = None
         self.end_time = None
         self.first_call_time = None
+        self.first_call_error = None
+        self.last_call_time = None
+        self.last_call_error = None
         self.dt = None
         self.interval = interval
         self.duration = duration
@@ -111,8 +114,9 @@ class State(object):
 
         # start the log
         self.state = self.__class__.__name__
-        self.log_attrs = ['state','start_time','first_call_time','first_call_error',
-                          'end_time',
+        self.log_attrs = ['state','start_time','end_time',
+                          'first_call_time','first_call_error',
+                          'last_call_time','last_call_error',
                           'reset_clock','duration']
 
     def get_log(self):
@@ -136,9 +140,11 @@ class State(object):
         # log when we've entered the callback the first time
         #if not self.log.has_key('first_call_time'):
         #    self.log['first_call_time'] = now()
+        self.last_call_time = now()
+        self.last_call_error = self.last_call_time - self.start_time
         if self.first_call_time is None:
-            self.first_call_time = now()
-            self.first_call_error = self.first_call_time - self.start_time
+            self.first_call_time = self.last_call_time
+            self.first_call_error = self.last_call_error #first_call_time - self.start_time
 
         # call the user-defined callback
         self._callback(dt)
