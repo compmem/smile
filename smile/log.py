@@ -63,7 +63,7 @@ def unwrap(d, prefix=''):
             continue
 
         # just add it in
-        new_item[k] = d[k]
+        new_item[key] = d[k]
 
     return new_item
     
