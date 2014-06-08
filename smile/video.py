@@ -196,7 +196,7 @@ class Text(VisualState):
     """
     Visual state to present text.
     """
-    def __init__(self, textstr, x=0, y=0, anchor_x='center', anchor_y='center',
+    def __init__(self, textstr, x=None, y=None, anchor_x='center', anchor_y='center',
                  font_name=None, font_size=18, color=(255,255,255,255),
                  bold=False, italic=False, halign='center', 
                  width=None, height=None, multiline=False,
@@ -210,8 +210,15 @@ class Text(VisualState):
         self.font_name = font_name
         self.font_size = font_size
         self.color = color
+
+        # set loc to center if none supplied
+        if x is None:
+            x = Ref(self['exp']['window'],'width')//2
         self.x = x
+        if y is None:
+            y = Ref(self['exp']['window'],'height')//2
         self.y = y
+
         self.anchor_x = anchor_x
         self.anchor_y = anchor_y
         self.bold = bold
@@ -259,7 +266,7 @@ class Image(VisualState):
     """
     Visual state to present an image.
     """
-    def __init__(self, imgstr, x=0, y=0, flip_x=False, flip_y=False,
+    def __init__(self, imgstr, x=None, y=None, flip_x=False, flip_y=False,
                  rotation=0, scale=1.0, opacity=255,
                  parent=None, reset_clock=False, save_log=True):
         super(Image, self).__init__(interval=0, parent=parent, 
@@ -270,8 +277,15 @@ class Image(VisualState):
         self.rotation = rotation
         self.scale = scale
         self.opacity = opacity
+
+        # set loc to center if none supplied
+        if x is None:
+            x = Ref(self['exp']['window'],'width')//2
         self.x = x
+        if y is None:
+            y = Ref(self['exp']['window'],'height')//2
         self.y = y
+
         self.flip_x = flip_x
         self.flip_y = flip_y
 
@@ -304,7 +318,7 @@ class Movie(VisualState):
     """
     Visual state to present an movie.
     """
-    def __init__(self, movstr, x=0, y=0,
+    def __init__(self, movstr, x=None, y=None,
                  rotation=0, scale=1.0, opacity=255, framerate=1/30.,
                  parent=None, reset_clock=False, save_log=True):
         super(Movie, self).__init__(interval=framerate, parent=parent, 
@@ -315,7 +329,13 @@ class Movie(VisualState):
         self.rotation = rotation
         self.scale = scale
         self.opacity = opacity
+
+        # set loc to center if none supplied
+        if x is None:
+            x = Ref(self['exp']['window'],'width')//2
         self.x = x
+        if y is None:
+            y = Ref(self['exp']['window'],'height')//2
         self.y = y
 
         self._player = pyglet.media.Player()
