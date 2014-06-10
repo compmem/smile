@@ -138,8 +138,6 @@ class State(object):
         
     def callback(self, dt):
         # log when we've entered the callback the first time
-        #if not self.log.has_key('first_call_time'):
-        #    self.log['first_call_time'] = now()
         self.last_call_time = now()
         self.last_call_error = self.last_call_time - self.start_time
         if self.first_call_time is None:
@@ -175,8 +173,10 @@ class State(object):
         self.state_time = self.get_parent_state_time()
         self.start_time = self.state_time
 
-        # save the starting state time
-        #self.log['start_time'] = self.start_time
+        # see if update parent's state time
+        if self.reset_clock and self.parent:
+            # set the parent state time to this state's time
+            self.parent.state_time = self.state_time
 
         # add the callback to the schedule
         delay = self.state_time - now()
