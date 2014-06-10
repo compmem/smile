@@ -266,7 +266,9 @@ class Image(VisualState):
     """
     Visual state to present an image.
     """
-    def __init__(self, imgstr, x=None, y=None, flip_x=False, flip_y=False,
+    def __init__(self, imgstr, x=None, y=None, 
+                 anchor_x=None, anchor_y=None,
+                 flip_x=False, flip_y=False,
                  rotation=0, scale=1.0, opacity=255,
                  parent=None, reset_clock=False, save_log=True):
         super(Image, self).__init__(interval=0, parent=parent, 
@@ -286,6 +288,11 @@ class Image(VisualState):
             y = Ref(self['exp']['window'],'height')//2
         self.y = y
 
+        # eventually process for strings indicating where to anchor,
+        # such as LEFT, BOTTOM_RIGHT, etc...
+        self.anchor_x = anchor_x
+        self.anchor_y = anchor_y
+
         self.flip_x = flip_x
         self.flip_y = flip_y
 
@@ -301,16 +308,29 @@ class Image(VisualState):
             # update with the values
             pass
         else:
-            # make the new shown and return it
+            # make the new image
             self.img = pyglet.resource.image(val(self.imgstr), 
                                              flip_x=val(self.flip_x),
                                              flip_y=val(self.flip_y))
+
+            # process the anchors
+            if self.anchor_x is None:
+                # set to center
+                self.anchor_x = self.img.width//2
+            self.img.anchor_x = self.anchor_x
+            if self.anchor_y is None:
+                # set to center
+                self.anchor_y = self.img.height//2
+            self.img.anchor_y = self.anchor_y
+
+            # make the sprite from the image
             self.shown = pyglet.sprite.Sprite(self.img,
                                               x=val(self.x), y=val(self.y),
                                               batch=self.exp.window.batch)
             self.shown.scale = val(self.scale)
             self.shown.rotation = val(self.rotation)
             self.shown.opacity = val(self.opacity)
+
         return self.shown
 
 
