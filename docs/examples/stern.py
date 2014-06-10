@@ -88,7 +88,7 @@ with Loop(trials) as trial:
     Set('study_times',[])
     with Loop(trial.current['study_items']) as item:
         # present the letter
-        ss = Show(Text(item.current.value, 
+        ss = Show(Text(item.current, 
                        x=Ref(exp['window'],'width')//2, 
                        y=Ref(exp['window'],'height')//2),
                        duration=STUDY_DURATION)

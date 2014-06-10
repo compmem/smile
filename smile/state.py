@@ -456,16 +456,6 @@ class If(ParentState):
                 self.leave()
 
                 
-class LoopItem(object):
-    def __init__(self, item):
-        self.item = item
-        self.value = Ref(self,'item')
-        
-    def __getitem__(self, index):
-        # modify so that we're accessing item
-        #return Ref(obj=self.item, attr=index)
-        return Ref(gfunc = lambda : self.item[index])
-        
 class Loop(Serial):
     """
     Loop state that can loop over an iterable or run repeatedly while
@@ -488,23 +478,20 @@ class Loop(Serial):
 
         # set to first in loop
         self.i = 0
-        if not self.iterable is None:
-            # make sure to evaluate it
-            #self.iterable = val(self.iterable)
-            #if len(self.iterable) == 0:
-            #    raise ValueError('The iterable can not be zero length.')
-            self.current = LoopItem(self.iterable[self.i])
                     
         # append outcome to log
         self.log_attrs.extend(['outcome','i'])
 
+    @property
+    def current(self):
+        if self.iterable is None:
+            return None
+        else:
+            return self['iterable'][self['i']]
+
     def _enter(self):
         # get the parent enter
         super(Loop, self)._enter()
-
-        # set to current item
-        if not self.iterable is None:
-            self.current.item = val(self.iterable[self.i])
 
         # reset outcome so we re-evaluate if called in loop
         self.outcome = val(self.cond)
@@ -563,7 +550,6 @@ class Loop(Serial):
 
                         # set to next
                         self.i += 1
-                        self.current.item = val(self.iterable[self.i])
                         
                 # update everything for the next loop
                 if not finished:
@@ -643,12 +629,20 @@ if __name__ == '__main__':
     exp = Experiment()
 
     # with implied parents
+    block = [{'val':i} for i in range(3)]
+    with Loop(block) as trial:
+        Func(print_dt, args=[trial.current['val']])
+        Wait(1.0)
+        If(trial.current['val']==block[-1],
+           Wait(2.))
+
     block = range(3)
     with Loop(block) as trial:
-        Func(print_dt, args=[trial.current.value])
+        Func(print_dt, args=[trial.current])
         Wait(1.0)
-        If(trial.current.value==block[-1],
+        If(trial.current==block[-1],
            Wait(2.))
+
 
     If(True, 
        Func(print_dt, args=["True"]),

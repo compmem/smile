@@ -304,7 +304,7 @@ class Image(VisualState):
 
     def _update_callback(self, dt):
         # children must implement drawing the showable to make it shown
-        if not self.shown is None:
+        if False: #not self.shown is None:
             # update with the values
             pass
         else:
@@ -316,13 +316,17 @@ class Image(VisualState):
             # process the anchors
             if self.anchor_x is None:
                 # set to center
-                self.anchor_x = self.img.width//2
-            self.img.anchor_x = self.anchor_x
+                anchor_x = self.img.width//2
+            else:
+                anchor_x = 0
+            self.img.anchor_x = anchor_x
             if self.anchor_y is None:
                 # set to center
-                self.anchor_y = self.img.height//2
-            self.img.anchor_y = self.anchor_y
-
+                anchor_y = self.img.height//2
+            else:
+                anchor_y = 0
+            self.img.anchor_y = anchor_y
+            
             # make the sprite from the image
             self.shown = pyglet.sprite.Sprite(self.img,
                                               x=val(self.x), y=val(self.y),
@@ -380,7 +384,6 @@ class Movie(VisualState):
 
         # process enter from parent (VisualState)
         super(Movie, self)._enter()
-
 
     def _update_callback(self, dt):
         # children must implement drawing the showable to make it shown
@@ -513,9 +516,7 @@ if __name__ == '__main__':
     with Loop(block) as trial:
         Set('stim_times',[])
         with Loop(trial.current['text']) as item:
-            ss = Show(Text(item.current.value, 
-                      x=exp.window.width//2, 
-                      y=exp.window.height//2, 
+            ss = Show(Text(item.current, 
                       color=(255,0,0,255)),
                       duration=1.0)
             #Wait(1.0)
