@@ -82,7 +82,7 @@ class ExpWindow(Window):
         pass
 
 class Experiment(Serial):
-    def __init__(self, fullscreen=False, resolution=(640,480), name="Smile",
+    def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
                  pyglet_vsync=True, background_color=(0,0,0,1), screen_ind=0):
 
         # first process the args
@@ -345,6 +345,7 @@ class Set(State):
 def Get(variable):
     gfunc = lambda : Experiment.last_instance()._vars[variable]
     return Ref(gfunc=gfunc)
+
 
 class Log(State):
     def __init__(self, log_file=None, parent=None, **log_items):

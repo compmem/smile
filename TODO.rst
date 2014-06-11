@@ -41,12 +41,13 @@ Approximately in order of importance:
 - Audio playback and recording
   - Should we just use pyaudio b/c we need recording?
   - It would also give us the ability to use JACK.
+  - Looks like pyo is the best option
 
 - Movie playback 
   - (DONE) without audio 
   - sync with audio
 
-- EEG sync pulsing
+- (DONE) EEG sync pulsing
 
 - Animations (i.e., complex/dynamic visual stimuli)
 

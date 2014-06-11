@@ -115,7 +115,7 @@ class VisualState(State):
 
         # the flip will already be scheduled
         # schedule the show
-        update_delay = self.state_time - clock._default.time()
+        update_delay = self.state_time - now()
         if update_delay < 0:
             update_delay = 0
         self.schedule_update(update_delay)
@@ -238,7 +238,7 @@ class Text(VisualState):
 
     def _update_callback(self, dt):
         # children must implement drawing the showable to make it shown
-        if self.shown:
+        if False: #self.shown:
             # update with the values
             pass
         else:
@@ -259,6 +259,7 @@ class Text(VisualState):
                                            dpi=val(self.dpi),
                                            group=self.group,
                                            batch=self.exp.window.batch)
+
         return self.shown
 
 

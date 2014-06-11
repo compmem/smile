@@ -192,10 +192,6 @@ class State(object):
         # say we're active
         self.active = True
 
-        # update the parent time if necessary
-        if self.duration > 0:
-            self.advance_parent_state_time(self.duration)
-
         # if we don't have the exp reference, get it now
         if self.exp is None:
             from experiment import Experiment
