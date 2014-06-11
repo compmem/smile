@@ -24,7 +24,7 @@ trials = [{'dur':d,'isi':i}
 trials = [{'dur':.005,'isi':.005}]*10 + trials
 
 # double length and repeat
-trials = trials*2
+trials = trials*4
 trials_copy = trials[:]
 trials_copy.reverse()
 trials.extend(trials_copy)
