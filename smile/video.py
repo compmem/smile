@@ -417,7 +417,7 @@ class Movie(VisualState):
                 self.leave()
                 return None
             # make the new shown and return it
-            # star the player
+            # start the player
             self._player.play()
 
             # get the image
@@ -485,7 +485,6 @@ class Show(Serial):
 if __name__ == '__main__':
 
     from experiment import Experiment, Get, Set
-    import pyglet
     from state import Parallel, Loop, Func
 
     exp = Experiment()
