@@ -133,6 +133,10 @@ class State(object):
     def __getitem__(self, index):
         return Ref(self, index)
 
+    # PBS: Must eventually check for specific attrs for this to work
+    #def __getattribute__(self, name):
+    #    return Ref(self, name)
+
     def _callback(self, dt):
         pass
         
@@ -180,7 +184,8 @@ class State(object):
 
         # add the callback to the schedule
         delay = self.state_time - now()
-        if delay < 0:
+        if delay < 0 or issubclass(self.__class__,ParentState):
+            # parents states run immediately
             delay = 0
         if self.interval < 0:
             # schedule it for every frame
@@ -216,7 +221,7 @@ class State(object):
         
         # update the parent state time to actual elapsed time if necessary
         if self.duration < 0:
-            if isinstance(self, ParentState):
+            if issubclass(self.__class__,ParentState): #isinstance(self, ParentState):
                 # advance the duration the children moved the this parent
                 duration = self.state_time-self.start_time
             else:
@@ -343,8 +348,8 @@ class Serial(ParentState):
             reset_next = False
             num_done = 0
             for i,c in enumerate(self.children):
-                # if any of the children ask to reset next, self should too
-                if c.reset_next:
+                # if last child asks to reset next, self should too
+                if c.reset_next and i==(len(self.children)-1):
                     self.reset_next = True
                 if c.done:
                     num_done += 1
