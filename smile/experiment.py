@@ -83,7 +83,7 @@ class ExpWindow(Window):
 
 class Experiment(Serial):
     def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
-                 pyglet_vsync=True, background_color=(0,0,0,1), screen_ind=0):
+                 pyglet_vsync=False, background_color=(0,0,0,1), screen_ind=0):
 
         # first process the args
         self._process_args()
