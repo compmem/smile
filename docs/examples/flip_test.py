@@ -19,10 +19,10 @@ trials = [{'txt':str(i)} for i in range(50)]
 
 Set('stim',False)
 Set('stim_shown',False)
-Wait(1.0, reset_clock=True)
+Wait(1.0)
 with Loop(trials) as trial:
     Wait(.005)
-    with If(Get('stim'), save_log=False, reset_clock=True) as if_state:
+    with If(Get('stim'), save_log=False) as if_state:
         with if_state.true_state:
             with Parallel():
                 ustim = Update(Get('stim'),'text',trial.current['txt'])
@@ -47,7 +47,7 @@ with Loop(trials) as trial:
         flip=Get('stim_flip'))
 
 Unshow(stim)
-Wait(2.0, reset_clock=True)
+Wait(2.0)
 Show(Text('Done!!!', 
           x=Ref(exp['window'],'width')//2, 
           y=Ref(exp['window'],'height')//2,),

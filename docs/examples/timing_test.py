@@ -12,7 +12,7 @@ from smile import *
 import random
 
 # create an experiment
-exp = Experiment(screen_ind=0, pyglet_vsync=True)
+exp = Experiment(screen_ind=0, pyglet_vsync=False)
 
 
 # set the dur and isi for each trial
@@ -24,7 +24,7 @@ trials = [{'dur':d,'isi':i}
 trials = [{'dur':.005,'isi':.005}]*10 + trials
 
 # double length and repeat
-trials = trials*4
+trials = trials*2
 trials_copy = trials[:]
 trials_copy.reverse()
 trials.extend(trials_copy)
@@ -45,10 +45,13 @@ BackColor(color=(0,0,0,1.0))
 Wait(1.0)
 with Loop(trials) as trial:
     # wait the isi
-    reset = Wait(trial.current['isi'], reset_clock=True)
+    reset = Wait(trial.current['isi'])
 
     # turn it on
     onstim = BackColor(color=(1,1,1,1.0))
+    
+    # reset clock to ensure flip-level timing
+    ResetClock(onstim['last_flip']['time'])
 
     # wait the dur
     Wait(trial.current['dur'])

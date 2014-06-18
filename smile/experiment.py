@@ -320,7 +320,7 @@ class Set(State):
     def __init__(self, variable, value, parent=None, save_log=True):
         # init the parent class
         super(Set, self).__init__(interval=0, parent=parent, 
-                                  duration=0, reset_clock=False, 
+                                  duration=0,
                                   save_log=save_log)
         self.variable = variable
         self.val = value
@@ -351,7 +351,7 @@ class Log(State):
     def __init__(self, log_file=None, parent=None, **log_items):
         # init the parent class
         super(Log, self).__init__(interval=0, parent=parent, 
-                                  duration=0, reset_clock=False,
+                                  duration=0,
                                   save_log=False)
         self.log_file = log_file
         self.log_items = log_items

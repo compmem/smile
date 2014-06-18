@@ -26,12 +26,11 @@ class VisualState(State):
     The key is to register that we want a flip, but only flip once if
     multiple stimuli are to be shown at the same time.
     """
-    def __init__(self, interval=0, duration=1.0, parent=None, 
-                 reset_clock=False, save_log=True):
+    def __init__(self, interval=0, duration=0.0, parent=None, 
+                 save_log=True):
         # init the parent class
         super(VisualState, self).__init__(interval=interval, parent=parent, 
                                           duration=duration, 
-                                          reset_clock=reset_clock,
                                           save_log=save_log)
 
         # we haven't shown anything yet
@@ -131,10 +130,10 @@ class Update(VisualState):
     Visual state to update a shown item.
     """
     def __init__(self, vstate, attr, value,
-                 parent=None, reset_clock=False, save_log=True):
+                 parent=None, save_log=True):
         # init the parent class
         super(Update, self).__init__(interval=0, parent=parent, 
-                                     duration=0, reset_clock=reset_clock,
+                                     duration=0,
                                      save_log=save_log)
 
         # we haven't shown anything yet
@@ -157,10 +156,10 @@ class Unshow(VisualState):
     """
     Visual state to unshow a shown item.
     """
-    def __init__(self, vstate, parent=None, reset_clock=False, save_log=True):
+    def __init__(self, vstate, parent=None, save_log=True):
         # init the parent class
         super(Unshow, self).__init__(interval=0, parent=parent, 
-                                     duration=0, reset_clock=reset_clock,
+                                     duration=0,
                                      save_log=save_log)
 
         # we haven't shown anything yet
@@ -180,9 +179,9 @@ class Unshow(VisualState):
 class BackColor(VisualState):
     """Set the background color."""
     def __init__(self, color=(0,0,0,1.0), parent=None, 
-                 reset_clock=False, save_log=True):
+                 save_log=True):
         super(BackColor, self).__init__(interval=0, parent=parent, 
-                                        duration=0, reset_clock=reset_clock,
+                                        duration=0,
                                         save_log=save_log)
 
         self.color = color
@@ -201,9 +200,9 @@ class Text(VisualState):
                  bold=False, italic=False, halign='center', 
                  width=None, height=None, multiline=False,
                  dpi=None, group=None,
-                 parent=None, reset_clock=False, save_log=True):
+                 parent=None, save_log=True):
         super(Text, self).__init__(interval=0, parent=parent, 
-                                   duration=0, reset_clock=reset_clock,
+                                   duration=0,
                                    save_log=save_log)
 
         self.textstr = textstr
@@ -271,9 +270,9 @@ class Image(VisualState):
                  anchor_x=None, anchor_y=None,
                  flip_x=False, flip_y=False,
                  rotation=0, scale=1.0, opacity=255,
-                 parent=None, reset_clock=False, save_log=True):
+                 parent=None, save_log=True):
         super(Image, self).__init__(interval=0, parent=parent, 
-                                    duration=0, reset_clock=reset_clock,
+                                    duration=0,
                                     save_log=save_log)
 
         self.imgstr = imgstr
@@ -345,9 +344,9 @@ class Movie(VisualState):
     """
     def __init__(self, movstr, x=None, y=None,
                  rotation=0, scale=1.0, opacity=255, framerate=1/30.,
-                 parent=None, reset_clock=False, save_log=True):
+                 parent=None, save_log=True):
         super(Movie, self).__init__(interval=framerate, parent=parent, 
-                                    duration=-1, reset_clock=reset_clock,
+                                    duration=-1,
                                     save_log=save_log)
 
         self.movstr = movstr
@@ -458,9 +457,8 @@ class Show(Serial):
     Show(Text("jubba"), duration=2.0)
     """
     def __init__(self, vstate, parent=None, duration=1.0, 
-                 reset_clock=False, save_log=True):
+                 save_log=True):
         super(Show, self).__init__(parent=parent, duration=duration, 
-                                   reset_clock=reset_clock,
                                    save_log=save_log)
 
         # remove vstate from parent if it exists

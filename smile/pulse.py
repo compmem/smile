@@ -30,11 +30,10 @@ class Pulse(State):
     ahead.
     """
     def __init__(self, code=15, duration=0.010, port=0,
-                 parent=None, reset_clock=False, save_log=True):
+                 parent=None, save_log=True):
         # init the parent class
         super(Pulse, self).__init__(interval=0, parent=parent, 
                                     duration=0, 
-                                    reset_clock=reset_clock,
                                     save_log=save_log)
         # Create a parallel port object
         if have_parallel:

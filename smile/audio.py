@@ -34,11 +34,10 @@ class Beep(State):
     def __init__(self, duration=1.0, freq=400, 
                  fadein=.1, fadeout=.1, volume=.5,
                  interval=0, parent=None, 
-                 reset_clock=False, save_log=True):
+                 save_log=True):
         # init the parent class
         super(Beep, self).__init__(interval=interval, parent=parent, 
                                    duration=val(duration), 
-                                   reset_clock=reset_clock,
                                    save_log=save_log)
 
         # save the vars

@@ -66,14 +66,12 @@ class State(object):
         ???
     duration : {0.0, float}
         Duration of the state.
-    reset_clock : bool
-        Whether to reset the clock when entering the state.
     save_log : bool
         Whether the state logs itself.
     
     """
     def __init__(self, interval=0, parent=None, duration=0.0, 
-                 reset_clock=False, save_log=True):
+                 save_log=True):
         """
         interval of 0 means once, -1 means every frame.
         """
@@ -88,8 +86,6 @@ class State(object):
         self.interval = interval
         self.duration = duration
         self.parent = parent
-        self.reset_clock = reset_clock
-        self.reset_next = False
         self.active = False
         self.done = False
         self.save_log = save_log
@@ -117,7 +113,7 @@ class State(object):
         self.log_attrs = ['state','start_time','end_time',
                           'first_call_time','first_call_error',
                           'last_call_time','last_call_error',
-                          'reset_clock','duration']
+                          'duration']
 
     def get_log(self):
         keyvals = [(a,val(getattr(self,a))) if hasattr(self,a) 
@@ -146,7 +142,7 @@ class State(object):
         self.last_call_error = self.last_call_time - self.start_time
         if self.first_call_time is None:
             self.first_call_time = self.last_call_time
-            self.first_call_error = self.last_call_error #first_call_time - self.start_time
+            self.first_call_error = self.last_call_error
 
         # call the user-defined callback
         self._callback(dt)
@@ -160,7 +156,7 @@ class State(object):
             self.leave()
 
     def get_parent_state_time(self):
-        if not self.reset_clock and self.parent:
+        if self.parent:
             return self.parent.get_state_time()
         else:
             return now()
@@ -176,11 +172,6 @@ class State(object):
         # get the starting time from the parent
         self.state_time = self.get_parent_state_time()
         self.start_time = self.state_time
-
-        # see if update parent's state time
-        if self.reset_clock and self.parent:
-            # set the parent state time to this state's time
-            self.parent.state_time = self.state_time
 
         # add the callback to the schedule
         delay = self.state_time - now()
@@ -253,10 +244,9 @@ class ParentState(State):
     Base state for parents that can hold children states. Only parent
     states can contain other states.
     """
-    def __init__(self, parent=None, duration=-1, reset_clock=False, save_log=True):
+    def __init__(self, parent=None, duration=-1, save_log=True):
         super(ParentState, self).__init__(interval=-1, parent=parent, 
                                           duration=duration, 
-                                          reset_clock=reset_clock,
                                           save_log=save_log)
         self.children = []
         self.check = False
@@ -311,9 +301,6 @@ class Parallel(ParentState):
             # start those that are not active and not done
             num_done = 0
             for c in self.children:
-                # if any of the children ask to reset next, self should too
-                if c.reset_next:
-                    self.reset_next = True
                 if c.done:
                     num_done += 1
                     continue
@@ -345,16 +332,10 @@ class Serial(ParentState):
             self.check = False
             # process the children
             # start those that are not active and not done
-            reset_next = False
             num_done = 0
             for i,c in enumerate(self.children):
-                # if last child asks to reset next, self should too
-                if c.reset_next and i==(len(self.children)-1):
-                    self.reset_next = True
                 if c.done:
                     num_done += 1
-                    # set whether we should reset the next
-                    reset_next = c.reset_next
                     continue
                 if not c.active:
                     if i > 0 and \
@@ -364,13 +345,8 @@ class Serial(ParentState):
                         break
 
                     # start the next one
-                    if reset_next:
-                        c.reset_clock = True
                     c.enter()
                     break
-
-                # set whether we should reset the next
-                reset_next = c.reset_next
 
             if num_done == len(self.children):
                 # we're done
@@ -399,11 +375,11 @@ class If(ParentState):
 
     """
     def __init__(self, conditional, true_state=None, false_state=None, 
-                 parent=None, reset_clock=False, save_log=True):
+                 parent=None, save_log=True):
 
         # init the parent class
         super(If, self).__init__(parent=parent, duration=-1, 
-                                 reset_clock=reset_clock, save_log=save_log)
+                                 save_log=save_log)
 
         # save the cond
         self.cond = conditional
@@ -467,9 +443,8 @@ class Loop(Serial):
         Wait(.5)
     """
     def __init__(self, iterable=None, conditional=True, 
-                 parent=None, reset_clock=False, save_log=True):
+                 parent=None, save_log=True):
         super(Loop, self).__init__(parent=parent, duration=-1, 
-                                   reset_clock=reset_clock,
                                    save_log=save_log)
 
         # otherwise, assume it's a list of dicts
@@ -510,13 +485,10 @@ class Loop(Serial):
                 
             # process the children            
             # start those that are not active and not done
-            reset_next = False
             num_done = 0
             for i,c in enumerate(self.children):
                 if c.done:
                     num_done += 1
-                    # set whether we should reset the next
-                    reset_next = c.reset_next
                     continue
                 if not c.active:
                     if i > 0 and \
@@ -526,13 +498,8 @@ class Loop(Serial):
                         break
 
                     # start the next one
-                    if reset_next:
-                        c.reset_clock = True
                     c.enter()
                     break
-
-                # set whether we should reset the next
-                reset_next = c.reset_next
 
             if num_done == len(self.children):
                 # we're done with this sequence
@@ -566,11 +533,10 @@ class Wait(State):
     ahead.
     """
     def __init__(self, duration=0.0, jitter=0.0, stay_active=False, 
-                 parent=None, reset_clock=False, save_log=True):
+                 parent=None, save_log=True):
         # init the parent class
         super(Wait, self).__init__(interval=-1, parent=parent, 
                                    duration=val(duration), 
-                                   reset_clock=reset_clock,
                                    save_log=save_log)
         self.stay_active = stay_active
         self.jitter = jitter
@@ -589,6 +555,27 @@ class Wait(State):
             # we're done
             #self.interval = 0
             self.leave()
+
+
+class ResetClock(State):
+    """
+    State that will reset the clock of its parent to a specific time
+    (or now if not specified).
+    """
+    def __init__(self, new_time=None, parent=None, save_log=True):
+        # init the parent class
+        super(ResetClock, self).__init__(interval=0, parent=parent, 
+                                         duration=0, 
+                                         save_log=save_log)
+        if new_time is None:
+            # eval to now if nothing specified
+            new_time = Ref(gfunc=lambda:now())
+        self.new_time = new_time
+
+    def _callback(self, dt):
+        duration = val(self.new_time) - self.get_parent_state_time()
+        if duration > 0:
+            self.advance_parent_state_time(duration)
     
 
 class Func(State):
@@ -598,11 +585,10 @@ class Func(State):
     """
     def __init__(self, func, args=None, kwargs=None, 
                  interval=0, parent=None, duration=0.0, 
-                 reset_clock=False, save_log=True):
+                 save_log=True):
         # init the parent class
         super(Func, self).__init__(interval=interval, parent=parent, 
                                    duration=duration, 
-                                   reset_clock=reset_clock,
                                    save_log=save_log)
 
         # set up the state
