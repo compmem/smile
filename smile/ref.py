@@ -126,13 +126,11 @@ def val(x, recurse=True):
     if recurse:
         if isinstance(x,list):
             # make sure we get value of all the items
-            for i in xrange(len(x)):
-                x[i] = val(x[i])
+            x = [val(x[i]) for i in xrange(len(x))]
         elif isinstance(x,dict):
-            for k in x:
-                x[k] = val(x[k])
-        
+            x = {val(x[k]) for k in x}        
     return x
+
 
 if __name__ == '__main__':
 
