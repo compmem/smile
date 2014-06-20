@@ -13,24 +13,18 @@ from smile import *
 # create an experiment
 exp = Experiment(screen_ind=0, pyglet_vsync=False)
 
-# set initially to white
-BackColor(color=(1,1,1,1.0))
-
+# initial wait
 Wait(1.0)
 
-# fade in
-nsteps = 254
-img = Image('face-smile.png',rotation=-nsteps,opacity=0)
-steps = [i/float(nsteps) for i in range(nsteps,-1,-1)]
-with Loop(steps) as step:
-    with Parallel():
-        BackColor(color=[step.current]*3 + [1.0])
-        Update(img,'rotation',img['shown'].rotation+1)
-        Update(img,'opacity',img['shown'].opacity+1)
-    ResetClock()
-    Wait(.02)
-
-Wait(2.0, stay_active=True)
+# Wait for a bunch of different times
+times = [.001,.002,.005,.010,.020,.050,.1,.2,.5,1,2,5.]
+with Loop(times) as time:
+    w = Wait(time.current)
+    Log(call_error=w['last_call_error'],
+        time=time.current,
+        start=w['start_time'],
+        call_time=w['last_call_time'])
+Wait(1.0, stay_active=True)
 
 if __name__ == '__main__':
     exp.run()

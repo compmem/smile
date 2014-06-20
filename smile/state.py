@@ -49,6 +49,9 @@ def schedule_delayed(func, delay, *args, **kwargs):
 
 _global_parents = []
 
+class RunOnEnter():
+    pass
+
 class State(object):
     """
     Base State object for the hierarchical state machine.
@@ -110,7 +113,7 @@ class State(object):
 
         # start the log
         self.state = self.__class__.__name__
-        self.log_attrs = ['state','start_time','end_time',
+        self.log_attrs = ['state','state_time','start_time','end_time',
                           'first_call_time','first_call_error',
                           'last_call_time','last_call_error',
                           'duration']
@@ -139,7 +142,7 @@ class State(object):
     def callback(self, dt):
         # log when we've entered the callback the first time
         self.last_call_time = now()
-        self.last_call_error = self.last_call_time - self.start_time
+        self.last_call_error = self.last_call_time - self.state_time
         if self.first_call_time is None:
             self.first_call_time = self.last_call_time
             self.first_call_error = self.last_call_error
@@ -175,8 +178,8 @@ class State(object):
 
         # add the callback to the schedule
         delay = self.state_time - now()
-        if delay < 0 or issubclass(self.__class__,ParentState):
-            # parents states run immediately
+        if delay < 0 or issubclass(self.__class__,RunOnEnter):
+            # parents states (and states like Logging) run immediately
             delay = 0
         if self.interval < 0:
             # schedule it for every frame
@@ -239,7 +242,7 @@ class State(object):
         pass
     
 
-class ParentState(State):
+class ParentState(State, RunOnEnter):
     """
     Base state for parents that can hold children states. Only parent
     states can contain other states.
@@ -525,7 +528,7 @@ class Loop(Serial):
                     
         pass
 
-        
+
 class Wait(State):
     """
     State that will wait a specified time in seconds.  It is possible
@@ -557,7 +560,7 @@ class Wait(State):
             self.leave()
 
 
-class ResetClock(State):
+class ResetClock(State, RunOnEnter):
     """
     State that will reset the clock of its parent to a specific time
     (or now if not specified).

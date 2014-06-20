@@ -20,11 +20,13 @@ import pyglet
 import pyo
 
 # need a single global sound server
-_ss = pyo.Server(sr=48000, nchnls=2, buffersize=512, duplex=1)
-_ss.setOutputDevice(9)
-_ss.setInputDevice(9)
-_ss.boot()
-#_ss = pyo.Server().boot()
+if False:
+    _ss = pyo.Server(sr=48000, nchnls=2, buffersize=512, duplex=1)
+    _ss.setOutputDevice(9)
+    _ss.setInputDevice(9)
+    _ss.boot()
+else:
+    _ss = pyo.Server().boot()
 _ss.start()
 
 class Beep(State):

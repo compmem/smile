@@ -21,7 +21,7 @@ from pyglet import clock
 from pyglet.window import key,Window
 
 # local imports
-from state import Serial, State
+from state import Serial, State, RunOnEnter
 from ref import val, Ref
 from log import dump
 
@@ -316,7 +316,7 @@ class Experiment(Serial):
         return self.last_flip
 
 
-class Set(State):
+class Set(State, RunOnEnter):
     def __init__(self, variable, value, parent=None, save_log=True):
         # init the parent class
         super(Set, self).__init__(interval=0, parent=parent, 
@@ -347,7 +347,7 @@ def Get(variable):
     return Ref(gfunc=gfunc)
 
 
-class Log(State):
+class Log(State, RunOnEnter):
     def __init__(self, log_file=None, parent=None, **log_items):
         # init the parent class
         super(Log, self).__init__(interval=0, parent=parent, 
