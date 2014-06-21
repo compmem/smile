@@ -26,7 +26,7 @@ Approximately in order of importance:
   - Track extended text input
 
 - Mouse input
-  - Button presses (what, when, and where)
+  - (DONE) Button presses (what, when, and where [not yet where])
   - Movement (A list of dicts for each movement during an active
     state)
 

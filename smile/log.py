@@ -34,6 +34,8 @@ with open(outfile,'wb') as fou:
 def load_yaml(yaml_file, **append_cols):
     # load the dictlist
     dictlist = yaml.load(open(yaml_file,'r'))
+    if dictlist is None:
+        return []
     for i in range(len(dictlist)):
         dictlist[i].update(append_cols)
     return dictlist
@@ -84,7 +86,10 @@ def yaml2csv(dictlist, csv_file, **append_cols):
         # get the unwraped dict list
         dictlist = yaml2dl(dictlist, **append_cols)
     dl = dictlist
-    
+
+    if len(dl) == 0:
+        return
+
     # get all unique colnames
     colnames = []
     for i in range(len(dl)):

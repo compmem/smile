@@ -128,7 +128,7 @@ def val(x, recurse=True):
             # make sure we get value of all the items
             x = [val(x[i]) for i in xrange(len(x))]
         elif isinstance(x,dict):
-            x = {val(x[k]) for k in x}        
+            x = {k:val(x[k]) for k in x}        
     return x
 
 

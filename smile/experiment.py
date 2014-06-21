@@ -23,7 +23,7 @@ from pyglet.window import key,Window
 # local imports
 from state import Serial, State, RunOnEnter
 from ref import val, Ref
-from log import dump
+from log import dump, yaml2csv
 
 # set up the basic timer
 now = clock._default.time
@@ -246,9 +246,16 @@ class Experiment(Serial):
             # save the time
             self._last_time = self._new_time
 
+        # write out csv logs
+        self.state_log_stream.flush()
+        yaml2csv(self.state_log, os.path.splitext(self.state_log)[0]+'.csv')
+        self.exp_log_stream.flush()
+        yaml2csv(self.exp_log, os.path.splitext(self.exp_log)[0]+'.csv')
+
         # close the window and clean up
         self.window.close()
         self.window = None
+
 
     def _calc_flip_interval(self, nflips=35, nignore=5):
         """
