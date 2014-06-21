@@ -24,8 +24,11 @@ class KeyPress(State):
                                        save_log=save_log)
 
         # save the keys we're watching (None for all)
+        if not isinstance(keys, list):
+            keys = [keys]
         self.keys = keys
-        self.keysym = None
+        if not isinstance(correct_resp, list):
+            correct_resp = [correct_resp]
         self.correct_resp = correct_resp
         self.base_time_src = base_time  # for calc rt
         self.base_time = None
@@ -46,33 +49,20 @@ class KeyPress(State):
                                'correct', 'rt'])
 
     def _enter(self):
-        # process any possible refs in the provided args
-        self.keys = val(self.keys)
-        if not self.keys is None:
-            if not isinstance(self.keys, list):
-                # turn into list
-                self.keys = [self.keys]
-            self.keysym = [getattr(key,k) for k in self.keys]
-
-        self.correct_resp = val(self.correct_resp)
-        if not self.correct_resp is None and \
-          not isinstance(self.correct_resp, list):
-            # turn into list
-            self.correct_resp = [self.correct_resp]
-
         # set defaults
         self.pressed = ''
         self.press_time = None
         self.correct = False
         self.rt = None
 
-        pass
-
     def _key_callback(self, symbol, modifiers, event_time):
         # check the key and time (if this is needed)
-        if self.keysym is None or symbol in self.keysym:
+        keys = val(self.keys)
+        correct_resp = val(self.correct_resp)
+        sym_str = key.symbol_string(symbol)
+        if None in keys or sym_str in keys:
             # it's all good!, so save it
-            self.pressed = key.symbol_string(symbol)
+            self.pressed = sym_str
             self.press_time = event_time
 
             # fill the base time val
@@ -84,10 +74,8 @@ class KeyPress(State):
             # calc RT if something pressed
             self.rt = event_time['time']-self.base_time
 
-            if not (self.keys is None or self.correct_resp is None):
-                # process if it's correct
-                if self.pressed in self.correct_resp:
-                    self.correct = True
+            if self.pressed in correct_resp:
+                self.correct = True
 
             # let's leave b/c we're all done
             #self.interval = 0
@@ -97,7 +85,8 @@ class KeyPress(State):
         if not self.waiting:
             self.exp.window.key_callbacks.append(self._key_callback)
             self.waiting = True
-        if ((self.wait_duration > 0 and now() >= self.state_time+self.wait_duration) or
+        wait_duration = val(self.wait_duration)
+        if ((wait_duration > 0 and now() >= self.state_time+wait_duration) or
             (val(self.wait_until))):
             # we're done
             self.leave()

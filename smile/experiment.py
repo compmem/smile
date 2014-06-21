@@ -65,11 +65,15 @@ class ExpWindow(Window):
                 
     def on_mouse_motion(self, x, y, dx, dy):
         pass
+
     def on_mouse_press(self, x, y, button, modifiers):
+        for c in self.mouse_callbacks:
+            # pass it the x, y, button, mod, and event time
+            c(x, y, button, modifiers, self.exp.event_time)
         pass
         
     def on_key_press(self, symbol, modifiers):
-        if symbol == key.ESCAPE:
+        if (symbol == key.ESCAPE) and (modifiers & key.MOD_SHIFT):
             self.has_exit = True
 
         # call the registered callbacks
