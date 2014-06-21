@@ -47,10 +47,10 @@ def schedule_delayed(func, delay, *args, **kwargs):
     """
     clock.schedule_once(_schedule_callback, delay, func, *args, **kwargs)
 
-_global_parents = []
 
 class RunOnEnter():
     pass
+
 
 class State(object):
     """
@@ -100,11 +100,10 @@ class State(object):
         except AttributeError:
             self.exp = None
 
-        #if self.parent is None and len(_global_parents) > 0: #not self.exp is None:
+        # try and set the current parent
         if self.parent is None and not self.exp is None:
             # try and get it from the exp
             self.parent = self.exp._parents[-1]
-            #self.parent = _global_parents[-1]
 
         # add self to children if we have a parent
         if self.parent:
@@ -276,21 +275,16 @@ class ParentState(State, RunOnEnter):
 
     def __enter__(self):
         # push self as current parent
-        # global _global_parents
-        # if len(_global_parents) > 0:
-        #     _global_parents.append(self)
         if not self.exp is None:
             self.exp._parents.append(self)
         return self
 
     def __exit__(self, type, value, tb):
         # pop self off
-        # global _global_parents
-        # if len(_global_parents) > 0:
-        #     state = _global_parents.pop()
         if not self.exp is None:
             state = self.exp._parents.pop()
         pass
+
 
 class Parallel(ParentState):
     """
