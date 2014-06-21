@@ -240,8 +240,8 @@ class Experiment(Serial):
 
             # put in sleeps if necessary
             if dt < .0001:
-                # do a usleep for half a ms (might need to tweak)
-                self.clock.sleep(500)
+                # do a usleep for 1/4 of a ms (might need to tweak)
+                self.clock.sleep(250)
 
             # save the time
             self._last_time = self._new_time
