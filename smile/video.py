@@ -20,7 +20,7 @@ import pyglet
 
 class VisualState(State):
     """
-    Parent state that handles drawing and showing of a visual
+    State that handles drawing and showing of a visual
     stimulus.
 
     The key is to register that we want a flip, but only flip once if
