@@ -164,6 +164,9 @@ class Experiment(Serial):
         parser.add_argument("-i", "--info", 
                             help="additional run info", 
                             default='')        
+        parser.add_argument("-n", "--nocsv", 
+                            help="prevent conversion of yaml to csv", 
+                            action='store_true')   
 
         # do the parsing
         args = parser.parse_args()
@@ -182,6 +185,9 @@ class Experiment(Serial):
 
         # set the additional info
         self.info = args.info
+
+        # set whether to log csv
+        self.nocsv = args.nocsv
         
     def run(self, initial_state=None):
         """
@@ -246,11 +252,12 @@ class Experiment(Serial):
             # save the time
             self._last_time = self._new_time
 
-        # write out csv logs
-        self.state_log_stream.flush()
-        yaml2csv(self.state_log, os.path.splitext(self.state_log)[0]+'.csv')
-        self.exp_log_stream.flush()
-        yaml2csv(self.exp_log, os.path.splitext(self.exp_log)[0]+'.csv')
+        # write out csv logs if desired
+        if not self.nocsv:
+            self.state_log_stream.flush()
+            yaml2csv(self.state_log, os.path.splitext(self.state_log)[0]+'.csv')
+            self.exp_log_stream.flush()
+            yaml2csv(self.exp_log, os.path.splitext(self.exp_log)[0]+'.csv')
 
         # close the window and clean up
         self.window.close()
