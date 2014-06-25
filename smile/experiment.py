@@ -366,13 +366,14 @@ def Get(variable):
 
 
 class Log(State, RunOnEnter):
-    def __init__(self, log_file=None, parent=None, **log_items):
+    def __init__(self, log_dict=None, log_file=None, parent=None, **log_items):
         # init the parent class
         super(Log, self).__init__(interval=0, parent=parent, 
                                   duration=0,
                                   save_log=False)
         self.log_file = log_file
         self.log_items = log_items
+        self.log_dict = log_dict
 
     def _get_stream(self):
         if self.log_file is None:
@@ -386,6 +387,8 @@ class Log(State, RunOnEnter):
         # eval the log_items and write the log
         keyvals = [(k,val(v)) for k,v in self.log_items.iteritems()]
         log = dict(keyvals)
+        if self.log_dict:
+            log.update(val(self.log_dict))
         # log it to the correct file
         dump([log], self._get_stream())
         pass
