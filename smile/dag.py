@@ -9,12 +9,7 @@
 
 import pydot
 from smile.state import ParentState, Serial, Parallel
-
-def get_class_name(obj):
-    name = str(obj.__class__)[8:-2].split('.')[-1]
-    mem_id = str(id(obj))
-    uname = name + "_" + mem_id
-    return name,uname
+from utils import get_class_name
 
 class DAG(object):
     """

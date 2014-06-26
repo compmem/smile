@@ -14,3 +14,9 @@ def rindex(lst, item):
         return dropwhile(lambda x: lst[x] != item, reversed(xrange(len(lst)))).next()
     except StopIteration:
         raise ValueError, "rindex(lst, item): item not in list"
+
+def get_class_name(obj):
+    name = str(obj.__class__)[8:-2].split('.')[-1]
+    mem_id = str(id(obj))
+    uname = name + "_" + mem_id
+    return name,uname

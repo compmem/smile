@@ -12,7 +12,7 @@ now = clock._default.time
 import random
 
 from ref import Ref, val
-from utils import rindex
+from utils import rindex, get_class_name
 from log import dump
 
 # custom schedule functions (add delays)
@@ -129,7 +129,12 @@ class State(object):
             return self.exp.state_log_stream
         
     def __getitem__(self, index):
-        return Ref(self, index)
+        if hasattr(self, index):
+            return Ref(self, index)
+        else:
+            class_name = get_class_name(self)[0]
+            raise ValueError('%s state does not have attribute "%s".' % 
+                             (class_name, index))
 
     # PBS: Must eventually check for specific attrs for this to work
     #def __getattribute__(self, name):

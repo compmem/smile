@@ -46,6 +46,7 @@ class Ref(object):
         else:
             # try and define it based on the obj and attr
             if not self.obj is None and not self.attr is None:
+                # get the values of the obj and attr
                 obj = val(self.obj)
                 attr = val(self.attr)
                 if isinstance(attr,str) and hasattr(obj, attr):
