@@ -34,6 +34,10 @@ class KeyPress(State):
         self.base_time = None
         self.wait_duration = duration
         self.wait_until = until
+        self.pressed = ''
+        self.press_time = None
+        self.correct = False
+        self.rt = None
         
         # if wait duration is -1 wait indefinitely
 
@@ -49,7 +53,7 @@ class KeyPress(State):
                                'correct', 'rt'])
 
     def _enter(self):
-        # set defaults
+        # reset defaults
         self.pressed = ''
         self.press_time = None
         self.correct = False
