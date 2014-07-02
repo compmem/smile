@@ -41,7 +41,7 @@ class DAG(object):
         # loop over children of cluster
         nodes = []
         for i,c in enumerate(cluster.children):
-            if isinstance(c, ParentState):
+            if issubclass(c.__class__, ParentState):
                 # call recursively
                 uname,first_uname,last_uname = self._add_cluster(clust, c)
 
@@ -61,7 +61,7 @@ class DAG(object):
                               'last_uname': None})
 
             # add edges if necessary
-            if isinstance(cluster, Serial) and i>0:
+            if issubclass(cluster.__class__, Serial) and i>0:
                 # set defaults
                 ledge = nodes[i-1]['uname']
                 redge = nodes[i]['uname']
