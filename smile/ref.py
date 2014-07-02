@@ -119,6 +119,8 @@ class Ref(object):
         return Ref(gfunc=lambda : -val(self))
     def append(self,o):
         return Ref(gfunc=lambda : val(self)+[val(o)])
+    def __contains__(self, key):
+        return Ref(gfunc=lambda : key in val(self))
         
 def val(x, recurse=True):
     # possibly put this in a for loop if we run into infinite recursion issues
