@@ -49,6 +49,11 @@ def schedule_delayed(func, delay, *args, **kwargs):
 
 
 class RunOnEnter():
+    """Inherited class to indicate to a state that it should run
+    immediately upon entering the state (instead of waiting until the
+    state time specified by the parent). This ensures that parent
+    states do not disturb the timing their children.
+    """
     pass
 
 
@@ -66,7 +71,7 @@ class State(object):
     interval : {0, -1, float}
         The number of seconds between each call.
     parent : {None, ``ParentState``}
-        ???
+        Parent state to attach to. Will search for experiment if None.
     duration : {0.0, float}
         Duration of the state.
     save_log : bool
@@ -247,9 +252,12 @@ class State(object):
     
 
 class ParentState(State, RunOnEnter):
-    """
-    Base state for parents that can hold children states. Only parent
-    states can contain other states.
+    """Base state for parents that can hold children states. 
+
+    Only parent states can contain other states.
+
+    Implicit hierarchies can be generated using the `with` syntax.
+
     """
     def __init__(self, parent=None, duration=-1, save_log=True):
         super(ParentState, self).__init__(interval=-1, parent=parent, 
@@ -292,9 +300,11 @@ class ParentState(State, RunOnEnter):
 
 
 class Parallel(ParentState):
-    """
+    """Parent state that runs its children in parallel.
+
     A Parallel Parent State is done when all its children have
     finished.
+
     """        
     def _callback(self, dt):
         if self.check:
@@ -325,7 +335,8 @@ class Parallel(ParentState):
 
 
 class Serial(ParentState):
-    """
+    """Parent state that runs its children in serial.
+
     A Serial Parent State is done when the last state in the chain is
     finished.
     """
@@ -437,7 +448,7 @@ class If(ParentState):
                 
 class Loop(Serial):
     """
-    Loop state that can loop over an iterable or run repeatedly while
+    State that can loop over an iterable or run repeatedly while
     a conditional evaluates to True.
     
     with Loop(block) as trial:
@@ -473,7 +484,6 @@ class Loop(Serial):
 
         # reset outcome so we re-evaluate if called in loop
         self.outcome = val(self.cond)
-
 
     def _callback(self, dt):
         if self.check:
@@ -661,11 +671,6 @@ if __name__ == '__main__':
     exp.run()
 
 
-
-
-
-
-
     # # with explicit parents
     # If(True, 
     #    Func(print_dt, args=["True"], interval=0.0),
@@ -686,7 +691,6 @@ if __name__ == '__main__':
     #     Func(print_dt, args=['four'], interval=0.0, parent=trial)
     #     print trial.children
     # Wait(2.0, stay_active=True, parent=exp)
-
 
     
     pass
