@@ -34,14 +34,13 @@ Approximately in order of importance:
 
 - (DONE) Loop state (to allow looping without unraveling into a big sequence)
 
-- Tests (especially to verify timing)
+- (IN PROGRESS) Tests (especially to verify timing)
 
 - (DONE) Plot the DAG with pydot
 
-- Audio playback and recording
-  - Should we just use pyaudio b/c we need recording?
-  - It would also give us the ability to use JACK.
-  - Looks like pyo is the best option
+- Audio 
+  - (DONE/In PROGRESS) Playback
+  - Recording
 
 - Movie playback 
   - (DONE) without audio 
