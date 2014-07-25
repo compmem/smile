@@ -35,10 +35,7 @@ class Pulse(State):
         super(Pulse, self).__init__(interval=0, parent=parent, 
                                     duration=0, 
                                     save_log=save_log)
-        # Create a parallel port object
-        if have_parallel:
-            self._pport = parallel.Parallel(port=port)
-
+        # save the info
         self.pulse_code = code
         self.pulse_duration = duration
         self.pulse_port = port
@@ -50,8 +47,7 @@ class Pulse(State):
         self.log_attrs.extend(['pulse_code', 'pulse_duration', 'pulse_port',
                                'pulse_time'])
 
-    def _callback(self, dt):
-        
+    def _callback(self, dt):        
         # Convert code if necessary
         code = val(self.pulse_code)
         if type(code)==str:
@@ -72,6 +68,10 @@ class Pulse(State):
 
         # send the code
         if have_parallel:
+            # Create a parallel port object (locks it exclusively)
+            self._pport = parallel.Parallel(port=self.pulse_port)
+
+            # send the port code and time it
             start_time = now()
             self._pport.setData(ncode)
             end_time = now()
@@ -85,9 +85,13 @@ class Pulse(State):
             clock.schedule_once(self._pulse_off_callback, val(self.pulse_duration))
 
     def _pulse_off_callback(self, dt):
+        # turn off the code
         start_time = now()
         self._pport.setData(0)
         end_time = now()
+
+        # clean up / close the port
+        self._pport = None
 
         # set the pulse time
         time_err = (end_time - start_time)/2.
