@@ -264,7 +264,7 @@ class Experiment(Serial):
         self.window = None
 
 
-    def _calc_flip_interval(self, nflips=35, nignore=5):
+    def _calc_flip_interval(self, nflips=55, nignore=5):
         """
         Calculate the mean flip interval.
         """
@@ -340,7 +340,8 @@ class Set(State, RunOnEnter):
         super(Set, self).__init__(interval=0, parent=parent, 
                                   duration=0,
                                   save_log=save_log)
-        self.variable = variable
+        self.var = variable
+        self.variable = None
         self.val = value
         self.value = None
 
@@ -349,6 +350,7 @@ class Set(State, RunOnEnter):
         
     def _callback(self, dt):
         # set the exp var
+        self.variable = val(self.var)
         self.value = val(self.val)
         if isinstance(self.variable,str):
             # set the experiment variable
@@ -361,7 +363,7 @@ class Set(State, RunOnEnter):
 
         
 def Get(variable):
-    gfunc = lambda : Experiment.last_instance()._vars[variable]
+    gfunc = lambda : Experiment.last_instance()._vars[val(variable)]
     return Ref(gfunc=gfunc)
 
 
