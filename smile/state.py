@@ -259,11 +259,17 @@ class ParentState(State, RunOnEnter):
     Implicit hierarchies can be generated using the `with` syntax.
 
     """
-    def __init__(self, parent=None, duration=-1, save_log=True):
+    def __init__(self, children=None, parent=None, duration=-1, save_log=True):
         super(ParentState, self).__init__(interval=-1, parent=parent, 
                                           duration=duration, 
                                           save_log=save_log)
+        # process children
+        if children is None:
+            children = []
         self.children = []
+        for c in children:
+            self.claim_child(c)
+        
         self.check = False
 
     def get_state_time(self):
@@ -548,7 +554,7 @@ class Wait(State):
                  parent=None, save_log=True):
         # init the parent class
         super(Wait, self).__init__(interval=-1, parent=parent, 
-                                   duration=val(duration), 
+                                   duration=duration, 
                                    save_log=save_log)
         self.stay_active = stay_active
         self.jitter = jitter
