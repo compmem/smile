@@ -314,17 +314,15 @@ class Image(VisualState):
                                              flip_y=val(self.flip_y))
 
             # process the anchors
-            if self.anchor_x is None:
+            anchor_x = val(self.anchor_x)
+            if anchor_x is None:
                 # set to center
                 anchor_x = self.img.width//2
-            else:
-                anchor_x = 0
             self.img.anchor_x = anchor_x
-            if self.anchor_y is None:
+            anchor_y = val(self.anchor_y)
+            if anchor_y is None:
                 # set to center
                 anchor_y = self.img.height//2
-            else:
-                anchor_y = 0
             self.img.anchor_y = anchor_y
             
             # make the sprite from the image
@@ -343,6 +341,7 @@ class Movie(VisualState):
     Visual state to present an movie.
     """
     def __init__(self, movstr, x=None, y=None,
+                 anchor_x=None, anchor_y=None,
                  rotation=0, scale=1.0, opacity=255, framerate=1/30.,
                  parent=None, save_log=True):
         super(Movie, self).__init__(interval=framerate, parent=parent, 
@@ -361,6 +360,11 @@ class Movie(VisualState):
         if y is None:
             y = Ref(self['exp']['window'],'height')//2
         self.y = y
+
+        # eventually process for strings indicating where to anchor,
+        # such as LEFT, BOTTOM_RIGHT, etc...
+        self.anchor_x = anchor_x
+        self.anchor_y = anchor_y
 
         self._player = pyglet.media.Player()
         self._player.eos_action = self._player.EOS_PAUSE
@@ -429,6 +433,19 @@ class Movie(VisualState):
                     self.shown = None
                 self.leave()
                 return None
+
+            # process the anchors
+            anchor_x = val(self.anchor_x)
+            if anchor_x is None:
+                # set to center
+                anchor_x = img.width//2
+            img.anchor_x = anchor_x
+            anchor_y = val(self.anchor_y)
+            if anchor_y is None:
+                # set to center
+                anchor_y = img.height//2
+            img.anchor_y = anchor_y
+
             self.shown = pyglet.sprite.Sprite(img,
                                               x=val(self.x), y=val(self.y),
                                               batch=self.exp.window.batch)
