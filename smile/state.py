@@ -191,7 +191,7 @@ class State(object):
             # parents states (and states like Logging) run immediately
             delay = 0
         if self.interval < 0:
-            # schedule it for every frame
+            # schedule it for every event loop
             schedule_delayed(self.callback, delay)
         else:
             # schedule the interval (0 means once)

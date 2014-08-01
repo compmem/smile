@@ -72,6 +72,15 @@ class ExpWindow(Window):
             c(x, y, button, modifiers, self.exp.event_time)
         pass
         
+    def on_mouse_release(self, x, y, button, modifiers):
+        pass
+
+    def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
+        pass
+
+    def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
+        pass
+
     def on_key_press(self, symbol, modifiers):
         if (symbol == key.ESCAPE) and (modifiers & key.MOD_SHIFT):
             self.has_exit = True
@@ -86,9 +95,34 @@ class ExpWindow(Window):
         pass
 
 class Experiment(Serial):
+    """A SMILE experiment.
+
+    This is the top level parent state for all experiments. It handles
+    the event loop, manages the window and associated input/output,
+    and processes the command line arguments.
+
+    """
     def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
                  pyglet_vsync=False, background_color=(0,0,0,1), screen_ind=0):
+        """Create a SMILE experiment.
 
+        Parameters
+        ----------
+        fullscreen : bool
+            Create the window in full screen.
+        resolution : tuple
+            Resolution of the window specified as (width, height) 
+            when not full screen.
+        name : str
+            Name on the window title bar.
+        pyglet_vsync : bool
+            Whether to instruct pyglet to sync to the vertical retrace.
+        background_color : tuple
+            4 tuple specifying the background color of the experiment window 
+            in (R,G,B,A).
+        screen_id : int
+            What screen/monitor to send the window to in multi-monitor layouts.
+        """
         # first process the args
         self._process_args()
         
@@ -165,7 +199,7 @@ class Experiment(Serial):
                             help="additional run info", 
                             default='')        
         parser.add_argument("-n", "--nocsv", 
-                            help="prevent conversion of yaml to csv", 
+                            help="prevent automatic conversion of yaml logs to csv", 
                             action='store_true')   
 
         # do the parsing
@@ -335,7 +369,21 @@ class Experiment(Serial):
 
 
 class Set(State, RunOnEnter):
+    """State to set a experiment variable.
+
+    See Get state for how to access experiment variables.
+    """
     def __init__(self, variable, value, parent=None, save_log=True):
+        """Set an experiment variable
+
+        Parameters
+        ----------
+        variable : str
+            Name of variable to save.
+        value : object
+            Value to set the variable. Can be a Reference evaluated at 
+            runtime.
+        """
         # init the parent class
         super(Set, self).__init__(interval=0, parent=parent, 
                                   duration=0,
@@ -363,12 +411,34 @@ class Set(State, RunOnEnter):
 
         
 def Get(variable):
+    """Retrieve an experiment variable.
+
+    Parameters
+    ----------
+    variable : str
+        Name of variable to retrieve. Can be a Reference evaluated 
+        at runtime.
+    """
     gfunc = lambda : Experiment.last_instance()._vars[val(variable)]
     return Ref(gfunc=gfunc)
 
 
 class Log(State, RunOnEnter):
+    """State to write values to a custom experiment log.
+    """
     def __init__(self, log_dict=None, log_file=None, parent=None, **log_items):
+        """Write data to a YAML log file.
+
+        Parameters
+        ----------
+        log_dict : dict
+            Key-value pairs to log. Handy for logging trial information.
+        log_file : str, optional
+            Where to log, defaults to exp.yaml in the subject directory.
+        parent : State
+        **log_items : kwargs
+            Key-value pairs to log.
+        """
         # init the parent class
         super(Log, self).__init__(interval=0, parent=parent, 
                                   duration=0,
