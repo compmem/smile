@@ -125,6 +125,60 @@ class VisualState(State):
         clock.unschedule(self.draw_callback)
 
 
+class Unshow(VisualState):
+    """
+    Visual state to unshow a shown item.
+    """
+    def __init__(self, vstate, parent=None, save_log=True):
+        # init the parent class
+        super(Unshow, self).__init__(interval=0, parent=parent, 
+                                     duration=0,
+                                     save_log=save_log)
+
+        # we haven't shown anything yet
+        self.vstate = vstate
+
+    def _update_callback(self, dt):
+        # children must implement drawing the showable to make it shown
+        # grab the vstate and associated shown
+        vstate = val(self.vstate)
+        shown = val(vstate.shown)
+        # if something is shown, then delete it
+        if shown:
+            shown.delete()
+        return shown
+
+
+class Show(Serial):
+    """
+    Show a visual state for a specified duration before unshowing it.
+    
+    Show(Text("jubba"), duration=2.0)
+    """
+    def __init__(self, vstate, parent=None, duration=1.0, 
+                 save_log=True):
+        super(Show, self).__init__(parent=parent, duration=duration, 
+                                   save_log=save_log)
+
+        # remove vstate from parent if it exists
+        self.claim_child(vstate)
+
+        # add the wait and unshow states
+        self._show_state = vstate
+        self._wait_state = Wait(duration, parent=self)
+        self._unshow_state = Unshow(vstate, parent=self)
+
+        # expose the shown
+        self.shown = vstate['shown']
+
+        # save the show and hide times
+        self.show_time = Ref(self._show_state,'first_flip')
+        self.unshow_time = Ref(self._unshow_state,'first_flip')
+
+        # append times to log
+        self.log_attrs.extend(['show_time','unshow_time'])
+
+
 class Update(VisualState):
     """
     Visual state to update a shown item.
@@ -151,30 +205,6 @@ class Update(VisualState):
                 val(self.attr),
                 val(self.value))
 
-
-class Unshow(VisualState):
-    """
-    Visual state to unshow a shown item.
-    """
-    def __init__(self, vstate, parent=None, save_log=True):
-        # init the parent class
-        super(Unshow, self).__init__(interval=0, parent=parent, 
-                                     duration=0,
-                                     save_log=save_log)
-
-        # we haven't shown anything yet
-        self.shown = None
-        self.vstate = vstate
-
-    def _update_callback(self, dt):
-        # children must implement drawing the showable to make it shown
-        self.vstate = val(self.vstate)
-        self.shown = self.vstate.shown
-        if self.shown:
-            self.shown.delete()
-            self.shown = None
-            self.vstate.shown = None
-        return self.shown
 
 class BackColor(VisualState):
     """Set the background color."""
@@ -465,36 +495,6 @@ class Movie(VisualState):
         # pop off any current sources
         while self._player.source:
             self._player.next()
-
-        
-class Show(Serial):
-    """
-    Show a visual state for a specified duration before unshowing it.
-    
-    Show(Text("jubba"), duration=2.0)
-    """
-    def __init__(self, vstate, parent=None, duration=1.0, 
-                 save_log=True):
-        super(Show, self).__init__(parent=parent, duration=duration, 
-                                   save_log=save_log)
-
-        # remove vstate from parent if it exists
-        self.claim_child(vstate)
-
-        # add the wait and unshow states
-        self._show_state = vstate
-        self._wait_state = Wait(duration, parent=self)
-        self._unshow_state = Unshow(vstate, parent=self)
-
-        # expose the shown
-        self.shown = vstate.shown
-
-        # save the show and hide times
-        self.show_time = Ref(self._show_state,'first_flip')
-        self.unshow_time = Ref(self._unshow_state,'first_flip')
-
-        # append times to log
-        self.log_attrs.extend(['show_time','unshow_time'])
 
         
 if __name__ == '__main__':
