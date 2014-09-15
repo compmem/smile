@@ -286,7 +286,7 @@ class Text(VisualState):
                                            height=val(self.height),
                                            multiline=val(self.multiline),
                                            dpi=val(self.dpi),
-                                           group=self.group,
+                                           group=val(self.group),
                                            batch=self.exp.window.batch)
 
         return self.shown
@@ -299,7 +299,7 @@ class Image(VisualState):
     def __init__(self, imgstr, x=None, y=None, 
                  anchor_x=None, anchor_y=None,
                  flip_x=False, flip_y=False,
-                 rotation=0, scale=1.0, opacity=255,
+                 rotation=0, scale=1.0, opacity=255, group=None,
                  parent=None, save_log=True):
         super(Image, self).__init__(interval=0, parent=parent, 
                                     duration=0,
@@ -309,6 +309,7 @@ class Image(VisualState):
         self.rotation = rotation
         self.scale = scale
         self.opacity = opacity
+        self.group = group
 
         # set loc to center if none supplied
         if x is None:
@@ -358,6 +359,7 @@ class Image(VisualState):
             # make the sprite from the image
             self.shown = pyglet.sprite.Sprite(self.img,
                                               x=val(self.x), y=val(self.y),
+                                              group=val(self.group),
                                               batch=self.exp.window.batch)
             self.shown.scale = val(self.scale)
             self.shown.rotation = val(self.rotation)
@@ -372,7 +374,7 @@ class Movie(VisualState):
     """
     def __init__(self, movstr, x=None, y=None,
                  anchor_x=None, anchor_y=None,
-                 rotation=0, scale=1.0, opacity=255, framerate=1/30.,
+                 rotation=0, scale=1.0, opacity=255, framerate=1/30., group=None,
                  parent=None, save_log=True):
         super(Movie, self).__init__(interval=framerate, parent=parent, 
                                     duration=-1,
@@ -382,6 +384,7 @@ class Movie(VisualState):
         self.rotation = rotation
         self.scale = scale
         self.opacity = opacity
+        self.group = group
 
         # set loc to center if none supplied
         if x is None:
@@ -478,6 +481,7 @@ class Movie(VisualState):
 
             self.shown = pyglet.sprite.Sprite(img,
                                               x=val(self.x), y=val(self.y),
+                                              group=val(self.group),
                                               batch=self.exp.window.batch)
             self.shown.scale = val(self.scale)
             self.shown.rotation = val(self.rotation)
