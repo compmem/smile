@@ -6,7 +6,7 @@ import os
 import sys
 
 setup(name='smile', 
-      version='0.0.1',
+      version='0.1.0',
       package_dir={"smile":"smile"},
       packages=['smile'],
       author=['Per B. Sederberg'],
