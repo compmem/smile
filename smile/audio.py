@@ -12,7 +12,7 @@ from state import schedule_delayed_interval, schedule_delayed
 from ref import Ref, val
 
 # get the last instance of the experiment class
-from experiment import Experiment, now
+from experiment import Experiment, now, event_time
 
 from pyglet import clock
 import pyglet
@@ -83,8 +83,10 @@ class Beep(State):
         self.fadeout = fadeout
         self.volume = volume
 
+        self.sound_start = None
+
         # set the log attrs
-        self.log_attrs.extend(['freq', 'volume', 'fadein', 'fadeout'])
+        self.log_attrs.extend(['freq', 'volume', 'fadein', 'fadeout', 'sound_start'])
 
     def _enter(self):
         if _pyo_server is None:
@@ -100,6 +102,7 @@ class Beep(State):
 
     def _callback(self, dt):
         self._fader.play()
+        self.sound_start = event_time(now())
 
 
 class SoundFile(State):
@@ -121,8 +124,11 @@ class SoundFile(State):
         self.duration = duration
         self.loop = loop
 
+        self.sound_start = None
+
         # set the log attrs
-        self.log_attrs.extend(['sound_file', 'volume', 'start', 'stop', 'loop'])
+        self.log_attrs.extend(['sound_file', 'volume', 'start', 'stop', 
+                               'loop', 'sound_start'])
 
     def _enter(self):
         if _pyo_server is None:
@@ -154,6 +160,7 @@ class SoundFile(State):
     def _callback(self, dt):
         # play the sound
         self._snd.out()
+        self.sound_start = event_time(now())
         # eventually use triggers for more accurate timing
 
 
@@ -168,10 +175,17 @@ if __name__ == '__main__':
 
     Beep(freq=[300,700],volume=.1)
     Beep(freq=[500,500],volume=.1)
-    # with Parallel():
-    #     Beep(freq=[700,300],volume=.1)
-    #     SoundFile('~/code/pyo-read-only/examples/snds/flute.aif',
-    #           stop=3.0, volume=.1)
+    with Parallel():
+        Beep(freq=[700,300],volume=.1)
+        #SoundFile('kongas.wav',
+        #      stop=5.0, volume=.1)
+        with Serial():
+            Wait(1.0)
+            Beep(freq=[400,400],volume=.1)
+        with Serial():
+            Wait(2.0)
+            Beep(freq=[300,300],volume=.1)
+
 
     Wait(1.0, stay_active=True)
 
