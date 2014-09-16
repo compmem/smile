@@ -33,12 +33,13 @@ Wait(1.0)
 # move them
 with Loop(range(100)):
     with Parallel():
+        # move the stims across the screen
         upstate = Update(stimF, "x", stimF['shown'].x+1)
         Update(stimB, "x", stimB['shown'].x-1)
     ResetClock(upstate['last_flip']['time'])
     Wait(.05)
     
-Wait(2.0, stay_active=True)
+Wait(1.0, stay_active=True)
 
 if __name__ == '__main__':
     exp.run()
