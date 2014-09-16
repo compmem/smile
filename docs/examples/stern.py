@@ -78,20 +78,14 @@ print trials
 # loop over study block
 with Loop(trials) as trial:
     # orient stim
-    ss_orient = Show(Text('+', 
-                          x=Ref(exp['window'],'width')//2, 
-                          y=Ref(exp['window'],'height')//2),
-                          duration=ORIENT_DURATION)
+    ss_orient = Show(Text('+'),duration=ORIENT_DURATION)
     Wait(ORIENT_ISI)
     
     # loop over study items
     Set('study_times',[])
     with Loop(trial.current['study_items']) as item:
         # present the letter
-        ss = Show(Text(item.current, 
-                       x=Ref(exp['window'],'width')//2, 
-                       y=Ref(exp['window'],'height')//2),
-                       duration=STUDY_DURATION)
+        ss = Show(Text(item.current),duration=STUDY_DURATION)
     
         # wait some jittered amount
         Wait(STUDY_ISI)
@@ -105,10 +99,7 @@ with Loop(trials) as trial:
     # present test item
     with Parallel():
         # present the letter
-        test_stim = Text(trial.current['test_item'], 
-                         x=Ref(exp['window'],'width')//2, 
-                         y=Ref(exp['window'],'height')//2,
-                         bold=True)
+        test_stim = Text(trial.current['test_item'], bold=True)
         with Serial():
             # wait some before accepting input
             Wait(RESP_DELAY)

@@ -22,17 +22,19 @@ exp = Experiment(screen_ind=0, pyglet_vsync=False)
 Wait(1.0)
 
 # create stims
-stimF = Text("F", x=(exp['window'].width//2)-50, font_size=32, 
-             color=(255,255,0,255), group=foreground)
-stimB = Text("B", x=(exp['window'].width//2)+50, font_size=32, 
-             color=(0,255,255,255), group=background)
+with Parallel():
+    stimF = Text("F", x=(exp['window'].width//2)-50, font_size=32, 
+                 color=(255,255,0,255), group=foreground)
+    stimB = Text("B", x=(exp['window'].width//2)+50, font_size=32, 
+                 color=(0,255,255,255), group=background)
 
 Wait(1.0)
 
 # move them
 with Loop(range(100)):
-    upstate = Update(stimF, "x", stimF['shown'].x+1)
-    Update(stimB, "x", stimB['shown'].x-1)
+    with Parallel():
+        upstate = Update(stimF, "x", stimF['shown'].x+1)
+        Update(stimB, "x", stimB['shown'].x-1)
     ResetClock(upstate['last_flip']['time'])
     Wait(.05)
     
