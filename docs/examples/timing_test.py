@@ -12,8 +12,7 @@ from smile import *
 import random
 
 # create an experiment
-exp = Experiment(screen_ind=0, pyglet_vsync=False)
-
+exp = Experiment(screen_ind=0, pyglet_vsync=True)
 
 # set the dur and isi for each trial
 trials = [{'dur':d,'isi':i} 
@@ -23,7 +22,7 @@ trials = [{'dur':d,'isi':i}
 # add in a bunch of fast switches
 trials = [{'dur':.005,'isi':.005}]*10 + trials
 
-# double length and repeat
+# double length, reverse, and repeat
 trials = trials*2
 trials_copy = trials[:]
 trials_copy.reverse()
@@ -31,16 +30,6 @@ trials.extend(trials_copy)
 
 # set initially to black
 BackColor(color=(0,0,0,1.0))
-
-# # show some txt and images
-# txt = Text('Jubba')
-# Wait(1.0)
-# # make the switch at same time
-# with Parallel():
-#     Unshow(txt)
-#     img = Image('face-smile.png')
-# Wait(.5)
-# Unshow(img)
 
 Wait(1.0)
 with Loop(trials) as trial:
@@ -63,8 +52,12 @@ with Loop(trials) as trial:
     Log(reset=reset['start_time'],
         on=onstim['last_flip'],
         on_start=onstim['start_time'],
+        on_draw=onstim['last_draw'],
+        on_update=onstim['last_update'],
         off=offstim['last_flip'],
         off_start=offstim['start_time'],
+        off_draw=offstim['last_draw'],
+        off_update=offstim['last_update'],
         dur=trial.current['dur'],
         isi=trial.current['isi'])
 

@@ -74,7 +74,7 @@ class VisualState(State):
         
     def schedule_update(self, flip_delay):
         # the show will be 3/4 of a flip interval before the flip
-        update_delay = flip_delay - self.exp.flip_interval*3/4.
+        update_delay = flip_delay - self.exp.flip_interval*(3/4.)
         if update_delay <= 0:
             # do it now
             self.update_callback(0)

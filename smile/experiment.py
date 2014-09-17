@@ -103,7 +103,7 @@ class Experiment(Serial):
 
     """
     def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
-                 pyglet_vsync=False, background_color=(0,0,0,1), screen_ind=0):
+                 pyglet_vsync=True, background_color=(0,0,0,1), screen_ind=0):
         """Create a SMILE experiment.
 
         Parameters
@@ -223,7 +223,7 @@ class Experiment(Serial):
         # set whether to log csv
         self.nocsv = args.nocsv
         
-    def run(self, initial_state=None):
+    def run(self):
         """
         Run the experiment.
         """
@@ -343,7 +343,7 @@ class Experiment(Serial):
             # first the flip
             self.window.flip()
 
-            if not self.pyglet_vsync:
+            if True: #not self.pyglet_vsync:
                 # OpenGL:
                 glDrawBuffer(GL_BACK)
                 # We draw our single pixel with an alpha-value of zero
