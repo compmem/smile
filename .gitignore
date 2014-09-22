@@ -5,6 +5,7 @@
 \.\#*
 build
 _build
+data
 *.so
 build-arch*
 dist
