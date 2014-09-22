@@ -17,7 +17,18 @@ from experiment import Experiment, now, event_time
 from pyglet import clock
 import pyglet
 
-import pyo
+# add in system site-packages if necessary
+try:
+    import pyo
+except ImportError:
+    import sys
+    if sys.platform == 'darwin':
+        os_sp_dir = '/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/'
+    elif sys.platform.startswith('win'):
+        os_sp_dir = 'C:\Python27\Lib\site-packages'
+    if not os_sp_dir in sys.path:
+        sys.path.append(os_sp_dir)
+        import pyo
 
 # need a single global sound server
 _pyo_server = None
