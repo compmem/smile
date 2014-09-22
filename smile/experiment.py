@@ -161,6 +161,9 @@ class Experiment(Serial):
         # event time
         self.last_event = event_time(0.0)
 
+        # default flip interval
+        self.flip_interval = 1/60.
+
         # place to save experimental variables
         self._vars = {}
 
