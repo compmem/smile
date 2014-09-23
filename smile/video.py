@@ -238,7 +238,32 @@ class Text(VisualState):
         The vertical location of the text string, in the units 
         specified by the stimulus or window. Defaults to half the height
         of the experiment window.
-        
+    anchor_x : str
+        Horizontal anchor alignment, which determines the meaning
+        of the x parameter.
+            "center" (default) : x value indicates position of the
+            center of the layout
+            "left" : x value indicates position of the left edge of 
+            the layout
+            "right" : x value indicates position of the right edge
+            of the layout
+    anchor_y : str   
+        Vertical anchor alignment, which determines the meaning 
+        of the y parameter.
+            "center" (default): y value indicates position of the
+            center of the layout
+            "top" : y value indicates position of the top edge of the
+            layout
+            "baseline" : y value indicates position of the first line
+            of text in the layout
+            "bottom" : y value indicates position of the bottom edge
+            of the layout
+    font_name : str
+        Choose the font style by indicating a font family that is 
+        available on your operating system. For example, all 
+        operating systems include the *Times New Roman* font.
+        Default will be the same as the default font on your operating
+        system.
     """
     def __init__(self, textstr, x=None, y=None, anchor_x='center', anchor_y='center',
                  font_name=None, font_size=18, color=(255,255,255,255),
