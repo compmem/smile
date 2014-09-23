@@ -155,8 +155,8 @@ class Show(Serial):
     
     Show(Text("jubba"), duration=2.0)
     """
-    def __init__(self, vstate, parent=None, duration=1.0, 
-                 save_log=True):
+    def __init__(self, vstate, duration=1.0, 
+                 parent=None, save_log=True):
         super(Show, self).__init__(parent=parent, duration=duration, 
                                    save_log=save_log)
 
