@@ -10,9 +10,11 @@
 import inspect
 
 class Ref(object):
-    def __init__(self, obj=None, attr=None, gfunc=None, gfunc_args=None):
+    def __init__(self, obj=None, attr=None, 
+                 gfunc=None, gfunc_args=None, gfunc_kwargs=None):
         self.gfunc = gfunc
         self.gfunc_args = gfunc_args
+        self.gfunc_kwargs = gfunc_kwargs
         self.obj = obj
         self.attr = attr
         # if self.gfunc is None:
@@ -36,18 +38,40 @@ class Ref(object):
         else:
             raise ValueError('You can only set a reference with a known obj and attr')
                 
-    def __call__(self):
+    def __call__(self, *args, **kwargs):
         if self.gfunc:
+            gfunc = self.gfunc
+        elif inspect.isfunction(self.obj) or \
+             inspect.isbuiltin(self.obj) or \
+             hasattr(self.obj, '__call__'):
+            gfunc = self.obj
+        else:
+            raise ValueError('You must specify a function as the obj or gfunc.')
+        return Ref(gfunc=gfunc, gfunc_args=args, gfunc_kwargs=kwargs)
+
+    def eval(self):
+        if self.gfunc:
+            # eval the args to the func if necessary
             if self.gfunc_args is None:
-                return self.gfunc()
+                args = []
             else:
-                # process the args and pass them in
-                return self.gfunc(val(self.gfunc_args))
+                args = val(self.gfunc_args)
+
+            if self.gfunc_kwargs is None:
+                kwargs = {}
+            else:
+                kwargs = val(self.gfunc_kwargs)
+            
+            # eval the function
+            return self.gfunc(*args, **kwargs)
         else:
             # try and define it based on the obj and attr
-            if not self.obj is None and not self.attr is None:
+            if not self.obj is None:
                 # get the values of the obj and attr
                 obj = val(self.obj)
+            else:
+                raise ValueError("Ref must either have obj or gfunc defined.")
+            if not self.attr is None:
                 attr = val(self.attr)
                 if isinstance(attr,str) and hasattr(obj, attr):
                     # treat as attr
@@ -55,6 +79,8 @@ class Ref(object):
                 else:
                     # access with getitem
                     return obj[attr]
+            else:
+                return obj
         #return self.obj #getattr(self.obj, self.attr)
         
     def __getitem__(self, index):
@@ -124,18 +150,32 @@ class Ref(object):
         
 def val(x, recurse=True):
     # possibly put this in a for loop if we run into infinite recursion issues
-    while isinstance(x,Ref) or inspect.isfunction(x) or inspect.isbuiltin(x):
-        x = x()
+    while isinstance(x,Ref): #or inspect.isfunction(x) or inspect.isbuiltin(x):
+        x = x.eval()
     if recurse:
         if isinstance(x,list):
             # make sure we get value of all the items
             x = [val(x[i]) for i in xrange(len(x))]
+        elif isinstance(x,tuple):
+            # make sure we get value of all the items
+            x = tuple([val(x[i]) for i in xrange(len(x))])
         elif isinstance(x,dict):
             x = {k:val(x[k]) for k in x}        
     return x
 
 
 if __name__ == '__main__':
+
+    import math
+    x = [0.0]
+    r = Ref(math.cos)(Ref(x,0))
+    print x[0], val(r)
+    x[0] += .5
+    print x[0], val(r)
+
+    r = Ref(str)(Ref(x)[0])
+    x[0] += .75
+    print x[0], val(r)
 
     class Jubba(object):     
         def __init__(self, val):
@@ -147,6 +187,10 @@ if __name__ == '__main__':
 
     a = Jubba(5)
     b = Ref(a,'x')
+    br = Ref(a).x
+    print val(b), val(br)
+    a.x += 42.
+    print val(b), val(br)
     
     c = {'y':6}
     d = Ref(c,'y')
