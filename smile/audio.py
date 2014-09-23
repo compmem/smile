@@ -23,7 +23,7 @@ try:
 except ImportError:
     import sys
     if sys.platform == 'darwin':
-        os_sp_dir = '/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/'
+        os_sp_dir = '/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages'
     elif sys.platform.startswith('win'):
         os_sp_dir = 'C:\Python27\Lib\site-packages'
     if not os_sp_dir in sys.path:
