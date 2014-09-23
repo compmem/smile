@@ -11,7 +11,7 @@
 from smile import *
 
 # create an experiment
-exp = Experiment(screen_ind=0, pyglet_vsync=False)
+exp = Experiment(screen_ind=0, pyglet_vsync=True)
 
 # set initially to white
 BackColor(color=(1,1,1,1.0))
@@ -29,8 +29,8 @@ with Loop(steps) as step:
         Update(img,'opacity',img['shown'].opacity+1)
     ResetClock()
     Wait(.02)
-
-Wait(2.0, stay_active=True)
+Show(Text("SMILE!",y=img['shown'].y-120), 2.0)
+#Wait(2.0, stay_active=True)
 
 if __name__ == '__main__':
     exp.run()
