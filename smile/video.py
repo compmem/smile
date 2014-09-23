@@ -222,8 +222,23 @@ class BackColor(VisualState):
 
 
 class Text(VisualState):
-    """
+    r"""
     Visual state to present text.
+    
+    Parameters
+    -----------
+    textstr : str
+        The text that will be displayed to the participant. It may
+        contain letters, numbers, spaces, or punctuation.
+    x : int
+        The horizontal location of the text string, in the units 
+        specified by the stimulus or window. Defaults to half the width
+        of the experiment window.
+    y : int
+        The vertical location of the text string, in the units 
+        specified by the stimulus or window. Defaults to half the height
+        of the experiment window.
+        
     """
     def __init__(self, textstr, x=None, y=None, anchor_x='center', anchor_y='center',
                  font_name=None, font_size=18, color=(255,255,255,255),
