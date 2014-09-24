@@ -177,6 +177,12 @@ if __name__ == '__main__':
     x[0] += .75
     print x[0], val(r)
 
+    r = Ref((Ref(x)[0]>0)&(Ref(x)[0]<0))
+    print x[0],val(r)
+    r = Ref((Ref(x)[0]>0)&(Ref(x)[0]>=0))
+    x[0] -= 10.0
+    print x[0],val(r)
+
     class Jubba(object):     
         def __init__(self, val):
             self.x = val
