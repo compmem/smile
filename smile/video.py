@@ -385,6 +385,7 @@ class Movie(VisualState):
         self.scale = scale
         self.opacity = opacity
         self.group = group
+        self.current_time = 0.0
 
         # set loc to center if none supplied
         if x is None:
@@ -418,6 +419,7 @@ class Movie(VisualState):
 
         # queue source
         self._player.queue(self._source)
+        self.current_time = 0.0
 
         # process enter from parent (VisualState)
         super(Movie, self)._enter()
@@ -486,6 +488,9 @@ class Movie(VisualState):
             self.shown.scale = val(self.scale)
             self.shown.rotation = val(self.rotation)
             self.shown.opacity = val(self.opacity)
+
+        # update the time
+        self.current_time = self._player.time
 
         return self.shown
 
