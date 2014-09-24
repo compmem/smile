@@ -620,9 +620,29 @@ class Func(State):
 
     def _callback(self, dt):
         # process the refs
-        args = [val(a) for a in self.args]
-        kwargs = {key: val(value) for (key, value) in self.kwargs}
+        args = val(self.args)
+        kwargs = val(self.kwargs)
         self.res = self.func(self, *args, **kwargs)
+    
+
+class Debug(State):
+    """
+    State that will evaluate the specified kwargs and print them to standard out for debugging purposes.
+    """
+    def __init__(self, parent=None, save_log=False, **kwargs):
+        # init the parent class
+        super(Debug, self).__init__(interval=0, parent=parent, 
+                                   duration=0, 
+                                   save_log=save_log)
+
+        # set up the state
+        self.kwargs = kwargs
+
+    def _callback(self, dt):
+        # process the refs
+        #kwargs = {key: val(value) for (key, value) in self.kwargs}
+        print 'DEBUG:', val(self.kwargs)
+
 
 if __name__ == '__main__':
 
@@ -632,6 +652,8 @@ if __name__ == '__main__':
         print txt, now()-state.state_time, state.dt
 
     exp = Experiment()
+
+    Debug(width=exp['window'].width, height=exp['window'].height)
 
     # with implied parents
     block = [{'val':i} for i in range(3)]
