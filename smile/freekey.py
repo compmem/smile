@@ -21,8 +21,8 @@ class FreeKey(Serial):
     """
     Perform free recall typed responses.
     """
-    def __init__(self, txt=None, duration=10.0, base_time=None, max_resp=0,
-                 parent=None, save_log=True):
+    def __init__(self, txt=None, max_duration=10.0, max_resp=100, base_time=None, 
+                 duration=-1, parent=None, save_log=True):
         super(FreeKey, self).__init__(parent=parent, duration=duration, 
                                       save_log=save_log)
 
@@ -32,6 +32,9 @@ class FreeKey(Serial):
         else:
             # claim that text
             self.claim_child(txt)
+
+        # set max_resp
+        self.max_resp = max_resp
 
         # set self as parent
         # like using with, but without the indentation
@@ -45,9 +48,13 @@ class FreeKey(Serial):
             base_time = txt['first_flip']['time']
 
         # Loop until out of time or press enter
-        Set('fk_end_time', base_time+duration)
+        Set('fk_first_time',0)
+        Set('fk_end_time', base_time+max_duration)
         Set('fk_cur_text','')
-        with Loop(conditional=Get('fk_end_time')>Ref(gfunc=now)) as loop:
+        Set('fk_num_resp', 0)
+        cond = ((Get('fk_end_time')>Ref(gfunc=now)) &
+                (Get('fk_num_resp')<Ref(self).max_resp))
+        with Loop(conditional=cond) as loop:
             # accept keyboard response (for remaining duration)
             kp = KeyPress(keys=asciiplus, base_time=base_time,
                           duration=Get('fk_end_time')-Ref(gfunc=now))
@@ -69,9 +76,11 @@ class FreeKey(Serial):
                 if_enter = If((kp['pressed'] == 'ENTER')|(kp['pressed']=='RETURN'))
                 with if_enter.true_state:
                     # is Enter, so log
+                    Set('fk_num_resp', Get('fk_num_resp')+1)
                     Log(first_key_time=Get('fk_first_time'),
                         enter_key_time=kp['press_time'],
-                        response=Get('fk_cur_text'))
+                        response=Get('fk_cur_text'),
+                        response_num=Get('fk_num_resp'))
 
                     # start over
                     Set('fk_cur_text','')
@@ -95,7 +104,8 @@ class FreeKey(Serial):
         If(Get('fk_cur_text')!='',
            Log(first_key_time=Get('fk_first_time'),
                enter_key_time=0.0,
-               response=Get('fk_cur_text')))
+               response=Get('fk_cur_text'),
+               response_num=-1))
         
         # remove the text cause we're done
         Unshow(txt)
@@ -108,11 +118,16 @@ if __name__ == '__main__':
 
     from experiment import Experiment, Get, Set
     from state import Parallel, Loop, Func
+    from video import Show
     from dag import DAG
 
     exp = Experiment()
 
     Wait(.5)
+
+    FreeKey(Text('XXXXXX',font_size=24), max_resp=1)
+    
+    Show(Text('Done', font_size=32),2.0)
 
     FreeKey(Text('??????',font_size=24))
 
