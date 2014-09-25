@@ -33,8 +33,10 @@ class FreeKey(Serial):
             # claim that text
             self.claim_child(txt)
 
-        # set max_resp
+        # set config vars
         self.max_resp = max_resp
+        self.max_duration = max_duration
+        self.responses = []
 
         # set self as parent
         # like using with, but without the indentation
@@ -52,6 +54,7 @@ class FreeKey(Serial):
         Set('fk_end_time', base_time+max_duration)
         Set('fk_cur_text','')
         Set('fk_num_resp', 0)
+        Set('fk_responses', [])
         cond = ((Get('fk_end_time')>Ref(gfunc=now)) &
                 (Get('fk_num_resp')<Ref(self).max_resp))
         with Loop(conditional=cond) as loop:
@@ -77,10 +80,15 @@ class FreeKey(Serial):
                 with if_enter.true_state:
                     # is Enter, so log
                     Set('fk_num_resp', Get('fk_num_resp')+1)
-                    Log(first_key_time=Get('fk_first_time'),
-                        enter_key_time=kp['press_time'],
-                        response=Get('fk_cur_text'),
-                        response_num=Get('fk_num_resp'))
+                    resp = Ref(dict)(first_key_time=Get('fk_first_time'),
+                                     enter_key_time=kp['press_time'],
+                                     response=Get('fk_cur_text'),
+                                     response_num=Get('fk_num_resp'))
+                    Set('fk_responses', Get('fk_responses').append(resp))
+                    # Log(first_key_time=Get('fk_first_time'),
+                    #     enter_key_time=kp['press_time'],
+                    #     response=Get('fk_cur_text'),
+                    #     response_num=Get('fk_num_resp'))
 
                     # start over
                     Set('fk_cur_text','')
@@ -102,13 +110,21 @@ class FreeKey(Serial):
 
         # log if anything was there and not complete
         If(Get('fk_cur_text')!='',
-           Log(first_key_time=Get('fk_first_time'),
-               enter_key_time=0.0,
-               response=Get('fk_cur_text'),
-               response_num=-1))
+           Set('fk_responses',
+               Get('fk_responses').append(Ref(dict)(first_key_time=Get('fk_first_time'),
+                                                    enter_key_time=0.0,
+                                                    response=Get('fk_cur_text'),
+                                                    response_num=-1))))
+           # Log(first_key_time=Get('fk_first_time'),
+           #     enter_key_time=0.0,
+           #     response=Get('fk_cur_text'),
+           #     response_num=-1))
         
         # remove the text cause we're done
         Unshow(txt)
+
+        # Make the responses available
+        Set(Ref(self,'responses'), Get('fk_responses'), eval_var=False)
 
         # pop off self as parent
         self.__exit__(None,None,None)
@@ -117,7 +133,7 @@ class FreeKey(Serial):
 if __name__ == '__main__':
 
     from experiment import Experiment, Get, Set
-    from state import Parallel, Loop, Func
+    from state import Parallel, Loop, Func, Debug
     from video import Show
     from dag import DAG
 
@@ -125,11 +141,13 @@ if __name__ == '__main__':
 
     Wait(.5)
 
-    FreeKey(Text('XXXXXX',font_size=24), max_resp=1)
+    fk = FreeKey(Text('XXXXXX',font_size=24), max_resp=1)
+    Debug(responses=fk['responses'])
     
     Show(Text('Done', font_size=32),2.0)
 
-    FreeKey(Text('??????',font_size=24))
+    fk = FreeKey(Text('??????',font_size=24))
+    Debug(responses=fk['responses'])
 
     Wait(1.0, stay_active=True)
 
