@@ -43,7 +43,7 @@ class Pulse(State):
 
         # append log vars
         self.log_attrs.extend(['pulse_code', 'pulse_duration', 'pulse_port',
-                               'pulse_time'])
+                               'pulse_time', 'pulse_end_time'])
 
     def _callback(self, dt):        
         # Convert code if necessary
