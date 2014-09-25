@@ -25,9 +25,7 @@ from experiment import now,event_time
 
 class Pulse(State):
     """
-    State that will wait a specified time in seconds.  It is possible
-    to keep the state active or simply move the parent's state time
-    ahead.
+    State that will send a sync pulse out the parallel port.
     """
     def __init__(self, code=15, duration=0.010, port=0,
                  parent=None, save_log=True):
