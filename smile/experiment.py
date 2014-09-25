@@ -376,7 +376,7 @@ class Set(State, RunOnEnter):
 
     See Get state for how to access experiment variables.
     """
-    def __init__(self, variable, value, parent=None, save_log=True):
+    def __init__(self, variable, value, eval_var=True, parent=None, save_log=True):
         """Set an experiment variable
 
         Parameters
@@ -395,15 +395,19 @@ class Set(State, RunOnEnter):
         self.variable = None
         self.val = value
         self.value = None
+        self.eval_var = eval_var
 
         # append log vars
         self.log_attrs.extend(['variable','value'])
         
     def _callback(self, dt):
         # set the exp var
-        self.variable = val(self.var)
+        if self.eval_var:
+            self.variable = val(self.var)
+        else:
+            self.variable = self.var
         self.value = val(self.val)
-        if isinstance(self.variable,str):
+        if isinstance(self.variable, str):
             # set the experiment variable
             self.exp._vars[self.variable] = self.value
         elif isinstance(self.variable, Ref):
