@@ -9,7 +9,7 @@
 
 from pyglet.window import key
 
-from state import State
+from state import State, Debug
 from ref import Ref, val
 
 # get the last instance of the experiment class
@@ -32,7 +32,10 @@ class KeyPress(State):
         self.correct_resp = correct_resp
         self.base_time_src = base_time  # for calc rt
         self.base_time = None
-        self.wait_duration = duration
+        if not isinstance(duration, Ref) and duration == -1:
+            self.wait_duration = None
+        else:
+            self.wait_duration = duration
         self.wait_until = until
         self.pressed = ''
         self.press_time = None
@@ -69,11 +72,11 @@ class KeyPress(State):
             self.pressed = sym_str
             self.press_time = event_time
 
-            # fill the base time val
-            self.base_time = val(self.base_time_src)
-            if self.base_time is None:
-                # set it to the state time
-                self.base_time = self.state_time
+            # # fill the base time val
+            # self.base_time = val(self.base_time_src)
+            # if self.base_time is None:
+            #     # set it to the state time
+            #     self.base_time = self.state_time
             
             # calc RT if something pressed
             self.rt = event_time['time']-self.base_time
@@ -89,12 +92,16 @@ class KeyPress(State):
         if not self.waiting:
             self.exp.window.key_callbacks.append(self._key_callback)
             self.waiting = True
+        if self.base_time is None:
+            self.base_time = val(self.base_time_src)
+            if self.base_time is None:
+                # set it to the state time
+                self.base_time = self.state_time
         wait_duration = val(self.wait_duration)
-        if ((wait_duration > 0 and now() >= self.state_time+wait_duration) or
-            (val(self.wait_until))):
-            # we're done
+        if (not wait_duration is None) and (now() >= self.base_time+wait_duration):
             self.leave()
-            #self.interval = 0
+        elif val(self.wait_until):
+            self.leave()
             
     def _leave(self):
         # remove the keyboard callback
