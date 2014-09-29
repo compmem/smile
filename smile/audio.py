@@ -79,7 +79,7 @@ class Beep(State):
     State that can play a beep.
     """
     def __init__(self, duration=1.0, freq=400, 
-                 fadein=.1, fadeout=.1, volume=.5,
+                 fadein=.05, fadeout=.05, volume=.5,
                  parent=None, 
                  save_log=True):
         # init the parent class
