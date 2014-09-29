@@ -13,9 +13,12 @@ from video import Text,Unshow,Update
 from state import Serial, Loop, Wait, If, now, Ref, val
 from experiment import Log, Set, Get
 
+import string
+
 # set the allowable keys (A-Z)
 asciiplus = [str(unichr(i)) for i in range(65,65+26)]
 asciiplus += ['RETURN','ENTER','BACKSPACE','SPACE']
+asciiplus += ['_%d'%i for i in range(10)]
 
 class FreeKey(Serial):
     """
@@ -103,7 +106,8 @@ class FreeKey(Serial):
                     # else normal letter, append it (processing SPACE)
                     If(kp['pressed']=='SPACE',
                        Set('fk_cur_text', Get('fk_cur_text')+' '),
-                       Set('fk_cur_text', Get('fk_cur_text')+kp['pressed']))
+                       Set('fk_cur_text', Get('fk_cur_text')+
+                           Ref(string.strip)(kp['pressed'],'_')))
 
                     # update the text
                     Update(txt, 'text', Get('fk_cur_text'))
