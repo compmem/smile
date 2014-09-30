@@ -62,9 +62,6 @@ class FreeKey(Serial):
                 (Get('fk_num_resp')<Ref(self).max_resp))
         with Loop(conditional=cond) as loop:
             # accept keyboard response (for remaining duration)
-            Debug(duration=Get('fk_end_time')-Ref(gfunc=now),
-                  end_time=Get('fk_end_time'),
-                  now=Ref(gfunc=now))
             kp = KeyPress(keys=asciiplus, base_time=base_time,
                           until=Get('fk_end_time')<Ref(gfunc=now))
 

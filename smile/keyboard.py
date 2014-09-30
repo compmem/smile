@@ -9,7 +9,7 @@
 
 from pyglet.window import key
 
-from state import State, Debug
+from state import State
 from ref import Ref, val
 
 # get the last instance of the experiment class
