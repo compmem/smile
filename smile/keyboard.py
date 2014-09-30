@@ -61,6 +61,7 @@ class KeyPress(State):
         self.press_time = None
         self.correct = False
         self.rt = None
+        self.base_time = None
 
     def _key_callback(self, symbol, modifiers, event_time):
         # check the key and time (if this is needed)
