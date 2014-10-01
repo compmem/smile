@@ -37,6 +37,22 @@ class VisualState(State):
     save_log : bool
         If set to 'True,' details about the state will be
         automatically saved in the log files.        
+
+    Log Parameters
+    --------------
+    The following information about each state will be stored in 
+    addition to the existing parameters:
+
+        duration
+        end_time  
+        first_call_error
+        first_call_time 
+        last_call_error 
+        last_draw 
+        last_flip 
+        last_update 
+        start_time 
+        state_time 
     """
     def __init__(self, interval=0, duration=0.0, parent=None, 
                  save_log=True):
@@ -155,26 +171,16 @@ class Unshow(VisualState):
     Example
     -------
     txt = Text("jubba")
+    Wait(1.0)
     Unshow(txt)
-    The text string "jubba" will be shown and then removed from the
-    screen.
+    The text string "jubba" will be shown for one second and then
+    removed from the screen.
     
     Log Parameters
     --------------
-    All of the above parameters for each Unshow state will be 
-    recorded in the state.yaml and state.csv files. The following
-    information about the Unshow state will be stored as well:
-
-        duration
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time       
+    All of the above parameters for each Unshow state will be recorded
+    in the state.yaml and state.csv files. Refer to State class 
+    docstring for addtional logged parameters.       
     """
     def __init__(self, vstate, parent=None, save_log=True):
         # init the parent class
@@ -223,19 +229,9 @@ class Show(Serial):
     
     Log Parameters
     --------------
-    All of the above parameters for each Show state will be 
-    recorded in the state.yaml and state.csv files. The following
-    information about the Show state will be stored as well:
-
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time 
+    All of the above parameters for each Show state will be recorded
+    in the state.yaml and state.csv files. Refer to State class 
+    docstring for addtional logged parameters. 
     """
     def __init__(self, vstate, duration=1.0, 
                  parent=None, save_log=True):
@@ -283,26 +279,16 @@ class Update(VisualState):
     Wait(1.0)
     Update(txt,'color',(0,0,255,255))
     Wait(1.0)
+    Unshow(txt)
     The text string 'jubba' will appear on the screen in white text
     for 1.0 second, then the text color will change to blue, and the
     text string will remain on the screen for an additional 1.0 second.
     
     Log Parameters
     --------------
-    All of the above parameters for each BackColor state will be 
-    recorded in the state.yaml and state.csv files. The following
-    information about the background will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time  
+    All of the above parameters for each Update state will be recorded
+    in the state.yaml and state.csv files. Refer to State class 
+    docstring for addtional logged parameters.  
     """
     def __init__(self, vstate, attr, value,
                  parent=None, save_log=True):
@@ -351,20 +337,9 @@ class BackColor(VisualState):
         
     Log Parameters
     --------------
-    All of the above parameters for each BackColor state will be 
-    recorded in the state.yaml and state.csv files. The following
-    information about the background will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time 
+    All of the above parameters for each BackColor state will be
+    recorded in the state.yaml and state.csv files. Refer to State 
+    class docstring for addtional logged parameters. 
     """
     def __init__(self, color=(0,0,0,1.0), parent=None, 
                  save_log=True):
@@ -465,20 +440,8 @@ class Text(VisualState):
     Log Parameters
     --------------
     All of the above parameters for each Text state will be recorded
-    in the state.yaml and state.csv files. The following
-    information about the text presentation will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time 
-
+    in the state.yaml and state.csv files. Refer to State class 
+    docstring for addtional logged parameters. 
     """
     def __init__(self, textstr, x=None, y=None, anchor_x='center', anchor_y='center',
                  font_name=None, font_size=18, color=(255,255,255,255),
@@ -614,19 +577,8 @@ class Image(VisualState):
     Log Parameters
     --------------
     All of the above parameters for each Image state will be recorded
-    in the state.yaml and state.csv files. The following
-    information about the image presentation will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time
+    in the state.yaml and state.csv files. Refer to State class 
+    docstring for addtional logged parameters. 
         
     """
     def __init__(self, imgstr, x=None, y=None, 
@@ -764,23 +716,12 @@ class Movie(VisualState):
     Movie('smile-movie.mp4', framerate = 1/24)
     The movie with the filename 'smile-movie.mp4' will play with each
     frame being replaced at a rate of 1/24 seconds. 
-        
+    
     Log Parameters
     --------------
     All of the above parameters for each Movie state will be recorded
-    in the state.yaml and state.csv files. The following
-    information about the movie presentation will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time 
+    in the state.yaml and state.csv files. Refer to State class 
+    docstring for addtional logged parameters. 
     """
     def __init__(self, movstr, x=None, y=None,
                  anchor_x=None, anchor_y=None,
