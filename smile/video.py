@@ -25,6 +25,18 @@ class VisualState(State):
 
     The key is to register that we want a flip, but only flip once if
     multiple stimuli are to be shown at the same time.
+    
+    Parameters
+    ----------
+    interval : {0, -1, float}
+        The number of seconds between each call.
+    duration : {0.0, float}
+        Duration of the state in seconds.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
+    save_log : bool
+        If set to 'True,' details about the state will be
+        automatically saved in the log files.        
     """
     def __init__(self, interval=0, duration=0.0, parent=None, 
                  save_log=True):
@@ -131,11 +143,11 @@ class Unshow(VisualState):
     
     Parameters
     -----------
-    vstate : VisualState
+    vstate : {None, ``VisualState``}
         The variable associated with the stimulus that you want 
         to be removed from the screen.     
-    parent : Parent
-        Manually set the ancestry.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
     save_log : bool
         If set to 'True,' details about the Unshow state will be
         automatically saved in the log files. 
@@ -190,7 +202,7 @@ class Show(Serial):
     
     Parameters
     -----------
-    vstate : VisualState
+    vstate : {None, ``VisualState``}
         The VisualState associated with the stimulus that you want 
         to appear on the screen for a certain duration. You will 
         need to specify both the VisualState (i.e. Text, Image, Movie, 
@@ -198,8 +210,8 @@ class Show(Serial):
     duration : float
         Duration in seconds that the stimulus specified by vstate
         will appear on the screen.
-    parent : Parent
-        Manually set the ancestry.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
     save_log : bool
         If set to 'True,' details about the Show state will be
         automatically saved in the log files.
@@ -255,7 +267,7 @@ class Update(VisualState):
     
     Parameters
     ----------
-    vstate : VisualState
+    vstate : {None, ``VisualState``}
         The variable refering to the visual stimulus who's attributes
         you want to update while the stimulus is still on the screen.
     attr : str
@@ -326,8 +338,8 @@ class BackColor(VisualState):
         Blue Alpha) components ranging from 0 to 255, where the 'Alpha' 
         component represents degree of transparency. Default is
         (0,0,0,1.0), which corresponds to opaque black.        
-    parent : Parent
-        Manually set the ancestry.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
     save_log : bool
         If set to 'True,' details about the presentation of the 
         background will be automatically saved in the log files.
@@ -439,8 +451,8 @@ class Text(VisualState):
         Resolution of the fonts in the current layout. Defaults to 96.
     group : Group
         Optional graphics settings.
-    parent : Parent
-        Manually set the ancestry.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
     save_log : bool
         If set to 'True,' details about the presentation of the text
         will be automatically saved in the log files.
@@ -587,8 +599,8 @@ class Image(VisualState):
     opacity : int
         Sets the aplpha component of the image's color properties. If
         set at a value less than 255, the image will appear translucent.
-    parent : Parent
-        Manually set the ancestry.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
     save_log : bool
         If set to 'True,' details about the presentation of the image
         will be automatically saved in the log files.        
@@ -740,8 +752,9 @@ class Movie(VisualState):
         replaced with the next. Units are seconds. Default is 1/30,
         meaning each frame is on the screen for one-thirtieth of a
         second.  
-    parent : Parent
-        Manually set the ancestry.    
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if 
+        None.   
     save_log : bool
         If set to 'True,' details about the presentation of the movie
         will be automatically saved in the log files.  
