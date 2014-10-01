@@ -532,6 +532,76 @@ class Image(VisualState):
 class Movie(VisualState):
     """
     Visual state to present an movie.
+    
+    Parameters
+    -----------
+    movstr : str
+        The filename of the movie that will be presented.
+    x : int
+        The horizontal location of the movie frame, in the units 
+        specified by the stimulus or window. Defaults to half the width
+        of the experiment window.
+    y : int
+        The vertical location of the movie frame, in the units 
+        specified by the stimulus or window. Defaults to half the height
+        of the experiment window.    
+    anchor_x : str
+        Horizontal anchor alignment, which determines the meaning
+        of the x parameter.
+            "center" (default) : x value indicates position of the
+            center of the layout
+            "left" : x value indicates position of the left edge of 
+            the layout
+            "right" : x value indicates position of the right edge
+            of the layout    
+    anchor_y : str
+        Vertical anchor alignment, which determines the meaning 
+        of the y parameter.
+            "center" (default): y value indicates position of the
+            center of the layout
+            "top" : y value indicates position of the top edge of the
+            layout
+            "baseline" : y value indicates position of the first line
+            of text in the layout
+            "bottom" : y value indicates position of the bottom edge
+            of the layout    
+    rotation : int
+        Degrees of clockwise rotation of the displayed movie frame. Only
+        90-degree increments are supported.    
+    scale : float
+        Scaling factor. By setting the scale at 2, for example, the
+        movie frame will be drawn at twice its original size.    
+    opacity : int
+        Sets the aplpha component of the movie's color properties. If
+        set at a value less than 255, the image will appear 
+        translucent.    
+    framerate : float
+        The rate at which each frame is flashed on the screen and 
+        replaced with the next. Units are seconds. Default is 1/30,
+        meaning each frame is on the screen for one-thirtieth of a
+        second.  
+    parent : Parent
+        Manually set the ancestry.    
+    save_log : bool
+        If set to 'True,' details about the presentation of the text
+        will be automatically saved in the log files.    
+        
+    Log Parameters
+    --------------
+    All of the above parameters for each text state will be recorded
+    in the state.yaml and state.csv files. The following
+    information about the text presentation will be stored as well:
+    
+        duration 
+        end_time  
+        first_call_error
+        first_call_time 
+        last_call_error 
+        last_draw 
+        last_flip 
+        last_update 
+        start_time 
+        state_time 
     """
     def __init__(self, movstr, x=None, y=None,
                  anchor_x=None, anchor_y=None,
