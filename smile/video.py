@@ -224,6 +224,98 @@ class BackColor(VisualState):
 class Text(VisualState):
     """
     Visual state to present text.
+    
+    Parameters
+    -----------
+    textstr : str
+        The text that will be displayed to the participant. It may
+        contain letters, numbers, spaces, or punctuation.
+    x : int
+        The horizontal location of the text string, in the units 
+        specified by the stimulus or window. Defaults to half the width
+        of the experiment window.
+    y : int
+        The vertical location of the text string, in the units 
+        specified by the stimulus or window. Defaults to half the height
+        of the experiment window.
+    anchor_x : str
+        Horizontal anchor alignment, which determines the meaning
+        of the x parameter.
+            "center" (default) : x value indicates position of the
+            center of the layout
+            "left" : x value indicates position of the left edge of 
+            the layout
+            "right" : x value indicates position of the right edge
+            of the layout
+    anchor_y : str   
+        Vertical anchor alignment, which determines the meaning 
+        of the y parameter.
+            "center" (default): y value indicates position of the
+            center of the layout
+            "top" : y value indicates position of the top edge of the
+            layout
+            "baseline" : y value indicates position of the first line
+            of text in the layout
+            "bottom" : y value indicates position of the bottom edge
+            of the layout
+    font_name : str
+        Choose the font style by indicating a font family that is 
+        available on your operating system. For example, all 
+        operating systems include the "Times New Roman" font.
+        Default will be the same as the default font on your operating
+        system.
+    font_size : int
+        Font size in points.
+    color : tuple
+        Color of text specified by a 4- tuple of RGBA (Red Green Blue
+        Alpha) components ranging from 0 to 255, where the 'Alpha' 
+        component represents degree of transparency. Default is
+        (255,255,255,255), which corresponds to opaque white.
+    bold : bool
+        Bold font option.
+    italic : bool
+        Italic font option.
+    halign : str
+        Horizontal alignment of text on a line. Only applies if width
+        is set as well.
+            "left" (default)
+            "center"
+            "right"
+    width : int
+        Width of the text block in pixels. Multiline must be set to 
+        'True' if the width is less than the width of textstr.
+    height : int
+        Height of the text block in pixels.
+    multiline : bool
+        If set to 'True,' the text string will be word-wrapped in 
+        accordance with newline characters and the 'width' parameter.
+    dpi : float
+        Resolution of the fonts in the current layout. Defaults to 96.
+    group : Group
+        Optional graphics settings.
+    parent : Parent
+        Manually set the ancestry.
+    save_log : bool
+        If set to 'True,' details about the presentation of the text
+        will be automatically saved in the log files.
+        
+    Log Parameters
+    --------------
+    All of the above parameters for each text state will be recorded
+    in the state.yaml and state.csv files. The following
+    information about the text presentation will be stored as well:
+    
+        duration 
+        end_time  
+        first_call_error
+        first_call_time 
+        last_call_error 
+        last_draw 
+        last_flip 
+        last_update 
+        start_time 
+        state_time 
+
     """
     def __init__(self, textstr, x=None, y=None, anchor_x='center', anchor_y='center',
                  font_name=None, font_size=18, color=(255,255,255,255),
@@ -295,6 +387,75 @@ class Text(VisualState):
 class Image(VisualState):
     """
     Visual state to present an image.
+    
+    Parameters
+    ----------
+    
+    imgstr : str
+        The filename of the image that will be displayed.
+    x : int
+        The horizontal location of the image on the screen, in the 
+        units specified by the stimulus or window. Defauts to half the
+        width of the experiment window.
+    y: int
+        The vertical location of the image on the screen, in the units
+        specified by the stimulus or window. Defaults to half the height
+        of the experiment window.
+    anchor_x : str
+        Horizontal anchor alignment, which determines the meaning
+        of the x parameter.
+            "center" (default) : x value indicates position of the
+            center of the layout
+            "left" : x value indicates position of the left edge of 
+            the layout
+            "right" : x value indicates position of the right edge
+            of the layout
+    anchor_y : str
+        Vertical anchor alignment, which determines the meaning 
+        of the y parameter.
+            "center" (default): y value indicates position of the
+            center of the layout
+            "top" : y value indicates position of the top edge of the
+            layout
+            "baseline" : y value indicates position of the first line
+            of text in the layout
+            "bottom" : y value indicates position of the bottom edge
+            of the layout    
+    flip_x : bool
+        If set to 'True,' the displayed image will be flipped 
+        horizontally.
+    flip_y : bool
+        If set to 'True,' the displayed image will be flipped
+        vertically.
+    rotation : int
+        Degrees of clockwise rotation of the displayed image. Only
+        90-degree increments are supported.
+    scale : float
+        Scaling factor. By setting the scale at 2, for example, the
+        image will be drawn at twice its original size. 
+    opacity : int
+        Sets the aplpha component of the image's color properties. If
+        set at a value less than 255, the image will appear translucent.
+    parent : Parent
+        Manually set the ancestry.
+        
+    Log Parameters
+    --------------
+    All of the above parameters for each text state will be recorded
+    in the state.yaml and state.csv files. The following
+    information about the text presentation will be stored as well:
+    
+        duration 
+        end_time  
+        first_call_error
+        first_call_time 
+        last_call_error 
+        last_draw 
+        last_flip 
+        last_update 
+        start_time 
+        state_time
+        
     """
     def __init__(self, imgstr, x=None, y=None, 
                  anchor_x=None, anchor_y=None,
