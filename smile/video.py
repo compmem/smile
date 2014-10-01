@@ -127,7 +127,42 @@ class VisualState(State):
 
 class Unshow(VisualState):
     """
-    Visual state to unshow a shown item.
+    Visual state to unshow a shown item. 
+    
+    Parameters
+    -----------
+    vstate : VisualState
+        The variable associated with the stimulus that you want 
+        to be removed from the screen.     
+    parent : Parent
+        Manually set the ancestry.
+    save_log : bool
+        If set to 'True,' details about the Unshow state will be
+        automatically saved in the log files. 
+        
+    Example
+    -------
+    txt = Text("jubba")
+    Unshow(txt)
+    The text string "jubba" will be shown and then removed from the
+    screen.
+    
+    Log Parameters
+    --------------
+    All of the above parameters for each Unshow state will be 
+    recorded in the state.yaml and state.csv files. The following
+    information about the Unshow state will be stored as well:
+
+        duration
+        end_time  
+        first_call_error
+        first_call_time 
+        last_call_error 
+        last_draw 
+        last_flip 
+        last_update 
+        start_time 
+        state_time       
     """
     def __init__(self, vstate, parent=None, save_log=True):
         # init the parent class
@@ -153,7 +188,42 @@ class Show(Serial):
     """
     Show a visual state for a specified duration before unshowing it.
     
+    Parameters
+    -----------
+    vstate : VisualState
+        The VisualState associated with the stimulus that you want 
+        to appear on the screen for a certain duration. You will 
+        need to specify both the VisualState (i.e. Text, Image, Movie, 
+        etc.) along with the necessary parameters for that state.
+    duration : float
+        Duration in seconds that the stimulus specified by vstate
+        will appear on the screen.
+    parent : Parent
+        Manually set the ancestry.
+    save_log : bool
+        If set to 'True,' details about the Show state will be
+        automatically saved in the log files.
+        
+    Example
+    -------
     Show(Text("jubba"), duration=2.0)
+    The text string "jubba" will be shown on the screen for 2 seconds.
+    
+    Log Parameters
+    --------------
+    All of the above parameters for each Show state will be 
+    recorded in the state.yaml and state.csv files. The following
+    information about the Show state will be stored as well:
+
+        end_time  
+        first_call_error
+        first_call_time 
+        last_call_error 
+        last_draw 
+        last_flip 
+        last_update 
+        start_time 
+        state_time 
     """
     def __init__(self, vstate, duration=1.0, 
                  parent=None, save_log=True):
@@ -182,6 +252,45 @@ class Show(Serial):
 class Update(VisualState):
     """
     Visual state to update a shown item.
+    
+    Parameters
+    ----------
+    vstate : VisualState
+        The variable refering to the visual stimulus who's attributes
+        you want to update while the stimulus is still on the screen.
+    attr : str
+        The particular attribute being updated. Must be a parameter
+        of the VisualState used to present the stimulus.
+    value : [based on attr]
+        Indicates what change should be made to the stimulus's 
+        attribute.
+        
+    Example
+    -------
+    txt = Text('jubba', color=(255,255,255,255))
+    Wait(1.0)
+    Update(txt,'color',(0,0,255,255))
+    Wait(1.0)
+    The text string 'jubba' will appear on the screen in white text
+    for 1.0 second, then the text color will change to blue, and the
+    text string will remain on the screen for an additional 1.0 second.
+    
+    Log Parameters
+    --------------
+    All of the above parameters for each BackColor state will be 
+    recorded in the state.yaml and state.csv files. The following
+    information about the background will be stored as well:
+    
+        duration 
+        end_time  
+        first_call_error
+        first_call_time 
+        last_call_error 
+        last_draw 
+        last_flip 
+        last_update 
+        start_time 
+        state_time  
     """
     def __init__(self, vstate, attr, value,
                  parent=None, save_log=True):
@@ -207,7 +316,44 @@ class Update(VisualState):
 
 
 class BackColor(VisualState):
-    """Set the background color."""
+    """
+    Set the background color.
+    
+    Parameters
+    -----------
+    color : tuple
+        Color of backgound specified by a 4- tuple of RGBA (Red Green
+        Blue Alpha) components ranging from 0 to 255, where the 'Alpha' 
+        component represents degree of transparency. Default is
+        (0,0,0,1.0), which corresponds to opaque black.        
+    parent : Parent
+        Manually set the ancestry.
+    save_log : bool
+        If set to 'True,' details about the presentation of the 
+        background will be automatically saved in the log files.
+        
+    Example
+    --------
+    BackColor(color=(0,1,0,1.0))
+    The background color will be set to green.
+        
+    Log Parameters
+    --------------
+    All of the above parameters for each BackColor state will be 
+    recorded in the state.yaml and state.csv files. The following
+    information about the background will be stored as well:
+    
+        duration 
+        end_time  
+        first_call_error
+        first_call_time 
+        last_call_error 
+        last_draw 
+        last_flip 
+        last_update 
+        start_time 
+        state_time 
+    """
     def __init__(self, color=(0,0,0,1.0), parent=None, 
                  save_log=True):
         super(BackColor, self).__init__(interval=0, parent=parent, 
@@ -298,10 +444,15 @@ class Text(VisualState):
     save_log : bool
         If set to 'True,' details about the presentation of the text
         will be automatically saved in the log files.
+    
+    Example
+    -------
+    Text("Jubba", font_size = 20, bold = True)
+    The text string "Jubba" will appear in bold, size 20 font.
         
     Log Parameters
     --------------
-    All of the above parameters for each text state will be recorded
+    All of the above parameters for each Text state will be recorded
     in the state.yaml and state.csv files. The following
     information about the text presentation will be stored as well:
     
@@ -438,12 +589,21 @@ class Image(VisualState):
         set at a value less than 255, the image will appear translucent.
     parent : Parent
         Manually set the ancestry.
+    save_log : bool
+        If set to 'True,' details about the presentation of the image
+        will be automatically saved in the log files.        
+    
+    Example
+    --------
+    Image('smile-image.png', rotation=180, scale = 3)
+    The image with the filename 'face-smile.png' will be shown on 
+    the screen at 3x its original size and flipped upside down.
         
     Log Parameters
     --------------
-    All of the above parameters for each text state will be recorded
+    All of the above parameters for each Image state will be recorded
     in the state.yaml and state.csv files. The following
-    information about the text presentation will be stored as well:
+    information about the image presentation will be stored as well:
     
         duration 
         end_time  
@@ -531,7 +691,7 @@ class Image(VisualState):
 
 class Movie(VisualState):
     """
-    Visual state to present an movie.
+    Visual state to present a movie.
     
     Parameters
     -----------
@@ -583,14 +743,20 @@ class Movie(VisualState):
     parent : Parent
         Manually set the ancestry.    
     save_log : bool
-        If set to 'True,' details about the presentation of the text
-        will be automatically saved in the log files.    
+        If set to 'True,' details about the presentation of the movie
+        will be automatically saved in the log files.  
+        
+    Example
+    --------  
+    Movie('smile-movie.mp4', framerate = 1/24)
+    The movie with the filename 'smile-movie.mp4' will play with each
+    frame being replaced at a rate of 1/24 seconds. 
         
     Log Parameters
     --------------
-    All of the above parameters for each text state will be recorded
+    All of the above parameters for each Movie state will be recorded
     in the state.yaml and state.csv files. The following
-    information about the text presentation will be stored as well:
+    information about the movie presentation will be stored as well:
     
         duration 
         end_time  
