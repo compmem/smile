@@ -23,6 +23,43 @@ asciiplus += ['_%d'%i for i in range(10)]
 class FreeKey(Serial):
     """
     Perform free recall typed responses.
+    
+    Parameters
+    ----------
+    txt : str
+        The text that will appear on the screen to indicate to the
+        participant that they are to type a response. This text
+        will disappear from the screen when a response is
+        entered. Default is '??????'.
+    max_duration : {0.0, float}
+        The amount of time in seconds that the participant is given
+        to respond.
+    max_resp : {100, int}
+        Maximum number of characters that the participant is allowed
+        to enter.
+    base_time : int
+        Manually set a time reference for the start of the state.
+    duration : {0.0, float}
+        Duration of the state in seconds.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
+    save_log : bool
+        If set to 'True,' details about the state will be
+        automatically saved in the log files.      
+        
+    Example
+    --------
+    FreeKey('Please type a response.', max_duration=15.0)
+    The message 'Please type a response.' will appear on the screen,
+    and participants will be given 15 seconds to enter a response.
+    
+    Log Parameters
+    ---------------
+    Log Parameters
+    --------------
+    All of the above parameters for each FreeKey state will be recorded
+    in the state.yaml and state.csv files. Refer to State class 
+    docstring for addtional logged parameters. 
     """
     def __init__(self, txt=None, max_duration=10.0, max_resp=100, base_time=None, 
                  duration=-1, parent=None, save_log=True):

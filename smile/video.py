@@ -269,7 +269,7 @@ class Update(VisualState):
     attr : str
         The particular attribute being updated. Must be a parameter
         of the VisualState used to present the stimulus.
-    value : [based on attr]
+    value : object
         Indicates what change should be made to the stimulus's 
         attribute.
         
