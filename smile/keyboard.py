@@ -21,8 +21,10 @@ class KeyPress(State):
     
     Parameters
     ----------
-    keys : str
-        List of keys that will be accepted as a response.
+    keys : list of str
+        List of keys that will be accepted as a response. Refer to
+        module pyglet.window.key documentation for compilation of
+        possible key constants. 
     correct_resp : str
         Correct key response for the current trial.
     base_time : int
@@ -60,8 +62,6 @@ class KeyPress(State):
         rt: 
             Amount of time that has passed between stimulus onset
             and the participant's response.      
-    
-    
     """
     def __init__(self, keys=None, correct_resp=None, base_time=None, until=None,
                  duration=-1, parent=None, save_log=True):
