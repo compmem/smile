@@ -40,10 +40,11 @@ class VisualState(State):
 
     Log Parameters
     --------------
-    The following information about each state will be stored in 
-    addition to the existing parameters:
+    All parameters are available to be accessed and manipulated within
+    the experiment code The following information about each state will 
+    be stored in addition to the state-specific parameters:
 
-        duration
+        duration 
         end_time  
         first_call_error
         first_call_time 

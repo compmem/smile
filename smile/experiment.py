@@ -95,7 +95,8 @@ class ExpWindow(Window):
         pass
 
 class Experiment(Serial):
-    """A SMILE experiment.
+    """
+    A SMILE experiment.
 
     This is the top level parent state for all experiments. It handles
     the event loop, manages the window and associated input/output,
@@ -104,7 +105,8 @@ class Experiment(Serial):
     """
     def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
                  pyglet_vsync=True, background_color=(0,0,0,1), screen_ind=0):
-        """Create a SMILE experiment.
+        """
+        Create a SMILE experiment.
 
         Parameters
         ----------
@@ -118,10 +120,12 @@ class Experiment(Serial):
         pyglet_vsync : bool
             Whether to instruct pyglet to sync to the vertical retrace.
         background_color : tuple
-            4 tuple specifying the background color of the experiment window 
-            in (R,G,B,A).
+            4 tuple specifying the background color of the experiment 
+            window in (R,G,B,A).
         screen_id : int
-            What screen/monitor to send the window to in multi-monitor layouts.
+            What screen/monitor to send the window to in multi-monitor 
+            layouts.
+            
         """
         # first process the args
         self._process_args()
