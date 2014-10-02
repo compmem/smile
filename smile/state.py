@@ -19,6 +19,23 @@ from log import dump
 def _schedule_interval_callback(dt, func, interval, *args, **kwargs):
     """
     Schedule a callback with specified interval.
+    
+    Parameters
+    ----------
+    dt: float
+        The number of seconds since the last function call.
+    func:function
+        The function to call when the timer lapses.
+    interval: float
+    	The number of seconds to wait between each call
+    
+    Example
+    -------
+    
+    _schedule_interval_callback(dt, function, 1.0)
+    	The function will be called one second after it
+    	was last called.
+
     """
     # schedule it
     if interval > 0:
@@ -29,12 +46,45 @@ def schedule_delayed_interval(func, delay, interval, *args, **kwargs):
     """
     Schedule a callback with specified interval to begin after the
     specified delay.
+    
+    Parameters
+    ----------
+    func:function
+        The function to call when the timer lapses.
+    delay: float
+    	The number of seconds after the interval before the function
+    	begins.
+    interval: float
+    	The number of seconds to wait between each call
+    
+    Example
+    -------
+    
+    _schedule_delayed_interval(function, 2.0, 1.0)
+    	The function will be called 2.0 seconds after the
+    	1.0 second interval
+
     """
     clock.schedule_once(_schedule_interval_callback, delay, func, interval, *args, **kwargs)
     
 def _schedule_callback(dt, func, *args, **kwargs):
     """
-    Schedule a callback to occur every event loop.
+    Schedule a callback to occur every event loop with no delay or interval
+    
+    Parameters
+    ----------
+    dt: float
+        The number of seconds since the last function call.
+    func:function
+        The function to call when the timer lapses.
+
+    Example
+    -------
+    
+    _schedule_callback(dt, function)
+    	The function will be called immediately after the previous
+    	event loop
+    	
     """
     # schedule it
     clock.schedule(func, *args, **kwargs)
@@ -44,6 +94,22 @@ def schedule_delayed(func, delay, *args, **kwargs):
     """
     Schedule a callback to occur every event loop after the specified
     initial delay.
+    
+    Parameters
+    ----------
+    func:function
+        The function to call when the timer lapses.
+    delay: float
+    	The number of seconds after the interval before the function
+    	begins.
+    	
+    Example
+    -------
+    
+    schedule_delay(function, 3.0)
+    	The function will be called 3.0 seconds after the previois
+    	event loop
+    	
     """
     clock.schedule_once(_schedule_callback, delay, func, *args, **kwargs)
 
@@ -52,7 +118,7 @@ class RunOnEnter():
     """Inherited class to indicate to a state that it should run
     immediately upon entering the state (instead of waiting until the
     state time specified by the parent). This ensures that parent
-    states do not disturb the timing their children.
+    states do not disturb the timing of their children.
     """
     pass
 
@@ -82,6 +148,18 @@ class State(object):
                  save_log=True):
         """
         interval of 0 means once, -1 means every frame.
+        
+   		Parameters
+    	----------
+    	interval : {0, -1, float}
+        	The number of seconds between each call.
+    	parent : {None, ``ParentState``}
+        	Parent state to attach to. Will search for experiment if None.
+    	duration : {0.0, float}
+        	Duration of the state.
+    	save_log : bool
+        	Whether the state logs itself.
+        
         """
         self.state_time = None
         self.start_time = None
@@ -123,17 +201,57 @@ class State(object):
                           'duration']
 
     def get_log(self):
+    	"""
+    	Returns a dictionary containing all important background attributes of the state
+    	
+    	state: State object
+    		Present state
+    		
+    	state_time: float
+    		Time at which state was entered
+    	
+    	start_time: float
+    		Time at which processes contained within the state begin
+    	
+    	end_time: float
+    		Time at which processes contained within the state end
+        
+        first_call_time: float
+        	Time of first function call within the state
+        
+        first_call_error: float
+        	Error time between coded and actual time
+        
+        last_call_time: float
+        	Time of last function call within the state
+        
+        last_call_error: float
+        	Error time between coded and actual time (this will be the 
+        	cumulative error time while for all function calls while
+        	the state was running)
+        
+        duration: float
+        	Total duration of the state
+        	
+    	"""
+        
         keyvals = [(a,val(getattr(self,a))) if hasattr(self,a) 
                    else (a,None) for a in self.log_attrs]
         return dict(keyvals)
 
     def get_log_stream(self):
+    	"""
+    	Gets log stream for the current experiment
+    	"""
         if self.exp is None:
             return None
         else:
             return self.exp.state_log_stream
         
     def __getitem__(self, index):
+    	"""
+    	Returns a reference object
+    	"""
         if hasattr(self, index):
             return Ref(self, index)
         else:
@@ -149,7 +267,10 @@ class State(object):
         pass
         
     def callback(self, dt):
-        # log when we've entered the callback the first time
+    	"""
+    	Logs the first time the callback is entered
+    	"""
+
         self.last_call_time = now()
         self.last_call_error = self.last_call_time - self.state_time
         if self.first_call_time is None:
@@ -168,6 +289,9 @@ class State(object):
             self.leave()
 
     def get_parent_state_time(self):
+    	"""
+    	Returns state time for the parent. If no parent, logs current time. 
+    	"""
         if self.parent:
             return self.parent.get_state_time()
         else:
@@ -181,7 +305,10 @@ class State(object):
         pass
 
     def enter(self):
-        # get the starting time from the parent
+        """
+        Gets the starting time from the parent state
+        """
+        
         self.state_time = self.get_parent_state_time()
         self.start_time = self.state_time
 
@@ -219,7 +346,10 @@ class State(object):
         pass
 
     def leave(self):
-        # get the end time
+        """
+        Gets the end time of the state (logs current time)
+        """
+        
         self.end_time = now()
         
         # update the parent state time to actual elapsed time if necessary
@@ -252,11 +382,26 @@ class State(object):
     
 
 class ParentState(State, RunOnEnter):
-    """Base state for parents that can hold children states. 
+    """
+    Base state for parents that can hold children states. 
 
     Only parent states can contain other states.
 
     Implicit hierarchies can be generated using the `with` syntax.
+    
+    Parameters
+    ----------
+    children: object
+    	Children States (objects) contained within the Parent State
+    parent: object
+    	Parent state object
+    duration: float
+    	Duration of the parent state. An interval of 0 means enter the state once, 
+    	-1 means every frame.
+    	Defaults to -1
+    save_log: bool
+        If set to 'True,' details about the parent state will be automatically saved 
+        in the log files.
 
     """
     def __init__(self, children=None, parent=None, duration=-1, save_log=True):
@@ -306,11 +451,19 @@ class ParentState(State, RunOnEnter):
 
 
 class Parallel(ParentState):
-    """Parent state that runs its children in parallel.
+    """
+    Parent state that runs its children in parallel.
 
     A Parallel Parent State is done when all its children have
     finished.
-
+    
+    Parameters
+    -----------
+	ParentState: object
+        Parent state to attach to. Will search for experiment if None.
+    children: object
+    	Child states contained within the parent state
+    	
     """        
     def _callback(self, dt):
         if self.check:
@@ -345,6 +498,14 @@ class Serial(ParentState):
 
     A Serial Parent State is done when the last state in the chain is
     finished.
+    
+    Parameters
+    -----------
+	ParentState: object
+        Parent state to attach to. Will search for experiment if None.
+    children: object
+    	Child states contained within the parent state
+    	
     """
     def _callback(self, dt):
         if self.check:
@@ -376,13 +537,36 @@ class Serial(ParentState):
     
 class If(ParentState):
     """
-    Parent state to implement conditional branching.
-
+    Parent state to implement conditional branching. If state is used in lieu
+    of a traditional Python if statement.
+    
+    Creates true and false states based on a specified conditional
+    
+    Parameters
+    ----------
+    conditional: bool
+    	Boolean statement that determines a true and false state
+    true_state: object
+    	State to enter if conditional evaluates to True
+    false_state: object
+    	State to enter if conditional evaluates to False
+    parent: object
+    	The parent state containing the If object
+    save_log: bool
+    	If set to 'True,' details about the If state will be automatically saved 
+    	in the log files.
+    
+    Examples
+    --------
+    1.
     key = KeyResponse(['Y','N'])
     If((key['rt']>2.0)&(key['resp'] != None), stateA, stateB)
+    
+    State A is entered if conditional evaluates to True
+    State B is entered if conditional evaluates to False
 
-    True and false states are created if they are not
-    passed in.  That way we can do
+	2. True and false states are automatically created if they are not
+    passed in.  This allows use of If state as follows:
 
     with If((key['rt']>2.0)&(key['resp'] != None)) as if_state:
         with if_state.true_state:
@@ -391,6 +575,11 @@ class If(ParentState):
         with if_state.false_state:
             # fill the false state
             pass
+    
+    Log Parameters
+    --------------
+	outcome: outcome of the conditional evaluation. Appended to state.yaml
+		and state.csv
 
     """
     def __init__(self, conditional, true_state=None, false_state=None, 
@@ -455,11 +644,32 @@ class If(ParentState):
 class Loop(Serial):
     """
     State that can loop over an iterable or run repeatedly while
-    a conditional evaluates to True.
+    a conditional evaluates to True. Loop is used in similar fashion
+    to for and while statements in Python.
     
+    Parameters
+    ----------
+    iterable: object
+    	Process to iterate through while a conditional evaluates to True
+    conditional: bool
+    	Boolean object that determines whether the Loop state will execute
+    parent: object
+    	The parent state
+    save_log: bool
+    	If set to 'True,' details about the If state will be automatically saved 
+    	in the log files.
+    
+    Example
+    -------
     with Loop(block) as trial:
         Show(Image(trial.current['image']), 2.0)
         Wait(.5)
+    
+    The Loop will evaluate the conditional. If true, show an image from trial.current 
+    for 2.0 seconds, unshow it, and wait for 0.5 seconds. The Loop will continue 
+    to evaluate the conditional until it returns as false, at which point the loop
+    terminates
+    
     """
     def __init__(self, iterable=None, conditional=True, 
                  parent=None, save_log=True):
@@ -549,6 +759,30 @@ class Wait(State):
     State that will wait a specified time in seconds.  It is possible
     to keep the state active or simply move the parent's state time
     ahead.
+    
+    Parameters
+    ----------
+    duration: float
+    	Time in seconds to remain in the wait state
+    jitter: float
+    	Creates the upper bound of a uniform distribution from which a jitter
+    	is randomly drawn each time Wait is executed. The uniform distribution
+    	takes the lower and upper bounds of (duration, duration + jitter)
+    stay_active: bool
+    	Determines whether the Wait state remains active, based on current time
+    	compared with the duration parameter
+    parent: object
+    	The parent state    
+    save_log: bool
+    	If set to 'True,' details about the Wait state will be automatically saved 
+    	in the log files.	
+    
+    Example
+    -------
+    Wait(2.0, 1.0)
+    	The state will wait for a duration drawn from a uniform distribution with ragnge
+    	(2.0, 3.0)
+    
     """
     def __init__(self, duration=0.0, jitter=0.0, stay_active=False, 
                  parent=None, save_log=True):
@@ -579,7 +813,23 @@ class ResetClock(State, RunOnEnter):
     """
     State that will reset the clock of its parent to a specific time
     (or now if not specified).
+    
+    Parameters
+    ----------
+    	new_time: float
+    		New time to reset the clock of the parent state
+    	parent: object
+    		The parent state
+    	save_log: bool
+    		If set to 'True,' details about the ResetClock state will be automatically saved 
+    		in the log files.
+    Examples
+    --------
+    ResetClock(0.0)
+    
+    	Will reset the time of the parent state to 0
     """
+    
     def __init__(self, new_time=None, parent=None, save_log=True):
         # init the parent class
         super(ResetClock, self).__init__(interval=0, parent=parent, 
@@ -600,6 +850,27 @@ class Func(State):
     """
     State that will call a Python function, passing this state as the
     first argument.
+    
+    Parameters
+    ----------
+    	func: function
+    		A python function to be applied to the State
+    	interval: float
+    		The number of seconds to wait between each call of the python function
+    	duration: float
+    		Duration of the parent state. An interval of 0 means enter the state once, 
+    		-1 means every frame. Defaults to 0
+    	parent: object
+    		The parent state
+    	save_log: bool
+    		If set to 'True,' details about the ResetClock state will be automatically saved 
+    		in the log files.
+    
+    Example
+    -------
+    Func(str(), StateA)
+    	Calls python function str(), converting the output of StateA into a string
+    	
     """
     def __init__(self, func, args=None, kwargs=None, 
                  interval=0, parent=None, duration=0.0, 
@@ -628,6 +899,19 @@ class Func(State):
 class Debug(State):
     """
     State that will evaluate the specified kwargs and print them to standard out for debugging purposes.
+    
+    Parameters
+    ----------
+    parent: object
+    	The parent state
+    save_log: bool
+    	If set to 'True,' details about the Debug state will be automatically saved 
+    	in the log files.
+    
+    Example
+    -------
+    Debug(StateA)
+    	This will return a readout of the values taken on by all **kwargs in StateA
     """
     def __init__(self, parent=None, save_log=False, **kwargs):
         # init the parent class
