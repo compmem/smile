@@ -16,6 +16,53 @@ from ref import Ref, val
 from experiment import Experiment, now
 
 class KeyPress(State):
+    """
+    Accept keyboard responses.
+    
+    Parameters
+    ----------
+    keys : str
+        List of keys that will be accepted as a response.
+    correct_resp : str
+        Correct key response for the current trial.
+    base_time : int
+        Manually set a time reference for the start of the state. This
+        will be used to calculate reaction times.
+    until : int
+        Time provided to make a response.
+    duration : {0.0, float}
+        Duration of the state in seconds.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
+    save_log : bool
+        If set to 'True,' details about the state will be
+        automatically saved in the log files.
+        
+    Example
+    -------
+    KeyPress(keys=['J','K'])
+    Accept a key press as a response, but limit responses to either
+    'J' or 'K'.
+    
+    Log Parameters
+    ---------------
+    All of the above parameters for each KeyPress state will be 
+    recorded in the state.yaml and state.csv files, along with the
+    parameters specified in State documentation. Additional logged 
+    KeyPress variables are:       
+        press :
+            Which key was pressed.
+        press_time:
+            Time at which key was pressed.
+        correct:
+            Boolean indicator of whether the response was correct
+            or incorrect.
+        rt: 
+            Amount of time that has passed between stimulus onset
+            and the participant's response.      
+    
+    
+    """
     def __init__(self, keys=None, correct_resp=None, base_time=None, until=None,
                  duration=-1, parent=None, save_log=True):
         # init the parent class

@@ -38,7 +38,8 @@ class FreeKey(Serial):
         Maximum number of characters that the participant is allowed
         to enter.
     base_time : int
-        Manually set a time reference for the start of the state.
+        Manually set a time reference for the start of the state. This
+        will be used to calculate reaction times.
     duration : {0.0, float}
         Duration of the state in seconds.
     parent : {None, ``ParentState``}
@@ -55,11 +56,30 @@ class FreeKey(Serial):
     
     Log Parameters
     ---------------
-    Log Parameters
-    --------------
     All of the above parameters for each FreeKey state will be recorded
-    in the state.yaml and state.csv files. Refer to State class 
-    docstring for addtional logged parameters. 
+    in the state.yaml and state.csv files, along with the parameters 
+    specified in State documentation. Additional logged FreeKey 
+    variables are:
+        fk_start_text : 
+            See 'txt parameter.
+        fk_first_time : 
+            Time of participant's initial key press.
+        fk_end_time : 
+            Total time participant was given to respond.
+        fk_cur_text : 
+            What the participant has typed at the time of the last flip.
+        fk_num_resp :
+            How many characters the participant has typed at the time
+            of the last flip.
+        fk_responses
+            Complete response.
+        keys
+            Possible response keys.
+        pressed
+            Record of each key pressed within the alotted time.
+        rt
+            Amount of time that has passed for each key pressed,
+            using the start of the state as a reference.      
     """
     def __init__(self, txt=None, max_duration=10.0, max_resp=100, base_time=None, 
                  duration=-1, parent=None, save_log=True):
