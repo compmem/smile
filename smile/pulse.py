@@ -48,9 +48,14 @@ class Pulse(State):
     
     Log Parameters
     ---------------
-    All of the above parameters for each Pulse state will be 
-    recorded in the state.yaml and state.csv files, along with the
-    parameters specified in State documentation.
+    All parameters above and below are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters. 
+        pulse_time :
+            Time at which the pulse began.
+        pulse_end_time :
+            Time at which the pulse ended.
     """
     def __init__(self, code=15, duration=0.010, port=0,
                  parent=None, save_log=True):

@@ -47,10 +47,10 @@ class MousePress(State):
     
  Log Parameters
     ---------------
-    All of the above parameters for each MousePress state will be 
-    recorded in the state.yaml and state.csv files, along with the
-    parameters specified in State documentation. Additional logged 
-    MousePress variables are:       
+    All parameters above and below are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters.      
         press :
             Which button on the mouse was pressed.
         press_time:
@@ -60,7 +60,7 @@ class MousePress(State):
             or incorrect.
         rt: 
             Amount of time that has passed between stimulus onset
-            and the participant's response.    
+            and the participant's response. Dependent upon base_time.  
     
     """
     def __init__(self, buttons=None, correct_resp=None, base_time=None, until=None,

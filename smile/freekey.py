@@ -56,10 +56,10 @@ class FreeKey(Serial):
     
     Log Parameters
     ---------------
-    All of the above parameters for each FreeKey state will be recorded
-    in the state.yaml and state.csv files, along with the parameters 
-    specified in State documentation. Additional logged FreeKey 
-    variables are:
+    All parameters above and below are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters. 
         fk_start_text : 
             See 'txt parameter.
         fk_first_time : 
@@ -79,7 +79,7 @@ class FreeKey(Serial):
             Record of each key pressed within the alotted time.
         rt
             Amount of time that has passed for each key pressed,
-            using the start of the state as a reference.      
+            using base_time as a reference.      
     """
     def __init__(self, txt=None, max_duration=10.0, max_resp=100, base_time=None, 
                  duration=-1, parent=None, save_log=True):

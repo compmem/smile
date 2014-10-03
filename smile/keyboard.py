@@ -48,11 +48,11 @@ class KeyPress(State):
     
     Log Parameters
     ---------------
-    All of the above parameters for each KeyPress state will be 
-    recorded in the state.yaml and state.csv files, along with the
-    parameters specified in State documentation. Additional logged 
-    KeyPress variables are:       
-        press :
+    All parameters above and below are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters.        
+        pressed :
             Which key was pressed.
         press_time:
             Time at which key was pressed.
@@ -61,7 +61,7 @@ class KeyPress(State):
             or incorrect.
         rt: 
             Amount of time that has passed between stimulus onset
-            and the participant's response.      
+            and the participant's response. Dependent on base_time.   
     """
     def __init__(self, keys=None, correct_resp=None, base_time=None, until=None,
                  duration=-1, parent=None, save_log=True):
