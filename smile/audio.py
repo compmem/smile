@@ -77,6 +77,31 @@ def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
 class Beep(State):
     """
     State that can play a beep.
+    
+    Parameters
+    ----------
+    duration : {1.0, float}
+        Duration of the state.
+    freq: {400, int}
+    	Frequency of the beep in Hz 
+    fadein: {.05, float}
+    	Fade-in time of the beep
+    fadeout: {.05, float}
+    	Fade-out time of the beep
+    volume: {.5, float}
+    	Volume of the beep
+    parent: object
+    	The parent state
+        save_log: bool
+    If set to 'True,' details about the Beep state will be automatically saved 
+        in the log files.
+    
+    Example
+    -------
+    Beep(duration = 2.0, freq = 500, fadein = 0.1, fadeout = 0.2, volume = .5)
+    The state will play a beep at 500 Hz at 50% volume with 0.1 seconds fade-in, 
+    2.0 second duration, and 0.2 second fade-out
+    
     """
     def __init__(self, duration=1.0, freq=400, 
                  fadein=.05, fadeout=.05, volume=.5,
@@ -118,7 +143,33 @@ class Beep(State):
 
 class SoundFile(State):
     """
-    State that can play a beep.
+    State that can play audio files
+    
+    Parameters
+    ----------
+    sound_file: file object
+    	The filepath to the sound file to be played 
+    start:  {0.0, float}
+    	The start time for the audio file to be played
+    stop: {None, float}
+    	The stop time for the audio file; defaults to playing the entire file
+    volume: {.5, float}
+    	The volume at which to play the audio file
+    loop: {False, bool}
+    	Loops the audio file after it finishes
+    duration: {0, float}
+    	Length of time to play the audio file 
+    parent: object
+    The parent state
+        save_log: bool
+    If set to 'True,' details about the Beep state will be automatically saved 
+        in the log files.
+    
+    Examples
+    --------
+    SoundFile(sound_file = 'some/file/path')
+    	A sound file at the designated file path will be played at 50% volume.
+    
     """
     def __init__(self, sound_file, start=0, stop=None, volume=.5, loop=False,
                  duration=0, parent=None, save_log=True):
