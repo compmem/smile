@@ -26,6 +26,36 @@ from experiment import now,event_time
 class Pulse(State):
     """
     State that will send a sync pulse out the parallel port.
+    
+    Parameters
+    ----------
+    code : int
+    duration : {0.0, float}
+        Time in seconds that the pulse is on. Default is 0.010 s.
+    port : {0, 255, int}
+        Value specifying the trigger byte.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
+    save_log : bool
+        If set to 'True,' details about the state will be
+        automatically saved in the log files. 
+        
+    Example
+    --------
+    Pulse(code=1)
+    A sync pulse will be sent and will register 'S1' as the code
+    on both the presentation machine and the EEG apparatus.
+    
+    Log Parameters
+    ---------------
+    All parameters above and below are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters. 
+        pulse_time :
+            Time at which the pulse began.
+        pulse_end_time :
+            Time at which the pulse ended.
     """
     def __init__(self, code=15, duration=0.010, port=0,
                  parent=None, save_log=True):
