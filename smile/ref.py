@@ -10,6 +10,41 @@
 import inspect
 
 class Ref(object):
+    """
+    Reference to an object to delay evaluation.
+
+    Most logical, mathematical, and indexing operations are implemented 
+    for Ref objects allowing for delayed operations. It is 
+    also possible to wrap functions for subsequent evaluation.
+
+    Parameters
+    ----------
+    obj : object
+        Object to be referenced.
+    attr : string
+        Attribute of the object to be referenced.
+    gfunc : function
+        Function to be called at evaluation.
+    gfunc_args : list
+        List of arguments evaluated and passed to the gfunc.
+    gfunc_kwargs : dict
+        Dictionary of keyword arguments evaluated and passed to gfunc.
+
+    Example
+    -------
+    d = {'x':10, 'y':20}
+    x = Ref(d,'x')
+    y = Ref(d,'y')
+    print val(x+y) # should be 30
+    z = x + y
+    print val(z) # should be 30
+    d['x'] += 10
+    print val(z) # should be 40
+    str_sum = Ref(str)(x+y)
+    ss = val(str_sum) # should be '40'
+    print type(ss),ss
+    
+    """
     def __init__(self, obj=None, attr=None, 
                  gfunc=None, gfunc_args=None, gfunc_kwargs=None):
         self.gfunc = gfunc
@@ -139,6 +174,8 @@ class Ref(object):
         return Ref(gfunc=lambda : val(o)/val(self))
     def __rfloordiv__(self, o):
         return Ref(gfunc=lambda : val(o)//val(self))
+    def __mod__(self, o):
+        return Ref(gfunc=lambda : val(self)%val(o))
     def __pos__(self):
         return self
     def __neg__(self):
@@ -149,6 +186,23 @@ class Ref(object):
         return Ref(gfunc=lambda : key in val(self))
         
 def val(x, recurse=True):
+    """
+    Evaluate a Ref object.
+
+    Call this when you need to evaluate a reference to get the current value.
+
+    This method will (optionally) recursively evaluate lists and dictionaries 
+    to ensure all Refs are evaluated. It is safe to call this on non-Ref objects,
+    and it will simply return what is passed in.
+    
+    Parameters
+    ----------
+    x : {Ref object, list, dict}
+        Ref object to evaluate.
+    recurse : Boolean
+        Whether to recurse lists and dicts.
+    
+    """
     # possibly put this in a for loop if we run into infinite recursion issues
     while isinstance(x,Ref): #or inspect.isfunction(x) or inspect.isbuiltin(x):
         x = x.eval()
