@@ -335,7 +335,7 @@ class BackColor(VisualState):
     -----------
     color : tuple
         Color of backgound specified by a 4- tuple of RGBA (Red Green
-        Blue Alpha) components ranging from 0 to 255, where the 'Alpha' 
+        Blue Alpha) components ranging from 0 to 1.0, where the 'Alpha' 
         component represents degree of transparency. Default is
         (0,0,0,1.0), which corresponds to opaque black.        
     parent : {None, ``ParentState``}
@@ -377,6 +377,128 @@ class BackColor(VisualState):
 
     def _update_callback(self, dt):
         self.exp.window.set_clear_color(val(self.color))
+
+class Rectangle(VisualState):
+    """
+    Draw a colored rectangle.
+    
+    Parameters
+    -----------
+    x : int
+        The horizontal location of the image on the screen, in the 
+        units specified by the stimulus or window. Defauts to half the
+        width of the experiment window.
+    y: int
+        The vertical location of the image on the screen, in the units
+        specified by the stimulus or window. Defaults to half the height
+        of the experiment window.
+    width : int
+        Width of the rectangle in pixels.
+    height : int
+        Height of the rectangle in pixels.
+    anchor_x : str
+        Horizontal anchor alignment, which determines the meaning
+        of the x parameter.
+            "center" (default) : x value indicates position of the
+            center of the layout
+            "left" : x value indicates position of the left edge of 
+            the layout
+            "right" : x value indicates position of the right edge
+            of the layout
+    anchor_y : str
+        Vertical anchor alignment, which determines the meaning 
+        of the y parameter.
+            "center" (default): y value indicates position of the
+            center of the layout
+            "top" : y value indicates position of the top edge of the
+            layout
+            "bottom" : y value indicates position of the bottom edge
+            of the layout    
+    color : tuple
+        Color of rectangle specified by a 4- tuple of RGBA (Red Green
+        Blue Alpha) components ranging from 0 to 255, where the 'Alpha' 
+        component represents degree of transparency. Default is
+        (255,255,255,255), which corresponds to opaque white.
+    group : Group
+        Optional graphics settings.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
+    save_log : bool
+        If set to 'True,' details about the presentation of the 
+        background will be automatically saved in the log files.
+        
+    Example
+    --------
+    Rectangle(color=(0,255,0,255))
+    The green rectangle will be drawn in the center of the screen.
+        
+    Log Parameters
+    --------------
+    All of the above parameters for each Rectangle state will be 
+    recorded in the state.yaml and state.csv files. The following
+    information about the background will be stored as well:
+    
+        duration 
+        end_time  
+        first_call_error
+        first_call_time 
+        last_call_error 
+        last_draw 
+        last_flip 
+        last_update 
+        start_time 
+        state_time 
+    """
+    def __init__(self, x=None, y=None, 
+                 width=100, height=100,
+                 anchor_x='center', anchor_y='center', 
+                 color=(0,0,0,255), 
+                 group=None, parent=None, 
+                 save_log=True):
+        super(Rectangle, self).__init__(interval=0, parent=parent, 
+                                        duration=0,
+                                        save_log=save_log)
+
+        # set loc to center if none supplied
+        if x is None:
+            x = Ref(self['exp']['window'],'width')//2
+        self.x = x
+        if y is None:
+            y = Ref(self['exp']['window'],'height')//2
+        self.y = y
+        self.anchor_x = anchor_x
+        self.anchor_y = anchor_y
+        self.width = width
+        self.height = height
+        self.color = color
+        self.group = group
+        self.log_attrs.extend(['x','y','anchor_x','anchor_y','width','height','color'])
+
+    def _update_callback(self, dt):
+        # calc corners from x,y and width,height
+        width = val(self.width)
+        height = val(self.height)
+        x1 = val(self.x)
+        y1 = val(self.y)
+        anchor_x = val(self.anchor_x)
+        anchor_y = val(self.anchor_y)
+        if anchor_x == 'center':
+            x1 -= width//2
+        elif anchor_x == 'right':
+            x1 -= width
+        if anchor_y == 'center':
+            y1 -= height//2
+        elif anchor_y == 'top':
+            y1 -= height
+        x2 = x1+width
+        y2 = y1+height
+        color = list(val(self.color))
+        self.shown = self.exp.window.batch.add(4, pyglet.gl.GL_QUADS, 
+                                               val(self.group),
+                                               ('v2i', [x1, y1, x2, y1, x2, y2, x1, y2]),
+                                               ('c4B', color * 4))
+
+        return self.shown
 
 
 class Text(VisualState):
@@ -580,8 +702,6 @@ class Image(VisualState):
             center of the layout
             "top" : y value indicates position of the top edge of the
             layout
-            "baseline" : y value indicates position of the first line
-            of text in the layout
             "bottom" : y value indicates position of the bottom edge
             of the layout    
     flip_x : bool
@@ -937,6 +1057,13 @@ if __name__ == '__main__':
 
     # Wait(1.0)
 
+    Show(Rectangle(color=(0,255,0,255)), 1.0)
+    Show(Rectangle(width=200,color=(0,255,0,255)), 1.0)
+    Show(Rectangle(height=200,color=(0,255,0,255)), 1.0)
+    Show(Rectangle(height=200,anchor_x='left',color=(0,0,255,255)), 1.0)
+    Show(Rectangle(height=200,anchor_x='right',color=(0,0,255,255)), 1.0)
+    Show(Rectangle(height=200,anchor_y='top',color=(0,0,255,255)), 1.0)
+    Show(Rectangle(height=200,anchor_y='bottom',color=(0,0,255,255)), 1.0)
 
     def print_dt(state, *txt):
         for t in txt:
