@@ -31,12 +31,51 @@ class VisualState(State):
     interval : {0, -1, float}
         The number of seconds between each call.
     duration : {0.0, float}
-        Duration of the state in seconds.
+        Duration of the state in seconds. 
     parent : {None, ``ParentState``}
         Parent state to attach to. Will search for experiment if None.
     save_log : bool
         If set to 'True,' details about the state will be
         automatically saved in the log files.        
+
+    Log Parameters
+    --------------
+    All parameters above and below are available to be accessed and 
+    manipulated within the experiment code. The following information 
+    about each state will be stored in addition to the state-specific 
+    parameters:
+
+        duration : 
+            Duration of the state in seconds. If the duration is not set
+            as a parameter of the specific state, it will default to -1 
+            (which means it will be calculated on exit) or 0 (which means
+            the state completes immediately and does not increment the
+            experiment clock).
+        end_time :
+            Unix timestamp for when the state ended.
+        first_call_error
+            Amount of time in seconds between when the state was supposed
+            to start and when it actually started.
+        first_call_time :
+            Unix timestamp for when the state was called.
+        last_call_error :
+            Same as first_call_error, but refers to the most recent time 
+            time the state was called.
+        last_draw :
+            Unix timestamp for when the last draw of a visual stimulus
+            occurred.
+        last_flip :
+            Unix timestamp for when the last flip occurred (i.e., when 
+            the stimulus actually appeared on the screen).
+        last_update :
+            Unix timestamp for the last time the context to be drawn 
+            occurred. (NOTE: Displaying a stimulus entails updating it,
+            drqwing it to the back buffer, then flipping the front and
+            back video buffers to display the stimulus.
+        start_time :
+            Unix timestamp for when the state is supposed to begin.
+        state_time :
+            Same as start_time.
     """
     def __init__(self, interval=0, duration=0.0, parent=None, 
                  save_log=True):
@@ -155,26 +194,17 @@ class Unshow(VisualState):
     Example
     -------
     txt = Text("jubba")
+    Wait(1.0)
     Unshow(txt)
-    The text string "jubba" will be shown and then removed from the
-    screen.
+    The text string "jubba" will be shown for one second and then
+    removed from the screen.
     
     Log Parameters
     --------------
-    All of the above parameters for each Unshow state will be 
-    recorded in the state.yaml and state.csv files. The following
-    information about the Unshow state will be stored as well:
-
-        duration
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time       
+    All parameters above are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters.       
     """
     def __init__(self, vstate, parent=None, save_log=True):
         # init the parent class
@@ -207,9 +237,8 @@ class Show(Serial):
         to appear on the screen for a certain duration. You will 
         need to specify both the VisualState (i.e. Text, Image, Movie, 
         etc.) along with the necessary parameters for that state.
-    duration : float
-        Duration in seconds that the stimulus specified by vstate
-        will appear on the screen.
+    duration : {0.0, float}
+        Duration of the state in seconds.
     parent : {None, ``ParentState``}
         Parent state to attach to. Will search for experiment if None.
     save_log : bool
@@ -223,19 +252,14 @@ class Show(Serial):
     
     Log Parameters
     --------------
-    All of the above parameters for each Show state will be 
-    recorded in the state.yaml and state.csv files. The following
-    information about the Show state will be stored as well:
-
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time 
+    All parameters above and below are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters.
+        show_time :
+            Time at which the stimulus appeared.
+        unshow_time :
+            Time at which the stimulus was removed from the screen. 
     """
     def __init__(self, vstate, duration=1.0, 
                  parent=None, save_log=True):
@@ -273,36 +297,32 @@ class Update(VisualState):
     attr : str
         The particular attribute being updated. Must be a parameter
         of the VisualState used to present the stimulus.
-    value : [based on attr]
+    value : object
         Indicates what change should be made to the stimulus's 
         attribute.
-        
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
+    save_log : bool
+        If set to 'True,' details about the Update state will be
+        automatically saved in the log files. 
+                
     Example
     -------
     txt = Text('jubba', color=(255,255,255,255))
     Wait(1.0)
     Update(txt,'color',(0,0,255,255))
     Wait(1.0)
+    Unshow(txt)
     The text string 'jubba' will appear on the screen in white text
     for 1.0 second, then the text color will change to blue, and the
     text string will remain on the screen for an additional 1.0 second.
     
     Log Parameters
     --------------
-    All of the above parameters for each BackColor state will be 
-    recorded in the state.yaml and state.csv files. The following
-    information about the background will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time  
+    All parameters above are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters. 
     """
     def __init__(self, vstate, attr, value,
                  parent=None, save_log=True):
@@ -351,20 +371,10 @@ class BackColor(VisualState):
         
     Log Parameters
     --------------
-    All of the above parameters for each BackColor state will be 
-    recorded in the state.yaml and state.csv files. The following
-    information about the background will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time 
+    All parameters above are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters.
     """
     def __init__(self, color=(0,0,0,1.0), parent=None, 
                  save_log=True):
@@ -586,21 +596,10 @@ class Text(VisualState):
         
     Log Parameters
     --------------
-    All of the above parameters for each Text state will be recorded
-    in the state.yaml and state.csv files. The following
-    information about the text presentation will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time 
-
+    All parameters above are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters. 
     """
     def __init__(self, textstr, x=None, y=None, anchor_x='center', anchor_y='center',
                  font_name=None, font_size=18, color=(255,255,255,255),
@@ -733,20 +732,10 @@ class Image(VisualState):
         
     Log Parameters
     --------------
-    All of the above parameters for each Image state will be recorded
-    in the state.yaml and state.csv files. The following
-    information about the image presentation will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time
+    All parameters above are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters. 
         
     """
     def __init__(self, imgstr, x=None, y=None, 
@@ -884,23 +873,13 @@ class Movie(VisualState):
     Movie('smile-movie.mp4', framerate = 1/24)
     The movie with the filename 'smile-movie.mp4' will play with each
     frame being replaced at a rate of 1/24 seconds. 
-        
+    
     Log Parameters
     --------------
-    All of the above parameters for each Movie state will be recorded
-    in the state.yaml and state.csv files. The following
-    information about the movie presentation will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time 
+    All parameters above are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters. 
     """
     def __init__(self, movstr, x=None, y=None,
                  anchor_x=None, anchor_y=None,

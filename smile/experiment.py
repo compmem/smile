@@ -95,34 +95,50 @@ class ExpWindow(Window):
         pass
 
 class Experiment(Serial):
-    """A SMILE experiment.
+    """
+    A SMILE experiment.
 
     This is the top level parent state for all experiments. It handles
     the event loop, manages the window and associated input/output,
     and processes the command line arguments.
 
+    Parameters
+    ----------
+    fullscreen : bool
+        Create the window in full screen.
+    resolution : tuple
+        Resolution of the window specified as (width, height) when not 
+        full screen.
+    name : str
+        Name on the window title bar.
+    pyglet_vsync : bool
+        Whether to instruct pyglet to sync to the vertical retrace.
+    background_color : tuple
+        4 tuple specifying the background color of the experiment 
+        window in (R,G,B,A).
+    screen_id : int
+        What screen/monitor to send the window to in multi-monitor 
+        layouts.
+    
+    Example
+    -------
+    exp = Experiment(resolution=(1920x1080), background_color=(0,1,0,1.0))
+    ...
+    run(exp)
+    Define an experiment window with a green background and a size of
+    1920x1080 pixels. This experiment window will not open until the 
+    run() command is executed. 
+            
+    Log Parameters
+    --------------
+    All parameters above and below are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters.              
     """
     def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
                  pyglet_vsync=True, background_color=(0,0,0,1), screen_ind=0):
-        """Create a SMILE experiment.
 
-        Parameters
-        ----------
-        fullscreen : bool
-            Create the window in full screen.
-        resolution : tuple
-            Resolution of the window specified as (width, height) 
-            when not full screen.
-        name : str
-            Name on the window title bar.
-        pyglet_vsync : bool
-            Whether to instruct pyglet to sync to the vertical retrace.
-        background_color : tuple
-            4 tuple specifying the background color of the experiment window 
-            in (R,G,B,A).
-        screen_id : int
-            What screen/monitor to send the window to in multi-monitor layouts.
-        """
         # first process the args
         self._process_args()
         
@@ -372,21 +388,39 @@ class Experiment(Serial):
 
 
 class Set(State, RunOnEnter):
-    """State to set a experiment variable.
+    """
+    State to set a experiment variable.
 
     See Get state for how to access experiment variables.
+    
+    Parameters
+    ----------
+    variable : str
+        Name of variable to save.
+    value : object
+        Value to set the variable. Can be a Reference evaluated at 
+        runtime.
+    eval_var : bool
+        If set to 'True,' the variable will be evaluated at runtime.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
+    save_log : bool
+        If set to 'True,' details about the state will be
+        automatically saved in the log files. 
+    
+    Example
+    -------
+    See Get state for example.
+    
+    Log Parameters
+    --------------
+    All parameters above are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters. 
     """
     def __init__(self, variable, value, eval_var=True, parent=None, save_log=True):
-        """Set an experiment variable
 
-        Parameters
-        ----------
-        variable : str
-            Name of variable to save.
-        value : object
-            Value to set the variable. Can be a Reference evaluated at 
-            runtime.
-        """
         # init the parent class
         super(Set, self).__init__(interval=0, parent=parent, 
                                   duration=0,
@@ -425,27 +459,112 @@ def Get(variable):
     variable : str
         Name of variable to retrieve. Can be a Reference evaluated 
         at runtime.
+        
+    Example
+    -------
+    with Parallel():
+        txt = Text('Press a key as quickly as you can!')
+        key = KeyPress(base_time=txt['last_flip']['time'])
+    Unshow(txt)
+    Set('good',key['rt']<0.5)
+    with If(Get('good')) as if_state:
+        with if_state.true_state:
+            Show(Text('Good job!'), duration=1.0)
+        with if_state.false_state:
+            Show(Text('Better luck next time.'), duration=1.0)
+            
+    Text will be shown on the screen, instructing the participant to press 
+    a key as quickly as they can. The participant will press a key while 
+    the text is on the screen, then the text will be removed. The 'Set' 
+    state will be used to define a variable for assessing the participant's 
+    reaction time for the key press that just occurred, and the 'Get' state 
+    accesses that new variable. If the participant's reaction time was 
+    faster than 0.5 seconds, the text 'Good job!' will appear on the 
+    screen. If the participant's reaction time was slower than 0.5 seconds, 
+    the text 'Better luck next time.' will appear on the screen.
+    
+    Log Parameters
+    --------------
+    All parameters above are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters. 
     """
     gfunc = lambda : Experiment.last_instance()._vars[val(variable)]
     return Ref(gfunc=gfunc)
 
 
 class Log(State, RunOnEnter):
-    """State to write values to a custom experiment log.
+    """
+    State to write values to a custom experiment log.
+    Write data to a YAML log file.
+
+    Parameters
+    ----------
+    log_dict : dict
+        Key-value pairs to log. Handy for logging trial information.
+    log_file : str, optional
+        Where to log, defaults to exp.yaml in the subject directory.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
+    **log_items : kwargs
+        Key-value pairs to log.
+        
+    Example
+    --------
+    numbers_list = [1,2,3]
+    with Loop(numbers_list) as trial:
+        num = Text(trial.current)
+        key = KeyPress()
+        Unshow(num)
+        
+    Log(stim = trial.current,
+        response = key['pressed'])
+    
+    Each number in numbers_list will appear on the screen, and will be
+    removed from the screen after the participant presses a key. For each
+    trial in the loop, the number that appeared on the screen as well as
+    the key that the participant pressed will be recorded in the log files.
+    
+    Log Parameters
+    --------------
+    The following information about each state will be stored in addition 
+    to the state-specific parameters:
+
+        duration : 
+            Duration of the state in seconds. If the duration is not set
+            as a parameter of the specific state, it will default to -1 
+            (which means it will be calculated on exit) or 0 (which means
+            the state completes immediately and does not increment the
+            experiment clock).
+        end_time :
+            Unix timestamp for when the state ended.
+        first_call_error
+            Amount of time in seconds between when the state was supposed
+            to start and when it actually started.
+        first_call_time :
+            Unix timestamp for when the state was called.
+        last_call_error :
+            Same as first_call_error, but refers to the most recent time 
+            time the state was called.
+        last_draw :
+            Unix timestamp for when the last draw of a visual stimulus
+            occurred.
+        last_flip :
+            Unix timestamp for when the last flip occurred (i.e., when 
+            the stimulus actually appeared on the screen).
+        last_update :
+            Unix timestamp for the last time the context to be drawn 
+            occurred. (NOTE: Displaying a stimulus entails updating it,
+            drqwing it to the back buffer, then flipping the front and
+            back video buffers to display the stimulus.
+        start_time :
+            Unix timestamp for when the state is supposed to begin.
+        state_time :
+            Same as start_time.
     """
     def __init__(self, log_dict=None, log_file=None, parent=None, **log_items):
-        """Write data to a YAML log file.
 
-        Parameters
-        ----------
-        log_dict : dict
-            Key-value pairs to log. Handy for logging trial information.
-        log_file : str, optional
-            Where to log, defaults to exp.yaml in the subject directory.
-        parent : State
-        **log_items : kwargs
-            Key-value pairs to log.
-        """
         # init the parent class
         super(Log, self).__init__(interval=0, parent=parent, 
                                   duration=0,

@@ -16,6 +16,53 @@ from ref import Ref, val
 from experiment import Experiment, now
 
 class MousePress(State):
+    """
+    Accept mouse click as response.
+    
+    Parameters
+    -----------
+    buttons : {['LEFT', 'RIGHT'], str}
+        The button(s) on the mouse that will register as a response.
+    correct_resp: {['LEFT', 'RIGHT'], str}
+        The correct response to the presented stimulus. 
+    base_time : int
+        Manually set a time reference for the start of the state. This
+        will be used to calculate reaction times.
+    until : int
+        Time provided to make a response.
+    duration : {0.0, float}
+        Duration of the state in seconds.
+    parent : {None, ``ParentState``}
+        Parent state to attach to. Will search for experiment if None.
+    save_log : bool
+        If set to 'True,' details about the state will be
+        automatically saved in the log files.   
+        
+    Example
+    -------
+    MousePress(correct_resp='LEFT')
+    Participant must make a mouse press response. Responses from both
+    buttons will be recorded, but only a 'LEFT' button response will
+    be counted as correct
+    
+ Log Parameters
+    ---------------
+    All parameters above and below are available to be accessed and 
+    manipulated within the experiment code, and will be automatically 
+    recorded in the state.yaml and state.csv files. Refer to State class
+    docstring for addtional logged parameters.      
+        press :
+            Which button on the mouse was pressed.
+        press_time:
+            Time at which button was pressed.
+        correct:
+            Boolean indicator of whether the response was correct
+            or incorrect.
+        rt: 
+            Amount of time that has passed between stimulus onset
+            and the participant's response. Dependent upon base_time.  
+    
+    """
     def __init__(self, buttons=None, correct_resp=None, base_time=None, until=None,
                  duration=-1, parent=None, save_log=True):
         # init the parent class
