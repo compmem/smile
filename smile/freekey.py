@@ -26,7 +26,7 @@ class FreeKey(Serial):
     
     Parameters
     ----------
-    txt : str
+    txt : Text state
         The text that will appear on the screen to indicate to the
         participant that they are to type a response. This text
         will disappear from the screen when a response is
@@ -50,9 +50,10 @@ class FreeKey(Serial):
         
     Example
     --------
-    FreeKey('Please type a response.', max_duration=15.0)
+    FreeKey(Text('Please type a response.'), max_duration=15.0)
     The message 'Please type a response.' will appear on the screen,
-    and participants will be given 15 seconds to enter a response.
+    and participants will be given 15 seconds to enter a response, 
+    replacing that text.
     
     Log Parameters
     ---------------
@@ -60,26 +61,10 @@ class FreeKey(Serial):
     manipulated within the experiment code, and will be automatically 
     recorded in the state.yaml and state.csv files. Refer to State class
     docstring for addtional logged parameters. 
-        fk_start_text : 
-            See 'txt parameter.
-        fk_first_time : 
-            Time of participant's initial key press.
-        fk_end_time : 
-            Total time participant was given to respond.
-        fk_cur_text : 
-            What the participant has typed at the time of the last flip.
-        fk_num_resp :
-            How many characters the participant has typed at the time
-            of the last flip.
-        fk_responses
-            Complete response.
-        keys
-            Possible response keys.
-        pressed
-            Record of each key pressed within the alotted time.
-        rt
-            Amount of time that has passed for each key pressed,
-            using base_time as a reference.      
+
+    responses : list
+        List of typed responses, each with the following information:
+        first_key_time, enter_key_time, response, response_num
     """
     def __init__(self, txt=None, max_duration=10.0, max_resp=100, base_time=None, 
                  duration=-1, parent=None, save_log=True):
