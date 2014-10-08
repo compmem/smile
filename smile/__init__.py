@@ -12,5 +12,6 @@ from state import Parallel, Serial, If, Loop, Wait, Func, ResetClock, Debug
 from keyboard import KeyPress
 from mouse import MousePress
 from video import Show, Update, Unshow, Text, Image, Movie, BackColor
+from video import Rectangle
 from ref import Ref,val
 from freekey import FreeKey
