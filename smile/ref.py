@@ -176,6 +176,8 @@ class Ref(object):
         return Ref(gfunc=lambda : val(o)//val(self))
     def __mod__(self, o):
         return Ref(gfunc=lambda : val(self)%val(o))
+    def __rmod__(self, o):
+        return Ref(gfunc=lambda : val(o)%val(self))
     def __pos__(self):
         return self
     def __neg__(self):
@@ -236,6 +238,12 @@ if __name__ == '__main__':
     r = Ref((Ref(x)[0]>0)&(Ref(x)[0]>=0))
     x[0] -= 10.0
     print x[0],val(r)
+
+    y = [7]
+    ry = Ref(y)
+    print y[0],val(ry[0]%2), val(2%ry[0])
+    y[0] = 8
+    print y[0],val(ry[0]%2), val(2%ry[0])
 
     class Jubba(object):     
         def __init__(self, val):
