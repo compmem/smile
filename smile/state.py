@@ -584,8 +584,7 @@ class If(ParentState):
 
                 
 class Loop(Serial):
-    """
-    State that implements a loop.
+    """State that implements a loop.
 
     Loop over an iterable or run repeatedly while a conditional 
     evaluates to True. Loop is used in similar fashion to for 
@@ -593,13 +592,17 @@ class Loop(Serial):
 
     Parameters
     ----------
-    iterable: object
+    iterable : object
     	Process to iterate through while a conditional evaluates to True
-    conditional: bool
-    	Boolean object that determines whether the Loop state will execute
-    parent: object
+    shuffle : bool
+        Whether to shuffle the iterable before the loop. Note that this will
+        only work for iterables and will evaluate and make a shallow copy
+        of the iterable in order to shuffle it.
+    conditional : bool,Ref
+    	Object that evaluates to a bool to determine whether to continue
+    parent : object
     	The parent state
-    save_log: bool
+    save_log : bool
     	If set to 'True,' details about the If state will be automatically saved 
     	in the log files.
 
@@ -617,24 +620,28 @@ class Loop(Serial):
         Show(Image(trial.current['image']), 2.0)
         Wait(.5)
     
-    The Loop will evaluate the conditional. If true, show an image from trial.current 
-    for 2.0 seconds, unshow it, and wait for 0.5 seconds. The Loop will continue 
-    to evaluate the conditional until it returns as false, at which point the loop
-    terminates
-    
+    The Loop will iterate over the list of dictionaries, showing an
+    image from trial.current for 2.0 seconds, unshow it, and wait for
+    0.5 seconds. The Loop will continue to iterate over the list,
+    running the Show and Wait states, until all the items from the
+    list are traversed.
+
     """
-    def __init__(self, iterable=None, conditional=True, 
+    def __init__(self, iterable=None, shuffle=False,
+                 conditional=True,
                  parent=None, save_log=True):
         super(Loop, self).__init__(parent=parent, duration=-1, 
                                    save_log=save_log)
 
         # otherwise, assume it's a list of dicts
         self.iterable = iterable
+        self.shuffle = shuffle
         self.cond = conditional
         self.outcome = True
 
         # set to first in loop
         self.i = 0
+        self._shuffled = False
                     
         # append outcome to log
         self.log_attrs.extend(['outcome','i'])
@@ -642,7 +649,7 @@ class Loop(Serial):
     @property
     def current(self):
         if self.iterable is None:
-            return None
+            return None # could possibly return self.i here
         else:
             return self['iterable'][self['i']]
 
@@ -652,6 +659,15 @@ class Loop(Serial):
 
         # reset outcome so we re-evaluate if called in loop
         self.outcome = val(self.cond)
+
+        # see if shuffle
+        if not self.iterable is None and \
+           val(self.shuffle) and \
+           not self._shuffled:
+            # eval and make a shallow copy
+            self.iterable = val(self.iterable, recurse=False)[:]
+            random.shuffle(self.iterable)
+            self._shuffled = True
 
     def _callback(self, dt):
         if self.check:
@@ -692,12 +708,16 @@ class Loop(Serial):
                         self.leave()
                         # reset to start if inside another loop
                         self.i = 0
+                        self._shuffled = False
                     else:
                         # dump log
                         dump([self.get_log()],self.get_log_stream())
 
                         # set to next
                         self.i += 1
+                else:
+                    # conditional looping so just set to next
+                    self.i += 1
                         
                 # update everything for the next loop
                 if not finished:
@@ -887,7 +907,7 @@ class Debug(State):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
+    from experiment import Experiment, Set, Get
 
     def print_dt(state, *txt):
         print txt, now()-state.state_time, state.dt
@@ -898,12 +918,16 @@ if __name__ == '__main__':
 
     # with implied parents
     block = [{'val':i} for i in range(3)]
-    with Loop(block) as trial:
-        Func(print_dt, args=[trial.current['val']])
-        Wait(1.0)
-        If(trial.current['val']==block[-1],
-           Wait(2.))
-
+    Set('not_done',True)
+    with Loop(conditional=Get('not_done')) as outer:
+        Debug(i=outer['i'])
+        with Loop(block, shuffle=True) as trial:
+            Func(print_dt, args=[trial.current['val']])
+            Wait(1.0)
+            If(trial.current['val']==block[-1],
+               Wait(2.))
+        If(outer['i']>=3,Set('not_done',False))
+        
     block = range(3)
     with Loop(block) as trial:
         Func(print_dt, args=[trial.current])
