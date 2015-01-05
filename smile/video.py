@@ -240,8 +240,11 @@ class Show(Serial):
         to appear on the screen for a certain duration. You will 
         need to specify both the VisualState (i.e. Text, Image, Movie, 
         etc.) along with the necessary parameters for that state.
-    duration : {0.0, float}
-        Duration of the state in seconds.
+    duration : {1.0, float, State}
+        Duration of the state in seconds or a State/ParentState to insert
+        between the Show and Unshow.
+    jitter : {0.0, float}
+        Duration of the state in seconds. Is ignored if duration is a State.
     parent : {None, ``ParentState``}
         Parent state to attach to. Will search for experiment if None.
     save_log : bool
@@ -264,8 +267,17 @@ class Show(Serial):
         unshow_time :
             Time at which the stimulus was removed from the screen. 
     """
-    def __init__(self, vstate, duration=1.0, 
+    def __init__(self, vstate, duration=1.0, jitter=0.0, 
                  parent=None, save_log=True):
+        # proc the duration first
+        if issubclass(duration.__class__, State):
+            self._wait_state = duration
+            duration = self._wait_state.duration
+            claim_wait = True
+        else:
+            claim_wait = False
+
+        # handle the parent class
         super(Show, self).__init__(parent=parent, duration=duration, 
                                    save_log=save_log)
 
@@ -274,7 +286,13 @@ class Show(Serial):
 
         # add the wait and unshow states
         self._show_state = vstate
-        self._wait_state = Wait(duration, parent=self)
+        if claim_wait:
+            # must claim that state as a child
+            self.claim_child(self._wait_state)
+        else:
+            # process as an actual Wait
+            self._wait_state = Wait(duration=duration, jitter=jitter,
+                                    parent=self)
         self._unshow_state = Unshow(vstate, parent=self)
 
         # expose the shown
@@ -1190,7 +1208,9 @@ if __name__ == '__main__':
     exp = Experiment()
 
     Wait(.5)
-    
+
+    Show(Text('Jubba!!!'), duration=Show(Text('********'),duration=1.0))
+
     # Show(Text('Jubba!!!', x=exp.window.width//2, y=exp.window.height//2), 
     #      duration=1.0)
     # Wait(1.0)
