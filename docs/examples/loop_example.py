@@ -24,11 +24,10 @@ with Loop(trials) as trial:
                            base_time=t['last_flip']['time'])
     Unshow(t)
     Set('good',key['rt']<GOOD_RT)
-    with If(Get('good')) as if_state:
-        with if_state.true_state:
-            Show(Text('Awesome'), duration=1.0)
-        with if_state.false_state:
-            Show(Text('Bummer'), duration=1.0)
+    with If(Get('good')):
+        Show(Text('Awesome'), duration=1.0)
+    with Else():
+        Show(Text('Bummer'), duration=1.0)
 
     Log(stim_txt=trial.current,
         stim_on=t['last_flip'],

@@ -205,11 +205,10 @@ with Loop(blocks) as block:
     with Loop(block.current) as trial:
         with Parallel():
             # present stim
-            if_visual = If(trial.current['modality']=='visual')
-            with if_visual.true_state:
+            with If(trial.current['modality']=='visual'):
                 vstim = Show(Text(trial.current['stim'], font_size=24),
                              duration=VISUAL_DUR)
-            with if_visual.false_state:
+            with Else():
                 astim = Beep(duration=AUDIO_DUR, 
                              freq=Ref(FREQS)[trial.current['stim']])
             with Serial():

@@ -508,15 +508,15 @@ class If(ParentState):
     State B is entered if conditional evaluates to False
 
     True and false states are automatically created if they are not
-    passed in.  This allows use of If state as follows:
+    passed in.  This allows for the more natural use of the If state 
+    as follows:
 
-    with If((key['rt']>2.0)&(key['resp'] != None)) as if_state:
-        with if_state.true_state:
-            # fill the true state
-            pass
-        with if_state.false_state:
-            # fill the false state
-            pass
+    with If((key['rt']>2.0)&(key['resp'] != None)):
+        # fill the true state
+        pass
+    with Else():
+        # fill the false state
+        pass
     
     Log Parameters
     --------------
@@ -531,8 +531,8 @@ class If(ParentState):
         super(If, self).__init__(parent=parent, duration=-1, 
                                  save_log=save_log)
 
-        # save the cond
-        self.cond = conditional
+        # save a list of conds to be evaluated (last one always True, acts as the Else)
+        self.cond = [conditional, True]
         self.outcome = None
         self.true_state = true_state
         self.false_state = false_state
@@ -551,12 +551,19 @@ class If(ParentState):
             # create the true state
             self.false_state = Serial(parent=self)
 
+        # save the out_states
+        self.out_states = [self.true_state, self.false_state]
+        
         # append outcome to log
         self.log_attrs.append('outcome')
         
     def _enter(self):
         # reset outcome so we re-evaluate if called in loop
-        self.outcome = val(self.cond)
+        # this will evaluate each conditional, we'll enter the first one that
+        # evaluates to True. Note that the last one is always True because it's
+        # the Else
+        # must evaluate each cond
+        self.outcome = [not v is False for v in val(self.cond)]
         super(If, self)._enter()
         
     def _callback(self, dt):
@@ -565,12 +572,15 @@ class If(ParentState):
             done = False
 
             # process the outcome
-            if self.outcome:
-                # get the first state
-                c = self.true_state
-            else:
-                c = self.false_state
-
+            # if self.outcome:
+            #     # get the first state
+            #     c = self.true_state
+            # else:
+            #     c = self.false_state
+                
+            # take the first one that evaluated to True
+            c = self.out_states[self.outcome.index(True)]
+            
             if c is None or c.done:
                 done = True
             elif not c.active:
@@ -582,7 +592,67 @@ class If(ParentState):
                 #self.interval = 0
                 self.leave()
 
-                
+    def __enter__(self):
+        # push self.true_state as current parent
+        if not self.exp is None:
+            self.exp._parents.append(self.true_state)
+        return self
+
+
+class Elif(Serial):
+    """State to attach an elif to and If state.
+
+    """
+    def __init__(self, conditional, parent=None, save_log=True):
+
+        # init the parent class
+        super(Elif, self).__init__(parent=parent, duration=-1, 
+                                   save_log=save_log)
+
+        # we now know our parent, so ensure the previous child is
+        # either and If or Elif state
+        if self.parent is None:
+            raise ValueError("The parent can not be None.")
+
+        # grab the previous child (-2 because we are -1)
+        prev_state = self.parent.children[-2]
+        if not isinstance(prev_state, If):
+            raise ValueError("The previous state must be an If or Elif state.")
+
+        # have that previous If state grab this one
+        prev_state.claim_child(self)
+
+        # insert the conditional and state
+        prev_state.cond.insert(-1, conditional)
+        prev_state.out_states.insert(-1, self)
+
+        
+def Else():
+    """State to attach to the else of an If state.
+
+    """
+
+    # get the exp reference
+    from experiment import Experiment
+    try:
+        exp = Experiment.last_instance()
+    except AttributeError:
+        raise AttributeError("You must first instantiate an Experiment.")
+
+    # find the parent
+    parent = exp._parents[-1]
+
+    # find the previous child state (-1 because this is not a state)
+    prev_state = parent.children[-1]
+    
+    # make sure it's the If
+    if not isinstance(prev_state, If):
+        raise ValueError("The previous state must be an If or Elif state.")
+
+    # return the false_state (the last out_state)
+    return prev_state.out_states[-1]
+
+    
 class Loop(Serial):
     """State that implements a loop.
 
@@ -752,7 +822,7 @@ class Wait(State):
     Example
     -------
     Wait(2.0, 1.0)
-    	The state will wait for a duration drawn from a uniform distribution with ragnge
+    	The state will wait for a duration drawn from a uniform distribution with range
     	(2.0, 3.0)
     
     """
@@ -915,6 +985,16 @@ if __name__ == '__main__':
     exp = Experiment()
 
     Debug(width=exp['window'].width, height=exp['window'].height)
+
+    with Loop(range(10)) as loop:
+        with If(loop.current > 6):
+            Func(print_dt, args=["True"])
+        with Elif(loop.current > 4):
+            Func(print_dt, args=["Trueish"])
+        with Elif(loop.current > 2):
+            Func(print_dt, args=["Falsish"])
+        with Else():
+            Func(print_dt, args=["False"])
 
     # with implied parents
     block = [{'val':i} for i in range(3)]
