@@ -13,6 +13,7 @@ import sys
 import os
 import weakref
 import argparse
+import time
 
 # pyglet imports
 import pyglet
@@ -188,6 +189,7 @@ class Experiment(Serial):
         self.state_log_stream = open(self.state_log,'a')
         self.exp_log = os.path.join(self.subj_dir,'exp.yaml')
         self.exp_log_stream = open(self.exp_log,'a')
+        self._reserved_data_filenames = os.listdir(self.subj_dir)
 
         # # grab the nice
         # import psutil
@@ -200,6 +202,23 @@ class Experiment(Serial):
         #     new_nice = -10
         # self._current_proc.set_nice(new_nice)
         # print "New nice: %d" % self._current_proc.get_nice()
+
+    def reserveDataFilename(self, title, ext=None):
+        #TODO: doc string
+        timestamp = time.strftime("%Y%m%d%H%M%S", time.gmtime())
+        for distinguer in xrange(256):  #TODO: should this be configurable?
+            if ext is None:
+                filename = "%s_%s_%d" % (title, timestamp, distinguisher)
+            else:
+                filename = "%s_%s_%s.%s" % (title, timestamp, distinguisher,
+                                            ext)
+            if filename not in self._reserved_data_filenames:
+                #TODO: make this thread safe?
+                self._reserved_data_filenames.append(filename)
+                return filename
+        else:
+            raise RuntimeError(
+                "Too many data files with the same title and timestamp!")
 
     def _process_args(self):
         # set up the arg parser

@@ -141,6 +141,30 @@ class Beep(State):
         self.sound_start = event_time(now())
 
 
+class RecordAudio(State):
+    #TODO: doc string
+    def __init__(self, duration, parent=None):
+        duration = val(duration)
+        super(RecordAudio, self).__init__(interval=0, parent=parent,
+                                          duration=duration)
+        self.filename = None
+
+        # set the log attrs
+        self.log_attrs.extend(['filename', 'duration'])
+
+    def _enter(self):
+        if _pyo_server is None:
+            # try and init it with defaults
+            # print some warning
+            init_audio_server()
+        filename = self.exp.reserveDataFilename("rec_audio", "aiff")
+        self._rec = Record(pyo.Input(),
+                           filename=os.path.joint(self.exp.subjdir, filename),
+                           chnls=2, fileformat=1, sampletype=1, buffering=16)
+        pyo.Clean_objects(duration, self._rec).start()
+        self.filename = filename
+
+
 class SoundFile(State):
     """
     State that can play audio files
