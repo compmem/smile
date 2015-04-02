@@ -206,7 +206,7 @@ class Experiment(Serial):
     def reserveDataFilename(self, title, ext=None):
         #TODO: doc string
         timestamp = time.strftime("%Y%m%d%H%M%S", time.gmtime())
-        for distinguer in xrange(256):  #TODO: should this be configurable?
+        for distinguisher in xrange(256):  #TODO: should this be configurable?
             if ext is None:
                 filename = "%s_%s_%d" % (title, timestamp, distinguisher)
             else:

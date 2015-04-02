@@ -7,6 +7,8 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
+import os
+
 from state import State, Wait, Serial
 from state import schedule_delayed_interval, schedule_delayed
 from ref import Ref, val
@@ -158,10 +160,10 @@ class RecordAudio(State):
             # print some warning
             init_audio_server()
         filename = self.exp.reserveDataFilename("rec_audio", "aiff")
-        self._rec = Record(pyo.Input(),
-                           filename=os.path.joint(self.exp.subjdir, filename),
+        self._rec = pyo.Record(pyo.Input(),
+                           filename=os.path.join(self.exp.subj_dir, filename),
                            chnls=2, fileformat=1, sampletype=1, buffering=16)
-        pyo.Clean_objects(duration, self._rec).start()
+        pyo.Clean_objects(self.duration, self._rec).start()
         self.filename = filename
 
 
@@ -271,6 +273,7 @@ if __name__ == '__main__':
         with Serial():
             Wait(2.0)
             Beep(freq=[300,300],volume=.1)
+        RecordAudio(8.0)
 
 
     Wait(1.0, stay_active=True)
