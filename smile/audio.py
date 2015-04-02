@@ -144,11 +144,28 @@ class Beep(State):
 
 
 class RecordAudio(State):
+    """
+    State that records microphone input to an audio file (AIFF)
+    
+    Parameters
+    ----------
+    duration: {0, float}
+        Length of time to record the audio file
+    parent: object
+        The parent state
+
+    Example
+    -------
+    RecordAudio(10.0)
+        Record audio for ten seconds.
+    
+    """
     #TODO: doc string
     def __init__(self, duration, parent=None):
-        duration = val(duration)
+        # init the parent class
         super(RecordAudio, self).__init__(interval=0, parent=parent,
-                                          duration=duration)
+                                          duration=val(duration))
+
         self.filename = None
 
         # set the log attrs
@@ -160,9 +177,9 @@ class RecordAudio(State):
             # print some warning
             init_audio_server()
         filename = self.exp.reserveDataFilename("rec_audio", "aiff")
-        self._rec = pyo.Record(pyo.Input(),
-                           filename=os.path.join(self.exp.subj_dir, filename),
-                           chnls=2, fileformat=1, sampletype=1, buffering=16)
+        self._rec = pyo.Record(
+            pyo.Input(), filename=os.path.join(self.exp.subj_dir, filename),
+            chnls=2, fileformat=1, sampletype=1, buffering=16)
         pyo.Clean_objects(self.duration, self._rec).start()
         self.filename = filename
 

@@ -203,23 +203,6 @@ class Experiment(Serial):
         # self._current_proc.set_nice(new_nice)
         # print "New nice: %d" % self._current_proc.get_nice()
 
-    def reserveDataFilename(self, title, ext=None):
-        #TODO: doc string
-        timestamp = time.strftime("%Y%m%d%H%M%S", time.gmtime())
-        for distinguisher in xrange(256):  #TODO: should this be configurable?
-            if ext is None:
-                filename = "%s_%s_%d" % (title, timestamp, distinguisher)
-            else:
-                filename = "%s_%s_%s.%s" % (title, timestamp, distinguisher,
-                                            ext)
-            if filename not in self._reserved_data_filenames:
-                #TODO: make this thread safe?
-                self._reserved_data_filenames.append(filename)
-                return filename
-        else:
-            raise RuntimeError(
-                "Too many data files with the same title and timestamp!")
-
     def _process_args(self):
         # set up the arg parser
         parser = argparse.ArgumentParser(description='Run a SMILE experiment.')
@@ -260,7 +243,35 @@ class Experiment(Serial):
 
         # set whether to log csv
         self.csv = args.csv
-        
+
+    def reserveDataFilename(self, title, ext=None):
+        """
+        Construct a unique filename for a data file in the log directory.  The
+        filename will incorporate the specified 'title' string and it will have
+        extension specified with 'ext' (without the dot, if not None).  The
+        filename will also incorporate a timestamp and a number to disambiguate
+        data files with the same title, extension, and timestamp.  The filename
+        is not a file path.  The filename will be distinct from all filenames
+        previously returned from this method even if a file of that name has
+        not yet been created in the log directory.
+
+        Returns the new filename.
+        """
+        timestamp = time.strftime("%Y%m%d%H%M%S", time.gmtime())
+        for distinguisher in xrange(256):  #TODO: should this be configurable?
+            if ext is None:
+                filename = "%s_%s_%d" % (title, timestamp, distinguisher)
+            else:
+                filename = "%s_%s_%s.%s" % (title, timestamp, distinguisher,
+                                            ext)
+            if filename not in self._reserved_data_filenames:
+                #TODO: make this thread safe?
+                self._reserved_data_filenames.append(filename)
+                return filename
+        else:
+            raise RuntimeError(
+                "Too many data files with the same title, extension, and timestamp!")
+
     def run(self):
         """
         Run the experiment.
