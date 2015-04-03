@@ -14,6 +14,7 @@ import os
 import weakref
 import argparse
 import time
+import threading
 
 # pyglet imports
 import pyglet
@@ -189,7 +190,8 @@ class Experiment(Serial):
         self.state_log_stream = open(self.state_log,'a')
         self.exp_log = os.path.join(self.subj_dir,'exp.yaml')
         self.exp_log_stream = open(self.exp_log,'a')
-        self._reserved_data_filenames = os.listdir(self.subj_dir)
+        self._reserved_data_filenames = set(os.listdir(self.subj_dir))
+        self._reserved_data_filenames_lock = threading.Lock()
 
         # # grab the nice
         # import psutil
@@ -244,7 +246,7 @@ class Experiment(Serial):
         # set whether to log csv
         self.csv = args.csv
 
-    def reserveDataFilename(self, title, ext=None):
+    def reserve_data_filename(self, title, ext=None):
         """
         Construct a unique filename for a data file in the log directory.  The
         filename will incorporate the specified 'title' string and it will have
@@ -258,19 +260,20 @@ class Experiment(Serial):
         Returns the new filename.
         """
         timestamp = time.strftime("%Y%m%d%H%M%S", time.gmtime())
-        for distinguisher in xrange(256):  #TODO: should this be configurable?
-            if ext is None:
-                filename = "%s_%s_%d" % (title, timestamp, distinguisher)
+        with self._reserved_data_filenames_lock:
+            self._reserved_data_filenames |= set(os.listdir(self.subj_dir))
+            for distinguisher in xrange(256):
+                if ext is None:
+                    filename = "%s_%s_%d" % (title, timestamp, distinguisher)
+                else:
+                    filename = "%s_%s_%s.%s" % (title, timestamp,
+                                                distinguisher, ext)
+                if filename not in self._reserved_data_filenames:
+                    self._reserved_data_filenames.add(filename)
+                    return filename
             else:
-                filename = "%s_%s_%s.%s" % (title, timestamp, distinguisher,
-                                            ext)
-            if filename not in self._reserved_data_filenames:
-                #TODO: make this thread safe?
-                self._reserved_data_filenames.append(filename)
-                return filename
-        else:
-            raise RuntimeError(
-                "Too many data files with the same title, extension, and timestamp!")
+                raise RuntimeError(
+                    "Too many data files with the same title, extension, and timestamp!")
 
     def run(self):
         """

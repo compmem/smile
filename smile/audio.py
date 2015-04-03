@@ -143,7 +143,7 @@ class Beep(State):
         self.sound_start = event_time(now())
 
 
-class RecordAudio(State):
+class RecordSoundFile(State):
     """
     State that records microphone input to an audio file (AIFF)
     
@@ -156,32 +156,40 @@ class RecordAudio(State):
 
     Example
     -------
-    RecordAudio(10.0)
+    RecordSoundFile(10.0)
         Record audio for ten seconds.
     
     """
-    #TODO: doc string
-    def __init__(self, duration, parent=None):
+    def __init__(self, duration, filename=None, parent=None):
         # init the parent class
-        super(RecordAudio, self).__init__(interval=0, parent=parent,
-                                          duration=val(duration))
+        super(RecordSoundFile, self).__init__(interval=0, parent=parent,
+                                              duration=val(duration))
 
-        self.filename = None
+        if filename is None:
+            self.filename = None
+        else:
+            self.filename = val(filename)
 
         # set the log attrs
-        self.log_attrs.extend(['filename', 'duration'])
+        self.log_attrs.extend(['filename', 'duration', 'rec_start'])
 
     def _enter(self):
         if _pyo_server is None:
             # try and init it with defaults
             # print some warning
             init_audio_server()
-        filename = self.exp.reserveDataFilename("rec_audio", "aiff")
+        if self.filename is None:
+            self.filename = self.exp.reserve_data_filename("rec", "aiff")
+            #TODO: when state names are implemented, use state name for file title
+
+    def _callback(self, dt):
         self._rec = pyo.Record(
-            pyo.Input(), filename=os.path.join(self.exp.subj_dir, filename),
+            pyo.Input(), filename=os.path.join(self.exp.subj_dir,
+                                               self.filename),
             chnls=2, fileformat=1, sampletype=1, buffering=16)
+        self.rec_start = event_time(now())
         pyo.Clean_objects(self.duration, self._rec).start()
-        self.filename = filename
+        # eventually use triggers for more accurate timing
 
 
 class SoundFile(State):
@@ -290,7 +298,8 @@ if __name__ == '__main__':
         with Serial():
             Wait(2.0)
             Beep(freq=[300,300],volume=.1)
-        RecordAudio(8.0)
+        RecordSoundFile(8.0)
+        RecordSoundFile(4.0, "test.aiff")
 
 
     Wait(1.0, stay_active=True)
