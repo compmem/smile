@@ -145,7 +145,7 @@ class Beep(State):
 
 class RecordSoundFile(State):
     """
-    State that records microphone input to an audio file (AIFF)
+    State that records microphone input to an audio file (WAV)
     
     Parameters
     ----------
@@ -182,14 +182,14 @@ class RecordSoundFile(State):
             # print some warning
             init_audio_server()
         if self.filename is None:
-            self.filename = self.exp.reserve_data_filename("rec", "aiff")
+            self.filename = self.exp.reserve_data_filename("rec", "wav")
             #TODO: when state names are implemented, use state name for file title
 
     def _callback(self, dt):
         self._rec = pyo.Record(
             pyo.Input(), filename=os.path.join(self.exp.subj_dir,
                                                self.filename),
-            chnls=2, fileformat=1, sampletype=1, buffering=16)
+            chnls=2, fileformat=0, sampletype=1, buffering=16)
         self.rec_start = event_time(now())
         pyo.Clean_objects(self.duration, self._rec).start()
         # eventually use triggers for more accurate timing
