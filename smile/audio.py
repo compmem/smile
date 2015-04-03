@@ -151,6 +151,9 @@ class RecordSoundFile(State):
     ----------
     duration: {0, float}
         Length of time to record the audio file
+    filename: str
+        Name of the audio file to create in the log directory.  If None, a
+        unique name is automatically generated each time the state is executed.
     parent: object
         The parent state
 
