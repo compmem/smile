@@ -170,8 +170,10 @@ class RecordSoundFile(State):
 
         if filename is None:
             self.filename = None
+            self.generate_filename = True
         else:
             self.filename = val(filename)
+            self.generate_filename = False
 
         # set the log attrs
         self.log_attrs.extend(['filename', 'duration', 'rec_start'])
@@ -181,7 +183,7 @@ class RecordSoundFile(State):
             # try and init it with defaults
             # print some warning
             init_audio_server()
-        if self.filename is None:
+        if self.generate_filename:
             self.filename = self.exp.reserve_data_filename("rec", "wav")
             #TODO: when state names are implemented, use state name for file title
 
