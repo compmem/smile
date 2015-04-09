@@ -166,7 +166,7 @@ class RecordSoundFile(State):
     def __init__(self, duration, filename=None, parent=None):
         # init the parent class
         super(RecordSoundFile, self).__init__(interval=0, parent=parent,
-                                              duration=val(duration))
+                                              duration=duration)
 
         self.filename = filename
         self.generate_filename = filename is None
@@ -227,7 +227,7 @@ class SoundFile(State):
                  duration=0, parent=None, save_log=True):
         # init the parent class
         super(SoundFile, self).__init__(interval=0, parent=parent, 
-                                        duration=val(duration), 
+                                        duration=duration, 
                                         save_log=save_log)
 
         # save the vars

@@ -156,7 +156,8 @@ class State(object):
         self.last_call_error = None
         self.dt = None
         self.interval = interval
-        self.duration = duration
+        self.raw_duration = duration
+        self.duration = 0.0
         self.parent = parent
         self.active = False
         self.done = False
@@ -288,6 +289,9 @@ class State(object):
         if self.exp is None:
             from experiment import Experiment
             self.exp = Experiment.last_instance()
+
+        # compute the duration
+        self.duration = val(self.raw_duration)
             
         # custom enter code
         self._enter()
