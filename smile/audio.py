@@ -182,9 +182,7 @@ class RecordSoundFile(State):
         if self.generate_filename:
             self.filename = self.exp.reserve_data_filename("rec", "wav")
             #TODO: when state names are implemented, use state name for file title
-        else:
-            self.filename = val(self.filename)
-        self.filepath = os.path.join(self.exp.subj_dir, self.filename)
+        self.filepath = os.path.join(self.exp.subj_dir, val(self.filename))
 
     def _callback(self, dt):
         self._rec = pyo.Record(
