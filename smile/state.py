@@ -834,19 +834,9 @@ class Wait(State):
                  parent=None, save_log=True):
         # init the parent class
         super(Wait, self).__init__(interval=-1, parent=parent, 
-                                   duration=duration, 
+                                   duration=Ref(duration, jitter=jitter), 
                                    save_log=save_log)
         self.stay_active = stay_active
-        self.jitter = jitter
-        self.wait_duration = duration
-
-    def _enter(self):
-        # get the parent enter
-        super(Wait, self)._enter()
-
-        # set the duration
-        self.duration = random.uniform(val(self.wait_duration),
-                                       val(self.wait_duration)+val(self.jitter))
 
     def _callback(self, dt):
         if not self.stay_active or now() >= self.state_time+self.duration:
