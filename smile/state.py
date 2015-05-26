@@ -156,7 +156,8 @@ class State(object):
         self.last_call_error = None
         self.dt = None
         self.interval = interval
-        self.duration = duration
+        self.raw_duration = duration
+        self.duration = 0.0
         self.parent = parent
         self.active = False
         self.done = False
@@ -288,6 +289,9 @@ class State(object):
         if self.exp is None:
             from experiment import Experiment
             self.exp = Experiment.last_instance()
+
+        # compute the duration
+        self.duration = val(self.raw_duration)
             
         # custom enter code
         self._enter()
@@ -830,19 +834,9 @@ class Wait(State):
                  parent=None, save_log=True):
         # init the parent class
         super(Wait, self).__init__(interval=-1, parent=parent, 
-                                   duration=duration, 
+                                   duration=Ref(duration, jitter=jitter), 
                                    save_log=save_log)
         self.stay_active = stay_active
-        self.jitter = jitter
-        self.wait_duration = duration
-
-    def _enter(self):
-        # get the parent enter
-        super(Wait, self)._enter()
-
-        # set the duration
-        self.duration = random.uniform(val(self.wait_duration),
-                                       val(self.wait_duration)+val(self.jitter))
 
     def _callback(self, dt):
         if not self.stay_active or now() >= self.state_time+self.duration:

@@ -166,12 +166,10 @@ class RecordSoundFile(State):
     def __init__(self, duration, filename=None, parent=None):
         # init the parent class
         super(RecordSoundFile, self).__init__(interval=0, parent=parent,
-                                              duration=val(duration))
+                                              duration=duration)
 
-        if filename is None:
-            self.filename = None
-        else:
-            self.filename = val(filename)
+        self.filename = filename
+        self.generate_filename = filename is None
 
         # set the log attrs
         self.log_attrs.extend(['filename', 'duration', 'rec_start'])
@@ -181,15 +179,15 @@ class RecordSoundFile(State):
             # try and init it with defaults
             # print some warning
             init_audio_server()
-        if self.filename is None:
+        if self.generate_filename:
             self.filename = self.exp.reserve_data_filename("rec", "wav")
             #TODO: when state names are implemented, use state name for file title
+        self.filepath = os.path.join(self.exp.subj_dir, val(self.filename))
 
     def _callback(self, dt):
         self._rec = pyo.Record(
-            pyo.Input(), filename=os.path.join(self.exp.subj_dir,
-                                               self.filename),
-            chnls=2, fileformat=0, sampletype=1, buffering=16)
+            pyo.Input(), filename=self.filepath, chnls=2, fileformat=0,
+            sampletype=1, buffering=16)
         self.rec_start = event_time(now())
         pyo.Clean_objects(self.duration, self._rec).start()
         # eventually use triggers for more accurate timing
@@ -229,8 +227,8 @@ class SoundFile(State):
                  duration=0, parent=None, save_log=True):
         # init the parent class
         super(SoundFile, self).__init__(interval=0, parent=parent, 
-                                    duration=val(duration), 
-                                    save_log=save_log)
+                                        duration=duration, 
+                                        save_log=save_log)
 
         # save the vars
         self.sound_file = sound_file
@@ -301,9 +299,9 @@ if __name__ == '__main__':
         with Serial():
             Wait(2.0)
             Beep(freq=[300,300],volume=.1)
-        RecordSoundFile(8.0)
+        rec_snd = RecordSoundFile(8.0)
         RecordSoundFile(4.0, "test.aiff")
-
+    SoundFile(Ref(rec_snd, "filepath"))
 
     Wait(1.0, stay_active=True)
 

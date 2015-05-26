@@ -8,6 +8,7 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import inspect
+import random
 
 class Ref(object):
     """
@@ -46,12 +47,13 @@ class Ref(object):
     
     """
     def __init__(self, obj=None, attr=None, 
-                 gfunc=None, gfunc_args=None, gfunc_kwargs=None):
+                 gfunc=None, gfunc_args=None, gfunc_kwargs=None, jitter=None):
         self.gfunc = gfunc
         self.gfunc_args = gfunc_args
         self.gfunc_kwargs = gfunc_kwargs
         self.obj = obj
         self.attr = attr
+        self.jitter = jitter
         # if self.gfunc is None:
         #     # try and define it based on the obj and attr
         #     if not obj is None and not attr is None:
@@ -98,7 +100,7 @@ class Ref(object):
                 kwargs = val(self.gfunc_kwargs)
             
             # eval the function
-            return self.gfunc(*args, **kwargs)
+            ret = self.gfunc(*args, **kwargs)
         else:
             # try and define it based on the obj and attr
             if not self.obj is None:
@@ -110,13 +112,18 @@ class Ref(object):
                 attr = val(self.attr)
                 if isinstance(attr,str) and hasattr(obj, attr):
                     # treat as attr
-                    return getattr(obj, attr)
+                    ret = getattr(obj, attr)
                 else:
                     # access with getitem
-                    return obj[attr]
+                    ret = obj[attr]
             else:
-                return obj
-        #return self.obj #getattr(self.obj, self.attr)
+                ret = obj
+        if self.jitter is None:
+            return ret
+        elif isinstance(ret, float):
+            return random.uniform(ret, ret + val(self.jitter))
+        else:
+            raise ValueError("Ref with jitter must evaluate to a float.")
         
     def __getitem__(self, index):
         return Ref(gfunc=lambda : val(self)[val(index)])
