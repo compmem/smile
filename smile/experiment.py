@@ -16,11 +16,29 @@ import argparse
 import time
 import threading
 
-# pyglet imports
-import pyglet
-from pyglet.gl import *
-from pyglet import clock
-from pyglet.window import key,Window
+# kivy imports & overrides
+if any([name.startswith("kivy") for name in sys.modules.keys()]):
+    raise ImportError("smile must be imported before kivy")
+import kivy
+EXACT_KIVY_VERSION = "1.8.0"
+if kivy.__version__ != EXACT_KIVY_VERSION:
+    raise ImportError("kivy version must be exactly %r, got %r" %
+                      (EXACT_KIVY_VERSION, kivy.__version__))
+import kivy.base
+class SmileEventLoop(kivy.base.EventLoopBase):
+    def __init__(self):
+        super(SmileEventLoop, self).__init__()
+        self._idle_callback = None
+    def set_idle_callback(self, callback):
+        self._idle_callback = callback
+    def idle(self):
+        if self._idle_callback:
+            self._idle_callback()
+kivy.base.EventLoop = SmileEventLoop()
+import kivy.clock
+kivy.clock.ClockBase.MIN_SLEEP = 0.0005
+kivy.clock.ClockBase.SLEEP_UNDERSHOOT = 0.0004
+#TODO: import additional kivy submodules?
 
 # local imports
 from state import Serial, State, RunOnEnter
