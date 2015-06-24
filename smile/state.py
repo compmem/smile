@@ -7,10 +7,11 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from pyglet import clock
-now = clock._default.time
+import kivy_overrides
+from kivy import clock
+now = clock._default_time
+from kivy.clock import Clock
 import random
-
 from ref import Ref, val
 from utils import rindex, get_class_name
 from log import dump
@@ -39,7 +40,9 @@ def _schedule_interval_callback(dt, func, interval, *args, **kwargs):
     """
     # schedule it
     if interval > 0:
-        clock.schedule_interval(func, interval, *args, **kwargs)
+        def cb(dt):
+            func(dt, *args, **kwargs)
+        Clock.schedule_interval(cb, interval)
     # call it
     func(dt, *args, **kwargs)
 
@@ -65,7 +68,9 @@ def schedule_delayed_interval(func, delay, interval, *args, **kwargs):
         2 seconds
 
     """
-    clock.schedule_once(_schedule_interval_callback, delay, func, interval, *args, **kwargs)
+    def schedule_it(dt):
+        _schedule_interval_callback(dt, func, interval, *args, **kwargs)
+    Clock.schedule_once(schedule_it, delay)
     
 def _schedule_callback(dt, func, *args, **kwargs):
     """
@@ -85,10 +90,14 @@ def _schedule_callback(dt, func, *args, **kwargs):
     	event loop
     	
     """
-    # schedule it
-    clock.schedule(func, *args, **kwargs)
+    def self_rescheduling_func(dt2):
+        func(dt2, *args, **kwargs)
+        Clock.schedule_once(self_rescheduling_func)
+
     # call it
-    func(dt, *args, **kwargs)
+    self_rescheduling_func(dt)
+
+    #TODO: DEAL WITH UNSCHEDULING!!!!!
 
 def schedule_delayed(func, delay, *args, **kwargs):
     """
@@ -109,7 +118,9 @@ def schedule_delayed(func, delay, *args, **kwargs):
     	The function will be called on every loop starting 
         after 3.0 seconds.    	
     """
-    clock.schedule_once(_schedule_callback, delay, func, *args, **kwargs)
+    def schedule_it(dt):
+        _schedule_callback(dt, func, *args, **kwargs)
+    Clock.schedule_once(schedule_it, delay)
 
 
 class RunOnEnter():
@@ -324,7 +335,7 @@ class State(object):
             self.advance_parent_state_time(duration)
 
         # remove the callback from the schedule
-        clock.unschedule(self.callback)
+        Clock.unschedule(self.callback)
 
         # notify the parent that we're done
         self.active = False
@@ -978,7 +989,7 @@ if __name__ == '__main__':
 
     exp = Experiment()
 
-    Debug(width=exp['window'].width, height=exp['window'].height)
+    #Debug(width=exp['window'].width, height=exp['window'].height)  #!!!!!!!!!!!!!!!!!!!!!!
 
     with Loop(range(10)) as loop:
         with If(loop.current > 6):

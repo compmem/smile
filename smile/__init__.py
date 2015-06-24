@@ -7,11 +7,12 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
+# SMILE components
 from experiment import Experiment, Set, Get, Log
 from state import Parallel, Serial, If, Elif, Else, Loop, Wait, Func, ResetClock, Debug
-from keyboard import KeyPress
-from mouse import MousePress
-from video import Show, Update, Unshow, Text, Image, Movie, BackColor
-from video import Rectangle
-from ref import Ref,val
-from freekey import FreeKey
+#from keyboard import KeyPress
+#from mouse import MousePress
+#from video import Show, Update, Unshow, Text, Image, Movie, BackColor
+#from video import Rectangle
+from ref import Ref, val
+#from freekey import FreeKey
