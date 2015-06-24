@@ -12,11 +12,27 @@ from kivy import clock
 now = clock._default_time
 from kivy.clock import Clock
 import random
+import weakref#???
 from ref import Ref, val
 from utils import rindex, get_class_name
 from log import dump
 
 # custom schedule functions (add delays)
+_scheduled_callbacks = {}
+
+def _track_scheduled_callback(func, clock_event):
+    global _scheduled_callbacks
+    _scheduled_callbacks.setdefault(func, []).append(clock_event)
+
+def unschedule_callback(func):
+    global _scheduled_callbacks
+    try:
+        for clock_event in  _scheduled_callbacks.pop(func):
+            clock_event.cancel()
+            #Clock.unschedule(clock_event)
+    except KeyError:
+        pass
+
 def _schedule_interval_callback(dt, func, interval, *args, **kwargs):
     """
     Schedule a callback with specified interval.
@@ -42,7 +58,8 @@ def _schedule_interval_callback(dt, func, interval, *args, **kwargs):
     if interval > 0:
         def cb(dt):
             func(dt, *args, **kwargs)
-        Clock.schedule_interval(cb, interval)
+        _track_scheduled_callback(func, Clock.schedule_interval(cb, interval))
+    
     # call it
     func(dt, *args, **kwargs)
 
@@ -90,14 +107,13 @@ def _schedule_callback(dt, func, *args, **kwargs):
     	event loop
     	
     """
-    def self_rescheduling_func(dt2):
-        func(dt2, *args, **kwargs)
-        Clock.schedule_once(self_rescheduling_func)
+    # schedule it
+    def cb(dt):
+        func(dt, *args, **kwargs)
+    _track_scheduled_callback(func, Clock.schedule_interval(cb, 0))
 
     # call it
-    self_rescheduling_func(dt)
-
-    #TODO: DEAL WITH UNSCHEDULING!!!!!
+    func(dt, *args, **kwargs)
 
 def schedule_delayed(func, delay, *args, **kwargs):
     """
@@ -335,7 +351,7 @@ class State(object):
             self.advance_parent_state_time(duration)
 
         # remove the callback from the schedule
-        Clock.unschedule(self.callback)
+        unschedule_callback(self.callback)
 
         # notify the parent that we're done
         self.active = False
