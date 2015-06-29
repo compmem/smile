@@ -560,8 +560,7 @@ class Log(State, RunOnEnter):
         # log it to the correct file
         dump([log], self._get_stream())
         pass
-    
-            
+
 if __name__ == '__main__':
     # can't run inside this file
     #exp = Experiment(fullscreen=False, pyglet_vsync=False)
