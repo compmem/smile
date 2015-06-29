@@ -78,6 +78,10 @@ class ExpApp(App):
         # save the time
         self._last_time = self._new_time
 
+        # exit if experiment done
+        if self.exp.done:
+            self.stop()
+
     def draw(self):
         #TODO: return if no draw needed?
         EventLoop.window.dispatch('on_draw')
