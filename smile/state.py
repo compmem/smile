@@ -7,109 +7,140 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from pyglet import clock
-now = clock._default.time
+import kivy_overrides
+from kivy import clock
+now = clock._default_time
+from kivy.clock import Clock
 import random
-
 from ref import Ref, val
 from utils import rindex, get_class_name
 from log import dump
 
 # custom schedule functions (add delays)
-def _schedule_interval_callback(dt, func, interval, *args, **kwargs):
-    """
-    Schedule a callback with specified interval.
-    
-    Parameters
-    ----------
-    dt : float
-        The number of seconds since the last function call.
-    func : function
-        The function to call when the timer lapses.
-    interval : float
-    	The number of seconds to wait between each call
-    
-    Example
-    -------
-    
-    _schedule_interval_callback(dt, function, 1.0)
-    	The function will be called one second after it
-    	was last called.
+class Scheduler(object):
+    def __init__(self):
+        self._to_cancel = []
 
-    """
-    # schedule it
-    if interval > 0:
-        clock.schedule_interval(func, interval, *args, **kwargs)
-    # call it
-    func(dt, *args, **kwargs)
+    def unschedule(self, func):
+        self._to_cancel.append(func)
 
-def schedule_delayed_interval(func, delay, interval, *args, **kwargs):
-    """
-    Schedule a callback with specified interval to begin after the
-    specified delay.
-    
-    Parameters
-    ----------
-    func : function
-        The function to call when the timer lapses.
-    delay : float
-    	The number of seconds after the interval before the function
-    	begins.
-    interval : float
-    	The number of seconds to wait between each call
-    
-    Example
-    -------
-    schedule_delayed_interval(function, 2.0, 1.0)
-    	The function will be called every second starting after 
-        2 seconds
+    def _schedule_interval_callback(self, dt, func, interval, *args, **kwargs):
+        """
+        Schedule a callback with specified interval.
 
-    """
-    clock.schedule_once(_schedule_interval_callback, delay, func, interval, *args, **kwargs)
-    
-def _schedule_callback(dt, func, *args, **kwargs):
-    """
-    Schedule a callback to occur every event loop with no delay or interval
-    
-    Parameters
-    ----------
-    dt: float
-        The number of seconds since the last function call.
-    func:function
-        The function to call when the timer lapses.
+        Parameters
+        ----------
+        dt : float
+            The number of seconds since the last function call.
+        func : function
+            The function to call when the timer lapses.
+        interval : float
+            The number of seconds to wait between each call
 
-    Example
-    -------    
-    _schedule_callback(dt, function)
-    	The function will be called immediately after the previous
-    	event loop
-    	
-    """
-    # schedule it
-    clock.schedule(func, *args, **kwargs)
-    # call it
-    func(dt, *args, **kwargs)
+        Example
+        -------
 
-def schedule_delayed(func, delay, *args, **kwargs):
-    """
-    Schedule a callback to occur every event loop after the specified
-    initial delay.
-    
-    Parameters
-    ----------
-    func:function
-        The function to call when the timer lapses.
-    delay: float
-    	The number of seconds after the interval before the function
-    	begins.
-    	
-    Example
-    -------    
-    schedule_delay(function, 3.0)
-    	The function will be called on every loop starting 
-        after 3.0 seconds.    	
-    """
-    clock.schedule_once(_schedule_callback, delay, func, *args, **kwargs)
+        sched._schedule_interval_callback(dt, function, 1.0)
+            The function will be called one second after it
+            was last called.
+
+        """
+        # schedule it
+        if interval > 0:
+            def cb(dt):
+                if func in self._to_cancel:
+                    self._to_cancel.remove(func)
+                    return False
+                else:
+                    func(dt, *args, **kwargs)
+                    return True
+            Clock.schedule_interval(cb, interval)
+
+        # call it
+        func(dt, *args, **kwargs)
+
+    def schedule_delayed_interval(self, func, delay, interval, *args, **kwargs):
+        """
+        Schedule a callback with specified interval to begin after the
+        specified delay.
+
+        Parameters
+        ----------
+        func : function
+            The function to call when the timer lapses.
+        delay : float
+            The number of seconds after the interval before the function
+            begins.
+        interval : float
+            The number of seconds to wait between each call
+
+        Example
+        -------
+        schedule_delayed_interval(function, 2.0, 1.0)
+            The function will be called every second starting after 
+            2 seconds
+
+        """
+        def schedule_it(dt):
+            self._schedule_interval_callback(
+                dt, func, interval, *args, **kwargs)
+        Clock.schedule_once(schedule_it, delay)
+
+    def _schedule_callback(self, dt, func, *args, **kwargs):
+        """
+        Schedule a callback to occur every event loop with no delay or interval
+
+        Parameters
+        ----------
+        dt: float
+            The number of seconds since the last function call.
+        func:function
+            The function to call when the timer lapses.
+
+        Example
+        -------    
+        _schedule_callback(dt, function)
+            The function will be called immediately after the previous
+            event loop
+
+        """
+        # schedule it
+        def cb(dt):
+            if func in self._to_cancel:
+                self._to_cancel.remove(func)
+                return False
+            else:
+                func(dt, *args, **kwargs)
+                return True
+        Clock.schedule_interval(cb, 0)
+
+        # call it
+        func(dt, *args, **kwargs)
+
+    def schedule_delayed(self, func, delay, *args, **kwargs):
+        """
+        Schedule a callback to occur every event loop after the specified
+        initial delay.
+
+        Parameters
+        ----------
+        func:function
+            The function to call when the timer lapses.
+        delay: float
+            The number of seconds after the interval before the function
+            begins.
+
+        Example
+        -------    
+        schedule_delay(function, 3.0)
+            The function will be called on every loop starting 
+            after 3.0 seconds.    	
+        """
+        def schedule_it(dt):
+            self._schedule_callback(dt, func, *args, **kwargs)
+        Clock.schedule_once(schedule_it, delay)
+
+scheduler = Scheduler()
 
 
 class RunOnEnter():
@@ -277,10 +308,10 @@ class State(object):
             delay = 0
         if self.interval < 0:
             # schedule it for every event loop
-            schedule_delayed(self.callback, delay)
+            scheduler.schedule_delayed(self.callback, delay)
         else:
             # schedule the interval (0 means once)
-            schedule_delayed_interval(self.callback, delay, self.interval)
+            scheduler.schedule_delayed_interval(self.callback, delay, self.interval)
 
         # say we're active
         self.active = True
@@ -300,8 +331,6 @@ class State(object):
         # moved to after _enter in case we update duration
         if self.duration > 0:
             self.advance_parent_state_time(self.duration)
-
-        pass
 
     def _leave(self):
         pass
@@ -324,7 +353,7 @@ class State(object):
             self.advance_parent_state_time(duration)
 
         # remove the callback from the schedule
-        clock.unschedule(self.callback)
+        scheduler.unschedule(self.callback)
 
         # notify the parent that we're done
         self.active = False
@@ -340,7 +369,7 @@ class State(object):
         if self.save_log:
             dump([self.get_log()],self.get_log_stream())
         pass
-    
+
 
 class ParentState(State, RunOnEnter):
     """
@@ -743,6 +772,9 @@ class Loop(Serial):
             random.shuffle(self.iterable)
             self._shuffled = True
 
+        #print [(c, c.active) for c in self.children]
+        #print "\n\n%r" % self
+
     def _callback(self, dt):
         if self.check:
             self.check = False
@@ -756,6 +788,7 @@ class Loop(Serial):
             # process the children            
             # start those that are not active and not done
             num_done = 0
+            #print [(c, c.active, c.done) for c in self.children]
             for i,c in enumerate(self.children):
                 if c.done:
                     num_done += 1
@@ -763,7 +796,7 @@ class Loop(Serial):
                 if not c.active:
                     if i > 0 and \
                             not self.children[i-1].done and \
-                            self.children[i-1].duration < 0:
+                            self.children[i-1].duration < 0:  #TODO: need to resolved raw_duration before this?
                         # we have to wait until it's done
                         break
 
@@ -978,7 +1011,7 @@ if __name__ == '__main__':
 
     exp = Experiment()
 
-    Debug(width=exp['window'].width, height=exp['window'].height)
+    #Debug(width=exp['window'].width, height=exp['window'].height)  #!!!!!!!!!!!!!!!!!!!!!!
 
     with Loop(range(10)) as loop:
         with If(loop.current > 6):

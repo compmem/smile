@@ -16,11 +16,17 @@ import argparse
 import time
 import threading
 
-# pyglet imports
-import pyglet
-from pyglet.gl import *
-from pyglet import clock
-from pyglet.window import key,Window
+# kivy imports
+import kivy_overrides
+import kivy
+import kivy.base
+from kivy.app import App
+from kivy.uix.widget import Widget
+from kivy import clock
+from kivy.clock import Clock
+from kivy.lang import Builder
+from kivy.logger import Logger
+from kivy.base import EventLoop
 
 # local imports
 from state import Serial, State, RunOnEnter
@@ -28,73 +34,100 @@ from ref import val, Ref
 from log import dump, yaml2csv
 
 # set up the basic timer
-now = clock._default.time
+now = clock._default_time
 def event_time(time, time_error=0.0):
-    return {'time':time, 'error':time_error}
-    
-class ExpWindow(Window):
-    def __init__(self, exp, *args, **kwargs):
-        # init the pyglet window
-        super(ExpWindow, self).__init__(*args, **kwargs)
+    return {'time': time, 'error': time_error}
 
-        # set up the exp
+class ExpApp(App):
+    def __init__(self, exp, *pargs, **kwargs):
+        super(ExpApp, self).__init__(*pargs, **kwargs)
         self.exp = exp
-
-        # set up easy key logging
-        self.keys = key.KeyStateHandler()
-        self.push_handlers(self.keys)
-
-        # set empty list of key and mouse handler callbacks
         self.key_callbacks = []
         self.mouse_callbacks = []
+        self.need_flip = False  #???
+        self.need_draw = False  #???
 
-        # set up a batch for fast rendering
-        # eventually we'll need multiple groups
-        self.batch = pyglet.graphics.Batch()
+    def build(self):
+        self.canvas = Widget()
+        #TODO: bind kivy events
+        #...
+        self._last_time = now()  #???
+        kivy.base.EventLoop.set_idle_callback(self.idle_callback)
 
-        # say we've got nothing to plot
-        self.need_flip = False
-        self.need_draw = False
+    def idle_callback(self, event_loop):
+        # record the time range
+        self._new_time = now()
+        time_err = (self._new_time - self._last_time) / 2.0
+        self.event_time = event_time(self._last_time + time_err, time_err)
 
-    def on_draw(self, force=False):
-        if force or self.need_draw:
-            self.clear()
-            self.batch.draw()
-            self.need_flip = True
+        # update dt
+        Clock.tick()
 
-    def set_clear_color(self,color=(0,0,0,1)):
-        glClearColor(*color)
-                
-    def on_mouse_motion(self, x, y, dx, dy):
-        pass
+        # read and dispatch input from providers
+        event_loop.dispatch_input()
 
-    def on_mouse_press(self, x, y, button, modifiers):
-        for c in self.mouse_callbacks:
-            # pass it the x, y, button, mod, and event time
-            c(x, y, button, modifiers, self.exp.event_time)
-        pass
+        # flush all the canvas operation
+        Builder.sync()  # do these calls do anything when a .kv file is not used?
+
+        # tick before draw
+        Clock.tick_draw()
+
+        # flush all the canvas operation
+        Builder.sync()
+
+        # save the time
+        self._last_time = self._new_time
+
+        # exit if experiment done
+        if self.exp.done:
+            self.stop()
+
+    def draw(self):
+        #TODO: return if no draw needed?
+        EventLoop.window.dispatch('on_draw')
+
+    def flip(self):
+        #TODO: return if no flip needed?
+        EventLoop.window.dispatch('on_flip')
+
+    def blocking_flip(self):
+        #TODO: return if no flip needed?
+        self.flip()
+        #TODO: draw single transparent point
+        #TODO: glFinish
+        self.flip()
+        self.last_flip = event_time(now(), 0.0)
+        #TODO: clear need_flip?
+        return self.last_flip
+
+    def calc_flip_interval(self, nflips=55, nignore=5):
+        diffs = 0.0
+        last_time = 0.0
+        count = 0.0
+        for i in range(nflips):
+            # must draw something so the flip happens
+            #TODO: draw something
+
+            # perform the flip and record the flip interval
+            cur_time = self.blocking_flip()
+            if last_time > 0.0 and i >= nignore:
+                diffs += cur_time['time'] - last_time['time']
+                count += 1
+            last_time = cur_time
+
+            # add in sleep of something definitely less than the refresh rate
+            Clock.usleep(5000)  # 5ms for 200Hz
+
+        # reset the background color
+        #TODO: clear drawing
+        self.blocking_flip()
         
-    def on_mouse_release(self, x, y, button, modifiers):
-        pass
+        # take the mean and return
+        self.flip_interval = diffs / count
+        return self.flip_interval
 
-    def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
-        pass
+    #...
 
-    def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
-        pass
-
-    def on_key_press(self, symbol, modifiers):
-        if (symbol == key.ESCAPE) and (modifiers & key.MOD_SHIFT):
-            self.has_exit = True
-
-        # call the registered callbacks
-        #print self.key_callbacks
-        for c in self.key_callbacks:
-            # pass it the key, mod, and event time
-            c(symbol, modifiers, self.exp.event_time)
-
-    def on_key_release(self, symbol, modifiers):
-        pass
 
 class Experiment(Serial):
     """
@@ -139,7 +172,7 @@ class Experiment(Serial):
     docstring for addtional logged parameters.              
     """
     def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
-                 pyglet_vsync=True, background_color=(0,0,0,1), screen_ind=0):
+                 vsync=True, background_color=(0,0,0,1), screen_ind=0):
 
         # first process the args
         self._process_args()
@@ -148,22 +181,22 @@ class Experiment(Serial):
         super(Experiment, self).__init__(parent=None, duration=-1)
 
         # set up the window
-        screens = pyglet.window.get_platform().get_default_display().get_screens()
-        if screen_ind != self.screen_ind:
-            # command line overrides
-            screen_ind = self.screen_ind
-        self.screen = screens[screen_ind]
-        self.pyglet_vsync = pyglet_vsync
+        #screens = pyglet.window.get_platform().get_default_display().get_screens()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #if screen_ind != self.screen_ind:
+        #    # command line overrides
+        #    screen_ind = self.screen_ind  #IS: isn't this if statement just equivalent to "screen_ind = self.screen_ind"?
+        self.screen = None  #screens[screen_ind]  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.vsync = vsync
         self.fullscreen = fullscreen or self.fullscreen
         self.resolution = resolution
         self.name = name
-        self.window = None   # will create when run
+        self.app = None   # will create when run
 
         # set the clear color
         self._background_color = background_color
 
         # get a clock for sleeping 
-        self.clock = pyglet.clock._default
+        self.clock = clock.Clock
 
         # set up instance for access throughout code
         self.__class__.last_instance = weakref.ref(self)
@@ -180,16 +213,16 @@ class Experiment(Serial):
         self.last_event = event_time(0.0)
 
         # default flip interval
-        self.flip_interval = 1/60.
+        self.flip_interval = 1 / 60.
 
         # place to save experimental variables
         self._vars = {}
 
         # add log locs (state.yaml, experiment.yaml)
-        self.state_log = os.path.join(self.subj_dir,'state.yaml')
-        self.state_log_stream = open(self.state_log,'a')
-        self.exp_log = os.path.join(self.subj_dir,'exp.yaml')
-        self.exp_log_stream = open(self.exp_log,'a')
+        self.state_log = os.path.join(self.subj_dir, 'state.yaml')
+        self.state_log_stream = open(self.state_log, 'a')
+        self.exp_log = os.path.join(self.subj_dir, 'exp.yaml')
+        self.exp_log_stream = open(self.exp_log, 'a')
         self._reserved_data_filenames = set(os.listdir(self.subj_dir))
         self._reserved_data_filenames_lock = threading.Lock()
 
@@ -281,143 +314,47 @@ class Experiment(Serial):
         """
         # create the window
         if self.fullscreen:
-            self.window = ExpWindow(self, fullscreen=True, 
-                                    caption=self.name, 
-                                    vsync=self.pyglet_vsync,
-                                    screen=self.screen)
+            self.app = ExpApp(self)
+            #self.app = ExpApp(self, fullscreen=True, 
+            #                  caption=self.name, 
+            #                  vsync=self.vsync,
+            #                  screen=self.screen)
         else:
-            self.window = ExpWindow(self, *(self.resolution),
-                                    fullscreen=self.fullscreen, 
-                                    caption=self.name, 
-                                    vsync=self.pyglet_vsync,
-                                    screen=self.screen)
-            
+            self.app = ExpApp(self)
+            #self.app = ExpApp(self, *(self.resolution),
+            #                  fullscreen=self.fullscreen, 
+            #                  caption=self.name, 
+            #                  vsync=self.vsync,
+            #                  screen=self.screen)
+
         # set the clear color
-        self.window.set_clear_color(self._background_color)
+        #self.window.set_clear_color(self._background_color)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         # set the mouse as desired
         #self.window.set_exclusive_mouse()
-        self.window.set_mouse_visible(False)
-
-        # some gl stuff (must look up to remember why we want them)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        #self.window.set_mouse_visible(False)                #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         # get flip interval
-        self.flip_interval = self._calc_flip_interval()
-        print "Monitor Flip Interval is %f (%f Hz)"%(self.flip_interval,1./self.flip_interval)
+        #self.flip_interval = self._calc_flip_interval()
+        #print "Monitor Flip Interval is %f (%f Hz)"%(self.flip_interval,1./self.flip_interval)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         # first clear and do a flip
-        #glClear(GL_COLOR_BUFFER_BIT)
-        self.window.on_draw(force=True)
-        self.blocking_flip()
+        #self.window.on_draw(force=True)
+        #self.blocking_flip()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         # start the first state (that's this experiment)
         self.enter()
 
-        # process events until done
-        self._last_time = now()
-        while not self.done and not self.window.has_exit:
-            # record the time range
-            self._new_time = now()
-            time_err = (self._new_time - self._last_time)/2.
-            self.event_time = event_time(self._last_time+time_err,
-                                         time_err)
-
-            # process the events that occurred in that range
-            self.window.dispatch_events()
-
-            # handle all scheduled callbacks
-            dt = clock.tick(poll=True)
-
-            # put in sleeps if necessary
-            if dt < .0001:
-                # do a usleep for 1/4 of a ms (might need to tweak)
-                self.clock.sleep(250)
-
-            # save the time
-            self._last_time = self._new_time
+        # kivy main loop
+        self.app.run()
 
         # write out csv logs if desired
         if self.csv:
             self.state_log_stream.flush()
-            yaml2csv(self.state_log, os.path.splitext(self.state_log)[0]+'.csv')
+            yaml2csv(self.state_log,
+                     os.path.splitext(self.state_log)[0] + '.csv')
             self.exp_log_stream.flush()
-            yaml2csv(self.exp_log, os.path.splitext(self.exp_log)[0]+'.csv')
-
-        # close the window and clean up
-        self.window.close()
-        self.window = None
-
-
-    def _calc_flip_interval(self, nflips=55, nignore=5):
-        """
-        Calculate the mean flip interval.
-        """
-        import random
-        diffs = 0.0
-        last_time = 0.0
-        count = 0.0
-        for i in range(nflips):
-            # must draw something so the flip happens
-            #color = (random.uniform(0,1),
-            #         random.uniform(0,1),
-            #         random.uniform(0,1),
-            #         1.0)
-            color = (0,
-                     0,
-                     0,
-                     1.0)
-            self.window.set_clear_color(color)
-            self.window.on_draw(force=True)
-
-            # perform the flip and record the flip interval
-            cur_time = self.blocking_flip()
-            if last_time > 0.0 and i >= nignore:
-                diffs += cur_time['time']-last_time['time']
-                count += 1
-            last_time = cur_time
-
-            # add in sleep of something definitely less than the refresh rate
-            self.clock.sleep(5000)  # 5ms for 200Hz
-
-        # reset the background color
-        self.window.set_clear_color(self._background_color)
-        self.window.on_draw(force=True)
-        self.blocking_flip()
-        
-        # take the mean and return
-        return diffs/count
-        
-    def blocking_flip(self):
-        # only flip if we've drawn
-        if self.window.need_flip:
-            # first the flip
-            self.window.flip()
-
-            if True: #not self.pyglet_vsync:
-                # OpenGL:
-                glDrawBuffer(GL_BACK)
-                # We draw our single pixel with an alpha-value of zero
-                # - so effectively it doesn't change the color buffer
-                # - just the z-buffer if z-writes are enabled...
-                glColor4f(0,0,0,0)
-                glBegin(GL_POINTS)
-                glVertex2i(10,10)
-                glEnd()
-                # This glFinish() will wait until point drawing is
-                # finished, ergo backbuffer was ready for drawing,
-                # ergo buffer swap in sync with start of VBL has
-                # happened.
-                glFinish()
-
-            # return when it happened
-            self.last_flip = event_time(now(),0.0)
-
-            # no need for flip anymore
-            self.window.need_flip = False
-
-        return self.last_flip
+            yaml2csv(self.exp_log, os.path.splitext(self.exp_log)[0] + '.csv')
 
 
 class Set(State, RunOnEnter):
@@ -623,8 +560,7 @@ class Log(State, RunOnEnter):
         # log it to the correct file
         dump([log], self._get_stream())
         pass
-    
-            
+
 if __name__ == '__main__':
     # can't run inside this file
     #exp = Experiment(fullscreen=False, pyglet_vsync=False)
