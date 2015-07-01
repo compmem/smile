@@ -22,8 +22,6 @@ import kivy
 import kivy.base
 from kivy.app import App
 from kivy.uix.widget import Widget
-#from kivy import clock
-#from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.base import EventLoop
@@ -35,8 +33,6 @@ from ref import val, Ref
 from log import dump, yaml2csv
 from clock import clock
 
-# set up the basic timer
-#now = clock._default_time
 def event_time(time, time_error=0.0):
     return {'time': time, 'error': time_error}
 
@@ -44,18 +40,37 @@ class ExpApp(App):
     def __init__(self, exp, *pargs, **kwargs):
         super(ExpApp, self).__init__(*pargs, **kwargs)
         self.exp = exp
-        self.key_callbacks = []
-        self.mouse_callbacks = []
+        self.callbacks = {}
         self.need_flip = False  #???
         self.need_draw = False  #???
+
+    def add_callback(self, event_name, func):
+        self.callbacks.setdefault(event_name, []).append(func)
+
+    def remove_callback(self, event_name, event_func):
+        try:
+            callbacks = self.callbacks[event_name]
+        except KeyError:
+            return
+        self.callbacks[event_name] = [func for func in
+                                      self.callbacks[event_name] if
+                                      func != event_func]
+
+    def _trigger_callback(self, event_name, *pargs, **kwargs):
+        try:
+            callbacks = self.callbacks[event_name]
+        except KeyError:
+            return
+        for func in callbacks:
+            func(*pargs, **kwargs)
 
     def build(self):
         self.canvas = Widget()
         #TODO: bind kivy events...
-        #self._keyboard = Window.request_keyboard(self._keyboard_closed,
-        #                                         self.canvas)
-        #self._keyboard.bind(on_key_down=self._on_key_down,
-        #                    on_key_up=self._on_key_up)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self._keyboard = Window.request_keyboard(self._keyboard_closed,
+                                                 self.canvas)
+        self._keyboard.bind(on_key_down=self._on_key_down,
+                            on_key_up=self._on_key_up)
         #...
         self._last_time = clock.now()  #???
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
@@ -66,7 +81,12 @@ class ExpApp(App):
                               on_key_up=self._on_key_up)
         self._keyboard = None
 
-    #TODO: key_up, key_down
+    def _on_key_down(self, keyboard, keycode, text, modifiers):
+        self._trigger_callback("KEY_DOWN", keycode, text, modifiers,
+                               self.event_time)
+
+    def _on_key_up(self, keyboard, keycode):
+        self._trigger_callback("KEY_UP", keycode, self.event_time)
 
     def _idle_callback(self, event_loop):
         # record the time range
@@ -75,20 +95,13 @@ class ExpApp(App):
         self.event_time = event_time(self._last_time + time_err, time_err)
 
         # update dt
-        #Clock.tick()  #TODO: alternative clock!!!
         clock.tick()
 
         # read and dispatch input from providers
         event_loop.dispatch_input()
 
         # flush all the canvas operation
-        Builder.sync()  # do these calls do anything when a .kv file is not used?
-
-        # tick before draw
-        #Clock.tick_draw()
-
-        # flush all the canvas operation
-        #Builder.sync()
+        Builder.sync()  # does this call do anything when a .kv file is not used?
 
         # save the time
         self._last_time = self._new_time
