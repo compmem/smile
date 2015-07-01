@@ -7,13 +7,14 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from pyglet.window import key
+#from pyglet.window import key
 
 from state import State
 from ref import Ref, val
+from clock import clock
 
 # get the last instance of the experiment class
-from experiment import Experiment, now
+from experiment import Experiment
 
 class KeyPress(State):
     """
@@ -110,11 +111,11 @@ class KeyPress(State):
         self.rt = None
         self.base_time = None
 
-    def _key_callback(self, symbol, modifiers, event_time):
+    def _key_callback(self, keycode, text, modifiers, event_time):
         # check the key and time (if this is needed)
         keys = val(self.keys)
         correct_resp = val(self.correct_resp)
-        sym_str = key.symbol_string(symbol)
+        sym_str = keycode[1].upper()
         if None in keys or sym_str in keys:
             # it's all good!, so save it
             self.pressed = sym_str
@@ -138,7 +139,8 @@ class KeyPress(State):
             
     def _callback(self, dt):
         if not self.waiting:
-            self.exp.window.key_callbacks.append(self._key_callback)
+            self.exp.app.add_callback("KEY_DOWN", self._key_callback)
+            #self.exp.window.key_callbacks.append(self._key_callback)
             self.waiting = True
         if self.base_time is None:
             self.base_time = val(self.base_time_src)
@@ -146,16 +148,17 @@ class KeyPress(State):
                 # set it to the state time
                 self.base_time = self.state_time
         wait_duration = val(self.wait_duration)
-        if (not wait_duration is None) and (now() >= self.base_time+wait_duration):
+        if (not wait_duration is None) and (clock.now() >=
+                                            self.base_time + wait_duration):
             self.leave()
         elif val(self.wait_until):
             self.leave()
             
     def _leave(self):
         # remove the keyboard callback
-        self.exp.window.key_callbacks.remove(self._key_callback)
+        self.exp.app.remove_callback("KEY_DOWN", self._key_callback)
+        #self.exp.window.key_callbacks.remove(self._key_callback)
         self.waiting = False
-        pass
     
 
 
