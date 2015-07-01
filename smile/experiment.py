@@ -82,6 +82,9 @@ class ExpApp(App):
         self._keyboard = None
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
+        if keycode[0] == 27 and "shift" in modifiers:
+            self.stop()
+            return
         self._trigger_callback("KEY_DOWN", keycode, text, modifiers,
                                self.event_time)
 
