@@ -28,7 +28,7 @@ class SmileEventLoop(kivy.base.EventLoopBase):
 
         return self.quit
 kivy.base.EventLoop = SmileEventLoop()
-import kivy.clock
-kivy.clock.ClockBase.MIN_SLEEP = 0.0
-kivy.clock.ClockBase.SLEEP_UNDERSHOOT = 0.0004
-kivy.clock.Clock._max_fps = 2000
+#import kivy.clock
+#kivy.clock.ClockBase.MIN_SLEEP = 0.0
+#kivy.clock.ClockBase.SLEEP_UNDERSHOOT = 0.0
+#kivy.clock.Clock._max_fps = 2000.0
