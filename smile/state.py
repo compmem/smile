@@ -8,139 +8,11 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import kivy_overrides
-from kivy import clock
-now = clock._default_time
-from kivy.clock import Clock
 import random
 from ref import Ref, val
 from utils import rindex, get_class_name
 from log import dump
-
-# custom schedule functions (add delays)
-class Scheduler(object):
-    def __init__(self):
-        self._to_cancel = []
-
-    def unschedule(self, func):
-        self._to_cancel.append(func)
-
-    def _schedule_interval_callback(self, dt, func, interval, *args, **kwargs):
-        """
-        Schedule a callback with specified interval.
-
-        Parameters
-        ----------
-        dt : float
-            The number of seconds since the last function call.
-        func : function
-            The function to call when the timer lapses.
-        interval : float
-            The number of seconds to wait between each call
-
-        Example
-        -------
-
-        sched._schedule_interval_callback(dt, function, 1.0)
-            The function will be called one second after it
-            was last called.
-
-        """
-        # schedule it
-        if interval > 0:
-            def cb(dt):
-                if func in self._to_cancel:
-                    self._to_cancel.remove(func)
-                    return False
-                else:
-                    func(dt, *args, **kwargs)
-                    return True
-            Clock.schedule_interval(cb, interval)
-
-        # call it
-        func(dt, *args, **kwargs)
-
-    def schedule_delayed_interval(self, func, delay, interval, *args, **kwargs):
-        """
-        Schedule a callback with specified interval to begin after the
-        specified delay.
-
-        Parameters
-        ----------
-        func : function
-            The function to call when the timer lapses.
-        delay : float
-            The number of seconds after the interval before the function
-            begins.
-        interval : float
-            The number of seconds to wait between each call
-
-        Example
-        -------
-        schedule_delayed_interval(function, 2.0, 1.0)
-            The function will be called every second starting after 
-            2 seconds
-
-        """
-        def schedule_it(dt):
-            self._schedule_interval_callback(
-                dt, func, interval, *args, **kwargs)
-        Clock.schedule_once(schedule_it, delay)
-
-    def _schedule_callback(self, dt, func, *args, **kwargs):
-        """
-        Schedule a callback to occur every event loop with no delay or interval
-
-        Parameters
-        ----------
-        dt: float
-            The number of seconds since the last function call.
-        func:function
-            The function to call when the timer lapses.
-
-        Example
-        -------    
-        _schedule_callback(dt, function)
-            The function will be called immediately after the previous
-            event loop
-
-        """
-        # schedule it
-        def cb(dt):
-            if func in self._to_cancel:
-                self._to_cancel.remove(func)
-                return False
-            else:
-                func(dt, *args, **kwargs)
-                return True
-        Clock.schedule_interval(cb, 0)
-
-        # call it
-        func(dt, *args, **kwargs)
-
-    def schedule_delayed(self, func, delay, *args, **kwargs):
-        """
-        Schedule a callback to occur every event loop after the specified
-        initial delay.
-
-        Parameters
-        ----------
-        func:function
-            The function to call when the timer lapses.
-        delay: float
-            The number of seconds after the interval before the function
-            begins.
-
-        Example
-        -------    
-        schedule_delay(function, 3.0)
-            The function will be called on every loop starting 
-            after 3.0 seconds.    	
-        """
-        def schedule_it(dt):
-            self._schedule_callback(dt, func, *args, **kwargs)
-        Clock.schedule_once(schedule_it, delay)
-
-scheduler = Scheduler()
+from clock import clock
 
 
 class RunOnEnter():
@@ -260,7 +132,7 @@ class State(object):
     	Run at the scheduled state time.
     	"""
 
-        self.last_call_time = now()
+        self.last_call_time = clock.now()
         self.last_call_error = self.last_call_time - self.state_time
         if self.first_call_time is None:
             self.first_call_time = self.last_call_time
@@ -284,7 +156,7 @@ class State(object):
         if self.parent:
             return self.parent.get_state_time()
         else:
-            return now()
+            return clock.now()
 
     def advance_parent_state_time(self, duration):
         if self.parent:
@@ -302,16 +174,20 @@ class State(object):
         self.start_time = self.state_time
 
         # add the callback to the schedule
-        delay = self.state_time - now()
+        delay = self.state_time - clock.now()
         if delay < 0 or issubclass(self.__class__,RunOnEnter):
             # parents states (and states like Logging) run immediately
             delay = 0
         if self.interval < 0:
             # schedule it for every event loop
-            scheduler.schedule_delayed(self.callback, delay)
-        else:
+            clock.schedule(self.callback, event_delay=delay, repeat_interval=0)
+        elif self.interval == 0:
             # schedule the interval (0 means once)
-            scheduler.schedule_delayed_interval(self.callback, delay, self.interval)
+            clock.schedule(self.callback, event_delay=delay)
+        else:
+            # schedule the interval
+            clock.schedule(self.callback, event_delay=delay,
+                           repeat_interval=self.interval)
 
         # say we're active
         self.active = True
@@ -340,7 +216,7 @@ class State(object):
         Gets the end time of the state (logs current time)
         """
         
-        self.end_time = now()
+        self.end_time = clock.now()
         
         # update the parent state time to actual elapsed time if necessary
         if self.duration < 0:
@@ -353,7 +229,7 @@ class State(object):
             self.advance_parent_state_time(duration)
 
         # remove the callback from the schedule
-        scheduler.unschedule(self.callback)
+        clock.unschedule(self.callback)
 
         # notify the parent that we're done
         self.active = False
@@ -872,7 +748,8 @@ class Wait(State):
         self.stay_active = stay_active
 
     def _callback(self, dt):
-        if not self.stay_active or now() >= self.state_time+self.duration:
+        if (not self.stay_active or
+            clock.now() >= self.state_time + self.duration):
             # we're done
             #self.interval = 0
             self.leave()
@@ -906,7 +783,7 @@ class ResetClock(State, RunOnEnter):
                                          save_log=save_log)
         if new_time is None:
             # eval to now if nothing specified
-            new_time = Ref(gfunc=lambda:now())
+            new_time = Ref(gfunc=lambda:clock.now())
         self.new_time = new_time
 
     def _callback(self, dt):
@@ -1007,7 +884,7 @@ if __name__ == '__main__':
     from experiment import Experiment, Set, Get
 
     def print_dt(state, *txt):
-        print txt, now()-state.state_time, state.dt
+        print txt, clock.now()-state.state_time, state.dt
 
     exp = Experiment()
 

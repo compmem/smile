@@ -22,19 +22,21 @@ import kivy
 import kivy.base
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy import clock
-from kivy.clock import Clock
+#from kivy import clock
+#from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.base import EventLoop
+from kivy.core.window import Window
 
 # local imports
 from state import Serial, State, RunOnEnter
 from ref import val, Ref
 from log import dump, yaml2csv
+from clock import clock
 
 # set up the basic timer
-now = clock._default_time
+#now = clock._default_time
 def event_time(time, time_error=0.0):
     return {'time': time, 'error': time_error}
 
@@ -49,19 +51,32 @@ class ExpApp(App):
 
     def build(self):
         self.canvas = Widget()
-        #TODO: bind kivy events
+        #TODO: bind kivy events...
+        #self._keyboard = Window.request_keyboard(self._keyboard_closed,
+        #                                         self.canvas)
+        #self._keyboard.bind(on_key_down=self._on_key_down,
+        #                    on_key_up=self._on_key_up)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         #...
-        self._last_time = now()  #???
-        kivy.base.EventLoop.set_idle_callback(self.idle_callback)
+        self._last_time = clock.now()  #???
+        kivy.base.EventLoop.set_idle_callback(self._idle_callback)
+        return self.canvas
 
-    def idle_callback(self, event_loop):
+    def _keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self._on_key_down,
+                              on_key_up=self._on_key_up)
+        self._keyboard = None
+
+    #TODO: key_up, key_down
+
+    def _idle_callback(self, event_loop):
         # record the time range
-        self._new_time = now()
+        self._new_time = clock.now()
         time_err = (self._new_time - self._last_time) / 2.0
         self.event_time = event_time(self._last_time + time_err, time_err)
 
         # update dt
-        Clock.tick()
+        #Clock.tick()  #TODO: alternative clock!!!
+        clock.tick()
 
         # read and dispatch input from providers
         event_loop.dispatch_input()
@@ -70,10 +85,10 @@ class ExpApp(App):
         Builder.sync()  # do these calls do anything when a .kv file is not used?
 
         # tick before draw
-        Clock.tick_draw()
+        #Clock.tick_draw()
 
         # flush all the canvas operation
-        Builder.sync()
+        #Builder.sync()
 
         # save the time
         self._last_time = self._new_time
@@ -96,7 +111,7 @@ class ExpApp(App):
         #TODO: draw single transparent point
         #TODO: glFinish
         self.flip()
-        self.last_flip = event_time(now(), 0.0)
+        self.last_flip = event_time(clock.now(), 0.0)
         #TODO: clear need_flip?
         return self.last_flip
 
@@ -194,9 +209,6 @@ class Experiment(Serial):
 
         # set the clear color
         self._background_color = background_color
-
-        # get a clock for sleeping 
-        self.clock = clock.Clock
 
         # set up instance for access throughout code
         self.__class__.last_instance = weakref.ref(self)
@@ -559,7 +571,6 @@ class Log(State, RunOnEnter):
             log.update(val(self.log_dict))
         # log it to the correct file
         dump([log], self._get_stream())
-        pass
 
 if __name__ == '__main__':
     # can't run inside this file
