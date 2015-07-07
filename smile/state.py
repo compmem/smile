@@ -7,6 +7,8 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
+from contextlib import contextmanager
+
 import kivy_overrides
 import random
 from ref import Ref, val
@@ -53,6 +55,8 @@ class State(object):
         self.state_time = None
         self.start_time = None
         self.end_time = None
+        self.enter_time = None
+        self.leave_time = None
         self.first_call_time = None
         self.first_call_error = None
         self.last_call_time = None
@@ -86,6 +90,7 @@ class State(object):
         # start the log
         self.state = self.__class__.__name__
         self.log_attrs = ['state','state_time','start_time','end_time',
+                          'enter_time', 'leave_time',
                           'first_call_time','first_call_error',
                           'last_call_time','last_call_error',
                           'duration']
@@ -158,10 +163,6 @@ class State(object):
         else:
             return clock.now()
 
-    def advance_parent_state_time(self, duration):
-        if self.parent:
-            self.parent.advance_state_time(duration)
-
     def _enter(self):
         pass
 
@@ -172,9 +173,10 @@ class State(object):
         
         self.state_time = self.get_parent_state_time()
         self.start_time = self.state_time
+        self.enter_time = clock.now()
 
         # add the callback to the schedule
-        delay = self.state_time - clock.now()
+        delay = self.state_time - self.enter_time
         if delay < 0 or issubclass(self.__class__,RunOnEnter):
             # parents states (and states like Logging) run immediately
             delay = 0
@@ -203,11 +205,6 @@ class State(object):
         # custom enter code
         self._enter()
 
-        # update the parent time if necessary
-        # moved to after _enter in case we update duration
-        if self.duration > 0:
-            self.advance_parent_state_time(self.duration)
-
     def _leave(self):
         pass
 
@@ -215,18 +212,12 @@ class State(object):
         """
         Gets the end time of the state (logs current time)
         """
-        
-        self.end_time = clock.now()
-        
-        # update the parent state time to actual elapsed time if necessary
-        if self.duration < 0:
-            if issubclass(self.__class__,ParentState): #isinstance(self, ParentState):
-                # advance the duration the children moved the this parent
-                duration = self.state_time-self.start_time
-            else:
-                # advance the duration of this state
-                duration = self.end_time-self.start_time
-            self.advance_parent_state_time(duration)
+        # ignore leave call if not active
+        if not self.active:
+            return
+
+        self.leave_time = clock.now()
+        self.set_end_time()
 
         # remove the callback from the schedule
         clock.unschedule(self.callback)
@@ -244,7 +235,12 @@ class State(object):
         #print self.get_log()
         if self.save_log:
             dump([self.get_log()],self.get_log_stream())
-        pass
+
+    def set_end_time(self):
+        if self.duration < 0:
+            self.end_time = self.leave_time
+        else:
+            self.end_time = self.start_time + self.duration
 
 
 class ParentState(State, RunOnEnter):
@@ -286,13 +282,11 @@ class ParentState(State, RunOnEnter):
     def get_state_time(self):
         return self.state_time
 
-    def advance_state_time(self, duration):
-        self.state_time += duration
-
     def claim_child(self, child):
         if not child.parent is None:
             ind = rindex(child.parent.children,child)
             del child.parent.children[ind]
+            #IKS: why don't we use the remove method?
         child.parent = self
         self.children.append(child)
 
@@ -301,7 +295,6 @@ class ParentState(State, RunOnEnter):
         for c in self.children:
             c.done = False
         self.check = True
-        self._advanced = 0 # for Parallel children
 
     def __enter__(self):
         # push self as current parent
@@ -313,7 +306,6 @@ class ParentState(State, RunOnEnter):
         # pop self off
         if not self.exp is None:
             state = self.exp._parents.pop()
-        pass
 
 
 class Parallel(ParentState):
@@ -323,33 +315,99 @@ class Parallel(ParentState):
     A Parallel Parent State is done when all its children have
     finished.
     
-    """        
+    """
+    def __init__(self, *pargs, **kwargs):
+        super(Parallel, self).__init__(*pargs, **kwargs)
+        self.children_blocking = []
+
+    def _normalize_children_blocking(self):
+        for _n in range(len(self.children_blocking), len(self.children)):
+            self.children_blocking.append(True)
+
+    def set_child_blocking(self, n, blocking):
+        self._normalize_children_blocking()
+        self.children_blocking[n] = blocking
+
+    def _enter(self):
+        super(Parallel, self)._enter()
+        self._normalize_children_blocking()
+        self.blocking_children = [c for c, blocking in
+                                  zip(self.children, self.children_blocking) if
+                                  blocking]
+        self.blocking_remaining = self.blocking_children[:]
+        self.started_children = False
+
     def _callback(self, dt):
         if self.check:
             self.check = False
-            # process the children
-            # start those that are not active and not done
-            num_done = 0
-            for c in self.children:
-                if c.done:
-                    num_done += 1
-                    continue
-                if not c.active:
-                    c.enter()
-            if num_done == len(self.children):
-                # we're done
-                #self.interval = 0
-                # advance the state_time
-                self.state_time += self._advanced
-                self.leave()
-        pass
 
-    def advance_state_time(self, duration):
-        # advance the longest duration
-        to_advance = duration - self._advanced
-        if to_advance > 0:
-            #self.state_time += to_advance
-            self._advanced += to_advance
+            newly_done = []
+            if self.started_children:
+                for n, c in enumerate(self.blocking_remaining):
+                    if c.done:
+                        newly_done.append(n)
+                for n in reversed(newly_done):
+                    del self.blocking_remaining[n]
+            else:
+                self.started_children = True
+                for c in self.children:
+                    c.enter()
+
+            if not len(self.blocking_remaining):
+                # we're done
+                self.leave()
+
+    def _leave(self):
+        for c in self.children:
+            c.leave()
+
+    def set_end_time(self):
+        self.end_time = max([c.end_time for c in self.blocking_children])
+
+
+@contextmanager
+def Meanwhile():
+    # get the exp reference
+    from experiment import Experiment
+    try:
+        exp = Experiment.last_instance()
+    except AttributeError:
+        raise AttributeError("You must first instantiate an Experiment.")
+
+    # find the parent
+    parent = exp._parents[-1]
+
+    # find the previous child state (-1 because this is not a state)
+    prev_state = parent.children[-1]
+
+    # build the new Parallel state
+    with Parallel() as p:
+        with Serial():
+            yield p
+    p.claim_child(prev_state)
+    p.set_child_blocking(0, False)
+
+@contextmanager
+def UntilDone():
+    # get the exp reference
+    from experiment import Experiment
+    try:
+        exp = Experiment.last_instance()
+    except AttributeError:
+        raise AttributeError("You must first instantiate an Experiment.")
+
+    # find the parent
+    parent = exp._parents[-1]
+
+    # find the previous child state (-1 because this is not a state)
+    prev_state = parent.children[-1]
+
+    # build the new Parallel state
+    with Parallel() as p:
+        with Serial():
+            yield p
+    p.claim_child(prev_state)
+    p.set_child_blocking(1, False)
 
 
 class Serial(ParentState):
@@ -359,32 +417,31 @@ class Serial(ParentState):
     finished.
     
     """
+    def _enter(self):
+        super(Serial, self)._enter()
+        self.child_iterator = iter(self.children)
+        self.current_child = None
+
     def _callback(self, dt):
         if self.check:
             self.check = False
-            # process the children
-            # start those that are not active and not done
-            num_done = 0
-            for i,c in enumerate(self.children):
-                if c.done:
-                    num_done += 1
-                    continue
-                if not c.active:
-                    if i > 0 and \
-                            not self.children[i-1].done and \
-                            self.children[i-1].duration < 0:
-                        # we have to wait until it's done
-                        break
 
-                    # start the next one
-                    c.enter()
-                    break
+            if (self.current_child is None or
+                self.current_child.done or
+                self.current_child.duration >= 0):  #???
+                if self.current_child is not None:
+                    self.state_time = self.current_child.end_time
+                try:
+                    self.current_child = self.child_iterator.next()
+                    self.current_child.enter()
+                except StopIteration:
+                    self.leave()
 
-            if num_done == len(self.children):
-                # we're done
-                #self.interval = 0
-                self.leave()
-        pass
+    def set_end_time(self):
+        if self.current_child is None:
+            self.end_time = self.start_time
+        else:
+            self.end_time = self.current_child.end_time
 
     
 class If(ParentState):
@@ -473,6 +530,7 @@ class If(ParentState):
         # the Else
         # must evaluate each cond
         self.outcome = [not v is False for v in val(self.cond)]
+        self.selected_child = self.out_states[self.outcome.index(True)]
         super(If, self)._enter()
         
     def _callback(self, dt):
@@ -488,7 +546,7 @@ class If(ParentState):
             #     c = self.false_state
                 
             # take the first one that evaluated to True
-            c = self.out_states[self.outcome.index(True)]
+            c = self.selected_child
             
             if c is None or c.done:
                 done = True
@@ -498,7 +556,6 @@ class If(ParentState):
 
             # check if done
             if done:
-                #self.interval = 0
                 self.leave()
 
     def __enter__(self):
@@ -506,6 +563,12 @@ class If(ParentState):
         if not self.exp is None:
             self.exp._parents.append(self.true_state)
         return self
+
+    def set_end_time(self):
+        if self.selected_child is None:
+            self.end_time = self.start_time
+        else:
+            self.end_time = self.selected_child.end_time
 
 
 class Elif(Serial):
@@ -606,6 +669,9 @@ class Loop(Serial):
     list are traversed.
 
     """
+
+    #TODO: Implement this with an enclosed Serial instead, to consolidate functionality!
+    
     def __init__(self, iterable=None, shuffle=False,
                  conditional=True,
                  parent=None, save_log=True):
@@ -648,6 +714,9 @@ class Loop(Serial):
             random.shuffle(self.iterable)
             self._shuffled = True
 
+        self.child_iterator = iter(self.children)
+        self.current_child = None
+
         #print [(c, c.active) for c in self.children]
         #print "\n\n%r" % self
 
@@ -660,27 +729,21 @@ class Loop(Serial):
                 #self.interval = 0
                 self.leave()
                 return
-                
-            # process the children            
-            # start those that are not active and not done
-            num_done = 0
-            #print [(c, c.active, c.done) for c in self.children]
-            for i,c in enumerate(self.children):
-                if c.done:
-                    num_done += 1
-                    continue
-                if not c.active:
-                    if i > 0 and \
-                            not self.children[i-1].done and \
-                            self.children[i-1].duration < 0:  #TODO: need to resolved raw_duration before this?
-                        # we have to wait until it's done
-                        break
 
-                    # start the next one
-                    c.enter()
-                    break
+            if (self.current_child is None or
+                self.current_child.done or
+                self.current_child.duration >= 0):  #???
+                if self.current_child is not None:
+                    self.state_time = self.current_child.end_time
+                try:
+                    self.current_child = self.child_iterator.next()
+                    self.current_child.enter()
+                except StopIteration:
+                    done_with_sequence = True
+                else:
+                    done_with_sequence = False
 
-            if num_done == len(self.children):
+            if done_with_sequence:
                 # we're done with this sequence
                 finished = False
                 if not self.iterable is None:
@@ -705,8 +768,12 @@ class Loop(Serial):
                 # update everything for the next loop
                 if not finished:
                     self._enter()
-                    
-        pass
+
+    def set_end_time(self):
+        if self.current_child is None:
+            self.end_time = self.start_time
+        else:
+            self.end_time = self.current_child.end_time
 
 
 class Wait(State):
@@ -886,6 +953,9 @@ if __name__ == '__main__':
     def print_dt(state, *txt):
         print txt, clock.now()-state.state_time, state.dt
 
+    def print_actual_duration(state, target):
+        print target.end_time - target.start_time
+
     exp = Experiment()
 
     #Debug(width=exp['window'].width, height=exp['window'].height)  #!!!!!!!!!!!!!!!!!!!!!!
@@ -942,8 +1012,36 @@ if __name__ == '__main__':
     with Loop(block) as trial:
         Func(print_dt, args=[trial.current['text']])
         Wait(1.0)
-        
-    Wait(2.0, stay_active=True)
+
+    Func(print_dt, args=['before meanwhile 1'])
+    Wait(1.0)
+    with Meanwhile() as mw:
+        Wait(15.0)
+    Func(print_dt, args=['after meanwhile 1'])
+    Func(print_actual_duration, args=(mw,))
+
+    Func(print_dt, args=['before meanwhile 2'])
+    Wait(5.0)
+    with Meanwhile() as mw:
+        Wait(1.0)
+    Func(print_dt, args=['after meanwhile 2'])
+    Func(print_actual_duration, args=(mw,))
+
+    Func(print_dt, args=['before untildone 1'])
+    Wait(15.0)
+    with UntilDone() as ud:
+        Wait(1.0)
+    Func(print_dt, args=['after untildone 1'])
+    Func(print_actual_duration, args=(ud,))
+
+    Func(print_dt, args=['before untildone 2'])
+    Wait(1.0)
+    with UntilDone() as ud:
+        Wait(5.0)
+    Func(print_dt, args=['after untildone 2'])
+    Func(print_actual_duration, args=(ud,))
+
+    Wait(2.0, stay_active=True)  #TODO: eliminate need for stay_active
 
     exp.run()
 
@@ -968,7 +1066,4 @@ if __name__ == '__main__':
     #     Func(print_dt, args=['four'], interval=0.0, parent=trial)
     #     print trial.children
     # Wait(2.0, stay_active=True, parent=exp)
-
-    
-    pass
 
