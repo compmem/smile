@@ -296,6 +296,10 @@ class ParentState(State, RunOnEnter):
             c.done = False
         self.check = True
 
+    def _leave(self):
+        for c in self.children:
+            c.leave()
+
     def __enter__(self):
         # push self as current parent
         if not self.exp is None:
@@ -356,10 +360,6 @@ class Parallel(ParentState):
             if not len(self.blocking_remaining):
                 # we're done
                 self.leave()
-
-    def _leave(self):
-        for c in self.children:
-            c.leave()
 
     def set_end_time(self):
         self.end_time = max([c.end_time for c in self.blocking_children])
