@@ -12,13 +12,70 @@ from state import schedule_delayed_interval, schedule_delayed
 from ref import Ref, val
 
 # get the last instance of the experiment class
-from experiment import Experiment, now
+from experiment import Experiment
+from clock import clock
 
-from pyglet import clock
-import pyglet
+#from pyglet import clock
+#import pyglet
+#...
 
 import random
 import math
+
+
+
+
+class VisualState(State):
+    def __init__(self, interval=0, duration=0.0, parent=None, 
+                 save_log=True):
+        pass #...
+
+    #...
+
+class StaticVisualState(VisualState):
+    def __init__(self, duration=-1, parent=None, save_log=True):
+        pass #...
+
+    #...
+
+class DynamicVisualState(VisualState):
+    def __init__(self, duration=-1, parent=None, save_log=True):
+        pass #...
+
+    #...
+
+class Rectangle(StaticVisualState):
+    def __init__(self, x=None, y=None, width=100, height=100,
+                 anchor_x='center', anchor_y='center', color=(0,0,0,255),
+                 duration=-1, parent=None, save_log=True):
+        super(Rectangle, self).__init__(duration=duration, parent=parent,
+                                        save_log=save_log)
+
+        # set loc to center if none supplied
+        if x is None:
+            x = Ref(self['exp']['window'],'width')//2  #!!!!!!!!!!!!!!!!!
+        self.x = x
+        if y is None:
+            y = Ref(self['exp']['window'],'height')//2
+        self.y = y
+        self.anchor_x = anchor_x
+        self.anchor_y = anchor_y
+        self.width = width
+        self.height = height
+        self.color = color
+        self.group = group
+        self.log_attrs.extend(['x','y','anchor_x','anchor_y','width','height','color'])
+
+    def draw(self):
+        pass #...
+
+    def update(self):
+        pass #...
+    #...
+
+#TODO: Text, DotBox, Image, Movie
+
+
 
 
 class VisualState(State):

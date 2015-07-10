@@ -26,6 +26,16 @@ from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.base import EventLoop
 from kivy.core.window import Window
+from kivy.graphics.opengl import (
+    glEnableVertexAttribArray,
+    glVertexAttribPointer,
+    glVertexAttrib4f,
+    glDrawArrays,
+    glDisableVertexAttribArray,
+    glFinish,
+    GL_INT,
+    GL_FALSE,
+    GL_POINTS)
 
 # local imports
 from state import Serial, State, RunOnEnter
@@ -74,6 +84,7 @@ class ExpApp(App):
         #...
         self._last_time = clock.now()  #???
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
+        print 1.0 / self.calc_flip_interval()
         return self.canvas
 
     def _keyboard_closed(self):
@@ -124,8 +135,13 @@ class ExpApp(App):
     def blocking_flip(self):
         #TODO: return if no flip needed?
         self.flip()
-        #TODO: draw single transparent point
-        #TODO: glFinish
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
+                              "\x00\x00\x00\x0a\x00\x00\x00\x0a")  # Position
+        glVertexAttrib4f(3, 0.0, 0.0, 0.0, 0.0)  # Color
+        glDrawArrays(GL_POINTS, 0, 1)
+        glDisableVertexAttribArray(0)
+        glFinish()
         self.flip()
         self.last_flip = event_time(clock.now(), 0.0)
         #TODO: clear need_flip?
@@ -147,7 +163,7 @@ class ExpApp(App):
             last_time = cur_time
 
             # add in sleep of something definitely less than the refresh rate
-            Clock.usleep(5000)  # 5ms for 200Hz
+            clock.usleep(5000)  # 5ms for 200Hz
 
         # reset the background color
         #TODO: clear drawing

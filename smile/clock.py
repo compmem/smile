@@ -2,6 +2,7 @@ import kivy_overrides
 import kivy.clock
 
 _get_time = kivy.clock._default_time
+_kivy_clock = kivy.clock.Clock
 
 class _ClockEvent(object):
     def __init__(self, clock, func, event_time, repeat_interval):
@@ -38,6 +39,9 @@ class Clock(object):
     def tick(self):
         for event in self._events:
             event.tick()
+
+    def usleep(self, usec):
+        _kivy_clock.usleep(usec)
 
     def schedule(self, func, event_delay=None, event_time=None,
                  repeat_interval=None):
