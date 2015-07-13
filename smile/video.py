@@ -63,14 +63,19 @@ class Rectangle(StaticVisualState):
         self.width = width
         self.height = height
         self.color = color
-        self.group = group
+        self.group = group  #?????
         self.log_attrs.extend(['x','y','anchor_x','anchor_y','width','height','color'])
+        self.kivy_shape = None
 
     def draw(self):
-        pass #...
+        if self.kivy_shape is None:
+            with self.exp.app.canvas:
+                #TODO: set color
+                self.kivy_shape = kivy.graphics.Rectangle(pos=(self.x, self.y),
+                                                          size=(self.width, self.hight))
+        else:
+            pass #...
 
-    def update(self):
-        pass #...
     #...
 
 #TODO: Text, DotBox, Image, Movie

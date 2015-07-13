@@ -30,3 +30,4 @@ class SmileEventLoop(kivy.base.EventLoopBase):
 kivy.base.EventLoop = SmileEventLoop()
 from kivy.config import Config
 Config.set("kivy", "exit_on_escape", 0)
+Config.set("graphics", "max_fps", 0)

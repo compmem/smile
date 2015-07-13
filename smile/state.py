@@ -8,6 +8,7 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from contextlib import contextmanager
+import inspect
 
 import kivy_overrides
 import random
@@ -49,7 +50,7 @@ class State(object):
     
     """
     def __init__(self, interval=0, parent=None, duration=0.0, 
-                 save_log=True):
+                 save_log=True, name=None):
         """
         """
         self.state_time = None
@@ -69,6 +70,27 @@ class State(object):
         self.active = False
         self.done = False
         self.save_log = save_log
+        self.name = name
+
+        # get instantiation context
+        base_inits = {}
+        for base in inspect.getmro(type(self)):
+            if base is not object and hasattr(base, "__init__"):
+                init = base.__init__
+                filename = inspect.getsourcefile(init)
+                lines, start_lineno = inspect.getsourcelines(init)
+                base_inits.setdefault(filename, []).extend(
+                    range(start_lineno, start_lineno + len(lines)))
+        for (frame, filename, lineno,
+             function, code_context, index) in inspect.stack():
+            if filename in base_inits and lineno in base_inits[filename]:
+                continue
+            self.instantiation_filename = filename
+            self.instantiation_lineno = lineno
+            break
+        else:
+            raise RuntimeError(
+                "Can't figure out where instantiation took place!")  #!!!!!!!!!
 
         # get the exp reference
         from experiment import Experiment
@@ -94,6 +116,29 @@ class State(object):
                           'first_call_time','first_call_error',
                           'last_call_time','last_call_error',
                           'duration']
+
+    def print_trace(self, child=None, t=None):
+        if t is None:
+            t = clock.now()
+        if self.parent is None:
+            print " SMILE Trace:"
+        else:
+            self.parent.print_trace(self, t)
+        if self.name is None:
+            name_spec = ""
+        else:
+            name_spec = " (%s)" % self.name
+        print "   %s%s - file: %s, line: %d" % (
+            type(self).__name__,
+            name_spec,
+            self.instantiation_filename,
+            self.instantiation_lineno)
+        print "     Started %fs ago" % (t - self.start_time)
+        print "     Entered %fs ago" % (t - self.enter_time)
+
+    def claim_exceptions(self):
+        if self.exp is not None:
+            self.exp.current_state = self
 
     def get_log(self):
     	"""
@@ -136,7 +181,7 @@ class State(object):
     	"""
     	Run at the scheduled state time.
     	"""
-
+        self.claim_exceptions()
         self.last_call_time = clock.now()
         self.last_call_error = self.last_call_time - self.state_time
         if self.first_call_time is None:
@@ -170,7 +215,7 @@ class State(object):
         """
         Gets the starting time from the parent state
         """
-        
+        self.claim_exceptions()
         self.state_time = self.get_parent_state_time()
         self.start_time = self.state_time
         self.enter_time = clock.now()
@@ -215,6 +260,8 @@ class State(object):
         # ignore leave call if not active
         if not self.active:
             return
+
+        self.claim_exceptions()
 
         self.leave_time = clock.now()
         self.set_end_time()
@@ -266,10 +313,12 @@ class ParentState(State, RunOnEnter):
         in the log files.
 
     """
-    def __init__(self, children=None, parent=None, duration=-1, save_log=True):
+    def __init__(self, children=None, parent=None, duration=-1, save_log=True,
+                 name=None):
         super(ParentState, self).__init__(interval=-1, parent=parent, 
                                           duration=duration, 
-                                          save_log=save_log)
+                                          save_log=save_log,
+                                          name=name)
         # process children
         if children is None:
             children = []
@@ -365,8 +414,13 @@ class Parallel(ParentState):
         self.end_time = max([c.end_time for c in self.blocking_children])
 
 
+def _get_calling_context(d=2):
+    frame, filename, lineno, function, code_context, index = inspect.stack()[d]
+    return filename, lineno
+
+
 @contextmanager
-def Meanwhile():
+def Meanwhile(name=None):
     # get the exp reference
     from experiment import Experiment
     try:
@@ -381,14 +435,19 @@ def Meanwhile():
     prev_state = parent.children[-1]
 
     # build the new Parallel state
+    filename, lineno = _get_calling_context(3)
     with Parallel() as p:
-        with Serial():
+        p.instantiation_filename = filename
+        p.instantiation_lineno = lineno
+        with Serial(name=name) as s:
+            s.instantiation_filename = filename
+            s.instantiation_lineno = lineno
             yield p
     p.claim_child(prev_state)
     p.set_child_blocking(0, False)
 
 @contextmanager
-def UntilDone():
+def UntilDone(name=None):
     # get the exp reference
     from experiment import Experiment
     try:
@@ -403,8 +462,13 @@ def UntilDone():
     prev_state = parent.children[-1]
 
     # build the new Parallel state
+    filename, lineno = _get_calling_context(3)
     with Parallel() as p:
-        with Serial():
+        p.instantiation_filename = filename
+        p.instantiation_lineno = lineno
+        with Serial(name=name) as s:
+            s.instantiation_filename = filename
+            s.instantiation_lineno = lineno
             yield p
     p.claim_child(prev_state)
     p.set_child_blocking(1, False)
@@ -491,11 +555,11 @@ class If(ParentState):
 
     """
     def __init__(self, conditional, true_state=None, false_state=None, 
-                 parent=None, save_log=True):
+                 parent=None, save_log=True, name=None):
 
         # init the parent class
         super(If, self).__init__(parent=parent, duration=-1, 
-                                 save_log=save_log)
+                                 save_log=save_log, name=name)
 
         # save a list of conds to be evaluated (last one always True, acts as the Else)
         self.cond = [conditional, True]
@@ -575,11 +639,11 @@ class Elif(Serial):
     """State to attach an elif to and If state.
 
     """
-    def __init__(self, conditional, parent=None, save_log=True):
+    def __init__(self, conditional, parent=None, save_log=True, name=None):
 
         # init the parent class
         super(Elif, self).__init__(parent=parent, duration=-1, 
-                                   save_log=save_log)
+                                   save_log=save_log, name=name)
 
         # we now know our parent, so ensure the previous child is
         # either and If or Elif state
@@ -674,9 +738,9 @@ class Loop(Serial):
     
     def __init__(self, iterable=None, shuffle=False,
                  conditional=True,
-                 parent=None, save_log=True):
+                 parent=None, save_log=True, name=None):
         super(Loop, self).__init__(parent=parent, duration=-1, 
-                                   save_log=save_log)
+                                   save_log=save_log, name=name)
 
         # otherwise, assume it's a list of dicts
         self.iterable = iterable
@@ -807,11 +871,11 @@ class Wait(State):
     
     """
     def __init__(self, duration=0.0, jitter=0.0, stay_active=False, 
-                 parent=None, save_log=True):
+                 parent=None, save_log=True, name=None):
         # init the parent class
         super(Wait, self).__init__(interval=-1, parent=parent, 
                                    duration=Ref(duration, jitter=jitter), 
-                                   save_log=save_log)
+                                   save_log=save_log, name=name)
         self.stay_active = stay_active
 
     def _callback(self, dt):
@@ -843,11 +907,12 @@ class ResetClock(State, RunOnEnter):
     Will reset the time of the parent state to now.
     """
     
-    def __init__(self, new_time=None, parent=None, save_log=True):
+    def __init__(self, new_time=None, parent=None, save_log=True, name=None):
         # init the parent class
         super(ResetClock, self).__init__(interval=0, parent=parent, 
                                          duration=0, 
-                                         save_log=save_log)
+                                         save_log=save_log,
+                                         name=name)
         if new_time is None:
             # eval to now if nothing specified
             new_time = Ref(gfunc=lambda:clock.now())
@@ -887,11 +952,12 @@ class Func(State):
     """
     def __init__(self, func, args=None, kwargs=None, 
                  interval=0, parent=None, duration=0.0, 
-                 save_log=True):
+                 save_log=True, name=None):
         # init the parent class
         super(Func, self).__init__(interval=interval, parent=parent, 
                                    duration=duration, 
-                                   save_log=save_log)
+                                   save_log=save_log,
+                                   name=name)
 
         # set up the state
         self.func = func
@@ -931,11 +997,12 @@ class Debug(State):
         Debug(show_time=txt['show_time'])
 
     """
-    def __init__(self, parent=None, save_log=False, **kwargs):
+    def __init__(self, parent=None, save_log=False, name=None, **kwargs):
         # init the parent class
-        super(Debug, self).__init__(interval=0, parent=parent, 
-                                   duration=0, 
-                                   save_log=save_log)
+        super(Debug, self).__init__(interval=0, parent=parent,
+                                   duration=0,
+                                   save_log=save_log,
+                                   name=name)
 
         # set up the state
         self.kwargs = kwargs
@@ -944,6 +1011,18 @@ class Debug(State):
         # process the refs
         #kwargs = {key: val(value) for (key, value) in self.kwargs}
         print 'DEBUG:', val(self.kwargs)
+
+
+class PrintTrace(State):
+    def __init__(self, parent=None, save_log=False, name=None):
+        # init the parent class
+        super(PrintTrace, self).__init__(interval=0, parent=parent,
+                                         duration=0,
+                                         save_log=save_log,
+                                         name=name)
+
+    def _callback(self, dt):
+        self.print_trace()
 
 
 if __name__ == '__main__':
@@ -1015,7 +1094,7 @@ if __name__ == '__main__':
 
     Func(print_dt, args=['before meanwhile 1'])
     Wait(1.0)
-    with Meanwhile() as mw:
+    with Meanwhile(name="First Meanwhile") as mw:
         Wait(15.0)
     Func(print_dt, args=['after meanwhile 1'])
     Func(print_actual_duration, args=(mw,))
@@ -1029,8 +1108,9 @@ if __name__ == '__main__':
 
     Func(print_dt, args=['before untildone 1'])
     Wait(15.0)
-    with UntilDone() as ud:
+    with UntilDone(name="UntilDone #1") as ud:
         Wait(1.0)
+        PrintTrace()
     Func(print_dt, args=['after untildone 1'])
     Func(print_actual_duration, args=(ud,))
 

@@ -36,6 +36,8 @@ from kivy.graphics.opengl import (
     GL_INT,
     GL_FALSE,
     GL_POINTS)
+import kivy.clock
+_kivy_clock = kivy.clock.Clock
 
 # local imports
 from state import Serial, State, RunOnEnter
@@ -110,6 +112,7 @@ class ExpApp(App):
 
         # update dt
         clock.tick()
+        _kivy_clock.tick()
 
         # read and dispatch input from providers
         event_loop.dispatch_input()
@@ -142,10 +145,17 @@ class ExpApp(App):
         glDrawArrays(GL_POINTS, 0, 1)
         glDisableVertexAttribArray(0)
         glFinish()
-        self.flip()
         self.last_flip = event_time(clock.now(), 0.0)
         #TODO: clear need_flip?
         return self.last_flip
+
+    def timed_flip(self, must_time=True):
+        if must_time:
+            self.blocking_flip()  #TODO: use sync events instead!
+            self.flip_pending = False
+        else:
+            self.flip()
+            self.flip_pending = False
 
     def calc_flip_interval(self, nflips=55, nignore=5):
         diffs = 0.0
@@ -163,7 +173,7 @@ class ExpApp(App):
             last_time = cur_time
 
             # add in sleep of something definitely less than the refresh rate
-            clock.usleep(5000)  # 5ms for 200Hz
+            clock.usleep(20000)  # 5ms for 200Hz
 
         # reset the background color
         #TODO: clear drawing
@@ -225,7 +235,7 @@ class Experiment(Serial):
         self._process_args()
         
         # set up the state
-        super(Experiment, self).__init__(parent=None, duration=-1)
+        super(Experiment, self).__init__(parent=None, duration=-1, name=name)
 
         # set up the window
         #screens = pyglet.window.get_platform().get_default_display().get_screens()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -236,7 +246,6 @@ class Experiment(Serial):
         self.vsync = vsync
         self.fullscreen = fullscreen or self.fullscreen
         self.resolution = resolution
-        self.name = name
         self.app = None   # will create when run
 
         # set the clear color
@@ -386,11 +395,17 @@ class Experiment(Serial):
         #self.window.on_draw(force=True)
         #self.blocking_flip()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        # start the first state (that's this experiment)
-        self.enter()
+        self.current_state = None
+        try:
+            # start the first state (that's this experiment)
+            self.enter()
 
-        # kivy main loop
-        self.app.run()
+            # kivy main loop
+            self.app.run()
+        except:
+            if self.current_state is not None:
+                self.current_state.print_trace()
+            raise
 
         # write out csv logs if desired
         if self.csv:
