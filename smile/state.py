@@ -128,13 +128,25 @@ class State(object):
             name_spec = ""
         else:
             name_spec = " (%s)" % self.name
+        def tstr(tm):
+            if tm is None:
+                return "None"
+            offset = t - tm
+            if offset < 0.0:
+                return "%fs from now" % -offset
+            else:
+                return "%fs ago" % offset
         print "   %s%s - file: %s, line: %d" % (
             type(self).__name__,
             name_spec,
             self.instantiation_filename,
             self.instantiation_lineno)
-        print "     Started %fs ago" % (t - self.start_time)
-        print "     Entered %fs ago" % (t - self.enter_time)
+        for attr_name in self.log_attrs:
+            if attr_name.endswith("_time"):
+                print "     %s: %s" % (attr_name,
+                                       tstr(getattr(self, attr_name)))
+            else:
+                print "     %s: %r" % (attr_name, getattr(self, attr_name))
 
     def claim_exceptions(self):
         if self.exp is not None:
@@ -219,6 +231,8 @@ class State(object):
         self.state_time = self.get_parent_state_time()
         self.start_time = self.state_time
         self.enter_time = clock.now()
+        self.leave_time = None
+        self.end_time = None
 
         # add the callback to the schedule
         delay = self.state_time - self.enter_time
@@ -372,6 +386,14 @@ class Parallel(ParentState):
     def __init__(self, *pargs, **kwargs):
         super(Parallel, self).__init__(*pargs, **kwargs)
         self.children_blocking = []
+
+    def print_trace(self, child=None, t=None):
+        super(Parallel, self).print_trace(child, t)
+        self._normalize_children_blocking()
+        if self.children_blocking[self.children.index(child)]:
+            print "     Blocking child..."
+        else:
+            print "     Non-blocking child..."
 
     def _normalize_children_blocking(self):
         for _n in range(len(self.children_blocking), len(self.children)):
@@ -1102,6 +1124,7 @@ if __name__ == '__main__':
     Func(print_dt, args=['before meanwhile 2'])
     Wait(5.0)
     with Meanwhile() as mw:
+        PrintTrace()
         Wait(1.0)
     Func(print_dt, args=['after meanwhile 2'])
     Func(print_actual_duration, args=(mw,))
