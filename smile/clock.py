@@ -12,12 +12,11 @@ class _ClockEvent(object):
         self.repeat_interval = repeat_interval
         self.count = 0
         self.target_time = event_time
-        self.last_time = clock.now()
 
     def tick(self):
         now = self.clock.now()
         if now >= self.target_time:
-            self.func(now - self.last_time)
+            self.func()
             if self.repeat_interval is None:
                 try:
                     self.clock._events.remove(self)
@@ -27,7 +26,6 @@ class _ClockEvent(object):
                 self.count += 1
                 self.target_time = (self.event_time +
                                     self.repeat_interval * self.count)
-            self.last_time = now
 
 class Clock(object):
     def __init__(self):
@@ -37,7 +35,7 @@ class Clock(object):
         return _get_time()
 
     def tick(self):
-        for event in self._events:
+        for event in self._events[:]:
             event.tick()
 
     def usleep(self, usec):
@@ -52,6 +50,7 @@ class Clock(object):
             event_time = now
         self._events.append(
             _ClockEvent(self, func, event_time, repeat_interval))
+        return func
 
     def unschedule(self, func):
         self._events = [event for event in self._events if event.func != func]

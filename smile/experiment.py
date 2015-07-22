@@ -48,13 +48,23 @@ from clock import clock
 def event_time(time, time_error=0.0):
     return {'time': time, 'error': time_error}
 
+
+class _VideoChange(object):
+    def __init__(self, update_cb, flip_time, flip_time_cb):
+        self.update_cb = update_cb
+        self.flip_time = flip_time
+        self.flip_time_cb = flip_time_cb
+        self.drawn = False
+        self.flipped = False
+
+
 class ExpApp(App):
     def __init__(self, exp, *pargs, **kwargs):
         super(ExpApp, self).__init__(*pargs, **kwargs)
         self.exp = exp
         self.callbacks = {}
-        self.need_flip = False  #???
-        self.need_draw = False  #???
+        self.pending_flip_time = None
+        self.video_queue = []
 
     def add_callback(self, event_name, func):
         self.callbacks.setdefault(event_name, []).append(func)
@@ -77,17 +87,17 @@ class ExpApp(App):
             func(*pargs, **kwargs)
 
     def build(self):
-        self.canvas = Widget()
+        self.wid = Widget()
         #TODO: bind kivy events...
         self._keyboard = Window.request_keyboard(self._keyboard_closed,
-                                                 self.canvas)
+                                                 self.wid)
         self._keyboard.bind(on_key_down=self._on_key_down,
                             on_key_up=self._on_key_up)
         #...
         self._last_time = clock.now()  #???
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
         print 1.0 / self.calc_flip_interval()
-        return self.canvas
+        return self.wid
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down,
@@ -120,24 +130,52 @@ class ExpApp(App):
         # flush all the canvas operation
         Builder.sync()  # does this call do anything when a .kv file is not used?
 
+        need_draw = False
+        for video in self.video_queue:
+            if (not video.drawn and
+                ((self.pending_flip_time is None and
+                  self._new_time >= video.flip_time -
+                  self.flip_interval / 2.0) or
+                 video.flip_time == self.pending_flip_time)):
+                video.update_cb()
+                need_draw = True
+                video.drawn = True
+                self.pending_flip_time = video.flip_time
+            else:
+                break
+        if need_draw:
+            EventLoop.window.dispatch('on_draw')
+        need_flip = False
+        flip_time_callbacks = []
+        for video in self.video_queue:
+            if video.drawn and video.flip_time == self.pending_flip_time:
+                need_flip = True
+                if video.flip_time_cb is not None:
+                    flip_time_callbacks.append(video.flip_time_cb)
+                video.flipped = True
+            else:
+                break
+        while len(self.video_queue) and self.video_queue[0].flipped:
+            del self.video_queue[0]
+        if need_flip:
+            print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if len(flip_time_callbacks):
+                self.blocking_flip()  #TODO: use sync events instead!
+                for cb in flip_time_callbacks:
+                    cb(self.last_flip)
+            else:
+                EventLoop.window.dispatch('on_flip')
+            self.pending_flip_time = None
+
         # save the time
         self._last_time = self._new_time
 
         # exit if experiment done
-        if self.exp.done:
+        if not self.exp.active:
             self.stop()
 
-    def draw(self):
-        #TODO: return if no draw needed?
-        EventLoop.window.dispatch('on_draw')
-
-    def flip(self):
-        #TODO: return if no flip needed?
-        EventLoop.window.dispatch('on_flip')
-
     def blocking_flip(self):
-        #TODO: return if no flip needed?
-        self.flip()
+        EventLoop.window.dispatch('on_flip')
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
                               "\x00\x00\x00\x0a\x00\x00\x00\x0a")  # Position
@@ -146,25 +184,13 @@ class ExpApp(App):
         glDisableVertexAttribArray(0)
         glFinish()
         self.last_flip = event_time(clock.now(), 0.0)
-        #TODO: clear need_flip?
         return self.last_flip
-
-    def timed_flip(self, must_time=True):
-        if must_time:
-            self.blocking_flip()  #TODO: use sync events instead!
-            self.flip_pending = False
-        else:
-            self.flip()
-            self.flip_pending = False
 
     def calc_flip_interval(self, nflips=55, nignore=5):
         diffs = 0.0
         last_time = 0.0
         count = 0.0
         for i in range(nflips):
-            # must draw something so the flip happens
-            #TODO: draw something
-
             # perform the flip and record the flip interval
             cur_time = self.blocking_flip()
             if last_time > 0.0 and i >= nignore:
@@ -174,16 +200,27 @@ class ExpApp(App):
 
             # add in sleep of something definitely less than the refresh rate
             clock.usleep(20000)  # 5ms for 200Hz
-
-        # reset the background color
-        #TODO: clear drawing
-        self.blocking_flip()
         
         # take the mean and return
         self.flip_interval = diffs / count
         return self.flip_interval
 
-    #...
+    def schedule_video(self, update_cb, flip_time, flip_time_cb=None):
+        new_video = _VideoChange(update_cb, flip_time, flip_time_cb)
+        for n, video in enumerate(self.video_queue):
+            if video.flip_time > flip_time:
+                self.video_queue.insert(n, new_video)
+                break
+        else:
+            self.video_queue.append(new_video)
+        return new_video
+
+    def cancel_video(self, video):
+        if not video.drawn:
+            try:
+                self.video_queue.remove(video)
+            except ValueError:
+                pass
 
 
 class Experiment(Serial):
@@ -463,7 +500,7 @@ class Set(State, RunOnEnter):
         # append log vars
         self.log_attrs.extend(['variable','value'])
         
-    def _callback(self, dt):
+    def _callback(self):
         # set the exp var
         if self.eval_var:
             self.variable = val(self.var)
@@ -610,7 +647,7 @@ class Log(State, RunOnEnter):
             stream = open(os.path.join(self.exp.subj_dir,self.log_file),'a')
         return stream
         
-    def _callback(self, dt):
+    def _callback(self):
         # eval the log_items and write the log
         keyvals = [(k,val(v)) for k,v in self.log_items.iteritems()]
         log = dict(keyvals)
