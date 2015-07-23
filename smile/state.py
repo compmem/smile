@@ -20,15 +20,6 @@ from log import dump
 from clock import clock
 
 
-class RunOnEnter():
-    """Inherited class to indicate to a state that it should run
-    immediately upon entering the state (instead of waiting until the
-    state time specified by the parent). This ensures that parent
-    states do not disturb the timing of their children.
-    """
-    pass
-
-
 class State(object):
     """
     Base State object for the hierarchical state machine.
@@ -51,8 +42,7 @@ class State(object):
         Whether the state logs itself.
     
     """
-    def __init__(self, interval=0, parent=None, duration=0.0, 
-                 save_log=True, auto_finalize=True, name=None):
+    def __init__(self, parent=None, duration=-1, save_log=True, name=None):
         """
         """
         self.state_time = None
@@ -61,18 +51,12 @@ class State(object):
         self.enter_time = None
         self.leave_time = None
         self.finalize_time = None
-        self.first_call_time = None
-        self.first_call_error = None
-        self.last_call_time = None
-        self.last_call_error = None
-        self.interval = interval
         self.raw_duration = duration
         self.duration = 0.0
         self.parent = parent
         self.active = False
         self.following_may_run = False
         self.save_log = save_log
-        self.auto_finalize = auto_finalize
         self.name = name
         self.depth = 0
         self.tracing = False
@@ -118,9 +102,7 @@ class State(object):
         self.state = self.__class__.__name__
         self.log_attrs = ['state', 'state_time', 'start_time', 'end_time',
                           'enter_time', 'leave_time', 'finalize_time',
-                          'first_call_time', 'first_call_error',
-                          'last_call_time', 'last_call_error',
-                          'duration']
+                          'duration', 'name']
         self.deepcopy_attrs = []  #TODO: extend this for subclasses!
 
     def clone(self):
@@ -234,29 +216,6 @@ class State(object):
     #def __getattribute__(self, name):
     #    return Ref(self, name)
 
-    def _callback(self):
-        # Subclasses of State must implement the callback.
-        pass
-        
-    def callback(self):
-    	"""
-    	Run at the scheduled state time.
-    	"""
-        self.claim_exceptions()
-        self.last_call_time = clock.now()
-        self.last_call_error = self.last_call_time - self.state_time
-        if self.first_call_time is None:
-            self.first_call_time = self.last_call_time
-            self.first_call_error = self.last_call_error
-
-        # call the user-defined callback
-        self._callback()
-
-        # see if done
-        if self.interval == 0:
-            # we're done
-            self.leave()
-
     def get_parent_state_time(self):
     	"""
     	Returns state time for the parent. If no parent, logs current time. 
@@ -281,24 +240,6 @@ class State(object):
         self.finalize_time = None
         self.end_time = None
 
-        # add the callback to the schedule
-        if issubclass(self.__class__,RunOnEnter):
-            # parents states (and states like Logging) run immediately
-            event_time = None
-        else:
-            event_time = self.start_time
-        if self.interval < 0:
-            # schedule it for every event loop
-            clock.schedule(self.callback, event_time=event_time,
-                           repeat_interval=0)
-        elif self.interval == 0:
-            # schedule the interval (0 means once)
-            clock.schedule(self.callback, event_time=event_time)
-        else:
-            # schedule the interval
-            clock.schedule(self.callback, event_time=event_time,
-                           repeat_interval=self.interval)
-
         # say we're active
         self.active = True
         self.following_may_run = False
@@ -314,9 +255,9 @@ class State(object):
         # compute the duration
         self.duration = val(self.raw_duration)
 
-        if self.duration > 0:
+        if self.duration >= 0.0:
             self.end_time = self.start_time + self.duration
-            
+
         # custom enter code
         self._enter()
 
@@ -343,9 +284,6 @@ class State(object):
 
         self.leave_time = clock.now()
 
-        # remove the callback from the schedule
-        clock.unschedule(self.callback)
-
         self.set_end_time()
 
         self.following_may_run = True
@@ -354,9 +292,6 @@ class State(object):
 
         # call custom leave code
         self._leave()
-
-        if self.auto_finalize:
-            clock.schedule(self.finalize)
 
         if self.tracing:
             call_time = self.leave_time - self.exp.start_time
@@ -394,7 +329,7 @@ class State(object):
             self.end_time = self.start_time + self.duration
 
 
-class ParentState(State, RunOnEnter):
+class ParentState(State):
     """
     Base state for parents that can hold children states. 
 
@@ -419,10 +354,9 @@ class ParentState(State, RunOnEnter):
     """
     def __init__(self, children=None, parent=None, duration=-1, save_log=True,
                  name=None):
-        super(ParentState, self).__init__(interval=-1, parent=parent, 
+        super(ParentState, self).__init__(parent=parent, 
                                           duration=duration, 
                                           save_log=save_log,
-                                          auto_finalize=False,
                                           name=name)
         # process children
         if children is None:
@@ -498,7 +432,7 @@ class Parallel(ParentState):
     finished.
     
     """
-    def __init__(self, *pargs, **kwargs):
+    def __init__(self, *pargs, **kwargs):  #TODO: fix this ... duration should not be an exposed parameter
         super(Parallel, self).__init__(*pargs, **kwargs)
         self.children_blocking = []
         self.blocking_children = []
@@ -714,8 +648,7 @@ class If(ParentState):
                  parent=None, save_log=True, name=None):
 
         # init the parent class
-        super(If, self).__init__(parent=parent, duration=-1, 
-                                 save_log=save_log, name=name)
+        super(If, self).__init__(parent=parent, save_log=save_log, name=name)
 
         # save a list of conds to be evaluated (last one always True, acts as the Else)
         self.cond = [conditional, True]
@@ -782,8 +715,7 @@ class Elif(Serial):
     """
     def __init__(self, conditional, parent=None, save_log=True, name=None):
         # init the parent class
-        super(Elif, self).__init__(parent=parent, duration=-1, 
-                                   save_log=save_log, name=name)
+        super(Elif, self).__init__(parent=parent, save_log=save_log, name=name)
 
         # we now know our parent, so ensure the previous child is
         # either and If or Elif state
@@ -878,13 +810,9 @@ class Loop(ParentState):
     list are traversed.
 
     """
-
-    #TODO: Implement this with an enclosed Serial instead, to consolidate functionality!
-    
     def __init__(self, iterable=None, shuffle=False, conditional=True,
                  parent=None, save_log=True, name=None):
-        super(Loop, self).__init__(parent=parent, duration=-1, 
-                                   save_log=save_log, name=name)
+        super(Loop, self).__init__(parent=parent, save_log=save_log, name=name)
 
         # otherwise, assume it's a list of dicts
         self.iterable = iterable
@@ -1017,10 +945,9 @@ class Wait(State):
     def __init__(self, duration=0.0, jitter=0.0, parent=None, save_log=True,
                  name=None):
         # init the parent class
-        super(Wait, self).__init__(interval=-1, parent=parent, 
+        super(Wait, self).__init__(parent=parent, 
                                    duration=Ref(duration, jitter=jitter), 
-                                   save_log=save_log, name=name,
-                                   auto_finalize=False)
+                                   save_log=save_log, name=name)
 
     def _enter(self):
         clock.schedule(self.leave, event_time=self.start_time)
@@ -1040,7 +967,13 @@ class Wait(State):
                 self.end_time = cancel_time
 
 
-class ResetClock(State, RunOnEnter):
+class AutoFinalizeState(State):
+    def leave(self):
+        super(AutoFinalizeState, self).leave()
+        clock.schedule(self.finalize)
+
+
+class ResetClock(AutoFinalizeState):
     """
     State that will reset the clock of its parent to a specific time
     (or now if not specified).
@@ -1063,8 +996,7 @@ class ResetClock(State, RunOnEnter):
     
     def __init__(self, new_time=None, parent=None, save_log=True, name=None):
         # init the parent class
-        super(ResetClock, self).__init__(interval=0, parent=parent, 
-                                         duration=0, 
+        super(ResetClock, self).__init__(parent=parent,
                                          save_log=save_log,
                                          name=name)
         if new_time is None:
@@ -1072,13 +1004,50 @@ class ResetClock(State, RunOnEnter):
             new_time = Ref(gfunc=lambda:clock.now())
         self.new_time = new_time
 
-    def _callback(self):
-        duration = val(self.new_time) - self.get_parent_state_time()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if duration > 0:
-            self.advance_parent_state_time(duration)
-    
+    def _enter(self):
+        clock.schedule(self.leave)
 
-class Func(State):
+    def set_end_time(self):
+        self.end_time = val(self.new_time)
+
+
+class CallbackState(AutoFinalizeState):
+    def __init__(self, repeat_interval=None, duration=0.0, parent=None,
+                 save_log=True, name=None):
+        super(CallbackState, self).__init__(duration=duration, parent=None,
+                                            save_log=True, name=None)
+        self.repeat_interval = repeat_interval
+
+    def _enter(self):
+        clock.schedule(self.callback, event_time=self.start_time,
+                       repeat_interval=self.repeat_interval)
+        if self.end_time is not None:
+            clock.schedule(self.leave, event_time=self.end_time)
+
+    def _leave(self):
+        clock.unschedule(self.callback)
+
+    def _callback(self):
+        pass
+
+    def callback(self):
+        self.claim_exceptions()
+        self._callback()
+
+    def cancel(self, cancel_time):
+        if self.active:
+            if cancel_time < self.start_time:
+                clock.unschedule(self.callback)
+                clock.unschedule(self.leave)
+                clock.schedule(self.leave)
+                self.end_time = self.start_time
+            elif cancel_time < self.end_time:
+                clock.unschedule(self.leave)
+                clock.schedule(self.leave, event_time=cancel_time)
+                self.end_time = cancel_time
+
+
+class Func(CallbackState):
     """
     State that will call a Python function, passing this state as the
     first argument.
@@ -1104,12 +1073,13 @@ class Func(State):
     Calls python function str(), converting the output of StateA into a string
     	
     """
-    def __init__(self, func, args=None, kwargs=None, 
-                 interval=0, parent=None, duration=0.0, 
+    def __init__(self, func, args=None, kwargs=None,
+                 repeat_interval=None, parent=None, duration=0.0,
                  save_log=True, name=None):
         # init the parent class
-        super(Func, self).__init__(interval=interval, parent=parent, 
-                                   duration=duration, 
+        super(Func, self).__init__(parent=parent,
+                                   repeat_interval=repeat_interval,
+                                   duration=duration,
                                    save_log=save_log,
                                    name=name)
 
@@ -1129,7 +1099,7 @@ class Func(State):
         self.res = self.func(self, *args, **kwargs)
     
 
-class Debug(State):
+class Debug(CallbackState):
     """
     Evaluate the specified kwargs and print them to standard out.
 
@@ -1153,10 +1123,9 @@ class Debug(State):
     """
     def __init__(self, parent=None, save_log=False, name=None, **kwargs):
         # init the parent class
-        super(Debug, self).__init__(interval=0, parent=parent,
-                                   duration=0,
-                                   save_log=save_log,
-                                   name=name)
+        super(Debug, self).__init__(parent=parent,
+                                    save_log=save_log,
+                                    name=name)
 
         # set up the state
         self.kwargs = kwargs
@@ -1167,11 +1136,10 @@ class Debug(State):
         print 'DEBUG:', val(self.kwargs)
 
 
-class PrintTraceback(State):
+class PrintTraceback(CallbackState):
     def __init__(self, parent=None, save_log=False, name=None):
         # init the parent class
-        super(PrintTraceback, self).__init__(interval=0, parent=parent,
-                                             duration=0,
+        super(PrintTraceback, self).__init__(parent=parent,
                                              save_log=save_log,
                                              name=name)
 
@@ -1180,7 +1148,6 @@ class PrintTraceback(State):
 
 
 if __name__ == '__main__':
-
     from experiment import Experiment, Set, Get
 
     def print_dt(state, *txt):

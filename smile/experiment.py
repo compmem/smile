@@ -40,7 +40,7 @@ import kivy.clock
 _kivy_clock = kivy.clock.Clock
 
 # local imports
-from state import Serial, State, RunOnEnter
+from state import Serial, AutoFinalizeState
 from ref import val, Ref
 from log import dump, yaml2csv
 from clock import clock
@@ -455,7 +455,7 @@ class Experiment(Serial):
             yaml2csv(self.exp_log, os.path.splitext(self.exp_log)[0] + '.csv')
 
 
-class Set(State, RunOnEnter):
+class Set(AutoFinalizeState):
     """
     State to set a experiment variable.
 
@@ -487,12 +487,12 @@ class Set(State, RunOnEnter):
     recorded in the state.yaml and state.csv files. Refer to State class
     docstring for addtional logged parameters. 
     """
-    def __init__(self, variable, value, eval_var=True, parent=None, save_log=True):
-
+    def __init__(self, variable, value, eval_var=True, parent=None,
+                 save_log=True, name=None):
         # init the parent class
-        super(Set, self).__init__(interval=0, parent=parent, 
-                                  duration=0,
-                                  save_log=save_log)
+        super(Set, self).__init__(parent=parent,
+                                  save_log=save_log,
+                                  name=name)
         self.var = variable
         self.variable = None
         self.val = value
@@ -502,7 +502,7 @@ class Set(State, RunOnEnter):
         # append log vars
         self.log_attrs.extend(['variable','value'])
         
-    def _callback(self):
+    def _enter(self):
         # set the exp var
         if self.eval_var:
             self.variable = val(self.var)
@@ -517,6 +517,7 @@ class Set(State, RunOnEnter):
             self.variable.set(self.value)
         else:
             raise ValueError('Unrecognized variable type. Must either be string or Ref')
+        clock.schedule(self.leave)
 
         
 def Get(variable):
@@ -562,7 +563,7 @@ def Get(variable):
     return Ref(gfunc=gfunc)
 
 
-class Log(State, RunOnEnter):
+class Log(AutoFinalizeState):
     """
     State to write values to a custom experiment log.
     Write data to a YAML log file.
@@ -631,11 +632,11 @@ class Log(State, RunOnEnter):
         state_time :
             Same as start_time.
     """
-    def __init__(self, log_dict=None, log_file=None, parent=None, **log_items):
-
+    def __init__(self, log_dict=None, log_file=None, parent=None, name=None,
+                 **log_items):
         # init the parent class
-        super(Log, self).__init__(interval=0, parent=parent, 
-                                  duration=0,
+        super(Log, self).__init__(parent=parent,
+                                  name=name,
                                   save_log=False)
         self.log_file = log_file
         self.log_items = log_items
@@ -649,7 +650,7 @@ class Log(State, RunOnEnter):
             stream = open(os.path.join(self.exp.subj_dir,self.log_file),'a')
         return stream
         
-    def _callback(self):
+    def _enter(self):
         # eval the log_items and write the log
         keyvals = [(k,val(v)) for k,v in self.log_items.iteritems()]
         log = dict(keyvals)
@@ -657,6 +658,7 @@ class Log(State, RunOnEnter):
             log.update(val(self.log_dict))
         # log it to the correct file
         dump([log], self._get_stream())
+        clock.schedule(self.leave)
 
 if __name__ == '__main__':
     # can't run inside this file

@@ -11,6 +11,7 @@ import random  #...
 import math  #...
 from functools import partial
 
+import kivy_overrides
 from state import State
 from ref import val
 from clock import clock
@@ -23,17 +24,15 @@ class VisualState(State):
 class StaticVisualState(VisualState):
     def __init__(self, duration=-1, parent=None, save_log=True, name=None):
         # init the parent class
-        super(StaticVisualState, self).__init__(interval=-1,
-                                                parent=parent, 
+        super(StaticVisualState, self).__init__(parent=parent, 
                                                 duration=duration, 
                                                 save_log=save_log,
                                                 name=name)
 
         self.appear_time = None
         self.disappear_time = None
-        self.appeared = False
-        self.disappeared = False
-        self.scheduled = []
+        self.appear_video = None
+        self.disappear_video = None
 
         # set the log attrs
         self.log_attrs.extend(['appear_time',
@@ -49,39 +48,51 @@ class StaticVisualState(VisualState):
     def _enter(self):
         self.appear_time = None
         self.disappear_time = None
-        self.appeared = False
-        self.disappeared = False
-        self.scheduled = []
+        self.appear_video = None
+        self.disappear_video = None
+        self.on_screen = False
 
-        self.scheduled.append(self.exp.app.schedule_video(
-            self.appear, self.start_time, self.set_appear_time))
+        self.appear_video = self.exp.app.schedule_video(
+            self.appear, self.start_time, self.set_appear_time)
         if self.end_time is not None:
-            self.scheduled.append(self.exp.app.schedule_video(
-                self.disappear, self.end_time, self.set_disappear_time))
+            self.disappear_video = self.exp.app.schedule_video(
+                self.disappear, self.end_time, self.set_disappear_time)
 
     def _appear(self):
         raise NotImplementedError
 
     def appear(self):
         self.claim_exceptions()
-        self.appeared = True
+        self.appear_video = None
+        self.on_screen = True
         self._appear()
+        clock.schedule(self.leave)
 
     def _disappear(self):
         raise NotImplementedError
 
     def disappear(self):
         self.claim_exceptions()
-        self.disappeared = True
+        self.disappear_video = None
+        self.on_screen = False
         self._disappear()
+        clock.schedule(self.finalize)
 
-    def _leave(self):
-        if not (self.appeared and self.disappeared):
-            for video in self.scheduled:
-                self.exp.app.cancel_video(video)
-        if self.appeared and not self.disappeared:
-            self.exp.app.schedule_video(
-                self.disappear, clock.now(), self.set_disappear_time)
+    def cancel(self, cancel_time):
+        if self.active:
+            if cancel_time < self.start_time:
+                self.exp.app.cancel_video(self.appear_video)
+                self.appear_video = None
+                self.exp.app.cancel_video(self.disappear_video)
+                self.disappear_video = None
+                if self.on_screen:
+                    self.disappear_video = self.exp.app.schedule_video(
+                        self.disappear, clock.now(), self.set_disappear_time)
+            elif cancel_time < self.end_time:
+                self.exp.app.cancel_video(self.disappear_video)
+                self.disappear_video = self.exp.app.schedule_video(
+                    self.disappear, cancel_time, self.set_disappear_time)
+                self.end_time = cancel_time
 
     def _live_change(self, **kwargs):
         raise NotImplementedError
@@ -169,5 +180,5 @@ if __name__ == '__main__':
               duration=1.0)
     Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
               duration=1.0)
-    Wait(5.0, stay_active=True)
+    Wait(5.0)
     exp.run()
