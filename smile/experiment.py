@@ -398,7 +398,7 @@ class Experiment(Serial):
                 raise RuntimeError(
                     "Too many data files with the same title, extension, and timestamp!")
 
-    def run(self):
+    def run(self, trace=False):
         """
         Run the experiment.
         """
@@ -433,6 +433,8 @@ class Experiment(Serial):
         #self.blocking_flip()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         self.current_state = None
+        if trace:
+            self.tron()
         try:
             # start the first state (that's this experiment)
             self.enter()
@@ -441,7 +443,7 @@ class Experiment(Serial):
             self.app.run()
         except:
             if self.current_state is not None:
-                self.current_state.print_trace()
+                self.current_state.print_traceback()
             raise
 
         # write out csv logs if desired
