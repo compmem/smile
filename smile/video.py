@@ -169,16 +169,28 @@ class Rectangle(StaticVisualState):
 
 if __name__ == '__main__':
     from experiment import Experiment
-    from state import Wait
+    from state import Wait, Loop, Parallel
 
     exp = Experiment()
 
     Wait(5.0)
-    Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
-              duration=1.0)
-    Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0),
-              duration=1.0)
-    Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
-              duration=1.0)
+    with Loop(range(3)):
+        Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
+                  duration=1.0)
+        Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0),
+                  duration=1.0)
+        Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
+                  duration=1.0)
+    with Parallel():
+        Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
+                  duration=3.0)
+        Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0),
+                  duration=2.0)
+        Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
+                  duration=1.0)
+    with Loop(range(3)):
+        Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
+                  duration=1.0)
+        #NOTE: This will flip between iterations, but the rectangle should remain on screen continuously.
     Wait(5.0)
     exp.run()
