@@ -42,7 +42,7 @@ class State(object):
         Whether the state logs itself.
     
     """
-    def __init__(self, parent=None, duration=-1, save_log=True, name=None):
+    def __init__(self, parent=None, duration=None, save_log=True, name=None):
         """
         """
         self.state_time = None
@@ -51,8 +51,7 @@ class State(object):
         self.enter_time = None
         self.leave_time = None
         self.finalize_time = None
-        self.raw_duration = duration
-        self.duration = 0.0
+        self.duration = duration
         self.parent = parent
         self.active = False
         self.following_may_run = False
@@ -101,8 +100,7 @@ class State(object):
         # start the log
         self.state = self.__class__.__name__
         self.log_attrs = ['state', 'state_time', 'start_time', 'end_time',
-                          'enter_time', 'leave_time', 'finalize_time',
-                          'duration', 'name']
+                          'enter_time', 'leave_time', 'finalize_time', 'name']
         self.deepcopy_attrs = []  #TODO: extend this for subclasses!
 
     def clone(self):
@@ -238,7 +236,6 @@ class State(object):
         self.enter_time = clock.now()
         self.leave_time = None
         self.finalize_time = None
-        self.end_time = None
 
         # say we're active
         self.active = True
@@ -252,11 +249,11 @@ class State(object):
             from experiment import Experiment
             self.exp = Experiment.last_instance()
 
-        # compute the duration
-        self.duration = val(self.raw_duration)
-
-        if self.duration >= 0.0:
-            self.end_time = self.start_time + self.duration
+        duration = val(self.duration)
+        if duration is None:
+            self.end_time = None
+        else:
+            self.end_time = self.start_time + duration
 
         # custom enter code
         self._enter()
@@ -323,10 +320,7 @@ class State(object):
                                  (call_time, call_duration))
 
     def set_end_time(self):
-        if self.duration < 0:
-            self.end_time = self.leave_time
-        else:
-            self.end_time = self.start_time + self.duration
+        pass
 
 
 class ParentState(State):
@@ -352,8 +346,8 @@ class ParentState(State):
         in the log files.
 
     """
-    def __init__(self, children=None, parent=None, duration=-1, save_log=True,
-                 name=None):
+    def __init__(self, children=None, parent=None, duration=None,
+                 save_log=True, name=None):
         super(ParentState, self).__init__(parent=parent, 
                                           duration=duration, 
                                           save_log=save_log,
@@ -442,10 +436,11 @@ class Parallel(ParentState):
     def print_traceback(self, child=None, t=None):
         super(Parallel, self).print_traceback(child, t)
         self._normalize_children_blocking()
-        if self.children_blocking[self.children.index(child)]:
-            print "     Blocking child..."
-        else:
-            print "     Non-blocking child..."
+        if child is not None:
+            if self.children_blocking[self.children.index(child)]:
+                print "     Blocking child..."
+            else:
+                print "     Non-blocking child..."
 
     def _normalize_children_blocking(self):
         for _n in range(len(self.children_blocking), len(self.children)):
@@ -587,7 +582,7 @@ class Serial(ParentState):
             clock.schedule(self.leave)
 
     def cancel(self, cancel_time):
-        if self.active and not self.following_may_run:
+        if self.active:
             clock.schedule(partial(self.current_child.cancel, cancel_time))
             self.cancel_time = cancel_time
 

@@ -272,7 +272,7 @@ class Experiment(Serial):
         self._process_args()
         
         # set up the state
-        super(Experiment, self).__init__(parent=None, duration=-1, name=name)
+        super(Experiment, self).__init__(parent=None, name=name)
 
         # set up the window
         #screens = pyglet.window.get_platform().get_default_display().get_screens()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

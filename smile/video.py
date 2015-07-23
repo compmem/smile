@@ -22,7 +22,7 @@ class VisualState(State):
     pass
 
 class StaticVisualState(VisualState):
-    def __init__(self, duration=-1, parent=None, save_log=True, name=None):
+    def __init__(self, duration=None, parent=None, save_log=True, name=None):
         # init the parent class
         super(StaticVisualState, self).__init__(parent=parent, 
                                                 duration=duration, 
@@ -80,16 +80,23 @@ class StaticVisualState(VisualState):
 
     def cancel(self, cancel_time):
         if self.active:
-            if cancel_time < self.start_time:
-                self.exp.app.cancel_video(self.appear_video)
+            if cancel_time <= self.start_time:
+                schedule(self.leave)
+                if self.appear_video is not None:
+                    self.exp.app.cancel_video(self.appear_video)
                 self.appear_video = None
-                self.exp.app.cancel_video(self.disappear_video)
-                self.disappear_video = None
+                if self.disappear_video is not None:
+                    self.exp.app.cancel_video(self.disappear_video)
                 if self.on_screen:
                     self.disappear_video = self.exp.app.schedule_video(
                         self.disappear, clock.now(), self.set_disappear_time)
-            elif cancel_time < self.end_time:
-                self.exp.app.cancel_video(self.disappear_video)
+                else:
+                    self.disappear_video = None
+                    schedule(self.finalize)
+                self.end_time = self.start_time
+            elif self.end_time is None or cancel_time < self.end_time:
+                if self.disappear_video is not None:
+                    self.exp.app.cancel_video(self.disappear_video)
                 self.disappear_video = self.exp.app.schedule_video(
                     self.disappear, cancel_time, self.set_disappear_time)
                 self.end_time = cancel_time
@@ -113,7 +120,7 @@ class Rectangle(StaticVisualState):
     def __init__(self, x=None, y=None, width=100, height=100,
                  anchor_x='center', anchor_y='center',
                  color=(0.0, 0.0, 0.0, 1.0),
-                 duration=-1, parent=None, save_log=True):
+                 duration=None, parent=None, save_log=True):
         super(Rectangle, self).__init__(duration=duration, parent=parent,
                                         save_log=save_log)
 
@@ -169,7 +176,7 @@ class Rectangle(StaticVisualState):
 
 if __name__ == '__main__':
     from experiment import Experiment
-    from state import Wait, Loop, Parallel
+    from state import Wait, Loop, Parallel, Meanwhile
 
     exp = Experiment()
 
@@ -192,5 +199,11 @@ if __name__ == '__main__':
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
                   duration=1.0)
         #NOTE: This will flip between iterations, but the rectangle should remain on screen continuously.
+    Wait(1.0)
+    Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
+              duration=0.0)  #NOTE: This should flip once but display nothing
+    Wait(1.0)
+    with Meanwhile():
+        Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0))
     Wait(5.0)
     exp.run()
