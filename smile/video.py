@@ -12,8 +12,8 @@ import math  #...
 from functools import partial
 
 import kivy_overrides
-from state import State
-from ref import val
+from state import State, get_calling_context
+from ref import val, Ref
 from clock import clock
 import kivy.graphics
 
@@ -22,7 +22,8 @@ class VisualState(State):
     pass
 
 class StaticVisualState(VisualState):
-    def __init__(self, duration=None, parent=None, save_log=True, name=None):
+    def __init__(self, duration=None, parent=None, save_log=True, name=None,
+                 **params):
         # init the parent class
         super(StaticVisualState, self).__init__(parent=parent, 
                                                 duration=duration, 
@@ -33,17 +34,33 @@ class StaticVisualState(VisualState):
         self.disappear_time = None
         self.appear_video = None
         self.disappear_video = None
+        self.params = self.get_default_params()
+        for name, value in params.items():
+            if name not in self.params:
+                raise ValueError(
+                    "Invalid StaticVisualState parameter name %r" % name)
+            self.params[name] = value
+            setattr(self, name, value)
 
         # set the log attrs
         self.log_attrs.extend(['appear_time',
                                'disappear_time'])
+        self.log_attrs.extend(self.params.keys())
+
+    def get_default_params(self):
+        return {}
+
+    def get_updated_param(self, name):
+        return self.params[name]
+
+    def get_updated_param_ref(self, name):
+        return Ref(gfunc=self.get_updated_param, gfunc_args=(name,))
 
     def set_appear_time(self, appear_time):
         self.appear_time = appear_time
 
     def set_disappear_time(self, disappear_time):
         self.disappear_time = disappear_time
-        self.leave()
 
     def _enter(self):
         self.appear_time = None
@@ -80,8 +97,8 @@ class StaticVisualState(VisualState):
 
     def cancel(self, cancel_time):
         if self.active:
+            clock.schedule(self.leave)
             if cancel_time <= self.start_time:
-                schedule(self.leave)
                 if self.appear_video is not None:
                     self.exp.app.cancel_video(self.appear_video)
                 self.appear_video = None
@@ -92,7 +109,7 @@ class StaticVisualState(VisualState):
                         self.disappear, clock.now(), self.set_disappear_time)
                 else:
                     self.disappear_video = None
-                    schedule(self.finalize)
+                    clock.schedule(self.finalize)
                 self.end_time = self.start_time
             elif self.end_time is None or cancel_time < self.end_time:
                 if self.disappear_video is not None:
@@ -101,46 +118,113 @@ class StaticVisualState(VisualState):
                     self.disappear, cancel_time, self.set_disappear_time)
                 self.end_time = cancel_time
 
-    def _live_change(self, **kwargs):
+    def _live_change(self, **params):
         raise NotImplementedError
 
-    def live_change(self, **kwargs):
+    def live_change(self, **params):
+        if not self.on_screen:
+            return
+        for name, value in params.items():
+            if name not in self.params:
+                raise ValueError(
+                    "Invalid StaticVisualState parameter name %r" % name)
+            self.params[name] = value
+        self.exp.app.schedule_video(partial(self._live_change, **params))
+
+    def animate(self, duration=None, parent=None, save_log=True, name=None,
+                **anim_params):
+        anim = Animate(self, duration=duration, parent=parent, name=name,
+                       save_log=save_log, **anim_params)
+        filename, lineno = get_calling_context(2)
+        anim.instantiation_filename = filename
+        anim.instantiation_lineno = lineno
+        return anim
+
+    def slide(self, duration=None, speed=None, accel=None, parent=None,
+              save_log=True, name=None, **params):
+        def interp(a, b, w):
+            if type(a) in (list, tuple):
+                return [interp(a_prime, b_prime, w) for
+                        a_prime, b_prime in
+                        zip(a, b)]
+            else:
+                return a * (1.0 - w) + b * w
+        condition = duration is None, speed is None, accel is None
+        if condition == (False, True, True):  # simple, linear interpolation
+            anim_params = {}
+            for name, value in params.items():
+                def func(t, initial):
+                    return interp(initial, value, t / duration)
+                anim_params[name] = func
+        #TODO: fancier interpolation modes!!!
+        else:
+            raise ValueError("Invalid combination of parameters.")  #...
+        anim = self.animate(duration=duration, parent=parent,
+                            save_log=save_log, name=name, **anim_params)
+        filename, lineno = get_calling_context(2)
+        anim.instantiation_filename = filename
+        anim.instantiation_lineno = lineno
+        return anim
+
+    #TODO: animation helper methods
+
+
+class Animate(State):
+    def __init__(self, target, duration=None, parent=None, save_log=True,
+                 name=None, **anim_params):
+        super(Animate, self).__init__(duration=duration, parent=parent,
+                                      save_log=save_log, name=name)
+        self.target = target
+        self.anim_params = anim_params
+        self.initial_params = None
+
+    def _enter(self):
+        self.initial_params = None
+        first_update_time = self.start_time + self.exp.app.flip_interval
+        clock.schedule(self.update, event_time=first_update_time,
+                       repeat_interval=self.exp.app.flip_interval)
+        clock.schedule(self.leave)
+
+    def update(self):
         self.claim_exceptions()
-        self.exp.app.schedule_video(partial(self._live_change, **kwargs),
-                                    clock.now())
+        now = clock.now()
+        if self.initial_params is None:
+            self.initial_params = self.target.params.copy()
+        if self.end_time is not None and now >= self.end_time:
+            clock.unschedule(self.update)
+            clock.schedule(self.finalize)
+            now = self.end_time
+        t = now - self.start_time
+        params = {name : val(func(t, self.initial_params[name])) for
+                  name, func in
+                  self.anim_params.items()}
+        self.target.live_change(**params)
+
+    def cancel(self, cancel_time):
+        if self.active and (self.end_time is None or
+                            cancel_time < self.end_time):
+            self.end_time = cancel_time
 
 
 class DynamicVisualState(VisualState):
-    def __init__(self, duration=-1, parent=None, save_log=True):
+    def __init__(self, duration=None, parent=None, save_log=True):
         pass #...
 
     #...
 
 class Rectangle(StaticVisualState):
-    def __init__(self, x=None, y=None, width=100, height=100,
-                 anchor_x='center', anchor_y='center',
-                 color=(0.0, 0.0, 0.0, 1.0),
-                 duration=None, parent=None, save_log=True):
-        super(Rectangle, self).__init__(duration=duration, parent=parent,
-                                        save_log=save_log)
-
-        # set loc to center if none supplied
-        #if x is None:
-        #    x = Ref(self['exp']['window'],'width')//2  #!!!!!!!!!!!!!!!!!
-        self.x = x
-        #if y is None:
-        #    y = Ref(self['exp']['window'],'height')//2
-        self.y = y
-        self.anchor_x = anchor_x  #????????
-        self.anchor_y = anchor_y  #????????
-        self.width = width
-        self.height = height
-        self.color = color  #TODO: deal with color names, etc...
-        #self.group = group  #?????
-        self.log_attrs.extend(
-            ['x','y','anchor_x','anchor_y','width','height','color'])
+    def __init__(self, *pargs, **kwargs):
+        super(Rectangle, self).__init__(*pargs, **kwargs)
         self.kivy_color = None
         self.kivy_shape = None
+
+    def get_default_params(self):
+        return {
+            "x": 0,
+            "y": 0,
+            "width": 100,
+            "height": 100,
+            "color": (1.0, 1.0, 1.0, 1.0)}
 
     def _appear(self):
         with self.exp.app.wid.canvas:
@@ -172,15 +256,17 @@ class Rectangle(StaticVisualState):
         self.kivy_color = None
         self.kivy_shape = None
 
-#TODO: Text, DotBox, Image, Movie, Background?, Animate
+#TODO: Text, DotBox, Image, Movie, Background?
 
 if __name__ == '__main__':
     from experiment import Experiment
-    from state import Wait, Loop, Parallel, Meanwhile
+    from state import Wait, Loop, Parallel, Meanwhile, UntilDone
+    from math import sin
 
     exp = Experiment()
 
     Wait(5.0)
+
     with Loop(range(3)):
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
                   duration=1.0)
@@ -188,6 +274,7 @@ if __name__ == '__main__':
                   duration=1.0)
         Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
                   duration=1.0)
+
     with Parallel():
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
                   duration=3.0)
@@ -195,15 +282,37 @@ if __name__ == '__main__':
                   duration=2.0)
         Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
                   duration=1.0)
+
     with Loop(range(3)):
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
                   duration=1.0)
         #NOTE: This will flip between iterations, but the rectangle should remain on screen continuously.
+
     Wait(1.0)
     Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
               duration=0.0)  #NOTE: This should flip once but display nothing
     Wait(1.0)
+
+    Wait(1.0)
     with Meanwhile():
         Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0))
+
+    rect = Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 0.0, 1.0))
+    with UntilDone():
+        rect.animate(x=lambda t, initial: t * 50, y=lambda t, initial: t * 25, duration=5.0)
+        with Parallel():
+            rect.animate(color=lambda t, initial: (1.0, 1.0 - t / 5.0, t / 5.0, 1.0),
+                         duration=5.0)
+            rect.animate(height=lambda t, initial: 50.0 + t * 25, duration=5.0)
+        Wait(1.0)
+        rect.animate(
+            height=lambda t, initial: (initial * (1.0 - t / 5.0) +
+                                       25 * (t / 5.0)),
+            duration=5.0, name="shrink vertically")
+        rect.slide(color=(0.0, 1.0, 1.0, 1.0), duration=10.0, name="color fade")
+        with Meanwhile():
+            rect.animate(x=lambda t, initial: initial + sin(t * 4) * 100,
+                         name = "oscillate")
+
     Wait(5.0)
-    exp.run()
+    exp.run(trace=False)

@@ -132,12 +132,21 @@ class ExpApp(App):
 
         need_draw = False
         for video in self.video_queue:
+            #if video.flip_time is None:
+            #    if self.pending_flip_time is None:
+            #        video.flip_time = self._new_time + self.flip_interval / 2.0
+            #    elif (self.pending_flip_time <=
+            #          self._new_time + self.flip_interval / 4.0):
+            #        video.flip_time = self.pending_flip_time
+            #    else:
+            #        video.flip_time = self.pending_flip_time + self.flip_interval
             if (not video.drawn and
                 ((self.pending_flip_time is None and
                   self._new_time >= video.flip_time -
                   self.flip_interval / 2.0) or
                  video.flip_time == self.pending_flip_time)):
                 video.update_cb()
+                #print video
                 need_draw = True
                 video.drawn = True
                 self.pending_flip_time = video.flip_time
@@ -158,13 +167,15 @@ class ExpApp(App):
         while len(self.video_queue) and self.video_queue[0].flipped:
             del self.video_queue[0]
         if need_flip:
-            print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             if len(flip_time_callbacks):
+                print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 self.blocking_flip()  #TODO: use sync events instead!
                 for cb in flip_time_callbacks:
                     cb(self.last_flip)
             else:
+                print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 EventLoop.window.dispatch('on_flip')
+                self.last_flip = event_time(clock.now(), 0.0)
             self.pending_flip_time = None
 
         # save the time
@@ -205,7 +216,9 @@ class ExpApp(App):
         self.flip_interval = diffs / count
         return self.flip_interval
 
-    def schedule_video(self, update_cb, flip_time, flip_time_cb=None):
+    def schedule_video(self, update_cb, flip_time=None, flip_time_cb=None):
+        if flip_time is None:
+            flip_time = self.last_flip["time"] + self.flip_interval
         new_video = _VideoChange(update_cb, flip_time, flip_time_cb)
         for n, video in enumerate(self.video_queue):
             if video.flip_time > flip_time:
@@ -518,6 +531,7 @@ class Set(AutoFinalizeState):
         else:
             raise ValueError('Unrecognized variable type. Must either be string or Ref')
         clock.schedule(self.leave)
+        self.end_time = self.start_time
 
         
 def Get(variable):
@@ -659,6 +673,7 @@ class Log(AutoFinalizeState):
         # log it to the correct file
         dump([log], self._get_stream())
         clock.schedule(self.leave)
+        self.end_time = self.start_time
 
 if __name__ == '__main__':
     # can't run inside this file

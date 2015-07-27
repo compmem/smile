@@ -219,7 +219,7 @@ class State(object):
     	Returns state time for the parent. If no parent, logs current time. 
     	"""
         if self.parent:
-            return self.parent.get_state_time()
+            return self.parent.state_time
         else:
             return clock.now()
 
@@ -293,15 +293,22 @@ class State(object):
         if self.tracing:
             call_time = self.leave_time - self.exp.start_time
             call_duration = clock.now() - self.leave_time
-            end_time = self.end_time - self.exp.start_time
-            self.print_trace_msg(
-                "LEAVE time=%fs, duration=%fs, end_time=%fs" %
-                (call_time, call_duration, end_time))
+            if self.end_time is None:
+                 self.print_trace_msg(
+                    "LEAVE time=%fs, duration=%fs, perpetual" %
+                    (call_time, call_duration))
+            else:
+                end_time = self.end_time - self.exp.start_time
+                self.print_trace_msg(
+                    "LEAVE time=%fs, duration=%fs, end_time=%fs" %
+                    (call_time, call_duration, end_time))
 
     def cancel(self, cancel_time):
         if self.active and not self.following_may_run:
             clock.schedule(self.leave, event_time=cancel_time)
             #QUESTION: Should this do anything in the base class at all?
+            if self.end_time is None or cancel_time < self.end_time:
+                self.end_time = cancel_time
 
     def finalize(self):
         if not self.active:
@@ -372,9 +379,6 @@ class ParentState(State):
         for child in self.children:
             child.troff()
 
-    def get_state_time(self):
-        return self.state_time
-
     def claim_child(self, child):
         if not child.parent is None:
             child.parent.children.remove(child)
@@ -382,14 +386,12 @@ class ParentState(State):
         self.children.append(child)
 
     def child_enter_callback(self, child):
-        #print "Entered child %r (%r) of parent %r (%r)." % (child, child.name, self, self.name)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.unfinalized_children.add(child)
 
     def child_leave_callback(self, child):
         pass
 
     def child_finalize_callback(self, child):
-        #print "Finalized child %r (%r) of parent %r (%r)." % (child, child.name, self, self.name)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.unfinalized_children.discard(child)
         if self.following_may_run and not len(self.unfinalized_children):
             self.finalize()
@@ -472,18 +474,23 @@ class Parallel(ParentState):
             self.blocking_remaining.discard(child)
             if not len(self.blocking_remaining):
                 self.set_end_time()
-                self.cancel(self.end_time)
+                if self.end_time is not None:
+                    self.cancel(self.end_time)
         if self.running_child_count == 0:
             self.leave()
 
     def set_end_time(self):
         if len(self.blocking_children):
-            self.end_time = max([c.end_time for c in self.blocking_children])
+            end_times = [c.end_time for c in self.blocking_children]
+            if any([et is None for et in end_times]):
+                self.end_time = None
+            else:
+                self.end_time = max(end_times)
         else:
             self.end_time = self.start_time
 
 
-def _get_calling_context(d):
+def get_calling_context(d):
     frame, filename, lineno, function, code_context, index = inspect.stack()[d]
     return filename, lineno
 
@@ -504,7 +511,7 @@ def Meanwhile(name=None):
     prev_state = parent.children[-1]
 
     # build the new Parallel state
-    filename, lineno = _get_calling_context(3)
+    filename, lineno = get_calling_context(3)
     with Parallel(name="MEANWHILE") as p:
         p.instantiation_filename = filename
         p.instantiation_lineno = lineno
@@ -531,7 +538,7 @@ def UntilDone(name=None):
     prev_state = parent.children[-1]
 
     # build the new Parallel state
-    filename, lineno = _get_calling_context(3)
+    filename, lineno = get_calling_context(3)
     with Parallel(name="UNTIL DONE") as p:
         p.instantiation_filename = filename
         p.instantiation_lineno = lineno
@@ -570,6 +577,9 @@ class Serial(ParentState):
     def child_leave_callback(self, child):
         super(Serial, self).child_leave_callback(child)
         self.state_time = self.current_child.end_time
+        if self.state_time is None:
+            self.leave()
+            return
         if (self.cancel_time is not None and
             self.state_time >= self.cancel_time):
             self.leave()
@@ -590,7 +600,7 @@ class Serial(ParentState):
         if self.current_child is None:
             self.end_time = self.start_time
         else:
-            self.end_time = self.current_child.end_time
+            self.end_time = self.state_time
 
     
 class If(ParentState):
@@ -755,7 +765,7 @@ def Else(name="ELSE BODY"):
     # return the false_state (the last out_state)
     false_state = prev_state.out_states[-1]
     false_state.name = name
-    filename, lineno = _get_calling_context(2)
+    filename, lineno = get_calling_context(2)
     false_state.instantiation_filename = filename
     false_state.instantiation_lineno = lineno
     return false_state
@@ -887,7 +897,10 @@ class Loop(ParentState):
     def child_leave_callback(self, child):
         super(Loop, self).child_leave_callback(child)
         self.state_time = self.current_child.end_time
-        self.start_next_iteration()
+        if self.state_time is None:
+            self.leave()
+        else:
+            self.start_next_iteration()
 
     def cancel(self, cancel_time):
         if self.active and not self.following_may_run:
@@ -937,8 +950,11 @@ class Wait(State):
     	(2.0, 3.0)
     
     """
-    def __init__(self, duration=0.0, jitter=0.0, parent=None, save_log=True,
+    def __init__(self, duration, jitter=0.0, parent=None, save_log=True,
                  name=None):
+        if duration is None:
+            raise ValueError("Wait state must have a duration.")
+
         # init the parent class
         super(Wait, self).__init__(parent=parent, 
                                    duration=Ref(duration, jitter=jitter), 
