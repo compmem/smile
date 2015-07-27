@@ -65,11 +65,12 @@ class KeyPress(State):
             and the participant's response. Dependent on base_time.   
     """
     def __init__(self, keys=None, correct_resp=None, base_time=None, until=None,
-                 duration=-1, parent=None, save_log=True):
+                 duration=-1, parent=None, save_log=True, name=None):
         # init the parent class
         super(KeyPress, self).__init__(interval=-1, parent=parent, 
                                        duration=-1,
-                                       save_log=save_log)
+                                       save_log=save_log,
+                                       name=name)
 
         # save the keys we're watching (None for all)
         if not isinstance(keys, list):
@@ -112,6 +113,8 @@ class KeyPress(State):
         self.base_time = None
 
     def _key_callback(self, keycode, text, modifiers, event_time):
+        self.claim_exceptions()
+
         # check the key and time (if this is needed)
         keys = val(self.keys)
         correct_resp = val(self.correct_resp)

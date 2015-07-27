@@ -21,7 +21,8 @@ from state import (
     Wait,
     Func,
     ResetClock,
-    Debug)
+    Debug,
+    PrintTraceback)
 from keyboard import KeyPress
 #from mouse import MousePress
 #from video import Show, Update, Unshow, Text, Image, Movie, BackColor

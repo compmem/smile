@@ -26,9 +26,21 @@ from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.base import EventLoop
 from kivy.core.window import Window
+from kivy.graphics.opengl import (
+    glEnableVertexAttribArray,
+    glVertexAttribPointer,
+    glVertexAttrib4f,
+    glDrawArrays,
+    glDisableVertexAttribArray,
+    glFinish,
+    GL_INT,
+    GL_FALSE,
+    GL_POINTS)
+import kivy.clock
+_kivy_clock = kivy.clock.Clock
 
 # local imports
-from state import Serial, State, RunOnEnter
+from state import Serial, AutoFinalizeState
 from ref import val, Ref
 from log import dump, yaml2csv
 from clock import clock
@@ -36,13 +48,23 @@ from clock import clock
 def event_time(time, time_error=0.0):
     return {'time': time, 'error': time_error}
 
+
+class _VideoChange(object):
+    def __init__(self, update_cb, flip_time, flip_time_cb):
+        self.update_cb = update_cb
+        self.flip_time = flip_time
+        self.flip_time_cb = flip_time_cb
+        self.drawn = False
+        self.flipped = False
+
+
 class ExpApp(App):
     def __init__(self, exp, *pargs, **kwargs):
         super(ExpApp, self).__init__(*pargs, **kwargs)
         self.exp = exp
         self.callbacks = {}
-        self.need_flip = False  #???
-        self.need_draw = False  #???
+        self.pending_flip_time = None
+        self.video_queue = []
 
     def add_callback(self, event_name, func):
         self.callbacks.setdefault(event_name, []).append(func)
@@ -65,16 +87,17 @@ class ExpApp(App):
             func(*pargs, **kwargs)
 
     def build(self):
-        self.canvas = Widget()
+        self.wid = Widget()
         #TODO: bind kivy events...
         self._keyboard = Window.request_keyboard(self._keyboard_closed,
-                                                 self.canvas)
+                                                 self.wid)
         self._keyboard.bind(on_key_down=self._on_key_down,
                             on_key_up=self._on_key_up)
         #...
         self._last_time = clock.now()  #???
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
-        return self.canvas
+        print 1.0 / self.calc_flip_interval()
+        return self.wid
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_key_down,
@@ -99,6 +122,7 @@ class ExpApp(App):
 
         # update dt
         clock.tick()
+        _kivy_clock.tick()
 
         # read and dispatch input from providers
         event_loop.dispatch_input()
@@ -106,29 +130,71 @@ class ExpApp(App):
         # flush all the canvas operation
         Builder.sync()  # does this call do anything when a .kv file is not used?
 
+        need_draw = False
+        for video in self.video_queue:
+            #if video.flip_time is None:
+            #    if self.pending_flip_time is None:
+            #        video.flip_time = self._new_time + self.flip_interval / 2.0
+            #    elif (self.pending_flip_time <=
+            #          self._new_time + self.flip_interval / 4.0):
+            #        video.flip_time = self.pending_flip_time
+            #    else:
+            #        video.flip_time = self.pending_flip_time + self.flip_interval
+            if (not video.drawn and
+                ((self.pending_flip_time is None and
+                  self._new_time >= video.flip_time -
+                  self.flip_interval / 2.0) or
+                 video.flip_time == self.pending_flip_time)):
+                video.update_cb()
+                #print video
+                need_draw = True
+                video.drawn = True
+                self.pending_flip_time = video.flip_time
+            else:
+                break
+        if need_draw:
+            EventLoop.window.dispatch('on_draw')
+        need_flip = False
+        flip_time_callbacks = []
+        for video in self.video_queue:
+            if video.drawn and video.flip_time == self.pending_flip_time:
+                need_flip = True
+                if video.flip_time_cb is not None:
+                    flip_time_callbacks.append(video.flip_time_cb)
+                video.flipped = True
+            else:
+                break
+        while len(self.video_queue) and self.video_queue[0].flipped:
+            del self.video_queue[0]
+        if need_flip:
+            if len(flip_time_callbacks):
+                print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                self.blocking_flip()  #TODO: use sync events instead!
+                for cb in flip_time_callbacks:
+                    cb(self.last_flip)
+            else:
+                print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                EventLoop.window.dispatch('on_flip')
+                self.last_flip = event_time(clock.now(), 0.0)
+            self.pending_flip_time = None
+
         # save the time
         self._last_time = self._new_time
 
         # exit if experiment done
-        if self.exp.done:
+        if not self.exp.active:
             self.stop()
 
-    def draw(self):
-        #TODO: return if no draw needed?
-        EventLoop.window.dispatch('on_draw')
-
-    def flip(self):
-        #TODO: return if no flip needed?
-        EventLoop.window.dispatch('on_flip')
-
     def blocking_flip(self):
-        #TODO: return if no flip needed?
-        self.flip()
-        #TODO: draw single transparent point
-        #TODO: glFinish
-        self.flip()
+        EventLoop.window.dispatch('on_flip')
+        glEnableVertexAttribArray(0)
+        glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
+                              "\x00\x00\x00\x0a\x00\x00\x00\x0a")  # Position
+        glVertexAttrib4f(3, 0.0, 0.0, 0.0, 0.0)  # Color
+        glDrawArrays(GL_POINTS, 0, 1)
+        glDisableVertexAttribArray(0)
+        glFinish()
         self.last_flip = event_time(clock.now(), 0.0)
-        #TODO: clear need_flip?
         return self.last_flip
 
     def calc_flip_interval(self, nflips=55, nignore=5):
@@ -136,9 +202,6 @@ class ExpApp(App):
         last_time = 0.0
         count = 0.0
         for i in range(nflips):
-            # must draw something so the flip happens
-            #TODO: draw something
-
             # perform the flip and record the flip interval
             cur_time = self.blocking_flip()
             if last_time > 0.0 and i >= nignore:
@@ -147,17 +210,30 @@ class ExpApp(App):
             last_time = cur_time
 
             # add in sleep of something definitely less than the refresh rate
-            Clock.usleep(5000)  # 5ms for 200Hz
-
-        # reset the background color
-        #TODO: clear drawing
-        self.blocking_flip()
+            clock.usleep(20000)  # 5ms for 200Hz
         
         # take the mean and return
         self.flip_interval = diffs / count
         return self.flip_interval
 
-    #...
+    def schedule_video(self, update_cb, flip_time=None, flip_time_cb=None):
+        if flip_time is None:
+            flip_time = self.last_flip["time"] + self.flip_interval
+        new_video = _VideoChange(update_cb, flip_time, flip_time_cb)
+        for n, video in enumerate(self.video_queue):
+            if video.flip_time > flip_time:
+                self.video_queue.insert(n, new_video)
+                break
+        else:
+            self.video_queue.append(new_video)
+        return new_video
+
+    def cancel_video(self, video):
+        if not video.drawn:
+            try:
+                self.video_queue.remove(video)
+            except ValueError:
+                pass
 
 
 class Experiment(Serial):
@@ -209,7 +285,7 @@ class Experiment(Serial):
         self._process_args()
         
         # set up the state
-        super(Experiment, self).__init__(parent=None, duration=-1)
+        super(Experiment, self).__init__(parent=None, name=name)
 
         # set up the window
         #screens = pyglet.window.get_platform().get_default_display().get_screens()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -220,7 +296,6 @@ class Experiment(Serial):
         self.vsync = vsync
         self.fullscreen = fullscreen or self.fullscreen
         self.resolution = resolution
-        self.name = name
         self.app = None   # will create when run
 
         # set the clear color
@@ -336,7 +411,7 @@ class Experiment(Serial):
                 raise RuntimeError(
                     "Too many data files with the same title, extension, and timestamp!")
 
-    def run(self):
+    def run(self, trace=False):
         """
         Run the experiment.
         """
@@ -370,11 +445,19 @@ class Experiment(Serial):
         #self.window.on_draw(force=True)
         #self.blocking_flip()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        # start the first state (that's this experiment)
-        self.enter()
+        self.current_state = None
+        if trace:
+            self.tron()
+        try:
+            # start the first state (that's this experiment)
+            self.enter()
 
-        # kivy main loop
-        self.app.run()
+            # kivy main loop
+            self.app.run()
+        except:
+            if self.current_state is not None:
+                self.current_state.print_traceback()
+            raise
 
         # write out csv logs if desired
         if self.csv:
@@ -385,7 +468,7 @@ class Experiment(Serial):
             yaml2csv(self.exp_log, os.path.splitext(self.exp_log)[0] + '.csv')
 
 
-class Set(State, RunOnEnter):
+class Set(AutoFinalizeState):
     """
     State to set a experiment variable.
 
@@ -417,12 +500,12 @@ class Set(State, RunOnEnter):
     recorded in the state.yaml and state.csv files. Refer to State class
     docstring for addtional logged parameters. 
     """
-    def __init__(self, variable, value, eval_var=True, parent=None, save_log=True):
-
+    def __init__(self, variable, value, eval_var=True, parent=None,
+                 save_log=True, name=None):
         # init the parent class
-        super(Set, self).__init__(interval=0, parent=parent, 
-                                  duration=0,
-                                  save_log=save_log)
+        super(Set, self).__init__(parent=parent,
+                                  save_log=save_log,
+                                  name=name)
         self.var = variable
         self.variable = None
         self.val = value
@@ -432,7 +515,7 @@ class Set(State, RunOnEnter):
         # append log vars
         self.log_attrs.extend(['variable','value'])
         
-    def _callback(self, dt):
+    def _enter(self):
         # set the exp var
         if self.eval_var:
             self.variable = val(self.var)
@@ -447,6 +530,8 @@ class Set(State, RunOnEnter):
             self.variable.set(self.value)
         else:
             raise ValueError('Unrecognized variable type. Must either be string or Ref')
+        clock.schedule(self.leave)
+        self.end_time = self.start_time
 
         
 def Get(variable):
@@ -492,7 +577,7 @@ def Get(variable):
     return Ref(gfunc=gfunc)
 
 
-class Log(State, RunOnEnter):
+class Log(AutoFinalizeState):
     """
     State to write values to a custom experiment log.
     Write data to a YAML log file.
@@ -561,11 +646,11 @@ class Log(State, RunOnEnter):
         state_time :
             Same as start_time.
     """
-    def __init__(self, log_dict=None, log_file=None, parent=None, **log_items):
-
+    def __init__(self, log_dict=None, log_file=None, parent=None, name=None,
+                 **log_items):
         # init the parent class
-        super(Log, self).__init__(interval=0, parent=parent, 
-                                  duration=0,
+        super(Log, self).__init__(parent=parent,
+                                  name=name,
                                   save_log=False)
         self.log_file = log_file
         self.log_items = log_items
@@ -579,7 +664,7 @@ class Log(State, RunOnEnter):
             stream = open(os.path.join(self.exp.subj_dir,self.log_file),'a')
         return stream
         
-    def _callback(self, dt):
+    def _enter(self):
         # eval the log_items and write the log
         keyvals = [(k,val(v)) for k,v in self.log_items.iteritems()]
         log = dict(keyvals)
@@ -587,6 +672,8 @@ class Log(State, RunOnEnter):
             log.update(val(self.log_dict))
         # log it to the correct file
         dump([log], self._get_stream())
+        clock.schedule(self.leave)
+        self.end_time = self.start_time
 
 if __name__ == '__main__':
     # can't run inside this file

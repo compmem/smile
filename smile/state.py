@@ -8,6 +8,9 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from contextlib import contextmanager
+from functools import partial
+import copy
+import inspect
 
 import kivy_overrides
 import random
@@ -15,15 +18,6 @@ from ref import Ref, val
 from utils import rindex, get_class_name
 from log import dump
 from clock import clock
-
-
-class RunOnEnter():
-    """Inherited class to indicate to a state that it should run
-    immediately upon entering the state (instead of waiting until the
-    state time specified by the parent). This ensures that parent
-    states do not disturb the timing of their children.
-    """
-    pass
 
 
 class State(object):
@@ -48,8 +42,7 @@ class State(object):
         Whether the state logs itself.
     
     """
-    def __init__(self, interval=0, parent=None, duration=0.0, 
-                 save_log=True):
+    def __init__(self, parent=None, duration=None, save_log=True, name=None):
         """
         """
         self.state_time = None
@@ -57,18 +50,35 @@ class State(object):
         self.end_time = None
         self.enter_time = None
         self.leave_time = None
-        self.first_call_time = None
-        self.first_call_error = None
-        self.last_call_time = None
-        self.last_call_error = None
-        self.dt = None
-        self.interval = interval
-        self.raw_duration = duration
-        self.duration = 0.0
+        self.finalize_time = None
+        self.duration = duration
         self.parent = parent
         self.active = False
-        self.done = False
+        self.following_may_run = False
         self.save_log = save_log
+        self.name = name
+        self.depth = 0
+        self.tracing = False
+
+        # get instantiation context
+        base_inits = {}
+        for base in inspect.getmro(type(self)):
+            if base is not object and hasattr(base, "__init__"):
+                init = base.__init__
+                filename = inspect.getsourcefile(init)
+                lines, start_lineno = inspect.getsourcelines(init)
+                base_inits.setdefault(filename, []).extend(
+                    range(start_lineno, start_lineno + len(lines)))
+        for (frame, filename, lineno,
+             function, code_context, index) in inspect.stack():
+            if filename in base_inits and lineno in base_inits[filename]:
+                continue
+            self.instantiation_filename = filename
+            self.instantiation_lineno = lineno
+            break
+        else:
+            raise RuntimeError(
+                "Can't figure out where instantiation took place!")  #!!!!!!!!!
 
         # get the exp reference
         from experiment import Experiment
@@ -89,11 +99,87 @@ class State(object):
 
         # start the log
         self.state = self.__class__.__name__
-        self.log_attrs = ['state','state_time','start_time','end_time',
-                          'enter_time', 'leave_time',
-                          'first_call_time','first_call_error',
-                          'last_call_time','last_call_error',
-                          'duration']
+        self.log_attrs = ['state', 'state_time', 'start_time', 'end_time',
+                          'enter_time', 'leave_time', 'finalize_time', 'name']
+        self.deepcopy_attrs = []  #TODO: extend this for subclasses!
+
+    def clone(self):
+        new_clone = copy.copy(self)
+        for attr in self.deepcopy_attrs:
+            setattr(new_clone, attr, copy.deepcopy(getattr(self, attr)))
+        return new_clone
+
+    def get_inactive_state(self, parent):
+        if self.active or self.parent is not parent:
+            clone = self.clone()
+            clone.active = False
+            clone.parent = parent
+            return clone
+        else:
+            return self
+
+    def tron(self, depth=0):
+        self.tracing = True
+        self.depth = depth
+
+    def troff(self):
+        self.tracing = False
+
+    def print_trace_msg(self, msg):
+        id_strs = [
+            "file: %r" % self.instantiation_filename,
+            "line: %d" % self.instantiation_lineno
+            ]
+        if self.name is not None:
+            id_strs.append("name: %s" % self.name)
+        print "*** %s%s (%s): %s" % (
+            "  " * self.depth,
+            type(self).__name__,
+            ", ".join(id_strs),
+            msg
+            )
+
+    def print_traceback(self, child=None, t=None):
+        if t is None:
+            t = clock.now()
+        if self.parent is None:
+            print " SMILE Traceback:"
+        else:
+            self.parent.print_traceback(self, t)
+        if self.name is None:
+            name_spec = ""
+        else:
+            name_spec = " (%s)" % self.name
+        def tstr(tm):
+            if (isinstance(tm, dict) and
+                len(tm) == 2 and
+                "time" in tm and "error" in tm):
+                error = ", error=%fs" % tm["error"]
+                tm = tm["time"]
+            else:
+                error = ""
+            if type(tm) not in (float, int):
+                return repr(tm)
+            offset = t - tm
+            if offset < 0.0:
+                return "%fs from now%s" % (-offset, error)
+            else:
+                return "%fs ago%s" % (offset, error)
+        print "   %s%s - file: %s, line: %d" % (
+            type(self).__name__,
+            name_spec,
+            self.instantiation_filename,
+            self.instantiation_lineno)
+        for attr_name in self.log_attrs:
+            value = val(getattr(self, attr_name))
+            if attr_name.endswith("_time"):
+                print "     %s: %s" % (attr_name, tstr(value))
+            else:
+                print "     %s: %r" % (attr_name, value)
+
+    def claim_exceptions(self):
+        if self.exp is not None:
+            self.exp.current_state = self
 
     def get_log(self):
     	"""
@@ -128,38 +214,12 @@ class State(object):
     #def __getattribute__(self, name):
     #    return Ref(self, name)
 
-    def _callback(self, dt):
-        # Subclasses of State must implement the callback.
-        pass
-        
-    def callback(self, dt):
-    	"""
-    	Run at the scheduled state time.
-    	"""
-
-        self.last_call_time = clock.now()
-        self.last_call_error = self.last_call_time - self.state_time
-        if self.first_call_time is None:
-            self.first_call_time = self.last_call_time
-            self.first_call_error = self.last_call_error
-
-        # call the user-defined callback
-        self._callback(dt)
-
-        # save the dt
-        self.dt = dt
-
-        # see if done (check to make sure we didn't already call leave)
-        if not self.done and self.interval == 0:
-            # we're done
-            self.leave()
-
     def get_parent_state_time(self):
     	"""
     	Returns state time for the parent. If no parent, logs current time. 
     	"""
         if self.parent:
-            return self.parent.get_state_time()
+            return self.parent.state_time
         else:
             return clock.now()
 
@@ -170,40 +230,41 @@ class State(object):
         """
         Gets the starting time from the parent state
         """
-        
+        self.claim_exceptions()
         self.state_time = self.get_parent_state_time()
         self.start_time = self.state_time
         self.enter_time = clock.now()
-
-        # add the callback to the schedule
-        delay = self.state_time - self.enter_time
-        if delay < 0 or issubclass(self.__class__,RunOnEnter):
-            # parents states (and states like Logging) run immediately
-            delay = 0
-        if self.interval < 0:
-            # schedule it for every event loop
-            clock.schedule(self.callback, event_delay=delay, repeat_interval=0)
-        elif self.interval == 0:
-            # schedule the interval (0 means once)
-            clock.schedule(self.callback, event_delay=delay)
-        else:
-            # schedule the interval
-            clock.schedule(self.callback, event_delay=delay,
-                           repeat_interval=self.interval)
+        self.leave_time = None
+        self.finalize_time = None
 
         # say we're active
         self.active = True
+        self.following_may_run = False
+
+        if self.parent:
+            clock.schedule(partial(self.parent.child_enter_callback, self))
 
         # if we don't have the exp reference, get it now
         if self.exp is None:
             from experiment import Experiment
             self.exp = Experiment.last_instance()
 
-        # compute the duration
-        self.duration = val(self.raw_duration)
-            
+        duration = val(self.duration)
+        if duration is None:
+            self.end_time = None
+        else:
+            self.end_time = self.start_time + duration
+
         # custom enter code
         self._enter()
+
+        if self.tracing:
+            call_time = self.enter_time - self.exp.start_time
+            call_duration = clock.now() - self.enter_time
+            start_time = self.start_time - self.exp.start_time
+            self.print_trace_msg(
+                "ENTER time=%fs, duration=%fs, start_time=%fs" %
+                (call_time, call_duration, start_time))
 
     def _leave(self):
         pass
@@ -213,37 +274,63 @@ class State(object):
         Gets the end time of the state (logs current time)
         """
         # ignore leave call if not active
-        if not self.active:
+        if self.following_may_run or not self.active:
             return
 
+        self.claim_exceptions()
+
         self.leave_time = clock.now()
+
         self.set_end_time()
 
-        # remove the callback from the schedule
-        clock.unschedule(self.callback)
-
-        # notify the parent that we're done
-        self.active = False
-        self.done = True
+        self.following_may_run = True
         if self.parent:
-            self.parent.check = True
+            clock.schedule(partial(self.parent.child_leave_callback, self))
 
         # call custom leave code
         self._leave()
 
-        # write log to the state log
-        #print self.get_log()
+        if self.tracing:
+            call_time = self.leave_time - self.exp.start_time
+            call_duration = clock.now() - self.leave_time
+            if self.end_time is None:
+                 self.print_trace_msg(
+                    "LEAVE time=%fs, duration=%fs, perpetual" %
+                    (call_time, call_duration))
+            else:
+                end_time = self.end_time - self.exp.start_time
+                self.print_trace_msg(
+                    "LEAVE time=%fs, duration=%fs, end_time=%fs" %
+                    (call_time, call_duration, end_time))
+
+    def cancel(self, cancel_time):
+        if self.active and not self.following_may_run:
+            clock.schedule(self.leave, event_time=cancel_time)
+            #QUESTION: Should this do anything in the base class at all?
+            if self.end_time is None or cancel_time < self.end_time:
+                self.end_time = cancel_time
+
+    def finalize(self):
+        if not self.active:
+            return
+
+        self.finalize_time = clock.now()
+        self.active = False
         if self.save_log:
             dump([self.get_log()],self.get_log_stream())
+        if self.parent:
+            clock.schedule(partial(self.parent.child_finalize_callback, self))
+        if self.tracing:
+            call_time = self.finalize_time - self.exp.start_time
+            call_duration = clock.now() - self.finalize_time
+            self.print_trace_msg("FINALIZE time=%fs, duration=%fs" %
+                                 (call_time, call_duration))
 
     def set_end_time(self):
-        if self.duration < 0:
-            self.end_time = self.leave_time
-        else:
-            self.end_time = self.start_time + self.duration
+        pass
 
 
-class ParentState(State, RunOnEnter):
+class ParentState(State):
     """
     Base state for parents that can hold children states. 
 
@@ -266,10 +353,12 @@ class ParentState(State, RunOnEnter):
         in the log files.
 
     """
-    def __init__(self, children=None, parent=None, duration=-1, save_log=True):
-        super(ParentState, self).__init__(interval=-1, parent=parent, 
+    def __init__(self, children=None, parent=None, duration=None,
+                 save_log=True, name=None):
+        super(ParentState, self).__init__(parent=parent, 
                                           duration=duration, 
-                                          save_log=save_log)
+                                          save_log=save_log,
+                                          name=name)
         # process children
         if children is None:
             children = []
@@ -277,28 +366,47 @@ class ParentState(State, RunOnEnter):
         for c in children:
             self.claim_child(c)
         
-        self.check = False
+        self.unfinalized_children = set()
 
-    def get_state_time(self):
-        return self.state_time
+    def tron(self, depth=0):
+        super(ParentState, self).tron(depth)
+        child_depth = depth + 1
+        for child in self.children:
+            child.tron(child_depth)
+
+    def troff(self):
+        super(ParentState, self).troff()
+        for child in self.children:
+            child.troff()
 
     def claim_child(self, child):
         if not child.parent is None:
-            ind = rindex(child.parent.children,child)
-            del child.parent.children[ind]
-            #IKS: why don't we use the remove method?
+            child.parent.children.remove(child)
         child.parent = self
         self.children.append(child)
 
+    def child_enter_callback(self, child):
+        self.unfinalized_children.add(child)
+
+    def child_leave_callback(self, child):
+        pass
+
+    def child_finalize_callback(self, child):
+        self.unfinalized_children.discard(child)
+        if self.following_may_run and not len(self.unfinalized_children):
+            self.finalize()
+
     def _enter(self):
-        # set all children to not done
-        for c in self.children:
-            c.done = False
-        self.check = True
+        self.unfinalized_children = set()
 
     def _leave(self):
-        for c in self.children:
-            c.leave()
+        if not len(self.children) or not len(self.unfinalized_children):
+            clock.schedule(self.finalize)
+
+    def cancel(self, cancel_time):
+        if self.active:
+            for c in self.children:
+                c.cancel(cancel_time)
 
     def __enter__(self):
         # push self as current parent
@@ -320,9 +428,21 @@ class Parallel(ParentState):
     finished.
     
     """
-    def __init__(self, *pargs, **kwargs):
+    def __init__(self, *pargs, **kwargs):  #TODO: fix this ... duration should not be an exposed parameter
         super(Parallel, self).__init__(*pargs, **kwargs)
         self.children_blocking = []
+        self.blocking_children = []
+        self.blocking_remaining = []
+        self.running_child_count = 0
+
+    def print_traceback(self, child=None, t=None):
+        super(Parallel, self).print_traceback(child, t)
+        self._normalize_children_blocking()
+        if child is not None:
+            if self.children_blocking[self.children.index(child)]:
+                print "     Blocking child..."
+            else:
+                print "     Non-blocking child..."
 
     def _normalize_children_blocking(self):
         for _n in range(len(self.children_blocking), len(self.children)):
@@ -335,38 +455,48 @@ class Parallel(ParentState):
     def _enter(self):
         super(Parallel, self)._enter()
         self._normalize_children_blocking()
-        self.blocking_children = [c for c, blocking in
-                                  zip(self.children, self.children_blocking) if
-                                  blocking]
-        self.blocking_remaining = self.blocking_children[:]
-        self.started_children = False
+        if len(self.children):
+            for c in self.children:
+                clock.schedule(c.enter)
+            self.blocking_children = [c for c, blocking in
+                                      zip(self.children,
+                                          self.children_blocking) if
+                                      blocking]
+            self.blocking_remaining = set(self.blocking_children)
+            self.running_child_count = len(self.children)
+        else:
+            clock.schedule(self.leave)
 
-    def _callback(self, dt):
-        if self.check:
-            self.check = False
-
-            newly_done = []
-            if self.started_children:
-                for n, c in enumerate(self.blocking_remaining):
-                    if c.done:
-                        newly_done.append(n)
-                for n in reversed(newly_done):
-                    del self.blocking_remaining[n]
-            else:
-                self.started_children = True
-                for c in self.children:
-                    c.enter()
-
+    def child_leave_callback(self, child):
+        super(Parallel, self).child_leave_callback(child)
+        self.running_child_count -= 1
+        if len(self.blocking_remaining):
+            self.blocking_remaining.discard(child)
             if not len(self.blocking_remaining):
-                # we're done
-                self.leave()
+                self.set_end_time()
+                if self.end_time is not None:
+                    self.cancel(self.end_time)
+        if self.running_child_count == 0:
+            self.leave()
 
     def set_end_time(self):
-        self.end_time = max([c.end_time for c in self.blocking_children])
+        if len(self.blocking_children):
+            end_times = [c.end_time for c in self.blocking_children]
+            if any([et is None for et in end_times]):
+                self.end_time = None
+            else:
+                self.end_time = max(end_times)
+        else:
+            self.end_time = self.start_time
+
+
+def get_calling_context(d):
+    frame, filename, lineno, function, code_context, index = inspect.stack()[d]
+    return filename, lineno
 
 
 @contextmanager
-def Meanwhile():
+def Meanwhile(name=None):
     # get the exp reference
     from experiment import Experiment
     try:
@@ -381,14 +511,19 @@ def Meanwhile():
     prev_state = parent.children[-1]
 
     # build the new Parallel state
-    with Parallel() as p:
-        with Serial():
+    filename, lineno = get_calling_context(3)
+    with Parallel(name="MEANWHILE") as p:
+        p.instantiation_filename = filename
+        p.instantiation_lineno = lineno
+        with Serial(name=name) as s:
+            s.instantiation_filename = filename
+            s.instantiation_lineno = lineno
             yield p
     p.claim_child(prev_state)
     p.set_child_blocking(0, False)
 
 @contextmanager
-def UntilDone():
+def UntilDone(name=None):
     # get the exp reference
     from experiment import Experiment
     try:
@@ -403,8 +538,13 @@ def UntilDone():
     prev_state = parent.children[-1]
 
     # build the new Parallel state
-    with Parallel() as p:
-        with Serial():
+    filename, lineno = get_calling_context(3)
+    with Parallel(name="UNTIL DONE") as p:
+        p.instantiation_filename = filename
+        p.instantiation_lineno = lineno
+        with Serial(name=name) as s:
+            s.instantiation_filename = filename
+            s.instantiation_lineno = lineno
             yield p
     p.claim_child(prev_state)
     p.set_child_blocking(1, False)
@@ -421,27 +561,46 @@ class Serial(ParentState):
         super(Serial, self)._enter()
         self.child_iterator = iter(self.children)
         self.current_child = None
+        self.cancel_time = None
+        try:
+            self.current_child = (
+                self.child_iterator.next().get_inactive_state(self))
+            clock.schedule(self.current_child.enter)
+        except StopIteration:
+            clock.schedule(self.leave)
 
-    def _callback(self, dt):
-        if self.check:
-            self.check = False
+    def child_enter_callback(self, child):
+        super(Serial, self).child_enter_callback(child)
+        if self.cancel_time is not None:
+            child.cancel(self.cancel_time)
 
-            if (self.current_child is None or
-                self.current_child.done or
-                self.current_child.duration >= 0):  #???
-                if self.current_child is not None:
-                    self.state_time = self.current_child.end_time
-                try:
-                    self.current_child = self.child_iterator.next()
-                    self.current_child.enter()
-                except StopIteration:
-                    self.leave()
+    def child_leave_callback(self, child):
+        super(Serial, self).child_leave_callback(child)
+        self.state_time = self.current_child.end_time
+        if self.state_time is None:
+            self.leave()
+            return
+        if (self.cancel_time is not None and
+            self.state_time >= self.cancel_time):
+            self.leave()
+            return
+        try:
+            self.current_child = (
+                self.child_iterator.next().get_inactive_state(self))
+            clock.schedule(self.current_child.enter)
+        except StopIteration:
+            clock.schedule(self.leave)
+
+    def cancel(self, cancel_time):
+        if self.active:
+            clock.schedule(partial(self.current_child.cancel, cancel_time))
+            self.cancel_time = cancel_time
 
     def set_end_time(self):
         if self.current_child is None:
             self.end_time = self.start_time
         else:
-            self.end_time = self.current_child.end_time
+            self.end_time = self.state_time
 
     
 class If(ParentState):
@@ -491,11 +650,10 @@ class If(ParentState):
 
     """
     def __init__(self, conditional, true_state=None, false_state=None, 
-                 parent=None, save_log=True):
+                 parent=None, save_log=True, name=None):
 
         # init the parent class
-        super(If, self).__init__(parent=parent, duration=-1, 
-                                 save_log=save_log)
+        super(If, self).__init__(parent=parent, save_log=save_log, name=name)
 
         # save a list of conds to be evaluated (last one always True, acts as the Else)
         self.cond = [conditional, True]
@@ -508,14 +666,18 @@ class If(ParentState):
             self.claim_child(self.true_state)
         else:
             # create the true state
-            self.true_state = Serial(parent=self)
+            self.true_state = Serial(parent=self, name="IF BODY")
+            self.true_state.instantiation_filename = self.instantiation_filename
+            self.true_state.instantiation_lineno = self.instantiation_lineno
 
         # process the false state similarly
         if self.false_state:
             self.claim_child(self.false_state)
         else:
-            # create the true state
-            self.false_state = Serial(parent=self)
+            # create the false state
+            self.false_state = Serial(parent=self, name="DO NOTHING")
+            self.false_state.instantiation_filename = self.instantiation_filename
+            self.false_state.instantiation_lineno = self.instantiation_lineno
 
         # save the out_states
         self.out_states = [self.true_state, self.false_state]
@@ -524,39 +686,20 @@ class If(ParentState):
         self.log_attrs.append('outcome')
         
     def _enter(self):
+        super(If, self)._enter()
+
         # reset outcome so we re-evaluate if called in loop
         # this will evaluate each conditional, we'll enter the first one that
         # evaluates to True. Note that the last one is always True because it's
         # the Else
         # must evaluate each cond
         self.outcome = [not v is False for v in val(self.cond)]
-        self.selected_child = self.out_states[self.outcome.index(True)]
-        super(If, self)._enter()
-        
-    def _callback(self, dt):
-        if self.check:
-            self.check = False
-            done = False
+        self.selected_child = (
+            self.out_states[self.outcome.index(True)].get_inactive_state(self))
+        clock.schedule(self.selected_child.enter)
 
-            # process the outcome
-            # if self.outcome:
-            #     # get the first state
-            #     c = self.true_state
-            # else:
-            #     c = self.false_state
-                
-            # take the first one that evaluated to True
-            c = self.selected_child
-            
-            if c is None or c.done:
-                done = True
-            elif not c.active:
-                # start the winning state
-                c.enter()
-
-            # check if done
-            if done:
-                self.leave()
+    def child_leave_callback(self, child):
+        self.leave()
 
     def __enter__(self):
         # push self.true_state as current parent
@@ -575,11 +718,9 @@ class Elif(Serial):
     """State to attach an elif to and If state.
 
     """
-    def __init__(self, conditional, parent=None, save_log=True):
-
+    def __init__(self, conditional, parent=None, save_log=True, name=None):
         # init the parent class
-        super(Elif, self).__init__(parent=parent, duration=-1, 
-                                   save_log=save_log)
+        super(Elif, self).__init__(parent=parent, save_log=save_log, name=name)
 
         # we now know our parent, so ensure the previous child is
         # either and If or Elif state
@@ -599,7 +740,7 @@ class Elif(Serial):
         prev_state.out_states.insert(-1, self)
 
         
-def Else():
+def Else(name="ELSE BODY"):
     """State to attach to the else of an If state.
 
     """
@@ -622,10 +763,15 @@ def Else():
         raise ValueError("The previous state must be an If or Elif state.")
 
     # return the false_state (the last out_state)
-    return prev_state.out_states[-1]
+    false_state = prev_state.out_states[-1]
+    false_state.name = name
+    filename, lineno = get_calling_context(2)
+    false_state.instantiation_filename = filename
+    false_state.instantiation_lineno = lineno
+    return false_state
 
-    
-class Loop(Serial):
+
+class Loop(ParentState):
     """State that implements a loop.
 
     Loop over an iterable or run repeatedly while a conditional 
@@ -669,14 +815,9 @@ class Loop(Serial):
     list are traversed.
 
     """
-
-    #TODO: Implement this with an enclosed Serial instead, to consolidate functionality!
-    
-    def __init__(self, iterable=None, shuffle=False,
-                 conditional=True,
-                 parent=None, save_log=True):
-        super(Loop, self).__init__(parent=parent, duration=-1, 
-                                   save_log=save_log)
+    def __init__(self, iterable=None, shuffle=False, conditional=True,
+                 parent=None, save_log=True, name=None):
+        super(Loop, self).__init__(parent=parent, save_log=save_log, name=name)
 
         # otherwise, assume it's a list of dicts
         self.iterable = iterable
@@ -685,11 +826,17 @@ class Loop(Serial):
         self.outcome = True
 
         # set to first in loop
-        self.i = 0
+        self.i = None
         self._shuffled = False
-                    
+
+        self.body_state = Serial(parent=self, name="LOOP BODY")
+        self.body_state.instantiation_filename = self.instantiation_filename
+        self.body_state.instantiation_lineno = self.instantiation_lineno
+        self.current_child = None
+        self.cancel_time = None
+
         # append outcome to log
-        self.log_attrs.extend(['outcome','i'])
+        self.log_attrs.extend(['outcome', 'i'])
 
     @property
     def current(self):
@@ -698,76 +845,73 @@ class Loop(Serial):
         else:
             return self['iterable'][self['i']]
 
+    def iter_i(self):
+        self.outcome = val(self.cond)
+        if self.iterable is None:
+            i = 0
+            while self.outcome:
+                yield i
+                i += 1
+                self.outcome = val(self.cond)
+        else:
+            if not self.outcome:
+                return
+
+            # see if shuffle
+            if val(self.shuffle) and not self._shuffled:
+                # eval and make a shallow copy
+                self.iterable = val(self.iterable, recurse=False)[:]  #IKS: only evaluated on the first execution of the Loop state???
+                random.shuffle(self.iterable)
+                self._shuffled = True
+
+            for i in xrange(len(self.iterable)):
+                # dump log
+                dump([self.get_log()],self.get_log_stream())  #???
+
+                yield i
+
     def _enter(self):
         # get the parent enter
         super(Loop, self)._enter()
 
-        # reset outcome so we re-evaluate if called in loop
-        self.outcome = val(self.cond)
-
-        # see if shuffle
-        if not self.iterable is None and \
-           val(self.shuffle) and \
-           not self._shuffled:
-            # eval and make a shallow copy
-            self.iterable = val(self.iterable, recurse=False)[:]
-            random.shuffle(self.iterable)
-            self._shuffled = True
-
-        self.child_iterator = iter(self.children)
+        self.outcome = None
         self.current_child = None
+        self.cancel_time = None
+        self.i_iterator = self.iter_i()
+        self.start_next_iteration()
 
-        #print [(c, c.active) for c in self.children]
-        #print "\n\n%r" % self
+    def start_next_iteration(self):
+        try:
+            self.i = self.i_iterator.next()
+        except StopIteration:
+            clock.schedule(self.leave)
+            return
+        self.current_child = self.body_state.get_inactive_state(self)
+        clock.schedule(self.current_child.enter)
 
-    def _callback(self, dt):
-        if self.check:
-            self.check = False
-            # check the outcome each time
-            if not self.outcome:
-                # we should stop now
-                #self.interval = 0
-                self.leave()
-                return
+    def child_enter_callback(self, child):
+        super(Loop, self).child_enter_callback(child)
+        if self.cancel_time is not None:
+            child.cancel(self.cancel_time)
 
-            if (self.current_child is None or
-                self.current_child.done or
-                self.current_child.duration >= 0):  #???
-                if self.current_child is not None:
-                    self.state_time = self.current_child.end_time
-                try:
-                    self.current_child = self.child_iterator.next()
-                    self.current_child.enter()
-                except StopIteration:
-                    done_with_sequence = True
-                else:
-                    done_with_sequence = False
+    def child_leave_callback(self, child):
+        super(Loop, self).child_leave_callback(child)
+        self.state_time = self.current_child.end_time
+        if self.state_time is None:
+            self.leave()
+        else:
+            self.start_next_iteration()
 
-            if done_with_sequence:
-                # we're done with this sequence
-                finished = False
-                if not self.iterable is None:
-                    # see if we're done with the loop
-                    if self.i+1 >= len(val(self.iterable,recurse=False)):
-                        # we're really done
-                        finished = True
-                        self.leave()
-                        # reset to start if inside another loop
-                        self.i = 0
-                        self._shuffled = False
-                    else:
-                        # dump log
-                        dump([self.get_log()],self.get_log_stream())
+    def cancel(self, cancel_time):
+        if self.active and not self.following_may_run:
+            clock.schedule(partial(self.current_child.cancel, cancel_time))
+            self.cancel_time = cancel_time
 
-                        # set to next
-                        self.i += 1
-                else:
-                    # conditional looping so just set to next
-                    self.i += 1
-                        
-                # update everything for the next loop
-                if not finished:
-                    self._enter()
+    def __enter__(self):
+        # push self.body_state as current parent
+        if not self.exp is None:
+            self.exp._parents.append(self.body_state)
+        return self
 
     def set_end_time(self):
         if self.current_child is None:
@@ -806,23 +950,41 @@ class Wait(State):
     	(2.0, 3.0)
     
     """
-    def __init__(self, duration=0.0, jitter=0.0, stay_active=False, 
-                 parent=None, save_log=True):
+    def __init__(self, duration, jitter=0.0, parent=None, save_log=True,
+                 name=None):
+        if duration is None:
+            raise ValueError("Wait state must have a duration.")
+
         # init the parent class
-        super(Wait, self).__init__(interval=-1, parent=parent, 
+        super(Wait, self).__init__(parent=parent, 
                                    duration=Ref(duration, jitter=jitter), 
-                                   save_log=save_log)
-        self.stay_active = stay_active
+                                   save_log=save_log, name=name)
 
-    def _callback(self, dt):
-        if (not self.stay_active or
-            clock.now() >= self.state_time + self.duration):
-            # we're done
-            #self.interval = 0
-            self.leave()
+    def _enter(self):
+        clock.schedule(self.leave, event_time=self.start_time)
+        clock.schedule(self.finalize, event_time=self.end_time)
+
+    def cancel(self, cancel_time):
+        if self.active:
+            if cancel_time < self.start_time:
+                clock.unschedule(self.leave)
+                clock.schedule(self.leave)
+                clock.unschedule(self.finalize)
+                clock.schedule(self.finalize)
+                self.end_time = self.start_time
+            elif cancel_time < self.end_time:
+                clock.unschedule(self.finalize)
+                clock.schedule(self.finalize, event_time=cancel_time)
+                self.end_time = cancel_time
 
 
-class ResetClock(State, RunOnEnter):
+class AutoFinalizeState(State):
+    def leave(self):
+        super(AutoFinalizeState, self).leave()
+        clock.schedule(self.finalize)
+
+
+class ResetClock(AutoFinalizeState):
     """
     State that will reset the clock of its parent to a specific time
     (or now if not specified).
@@ -843,23 +1005,60 @@ class ResetClock(State, RunOnEnter):
     Will reset the time of the parent state to now.
     """
     
-    def __init__(self, new_time=None, parent=None, save_log=True):
+    def __init__(self, new_time=None, parent=None, save_log=True, name=None):
         # init the parent class
-        super(ResetClock, self).__init__(interval=0, parent=parent, 
-                                         duration=0, 
-                                         save_log=save_log)
+        super(ResetClock, self).__init__(parent=parent,
+                                         save_log=save_log,
+                                         name=name)
         if new_time is None:
             # eval to now if nothing specified
             new_time = Ref(gfunc=lambda:clock.now())
         self.new_time = new_time
 
-    def _callback(self, dt):
-        duration = val(self.new_time) - self.get_parent_state_time()
-        if duration > 0:
-            self.advance_parent_state_time(duration)
-    
+    def _enter(self):
+        clock.schedule(self.leave)
 
-class Func(State):
+    def set_end_time(self):
+        self.end_time = val(self.new_time)
+
+
+class CallbackState(AutoFinalizeState):
+    def __init__(self, repeat_interval=None, duration=0.0, parent=None,
+                 save_log=True, name=None):
+        super(CallbackState, self).__init__(duration=duration, parent=None,
+                                            save_log=True, name=None)
+        self.repeat_interval = repeat_interval
+
+    def _enter(self):
+        clock.schedule(self.callback, event_time=self.start_time,
+                       repeat_interval=self.repeat_interval)
+        if self.end_time is not None:
+            clock.schedule(self.leave, event_time=self.end_time)
+
+    def _leave(self):
+        clock.unschedule(self.callback)
+
+    def _callback(self):
+        pass
+
+    def callback(self):
+        self.claim_exceptions()
+        self._callback()
+
+    def cancel(self, cancel_time):
+        if self.active:
+            if cancel_time < self.start_time:
+                clock.unschedule(self.callback)
+                clock.unschedule(self.leave)
+                clock.schedule(self.leave)
+                self.end_time = self.start_time
+            elif cancel_time < self.end_time:
+                clock.unschedule(self.leave)
+                clock.schedule(self.leave, event_time=cancel_time)
+                self.end_time = cancel_time
+
+
+class Func(CallbackState):
     """
     State that will call a Python function, passing this state as the
     first argument.
@@ -885,13 +1084,15 @@ class Func(State):
     Calls python function str(), converting the output of StateA into a string
     	
     """
-    def __init__(self, func, args=None, kwargs=None, 
-                 interval=0, parent=None, duration=0.0, 
-                 save_log=True):
+    def __init__(self, func, args=None, kwargs=None,
+                 repeat_interval=None, parent=None, duration=0.0,
+                 save_log=True, name=None):
         # init the parent class
-        super(Func, self).__init__(interval=interval, parent=parent, 
-                                   duration=duration, 
-                                   save_log=save_log)
+        super(Func, self).__init__(parent=parent,
+                                   repeat_interval=repeat_interval,
+                                   duration=duration,
+                                   save_log=save_log,
+                                   name=name)
 
         # set up the state
         self.func = func
@@ -902,14 +1103,14 @@ class Func(State):
         if self.kwargs is None:
             self.kwargs = {}
 
-    def _callback(self, dt):
+    def _callback(self):
         # process the refs
         args = val(self.args)
         kwargs = val(self.kwargs)
         self.res = self.func(self, *args, **kwargs)
     
 
-class Debug(State):
+class Debug(CallbackState):
     """
     Evaluate the specified kwargs and print them to standard out.
 
@@ -931,27 +1132,37 @@ class Debug(State):
         Debug(show_time=txt['show_time'])
 
     """
-    def __init__(self, parent=None, save_log=False, **kwargs):
+    def __init__(self, parent=None, save_log=False, name=None, **kwargs):
         # init the parent class
-        super(Debug, self).__init__(interval=0, parent=parent, 
-                                   duration=0, 
-                                   save_log=save_log)
+        super(Debug, self).__init__(parent=parent,
+                                    save_log=save_log,
+                                    name=name)
 
         # set up the state
         self.kwargs = kwargs
 
-    def _callback(self, dt):
+    def _callback(self):
         # process the refs
         #kwargs = {key: val(value) for (key, value) in self.kwargs}
         print 'DEBUG:', val(self.kwargs)
 
 
-if __name__ == '__main__':
+class PrintTraceback(CallbackState):
+    def __init__(self, parent=None, save_log=False, name=None):
+        # init the parent class
+        super(PrintTraceback, self).__init__(parent=parent,
+                                             save_log=save_log,
+                                             name=name)
 
+    def _callback(self):
+        self.print_traceback()
+
+
+if __name__ == '__main__':
     from experiment import Experiment, Set, Get
 
     def print_dt(state, *txt):
-        print txt, clock.now()-state.state_time, state.dt
+        print txt, clock.now()-state.state_time
 
     def print_actual_duration(state, target):
         print target.end_time - target.start_time
@@ -979,7 +1190,7 @@ if __name__ == '__main__':
             Func(print_dt, args=[trial.current['val']])
             Wait(1.0)
             If(trial.current['val']==block[-1],
-               Wait(2.))
+               Wait(2.0))
         If(outer['i']>=3,Set('not_done',False))
         
     block = range(3)
@@ -1015,7 +1226,7 @@ if __name__ == '__main__':
 
     Func(print_dt, args=['before meanwhile 1'])
     Wait(1.0)
-    with Meanwhile() as mw:
+    with Meanwhile(name="First Meanwhile") as mw:
         Wait(15.0)
     Func(print_dt, args=['after meanwhile 1'])
     Func(print_actual_duration, args=(mw,))
@@ -1023,14 +1234,16 @@ if __name__ == '__main__':
     Func(print_dt, args=['before meanwhile 2'])
     Wait(5.0)
     with Meanwhile() as mw:
+        PrintTraceback()
         Wait(1.0)
     Func(print_dt, args=['after meanwhile 2'])
     Func(print_actual_duration, args=(mw,))
 
     Func(print_dt, args=['before untildone 1'])
     Wait(15.0)
-    with UntilDone() as ud:
+    with UntilDone(name="UntilDone #1") as ud:
         Wait(1.0)
+        PrintTraceback()
     Func(print_dt, args=['after untildone 1'])
     Func(print_actual_duration, args=(ud,))
 
@@ -1041,9 +1254,9 @@ if __name__ == '__main__':
     Func(print_dt, args=['after untildone 2'])
     Func(print_actual_duration, args=(ud,))
 
-    Wait(2.0, stay_active=True)  #TODO: eliminate need for stay_active
+    Wait(2.0)
 
-    exp.run()
+    exp.run(trace=False)
 
 
     # # with explicit parents

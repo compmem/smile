@@ -3,6 +3,9 @@ import sys
 if any([name.startswith("kivy") for name in sys.modules.keys() if
         name != "kivy_overrides"]):
     raise ImportError("smile must be imported before kivy")
+from kivy.config import Config
+Config.set("kivy", "exit_on_escape", 0)
+Config.set("graphics", "maxfps", 0)
 import kivy
 EXACT_KIVY_VERSION = "1.8.0"
 if kivy.__version__ != EXACT_KIVY_VERSION:
@@ -28,5 +31,3 @@ class SmileEventLoop(kivy.base.EventLoopBase):
 
         return self.quit
 kivy.base.EventLoop = SmileEventLoop()
-from kivy.config import Config
-Config.set("kivy", "exit_on_escape", 0)
