@@ -168,12 +168,12 @@ class ExpApp(App):
             del self.video_queue[0]
         if need_flip:
             if len(flip_time_callbacks):
-                print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                #print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 self.blocking_flip()  #TODO: use sync events instead!
                 for cb in flip_time_callbacks:
                     cb(self.last_flip)
             else:
-                print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                #print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 EventLoop.window.dispatch('on_flip')
                 self.last_flip = event_time(clock.now(), 0.0)
             self.pending_flip_time = None
@@ -210,7 +210,7 @@ class ExpApp(App):
             last_time = cur_time
 
             # add in sleep of something definitely less than the refresh rate
-            clock.usleep(20000)  # 5ms for 200Hz
+            clock.usleep(5000)  # 5ms for 200Hz
         
         # take the mean and return
         self.flip_interval = diffs / count

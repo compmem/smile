@@ -490,7 +490,7 @@ class Parallel(ParentState):
             self.end_time = self.start_time
 
 
-def get_calling_context(d):
+def get_calling_context(d):  #TODO: put this in a method of State instead
     frame, filename, lineno, function, code_context, index = inspect.stack()[d]
     return filename, lineno
 

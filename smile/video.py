@@ -34,12 +34,16 @@ class StaticVisualState(VisualState):
         self.disappear_time = None
         self.appear_video = None
         self.disappear_video = None
-        self.params = self.get_default_params()
+        self.default_params = {}
+        self.add_default_params()
+        self.params = {}
+        for name, default in self.default_params.items():
+            setattr(self, name, default)
+            self.params[name] = None
         for name, value in params.items():
             if name not in self.params:
                 raise ValueError(
                     "Invalid StaticVisualState parameter name %r" % name)
-            self.params[name] = value
             setattr(self, name, value)
 
         # set the log attrs
@@ -47,8 +51,8 @@ class StaticVisualState(VisualState):
                                'disappear_time'])
         self.log_attrs.extend(self.params.keys())
 
-    def get_default_params(self):
-        return {}
+    def add_default_params(self):
+        pass
 
     def get_updated_param(self, name):
         return self.params[name]
@@ -68,6 +72,9 @@ class StaticVisualState(VisualState):
         self.appear_video = None
         self.disappear_video = None
         self.on_screen = False
+
+        for name in self.params:
+            self.params[name] = val(getattr(self, name))
 
         self.appear_video = self.exp.app.schedule_video(
             self.appear, self.start_time, self.set_appear_time)
@@ -118,7 +125,7 @@ class StaticVisualState(VisualState):
                     self.disappear, cancel_time, self.set_disappear_time)
                 self.end_time = cancel_time
 
-    def _live_change(self, **params):
+    def _live_change(self):
         raise NotImplementedError
 
     def live_change(self, **params):
@@ -128,8 +135,8 @@ class StaticVisualState(VisualState):
             if name not in self.params:
                 raise ValueError(
                     "Invalid StaticVisualState parameter name %r" % name)
-            self.params[name] = value
-        self.exp.app.schedule_video(partial(self._live_change, **params))
+            self.params[name] = val(value)
+        self.exp.app.schedule_video(self._live_change)
 
     def animate(self, duration=None, parent=None, save_log=True, name=None,
                 **anim_params):
@@ -152,10 +159,10 @@ class StaticVisualState(VisualState):
         condition = duration is None, speed is None, accel is None
         if condition == (False, True, True):  # simple, linear interpolation
             anim_params = {}
-            for name, value in params.items():
-                def func(t, initial):
+            for param_name, value in params.items():
+                def func(t, initial, value=value):
                     return interp(initial, value, t / duration)
-                anim_params[name] = func
+                anim_params[param_name] = func
         #TODO: fancier interpolation modes!!!
         else:
             raise ValueError("Invalid combination of parameters.")  #...
@@ -195,7 +202,7 @@ class Animate(State):
             clock.schedule(self.finalize)
             now = self.end_time
         t = now - self.start_time
-        params = {name : val(func(t, self.initial_params[name])) for
+        params = {name : func(t, self.initial_params[name]) for
                   name, func in
                   self.anim_params.items()}
         self.target.live_change(**params)
@@ -212,49 +219,83 @@ class DynamicVisualState(VisualState):
 
     #...
 
-class Rectangle(StaticVisualState):
+
+class KivyInstructionVisualState(StaticVisualState):
+    _kivy_instruction_class = None
+
     def __init__(self, *pargs, **kwargs):
-        super(Rectangle, self).__init__(*pargs, **kwargs)
+        super(KivyInstructionVisualState, self).__init__(*pargs, **kwargs)
         self.kivy_color = None
         self.kivy_shape = None
 
-    def get_default_params(self):
-        return {
-            "x": 0,
-            "y": 0,
-            "width": 100,
-            "height": 100,
-            "color": (1.0, 1.0, 1.0, 1.0)}
+    def add_default_params(self):
+        super(KivyInstructionVisualState, self).add_default_params()
+        self.default_params.update({
+            "color": None})
+
+    def get_instruction_attributes(self):
+        raise NotImplementedError
 
     def _appear(self):
         with self.exp.app.wid.canvas:
-            self.kivy_color = kivy.graphics.Color(*val(self.color))
-            self.kivy_shape = kivy.graphics.Rectangle(
-                pos=(val(self.x), val(self.y)),
-                size=(val(self.width), val(self.height)))
+            self.kivy_color = kivy.graphics.Color(*self.params["color"])
+            self.kivy_shape = type(self)._kivy_instruction_class(
+                **self.get_instruction_attributes())
 
-    def _live_change(self, **kwargs):
+    def _live_change(self):
         if self.kivy_shape is not None:
-            if "color" in kwargs:
-                self.kivy_color.rgba = kwargs["color"]
-            pos = list(self.kivy_shape.pos)
-            if "x" in kwargs:
-                pos[0] = kwargs["x"]
-            if "y" in kwargs:
-                pos[1] = kwargs["y"]
-            self.kivy_shape.pos = pos
-            size = list(self.kivy_shape.size)
-            if "width" in kwargs:
-                size[0] = kwargs["width"]
-            if "height" in kwargs:
-                size[1] = kwargs["height"]
-            self.kivy_shape.size = size
+            self.kivy_color.rgba = self.params["color"]
+            for name, value in self.get_instruction_attributes().items():
+                setattr(self.kivy_shape, name, value)
 
     def _disappear(self):
         self.exp.app.wid.canvas.remove(self.kivy_color)
         self.exp.app.wid.canvas.remove(self.kivy_shape)
         self.kivy_color = None
         self.kivy_shape = None
+
+
+class Rectangle(KivyInstructionVisualState):
+    _kivy_instruction_class = kivy.graphics.Rectangle
+
+    def add_default_params(self):
+        super(Rectangle, self).add_default_params()
+        self.default_params.update({
+            "x": 0,
+            "y": 0,
+            "width": 100,
+            "height": 100})
+
+    def get_instruction_attributes(self):
+        return {
+            "pos": (self.params["x"], self.params["y"]),
+            "size": (self.params["width"], self.params["height"])
+            }
+
+class Ellipse(KivyInstructionVisualState):
+    _kivy_instruction_class = kivy.graphics.Ellipse
+
+    def add_default_params(self):
+        super(Ellipse, self).add_default_params()
+        self.default_params.update({
+            "x": 0,
+            "y": 0,
+            "width": 100,
+            "height": 100,
+            "segments": 180,
+            "angle_start": 0,
+            "angle_end": 360})
+
+    def get_instruction_attributes(self):
+        return {
+            "pos": (self.params["x"], self.params["y"]),
+            "size": (self.params["width"], self.params["height"]),
+            "segments": self.params["segments"],
+            "angle_start": self.params["angle_start"],
+            "angle_end": self.params["angle_end"]
+            }
+
+
 
 #TODO: Text, DotBox, Image, Movie, Background?
 
@@ -299,7 +340,10 @@ if __name__ == '__main__':
 
     rect = Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 0.0, 1.0))
     with UntilDone():
-        rect.animate(x=lambda t, initial: t * 50, y=lambda t, initial: t * 25, duration=5.0)
+        rect.animate(x=lambda t, initial: t * 50, y=lambda t, initial: t * 25,
+                     duration=5.0)
+        with Meanwhile():
+            Rectangle(x=50, y=50, width=50, height=50, color=(0.5, 0.5, 0.5, 1.0))
         with Parallel():
             rect.animate(color=lambda t, initial: (1.0, 1.0 - t / 5.0, t / 5.0, 1.0),
                          duration=5.0)
@@ -312,7 +356,14 @@ if __name__ == '__main__':
         rect.slide(color=(0.0, 1.0, 1.0, 1.0), duration=10.0, name="color fade")
         with Meanwhile():
             rect.animate(x=lambda t, initial: initial + sin(t * 4) * 100,
-                         name = "oscillate")
+                         name="oscillate")
+        ellipse = Ellipse(x=75, y=50, width=50, height=50,
+                          color=(1.0, 0.5, 0.0, 1.0))
+        with UntilDone():
+            rect.slide(color=(1.0, 1.0, 1.0, 1.0), x=0, y=0,
+                       width=100, height=100, duration=5.0)
+            ellipse.slide(color=(0.0, 0.0, 1.0, 0.0), duration=5.0)
+            rect.slide(color=(1.0, 1.0, 1.0, 0.0), duration=5.0)
 
     Wait(5.0)
     exp.run(trace=False)
