@@ -12,50 +12,96 @@ import math  #...
 from functools import partial
 
 import kivy_overrides
-from state import State, get_calling_context
+from state import State
 from ref import val, Ref
 from clock import clock
 import kivy.graphics
+import kivy.uix.image
+import kivy.uix.label
+import kivy.uix.widget
+from kivy.properties import StringProperty, ListProperty, NumericProperty  #???
 
 
-class VisualState(State):
-    pass
+class RectangleWidget(kivy.uix.widget.Widget):
+    color = ListProperty([1.0, 1.0, 1.0, 1.0])
 
-class StaticVisualState(VisualState):
-    def __init__(self, duration=None, parent=None, save_log=True, name=None,
-                 **params):
-        # init the parent class
-        super(StaticVisualState, self).__init__(parent=parent, 
-                                                duration=duration, 
-                                                save_log=save_log,
-                                                name=name)
+    def __init__(self, *pargs, **kwargs):
+        super(RectangleWidget, self).__init__(*pargs, **kwargs)
+        with self.canvas:
+            self._color = kivy.graphics.Color(*self.color)
+            self._rectangle = kivy.graphics.Rectangle(pos=self.pos,
+                                                      size=self.size)
+        self.bind(pos=self.redraw, size=self.redraw, color=self.redraw)
+
+    def redraw(self, *pargs):
+        self._color.rgba = self.color
+        self._rectangle.pos = self.pos
+        self._rectangle.size = self.size
+
+
+class EllipseWidget(kivy.uix.widget.Widget):
+    color = ListProperty([1.0, 1.0, 1.0, 1.0])
+    segments = NumericProperty(180)
+    angle_start = NumericProperty(0)
+    angle_end = NumericProperty(360)
+
+    def __init__(self, *pargs, **kwargs):
+        super(EllipseWidget, self).__init__(*pargs, **kwargs)
+        with self.canvas:
+            self._color = kivy.graphics.Color(*self.color)
+            self._rectangle = kivy.graphics.Ellipse(
+                pos=self.pos, size=self.size, segments=self.segments,
+                angle_start=self.angle_start, angle_end=self.angle_end)
+        self.bind(pos=self.redraw, size=self.redraw, color=self.redraw,
+                  segments=self.redraw, angle_start=self.redraw,
+                  angle_end=self.redraw)
+
+    def redraw(self, *pargs):
+        self._color.rgba = self.color
+        self._rectangle.pos = self.pos
+        self._rectangle.size = self.size
+        self._rectangle.segments = self.segments
+        self._rectangle.angle_start = self.angle_start
+        self._rectangle.angle_end = self.angle_end
+
+
+class Widget(State):
+    @staticmethod
+    def factory(widget_class):
+        def new_factory(*pargs, **kwargs):
+            widget = Widget(widget_class, *pargs, **kwargs)
+            widget.override_instantiation_context()
+            return widget
+        return new_factory
+
+    def __init__(self, widget_class, duration=None, parent=None, save_log=True,
+                 name=None, index=0, **params):
+        if name is None:
+            name = widget_class.__name__
+        super(Widget, self).__init__(parent=parent, 
+                                     duration=duration, 
+                                     save_log=save_log,
+                                     name=name)
 
         self.appear_time = None
         self.disappear_time = None
         self.appear_video = None
         self.disappear_video = None
-        self.default_params = {}
-        self.add_default_params()
-        self.params = {}
-        for name, default in self.default_params.items():
-            setattr(self, name, default)
-            self.params[name] = None
+        self.widget_class = widget_class
+        self.index = index
+        self.widget = None
+        self.param_names = params.keys()
+        self.params = None
         for name, value in params.items():
-            if name not in self.params:
-                raise ValueError(
-                    "Invalid StaticVisualState parameter name %r" % name)
             setattr(self, name, value)
 
         # set the log attrs
         self.log_attrs.extend(['appear_time',
                                'disappear_time'])
-        self.log_attrs.extend(self.params.keys())
-
-    def add_default_params(self):
-        pass
+        self.log_attrs.extend(self.param_names)
 
     def get_updated_param(self, name):
-        return self.params[name]
+        return getattr(self.widget, name)
 
     def get_updated_param_ref(self, name):
         return Ref(gfunc=self.get_updated_param, gfunc_args=(name,))
@@ -73,33 +119,30 @@ class StaticVisualState(VisualState):
         self.disappear_video = None
         self.on_screen = False
 
-        for name in self.params:
-            self.params[name] = val(getattr(self, name))
+        self.params = {name : val(getattr(self, name)) for
+                       name in self.param_names}
 
         self.appear_video = self.exp.app.schedule_video(
             self.appear, self.start_time, self.set_appear_time)
+        #clock.schedule(self.appear, event_time=self.start_time)
         if self.end_time is not None:
             self.disappear_video = self.exp.app.schedule_video(
                 self.disappear, self.end_time, self.set_disappear_time)
-
-    def _appear(self):
-        raise NotImplementedError
 
     def appear(self):
         self.claim_exceptions()
         self.appear_video = None
         self.on_screen = True
-        self._appear()
+        self.widget = self.widget_class(**self.params)
+        self.exp.app.wid.add_widget(self.widget, index=self.index)
         clock.schedule(self.leave)
-
-    def _disappear(self):
-        raise NotImplementedError
 
     def disappear(self):
         self.claim_exceptions()
         self.disappear_video = None
         self.on_screen = False
-        self._disappear()
+        self.exp.app.wid.remove_widget(self.widget)
+        self.widget = None
         clock.schedule(self.finalize)
 
     def cancel(self, cancel_time):
@@ -125,32 +168,22 @@ class StaticVisualState(VisualState):
                     self.disappear, cancel_time, self.set_disappear_time)
                 self.end_time = cancel_time
 
-    def _live_change(self):
-        raise NotImplementedError
-
     def live_change(self, **params):
-        if not self.on_screen:
-            return
-        for name, value in params.items():
-            if name not in self.params:
-                raise ValueError(
-                    "Invalid StaticVisualState parameter name %r" % name)
-            self.params[name] = val(value)
-        self.exp.app.schedule_video(self._live_change)
+        if self.on_screen:
+            for name, value in params.items():
+                setattr(self.widget, name, val(value))
 
     def animate(self, duration=None, parent=None, save_log=True, name=None,
                 **anim_params):
         anim = Animate(self, duration=duration, parent=parent, name=name,
                        save_log=save_log, **anim_params)
-        filename, lineno = get_calling_context(2)
-        anim.instantiation_filename = filename
-        anim.instantiation_lineno = lineno
+        anim.override_instantiation_context()
         return anim
 
     def slide(self, duration=None, speed=None, accel=None, parent=None,
               save_log=True, name=None, **params):
         def interp(a, b, w):
-            if type(a) in (list, tuple):
+            if hasattr(a, "__iter__"):
                 return [interp(a_prime, b_prime, w) for
                         a_prime, b_prime in
                         zip(a, b)]
@@ -168,12 +201,15 @@ class StaticVisualState(VisualState):
             raise ValueError("Invalid combination of parameters.")  #...
         anim = self.animate(duration=duration, parent=parent,
                             save_log=save_log, name=name, **anim_params)
-        filename, lineno = get_calling_context(2)
-        anim.instantiation_filename = filename
-        anim.instantiation_lineno = lineno
+        anim.override_instantiation_context()
         return anim
 
-    #TODO: animation helper methods
+
+Image = Widget.factory(kivy.uix.image.Image)  #???
+Label = Widget.factory(kivy.uix.label.Label)  #???
+Rectangle = Widget.factory(RectangleWidget)
+Ellipse = Widget.factory(EllipseWidget)
+#...
 
 
 class Animate(State):
@@ -196,13 +232,15 @@ class Animate(State):
         self.claim_exceptions()
         now = clock.now()
         if self.initial_params is None:
-            self.initial_params = self.target.params.copy()
+            self.initial_params = {
+                name : self.target.get_updated_param(name) for
+                name in self.anim_params.keys()}
         if self.end_time is not None and now >= self.end_time:
             clock.unschedule(self.update)
             clock.schedule(self.finalize)
             now = self.end_time
         t = now - self.start_time
-        params = {name : func(t, self.initial_params[name]) for
+        params = {name : val(func(t, self.initial_params[name])) for
                   name, func in
                   self.anim_params.items()}
         self.target.live_change(**params)
@@ -211,89 +249,6 @@ class Animate(State):
         if self.active and (self.end_time is None or
                             cancel_time < self.end_time):
             self.end_time = cancel_time
-
-
-class DynamicVisualState(VisualState):
-    def __init__(self, duration=None, parent=None, save_log=True):
-        pass #...
-
-    #...
-
-
-class KivyInstructionVisualState(StaticVisualState):
-    _kivy_instruction_class = None
-
-    def __init__(self, *pargs, **kwargs):
-        super(KivyInstructionVisualState, self).__init__(*pargs, **kwargs)
-        self.kivy_color = None
-        self.kivy_shape = None
-
-    def add_default_params(self):
-        super(KivyInstructionVisualState, self).add_default_params()
-        self.default_params.update({
-            "color": None})
-
-    def get_instruction_attributes(self):
-        raise NotImplementedError
-
-    def _appear(self):
-        with self.exp.app.wid.canvas:
-            self.kivy_color = kivy.graphics.Color(*self.params["color"])
-            self.kivy_shape = type(self)._kivy_instruction_class(
-                **self.get_instruction_attributes())
-
-    def _live_change(self):
-        if self.kivy_shape is not None:
-            self.kivy_color.rgba = self.params["color"]
-            for name, value in self.get_instruction_attributes().items():
-                setattr(self.kivy_shape, name, value)
-
-    def _disappear(self):
-        self.exp.app.wid.canvas.remove(self.kivy_color)
-        self.exp.app.wid.canvas.remove(self.kivy_shape)
-        self.kivy_color = None
-        self.kivy_shape = None
-
-
-class Rectangle(KivyInstructionVisualState):
-    _kivy_instruction_class = kivy.graphics.Rectangle
-
-    def add_default_params(self):
-        super(Rectangle, self).add_default_params()
-        self.default_params.update({
-            "x": 0,
-            "y": 0,
-            "width": 100,
-            "height": 100})
-
-    def get_instruction_attributes(self):
-        return {
-            "pos": (self.params["x"], self.params["y"]),
-            "size": (self.params["width"], self.params["height"])
-            }
-
-class Ellipse(KivyInstructionVisualState):
-    _kivy_instruction_class = kivy.graphics.Ellipse
-
-    def add_default_params(self):
-        super(Ellipse, self).add_default_params()
-        self.default_params.update({
-            "x": 0,
-            "y": 0,
-            "width": 100,
-            "height": 100,
-            "segments": 180,
-            "angle_start": 0,
-            "angle_end": 360})
-
-    def get_instruction_attributes(self):
-        return {
-            "pos": (self.params["x"], self.params["y"]),
-            "size": (self.params["width"], self.params["height"]),
-            "segments": self.params["segments"],
-            "angle_start": self.params["angle_start"],
-            "angle_end": self.params["angle_end"]
-            }
 
 
 
@@ -316,6 +271,10 @@ if __name__ == '__main__':
         Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
                   duration=1.0)
 
+    #Wait(1.0)
+    #Image(source="face-smile.png", duration=3.0)
+    #Label(text="SMILE!", duration=3.0, center_x=100, center_y=100)
+
     with Parallel():
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
                   duration=3.0)
@@ -323,6 +282,7 @@ if __name__ == '__main__':
                   duration=2.0)
         Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
                   duration=1.0)
+        Image(source="face-smile.png", duration=4.0, name="Smiling Face")
 
     with Loop(range(3)):
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),

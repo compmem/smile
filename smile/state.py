@@ -181,6 +181,16 @@ class State(object):
         if self.exp is not None:
             self.exp.current_state = self
 
+    def override_instantiation_context(self, depth=0):
+        (frame,
+         filename,
+         lineno,
+         function,
+         code_context,
+         index) = inspect.stack()[depth + 2]
+        self.instantiation_filename = filename
+        self.instantiation_lineno = lineno
+
     def get_log(self):
     	"""
         Evaluate all the log attributes and generate a dict.
@@ -490,11 +500,6 @@ class Parallel(ParentState):
             self.end_time = self.start_time
 
 
-def get_calling_context(d):  #TODO: put this in a method of State instead
-    frame, filename, lineno, function, code_context, index = inspect.stack()[d]
-    return filename, lineno
-
-
 @contextmanager
 def Meanwhile(name=None):
     # get the exp reference
@@ -511,13 +516,10 @@ def Meanwhile(name=None):
     prev_state = parent.children[-1]
 
     # build the new Parallel state
-    filename, lineno = get_calling_context(3)
     with Parallel(name="MEANWHILE") as p:
-        p.instantiation_filename = filename
-        p.instantiation_lineno = lineno
+        p.override_instantiation_context(1)
         with Serial(name=name) as s:
-            s.instantiation_filename = filename
-            s.instantiation_lineno = lineno
+            s.override_instantiation_context(1)
             yield p
     p.claim_child(prev_state)
     p.set_child_blocking(0, False)
@@ -538,13 +540,10 @@ def UntilDone(name=None):
     prev_state = parent.children[-1]
 
     # build the new Parallel state
-    filename, lineno = get_calling_context(3)
     with Parallel(name="UNTIL DONE") as p:
-        p.instantiation_filename = filename
-        p.instantiation_lineno = lineno
+        p.override_instantiation_context(1)
         with Serial(name=name) as s:
-            s.instantiation_filename = filename
-            s.instantiation_lineno = lineno
+            s.override_instantiation_context(1)
             yield p
     p.claim_child(prev_state)
     p.set_child_blocking(1, False)
@@ -765,9 +764,7 @@ def Else(name="ELSE BODY"):
     # return the false_state (the last out_state)
     false_state = prev_state.out_states[-1]
     false_state.name = name
-    filename, lineno = get_calling_context(2)
-    false_state.instantiation_filename = filename
-    false_state.instantiation_lineno = lineno
+    false_state.override_instantiation_context()
     return false_state
 
 

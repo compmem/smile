@@ -120,33 +120,34 @@ class ExpApp(App):
         time_err = (self._new_time - self._last_time) / 2.0
         self.event_time = event_time(self._last_time + time_err, time_err)
 
-        # update dt
         clock.tick()
-        _kivy_clock.tick()
+
+        ready_for_video = (self._new_time - self.last_flip["time"] >=
+                           self.flip_interval)
+
+        if ready_for_video:
+            _kivy_clock.tick()
 
         # read and dispatch input from providers
         event_loop.dispatch_input()
 
-        # flush all the canvas operation
-        Builder.sync()  # does this call do anything when a .kv file is not used?
+        if ready_for_video:
+            Builder.sync()
+            _kivy_clock.tick_draw()
+            Builder.sync()
+            kivy_needs_draw = EventLoop.window.canvas.needs_redraw
+        else:
+            kivy_needs_draw = False
 
-        need_draw = False
+        need_draw = kivy_needs_draw
         for video in self.video_queue:
-            #if video.flip_time is None:
-            #    if self.pending_flip_time is None:
-            #        video.flip_time = self._new_time + self.flip_interval / 2.0
-            #    elif (self.pending_flip_time <=
-            #          self._new_time + self.flip_interval / 4.0):
-            #        video.flip_time = self.pending_flip_time
-            #    else:
-            #        video.flip_time = self.pending_flip_time + self.flip_interval
             if (not video.drawn and
                 ((self.pending_flip_time is None and
                   self._new_time >= video.flip_time -
                   self.flip_interval / 2.0) or
                  video.flip_time == self.pending_flip_time)):
                 video.update_cb()
-                #print video
+                Builder.sync()
                 need_draw = True
                 video.drawn = True
                 self.pending_flip_time = video.flip_time
@@ -154,29 +155,31 @@ class ExpApp(App):
                 break
         if need_draw:
             EventLoop.window.dispatch('on_draw')
-        need_flip = False
-        flip_time_callbacks = []
-        for video in self.video_queue:
-            if video.drawn and video.flip_time == self.pending_flip_time:
-                need_flip = True
-                if video.flip_time_cb is not None:
-                    flip_time_callbacks.append(video.flip_time_cb)
-                video.flipped = True
-            else:
-                break
-        while len(self.video_queue) and self.video_queue[0].flipped:
-            del self.video_queue[0]
-        if need_flip:
-            if len(flip_time_callbacks):
-                #print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                self.blocking_flip()  #TODO: use sync events instead!
-                for cb in flip_time_callbacks:
-                    cb(self.last_flip)
-            else:
-                #print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                EventLoop.window.dispatch('on_flip')
-                self.last_flip = event_time(clock.now(), 0.0)
-            self.pending_flip_time = None
+
+        if ready_for_video:
+            need_flip = kivy_needs_draw and self.pending_flip_time is None
+            flip_time_callbacks = []
+            for video in self.video_queue:
+                if video.drawn and video.flip_time == self.pending_flip_time:
+                    need_flip = True
+                    if video.flip_time_cb is not None:
+                        flip_time_callbacks.append(video.flip_time_cb)
+                    video.flipped = True
+                else:
+                    break
+            while len(self.video_queue) and self.video_queue[0].flipped:
+                del self.video_queue[0]
+            if need_flip:
+                if len(flip_time_callbacks):
+                    print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    self.blocking_flip()  #TODO: use sync events instead!
+                    for cb in flip_time_callbacks:
+                        cb(self.last_flip)
+                else:
+                    print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    EventLoop.window.dispatch('on_flip')
+                    self.last_flip = event_time(clock.now(), 0.0)
+                self.pending_flip_time = None
 
         # save the time
         self._last_time = self._new_time
