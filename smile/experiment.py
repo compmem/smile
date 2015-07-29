@@ -95,8 +95,9 @@ class ExpApp(App):
                             on_key_up=self._on_key_up)
         #...
         self._last_time = clock.now()  #???
+        self._last_kivy_tick = clock.now()  #???
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
-        print 1.0 / self.calc_flip_interval()
+        print 1.0 / self.calc_flip_interval()  #...
         return self.wid
 
     def _keyboard_closed(self):
@@ -124,22 +125,11 @@ class ExpApp(App):
 
         ready_for_video = (self._new_time - self.last_flip["time"] >=
                            self.flip_interval)
+        ready_for_kivy_tick = ready_for_video and (self._new_time -
+                                                   self._last_kivy_tick >=
+                                                   self.flip_interval)
 
-        if ready_for_video:
-            _kivy_clock.tick()
-
-        # read and dispatch input from providers
-        event_loop.dispatch_input()
-
-        if ready_for_video:
-            Builder.sync()
-            _kivy_clock.tick_draw()
-            Builder.sync()
-            kivy_needs_draw = EventLoop.window.canvas.needs_redraw
-        else:
-            kivy_needs_draw = False
-
-        need_draw = kivy_needs_draw
+        need_draw = False
         for video in self.video_queue:
             if (not video.drawn and
                 ((self.pending_flip_time is None and
@@ -147,14 +137,28 @@ class ExpApp(App):
                   self.flip_interval / 2.0) or
                  video.flip_time == self.pending_flip_time)):
                 video.update_cb()
-                Builder.sync()
                 need_draw = True
                 video.drawn = True
                 self.pending_flip_time = video.flip_time
             else:
                 break
-        if need_draw:
+        do_kivy_tick = ready_for_kivy_tick or need_draw
+        if do_kivy_tick:
+            _kivy_clock.tick()
+            self._last_kivy_tick = self._new_time
+        event_loop.dispatch_input()
+        if do_kivy_tick:
+            Builder.sync()
+            _kivy_clock.tick_draw()
+            Builder.sync()
+            kivy_needs_draw = EventLoop.window.canvas.needs_redraw
+            #print (_kivy_clock.get_fps(), _kivy_clock.get_rfps(), self._new_time)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        else:
+            kivy_needs_draw = False
+        if kivy_needs_draw:
             EventLoop.window.dispatch('on_draw')
+            #EventLoop.window.dispatch('on_flip')  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #self.last_flip = event_time(clock.now(), 0.0)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         if ready_for_video:
             need_flip = kivy_needs_draw and self.pending_flip_time is None
@@ -319,7 +323,7 @@ class Experiment(Serial):
         self.last_event = event_time(0.0)
 
         # default flip interval
-        self.flip_interval = 1 / 60.
+        self.flip_interval = 1.0 / 60.0
 
         # place to save experimental variables
         self._vars = {}
@@ -419,34 +423,7 @@ class Experiment(Serial):
         Run the experiment.
         """
         # create the window
-        if self.fullscreen:
-            self.app = ExpApp(self)
-            #self.app = ExpApp(self, fullscreen=True, 
-            #                  caption=self.name, 
-            #                  vsync=self.vsync,
-            #                  screen=self.screen)
-        else:
-            self.app = ExpApp(self)
-            #self.app = ExpApp(self, *(self.resolution),
-            #                  fullscreen=self.fullscreen, 
-            #                  caption=self.name, 
-            #                  vsync=self.vsync,
-            #                  screen=self.screen)
-
-        # set the clear color
-        #self.window.set_clear_color(self._background_color)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        # set the mouse as desired
-        #self.window.set_exclusive_mouse()
-        #self.window.set_mouse_visible(False)                #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        # get flip interval
-        #self.flip_interval = self._calc_flip_interval()
-        #print "Monitor Flip Interval is %f (%f Hz)"%(self.flip_interval,1./self.flip_interval)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        # first clear and do a flip
-        #self.window.on_draw(force=True)
-        #self.blocking_flip()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.app = ExpApp(self)
 
         self.current_state = None
         if trace:

@@ -7,8 +7,6 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-import random  #...
-import math  #...
 from functools import partial
 
 import kivy_overrides
@@ -18,51 +16,10 @@ from clock import clock
 import kivy.graphics
 import kivy.uix.image
 import kivy.uix.label
+import kivy.uix.button
 import kivy.uix.widget
-from kivy.properties import StringProperty, ListProperty, NumericProperty  #???
-
-
-class RectangleWidget(kivy.uix.widget.Widget):
-    color = ListProperty([1.0, 1.0, 1.0, 1.0])
-
-    def __init__(self, *pargs, **kwargs):
-        super(RectangleWidget, self).__init__(*pargs, **kwargs)
-        with self.canvas:
-            self._color = kivy.graphics.Color(*self.color)
-            self._rectangle = kivy.graphics.Rectangle(pos=self.pos,
-                                                      size=self.size)
-        self.bind(pos=self.redraw, size=self.redraw, color=self.redraw)
-
-    def redraw(self, *pargs):
-        self._color.rgba = self.color
-        self._rectangle.pos = self.pos
-        self._rectangle.size = self.size
-
-
-class EllipseWidget(kivy.uix.widget.Widget):
-    color = ListProperty([1.0, 1.0, 1.0, 1.0])
-    segments = NumericProperty(180)
-    angle_start = NumericProperty(0)
-    angle_end = NumericProperty(360)
-
-    def __init__(self, *pargs, **kwargs):
-        super(EllipseWidget, self).__init__(*pargs, **kwargs)
-        with self.canvas:
-            self._color = kivy.graphics.Color(*self.color)
-            self._rectangle = kivy.graphics.Ellipse(
-                pos=self.pos, size=self.size, segments=self.segments,
-                angle_start=self.angle_start, angle_end=self.angle_end)
-        self.bind(pos=self.redraw, size=self.redraw, color=self.redraw,
-                  segments=self.redraw, angle_start=self.redraw,
-                  angle_end=self.redraw)
-
-    def redraw(self, *pargs):
-        self._color.rgba = self.color
-        self._rectangle.pos = self.pos
-        self._rectangle.size = self.size
-        self._rectangle.segments = self.segments
-        self._rectangle.angle_start = self.angle_start
-        self._rectangle.angle_end = self.angle_end
+import kivy.uix.slider
+from kivy.properties import ListProperty, NumericProperty
 
 
 class Widget(State):
@@ -103,7 +60,7 @@ class Widget(State):
     def get_updated_param(self, name):
         return getattr(self.widget, name)
 
-    def get_updated_param_ref(self, name):
+    def get(self, name):
         return Ref(gfunc=self.get_updated_param, gfunc_args=(name,))
 
     def set_appear_time(self, appear_time):
@@ -119,12 +76,13 @@ class Widget(State):
         self.disappear_video = None
         self.on_screen = False
 
+        #TODO: is this the right time to evaluate refs?
         self.params = {name : val(getattr(self, name)) for
                        name in self.param_names}
 
         self.appear_video = self.exp.app.schedule_video(
             self.appear, self.start_time, self.set_appear_time)
-        #clock.schedule(self.appear, event_time=self.start_time)
+        #clock.schedule(self.appear, event_time=self.start_time)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if self.end_time is not None:
             self.disappear_video = self.exp.app.schedule_video(
                 self.disappear, self.end_time, self.set_disappear_time)
@@ -133,8 +91,13 @@ class Widget(State):
         self.claim_exceptions()
         self.appear_video = None
         self.on_screen = True
-        self.widget = self.widget_class(**self.params)
+        self.widget = self.widget_class(**self.params)  #TODO: construct on entry and only add here?
         self.exp.app.wid.add_widget(self.widget, index=self.index)
+        try:
+            self.widget.texture_update()
+            print "texture_update()"
+        except AttributeError:
+            pass
         clock.schedule(self.leave)
 
     def disappear(self):
@@ -142,7 +105,6 @@ class Widget(State):
         self.disappear_video = None
         self.on_screen = False
         self.exp.app.wid.remove_widget(self.widget)
-        self.widget = None
         clock.schedule(self.finalize)
 
     def cancel(self, cancel_time):
@@ -172,6 +134,11 @@ class Widget(State):
         if self.on_screen:
             for name, value in params.items():
                 setattr(self.widget, name, val(value))
+            try:
+                self.widget.texture_update()
+                print "texture_update()"
+            except AttributeError:
+                pass
 
     def animate(self, duration=None, parent=None, save_log=True, name=None,
                 **anim_params):
@@ -205,19 +172,12 @@ class Widget(State):
         return anim
 
 
-Image = Widget.factory(kivy.uix.image.Image)  #???
-Label = Widget.factory(kivy.uix.label.Label)  #???
-Rectangle = Widget.factory(RectangleWidget)
-Ellipse = Widget.factory(EllipseWidget)
-#...
-
-
 class Animate(State):
     def __init__(self, target, duration=None, parent=None, save_log=True,
                  name=None, **anim_params):
         super(Animate, self).__init__(duration=duration, parent=parent,
                                       save_log=save_log, name=name)
-        self.target = target
+        self.target = target  #TODO: make sure target is a Widget
         self.anim_params = anim_params
         self.initial_params = None
 
@@ -251,8 +211,93 @@ class Animate(State):
             self.end_time = cancel_time
 
 
+Image = Widget.factory(kivy.uix.image.Image)
+#Label = Widget.factory(kivy.uix.label.Label)
+Button = Widget.factory(kivy.uix.button.Button)
+Slider = Widget.factory(kivy.uix.slider.Slider)
 
-#TODO: Text, DotBox, Image, Movie, Background?
+
+@Widget.factory
+class Label(kivy.uix.label.Label):  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    def __init__(self, *pargs, **kwargs):
+        super(type(self), self).__init__(*pargs, **kwargs)
+        with self.canvas:
+            self._color = kivy.graphics.Color(*self.get_color())
+            self._rectangle = kivy.graphics.Rectangle(pos=self.get_pos(),
+                                                      size=self.texture_size,
+                                                      texture=self.texture)
+        self.bind(disabled_color=self.redraw,
+                  disabled=self.redraw,
+                  color=self.redraw,
+                  markup=self.redraw,
+                  texture=self.redraw,
+                  center_x=self.redraw,
+                  center_y=self.redraw,
+                  texture_size=self.redraw)
+
+    def redraw(self, *pargs):
+        self._color.rgba = self.get_color()
+        self._rectangle.pos = self.get_pos()
+        self._rectangle.size = self.texture_size
+        self._rectangle.texture = self.texture
+
+    def get_color(self):
+        if self.disabled:
+            return self.disabled_color
+        elif self.markup:
+            return (1.0, 1.0, 1.0, 1.0)
+        else:
+            return self.color
+
+    def get_pos(self):
+        return (int(self.center_x - self.texture_size[0] / 2.0),
+                int(self.center_y - self.texture_size[1] / 2.0))
+
+@Widget.factory
+class Rectangle(kivy.uix.widget.Widget):
+    color = ListProperty([1.0, 1.0, 1.0, 1.0])
+
+    def __init__(self, *pargs, **kwargs):
+        super(type(self), self).__init__(*pargs, **kwargs)
+        with self.canvas:
+            self._color = kivy.graphics.Color(*self.color)
+            self._rectangle = kivy.graphics.Rectangle(pos=self.pos,
+                                                      size=self.size)
+        self.bind(pos=self.redraw, size=self.redraw, color=self.redraw)
+
+    def redraw(self, *pargs):
+        self._color.rgba = self.color
+        self._rectangle.pos = self.pos
+        self._rectangle.size = self.size
+
+
+@Widget.factory
+class Ellipse(kivy.uix.widget.Widget):
+    color = ListProperty([1.0, 1.0, 1.0, 1.0])
+    segments = NumericProperty(180)
+    angle_start = NumericProperty(0)
+    angle_end = NumericProperty(360)
+
+    def __init__(self, *pargs, **kwargs):
+        super(type(self), self).__init__(*pargs, **kwargs)
+        with self.canvas:
+            self._color = kivy.graphics.Color(*self.color)
+            self._rectangle = kivy.graphics.Ellipse(
+                pos=self.pos, size=self.size, segments=self.segments,
+                angle_start=self.angle_start, angle_end=self.angle_end)
+        self.bind(pos=self.redraw, size=self.redraw, color=self.redraw,
+                  segments=self.redraw, angle_start=self.redraw,
+                  angle_end=self.redraw)
+
+    def redraw(self, *pargs):
+        self._color.rgba = self.color
+        self._rectangle.pos = self.pos
+        self._rectangle.size = self.size
+        self._rectangle.segments = self.segments
+        self._rectangle.angle_start = self.angle_start
+        self._rectangle.angle_end = self.angle_end
+
+
 
 if __name__ == '__main__':
     from experiment import Experiment
@@ -272,17 +317,23 @@ if __name__ == '__main__':
                   duration=1.0)
 
     #Wait(1.0)
+    #Slider(duration=3.0)
+    #Button(text="Button!", duration=3.0, center_x=100, center_y=100)
     #Image(source="face-smile.png", duration=3.0)
-    #Label(text="SMILE!", duration=3.0, center_x=100, center_y=100)
+    #Label(text="SMILE!", duration=3.0, center_x=100, center_y=100,
+    #      color=(1.0, 1.0, 1.0, 1.0), font_size='50sp')
 
     with Parallel():
+        label = Label(text=u"SMILE!", duration=4.0, center_x=100, center_y=100,
+                      font_size='50sp')
+        label.slide(center_x=200, center_y=200, duration=4.0)
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
                   duration=3.0)
         Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0),
                   duration=2.0)
         Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
                   duration=1.0)
-        Image(source="face-smile.png", duration=4.0, name="Smiling Face")
+        #Image(source="face-smile.png", duration=4.0, name="Smiling Face")
 
     with Loop(range(3)):
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
