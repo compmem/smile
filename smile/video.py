@@ -22,11 +22,12 @@ import kivy.uix.slider
 from kivy.properties import ListProperty, NumericProperty
 
 
-class Widget(State):
+class WidgetState(State):
     @staticmethod
     def factory(widget_class):
+        #TODO: make sure widget_class is a subclass of kivy.uix.widget.Widget
         def new_factory(*pargs, **kwargs):
-            widget = Widget(widget_class, *pargs, **kwargs)
+            widget = WidgetState(widget_class, *pargs, **kwargs)
             widget.override_instantiation_context()
             return widget
         return new_factory
@@ -35,10 +36,10 @@ class Widget(State):
                  name=None, index=0, **params):
         if name is None:
             name = widget_class.__name__
-        super(Widget, self).__init__(parent=parent, 
-                                     duration=duration, 
-                                     save_log=save_log,
-                                     name=name)
+        super(WidgetState, self).__init__(parent=parent, 
+                                          duration=duration, 
+                                          save_log=save_log,
+                                          name=name)
 
         self.appear_time = None
         self.disappear_time = None
@@ -166,7 +167,7 @@ class Animate(State):
                  name=None, **anim_params):
         super(Animate, self).__init__(duration=duration, parent=parent,
                                       save_log=save_log, name=name)
-        self.target = target  #TODO: make sure target is a Widget
+        self.target = target  #TODO: make sure target is a WidgetState
         self.anim_params = anim_params
         self.initial_params = None
 
@@ -200,13 +201,13 @@ class Animate(State):
             self.end_time = cancel_time
 
 
-Image = Widget.factory(kivy.uix.image.Image)
-Label = Widget.factory(kivy.uix.label.Label)
-Button = Widget.factory(kivy.uix.button.Button)
-Slider = Widget.factory(kivy.uix.slider.Slider)
+Image = WidgetState.factory(kivy.uix.image.Image)
+Label = WidgetState.factory(kivy.uix.label.Label)
+Button = WidgetState.factory(kivy.uix.button.Button)
+Slider = WidgetState.factory(kivy.uix.slider.Slider)
 
 
-@Widget.factory
+@WidgetState.factory
 class Rectangle(kivy.uix.widget.Widget):
     color = ListProperty([1.0, 1.0, 1.0, 1.0])
 
@@ -224,7 +225,7 @@ class Rectangle(kivy.uix.widget.Widget):
         self._rectangle.size = self.size
 
 
-@Widget.factory
+@WidgetState.factory
 class Ellipse(kivy.uix.widget.Widget):
     color = ListProperty([1.0, 1.0, 1.0, 1.0])
     segments = NumericProperty(180)
@@ -269,15 +270,8 @@ if __name__ == '__main__':
         Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
                   duration=1.0)
 
-    #Wait(1.0)
-    #Slider(duration=3.0)
-    #Button(text="Button!", duration=3.0, center_x=100, center_y=100)
-    #Image(source="face-smile.png", duration=3.0)
-    #Label(text="SMILE!", duration=3.0, center_x=100, center_y=100,
-    #      color=(1.0, 1.0, 1.0, 1.0), font_size='50sp')
-
     with Parallel():
-        label = Label(text=u"SMILE!", duration=4.0, center_x=100, center_y=100,
+        label = Label(text="SMILE!", duration=4.0, center_x=100, center_y=100,
                       font_size='50sp')
         label.slide(center_x=200, center_y=200, duration=4.0)
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),

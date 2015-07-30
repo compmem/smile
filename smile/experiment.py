@@ -187,7 +187,7 @@ class ExpApp(App):
         self._last_time = self._new_time
 
         # exit if experiment done
-        if not self.exp.active:
+        if not self.exp.root_state.active:
             self.stop()
 
     def blocking_flip(self):
@@ -241,7 +241,7 @@ class ExpApp(App):
                 pass
 
 
-class Experiment(Serial):
+class Experiment(object):
     """
     A SMILE experiment.
 
@@ -288,9 +288,6 @@ class Experiment(Serial):
 
         # first process the args
         self._process_args()
-        
-        # set up the state
-        super(Experiment, self).__init__(parent=None, name=name)
 
         # set up the window
         #screens = pyglet.window.get_platform().get_default_display().get_screens()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -309,10 +306,10 @@ class Experiment(Serial):
         # set up instance for access throughout code
         self.__class__.last_instance = weakref.ref(self)
 
-        # init parents (with self at top)
-        self._parents = [self]
-        #global state._global_parents
-        #state._global_parents.append(self)
+        # set up initial root state and parent stack
+        Serial(name="EXPERIMENT BODY", parent=self)
+        self.root_state.set_instantiation_context(self)
+        self._parents = [self.root_state]
 
         # we have not flipped yet
         self.last_flip = event_time(0.0)
@@ -427,8 +424,8 @@ class Experiment(Serial):
         if trace:
             self.tron()
         try:
-            # start the first state (that's this experiment)
-            self.enter()
+            # start the first state (that's the root state)
+            self.root_state.enter()
 
             # kivy main loop
             self.app.run()

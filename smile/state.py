@@ -20,6 +20,10 @@ from log import dump
 from clock import clock
 
 
+class StateConstructionError(RuntimeError):
+    pass
+
+
 class State(object):
     """
     Base State object for the hierarchical state machine.
@@ -42,7 +46,8 @@ class State(object):
         Whether the state logs itself.
     
     """
-    def __init__(self, parent=None, duration=None, save_log=True, name=None):
+    def __init__(self, parent=None, duration=None, save_log=True, name=None,
+                 instantiation_context_obj=None):
         """
         """
         self.state_time = None
@@ -52,7 +57,6 @@ class State(object):
         self.leave_time = None
         self.finalize_time = None
         self.duration = duration
-        self.parent = parent
         self.active = False
         self.following_may_run = False
         self.save_log = save_log
@@ -61,24 +65,7 @@ class State(object):
         self.tracing = False
 
         # get instantiation context
-        base_inits = {}
-        for base in inspect.getmro(type(self)):
-            if base is not object and hasattr(base, "__init__"):
-                init = base.__init__
-                filename = inspect.getsourcefile(init)
-                lines, start_lineno = inspect.getsourcelines(init)
-                base_inits.setdefault(filename, []).extend(
-                    range(start_lineno, start_lineno + len(lines)))
-        for (frame, filename, lineno,
-             function, code_context, index) in inspect.stack():
-            if filename in base_inits and lineno in base_inits[filename]:
-                continue
-            self.instantiation_filename = filename
-            self.instantiation_lineno = lineno
-            break
-        else:
-            raise RuntimeError(
-                "Can't figure out where instantiation took place!")  #!!!!!!!!!
+        self.set_instantiation_context()
 
         # get the exp reference
         from experiment import Experiment
@@ -88,9 +75,16 @@ class State(object):
             self.exp = None
 
         # try and set the current parent
-        if self.parent is None and not self.exp is None:
-            # try and get it from the exp
-            self.parent = self.exp._parents[-1]
+        if parent is None:
+            if self.exp is None:
+                self.parent = None
+            else:
+                self.parent = self.exp._parents[-1]
+        elif parent is self.exp:
+            self.parent = None
+            self.exp.root_state = self
+        else:
+            self.parent = parent
 
         # add self to children if we have a parent
         if self.parent:
@@ -102,6 +96,38 @@ class State(object):
         self.log_attrs = ['state', 'state_time', 'start_time', 'end_time',
                           'enter_time', 'leave_time', 'finalize_time', 'name']
         self.deepcopy_attrs = []  #TODO: extend this for subclasses!
+
+    def set_instantiation_context(self, obj=None):
+        if obj is None:
+            obj = self
+        base_inits = {}
+        for base in inspect.getmro(type(obj)):
+            if base is not object and hasattr(base, "__init__"):
+                init = base.__init__
+                filename = inspect.getsourcefile(init)
+                lines, start_lineno = inspect.getsourcelines(init)
+                base_inits.setdefault(filename, []).extend(
+                    range(start_lineno, start_lineno + len(lines)))
+        for (frame, filename, lineno,
+             function, code_context, index) in inspect.stack()[1:]:
+            if filename in base_inits and lineno in base_inits[filename]:
+                continue
+            self.instantiation_filename = filename
+            self.instantiation_lineno = lineno
+            break
+        else:
+            raise StateConstructionError(
+                "Can't figure out where instantiation took place!")
+
+    def override_instantiation_context(self, depth=0):
+        (frame,
+         filename,
+         lineno,
+         function,
+         code_context,
+         index) = inspect.stack()[depth + 2]
+        self.instantiation_filename = filename
+        self.instantiation_lineno = lineno
 
     def clone(self):
         new_clone = copy.copy(self)
@@ -181,16 +207,6 @@ class State(object):
         if self.exp is not None:
             self.exp.current_state = self
 
-    def override_instantiation_context(self, depth=0):
-        (frame,
-         filename,
-         lineno,
-         function,
-         code_context,
-         index) = inspect.stack()[depth + 2]
-        self.instantiation_filename = filename
-        self.instantiation_lineno = lineno
-
     def get_log(self):
     	"""
         Evaluate all the log attributes and generate a dict.
@@ -217,7 +233,7 @@ class State(object):
             return Ref(self, index)
         else:
             class_name = get_class_name(self)[0]
-            raise ValueError('%s state does not have attribute "%s".' % 
+            raise IndexError('%s state does not have attribute "%s".' % 
                              (class_name, index))
 
     # PBS: Must eventually check for specific attrs for this to work
@@ -501,51 +517,48 @@ class Parallel(ParentState):
 
 
 @contextmanager
-def Meanwhile(name=None):
+def _ParallelWithPrevious(name=None, parallel_name=None):
     # get the exp reference
     from experiment import Experiment
     try:
         exp = Experiment.last_instance()
     except AttributeError:
-        raise AttributeError("You must first instantiate an Experiment.")
+        raise StateConstructionError(
+            "You must first instantiate an Experiment.")
 
     # find the parent
     parent = exp._parents[-1]
 
     # find the previous child state (-1 because this is not a state)
-    prev_state = parent.children[-1]
+    try:
+        prev_state = parent.children[-1]
+        parallel_parent = parent
+    except IndexError:
+        prev_state = parent
+        if parent.parent is None:
+            parallel_parent = parent.exp
+        else:
+            parallel_parent = parent.parent
 
     # build the new Parallel state
-    with Parallel(name="MEANWHILE") as p:
-        p.override_instantiation_context(1)
+    with Parallel(name=parallel_name, parent=parallel_parent) as p:
+        p.override_instantiation_context(3)
         with Serial(name=name) as s:
-            s.override_instantiation_context(1)
+            s.override_instantiation_context(3)
             yield p
     p.claim_child(prev_state)
+
+
+@contextmanager
+def Meanwhile(name=None):
+    with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE") as p:
+        yield p
     p.set_child_blocking(0, False)
 
 @contextmanager
 def UntilDone(name=None):
-    # get the exp reference
-    from experiment import Experiment
-    try:
-        exp = Experiment.last_instance()
-    except AttributeError:
-        raise AttributeError("You must first instantiate an Experiment.")
-
-    # find the parent
-    parent = exp._parents[-1]
-
-    # find the previous child state (-1 because this is not a state)
-    prev_state = parent.children[-1]
-
-    # build the new Parallel state
-    with Parallel(name="UNTIL DONE") as p:
-        p.override_instantiation_context(1)
-        with Serial(name=name) as s:
-            s.override_instantiation_context(1)
-            yield p
-    p.claim_child(prev_state)
+    with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE") as p:
+        yield p
     p.set_child_blocking(1, False)
 
 
@@ -578,17 +591,16 @@ class Serial(ParentState):
         self.state_time = self.current_child.end_time
         if self.state_time is None:
             self.leave()
-            return
-        if (self.cancel_time is not None and
+        elif (self.cancel_time is not None and
             self.state_time >= self.cancel_time):
             self.leave()
-            return
-        try:
-            self.current_child = (
-                self.child_iterator.next().get_inactive_state(self))
-            clock.schedule(self.current_child.enter)
-        except StopIteration:
-            clock.schedule(self.leave)
+        else:
+            try:
+                self.current_child = (
+                    self.child_iterator.next().get_inactive_state(self))
+                clock.schedule(self.current_child.enter)
+            except StopIteration:
+                clock.schedule(self.leave)
 
     def cancel(self, cancel_time):
         if self.active:
@@ -724,12 +736,16 @@ class Elif(Serial):
         # we now know our parent, so ensure the previous child is
         # either and If or Elif state
         if self.parent is None:
-            raise ValueError("The parent can not be None.")
+            raise StateConstructionError("The parent of Elif can not be None.")
 
         # grab the previous child (-2 because we are -1)
-        prev_state = self.parent.children[-2]
+        try:
+            prev_state = self.parent.children[-2]
+        except IndexError:
+            raise StateConstructionError("No previous state for Elif.")
         if not isinstance(prev_state, If):
-            raise ValueError("The previous state must be an If or Elif state.")
+            raise StateConstructionError(
+                "The previous state must be an If or Elif state.")
 
         # have that previous If state grab this one
         prev_state.claim_child(self)
@@ -743,23 +759,27 @@ def Else(name="ELSE BODY"):
     """State to attach to the else of an If state.
 
     """
-
     # get the exp reference
     from experiment import Experiment
     try:
         exp = Experiment.last_instance()
     except AttributeError:
-        raise AttributeError("You must first instantiate an Experiment.")
+        raise StateConstructionError(
+            "You must first instantiate an Experiment.")
 
     # find the parent
     parent = exp._parents[-1]
 
     # find the previous child state (-1 because this is not a state)
-    prev_state = parent.children[-1]
+    try:
+        prev_state = parent.children[-1]
+    except IndexError:
+        raise StateConstructionError("No previous state for Else.")
     
     # make sure it's the If
     if not isinstance(prev_state, If):
-        raise ValueError("The previous state must be an If or Elif state.")
+        raise StateConstructionError(
+            "The previous state must be an If or Elif state.")
 
     # return the false_state (the last out_state)
     false_state = prev_state.out_states[-1]
@@ -896,11 +916,14 @@ class Loop(ParentState):
         self.state_time = self.current_child.end_time
         if self.state_time is None:
             self.leave()
+        elif (self.cancel_time is not None and
+              self.state_time >= self.cancel_time):
+            self.leave()
         else:
             self.start_next_iteration()
 
     def cancel(self, cancel_time):
-        if self.active and not self.following_may_run:
+        if self.active:
             clock.schedule(partial(self.current_child.cancel, cancel_time))
             self.cancel_time = cancel_time
 
@@ -950,7 +973,7 @@ class Wait(State):
     def __init__(self, duration, jitter=0.0, parent=None, save_log=True,
                  name=None):
         if duration is None:
-            raise ValueError("Wait state must have a duration.")
+            raise StateConstructionError("Wait state must have a duration.")
 
         # init the parent class
         super(Wait, self).__init__(parent=parent, 
@@ -1164,7 +1187,17 @@ if __name__ == '__main__':
     def print_actual_duration(state, target):
         print target.end_time - target.start_time
 
+    def print_periodic(state):
+        print "PERIODIC!"
+
     exp = Experiment()
+
+    #with UntilDone():
+    #    Wait(5.0)
+    with Meanwhile():
+        with Loop():
+            Wait(5.0)
+            Func(print_periodic)
 
     #Debug(width=exp['window'].width, height=exp['window'].height)  #!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1250,6 +1283,17 @@ if __name__ == '__main__':
         Wait(5.0)
     Func(print_dt, args=['after untildone 2'])
     Func(print_actual_duration, args=(ud,))
+
+    with Serial() as s:
+        with Meanwhile():
+            Wait(100.0)
+        Wait(1.0)
+    Func(print_actual_duration, args=(s,))
+    with Serial() as s:
+        with UntilDone():
+            Wait(1.0)
+        Wait(100.0)
+    Func(print_actual_duration, args=(s,))
 
     Wait(2.0)
 
