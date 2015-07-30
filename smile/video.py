@@ -82,7 +82,6 @@ class Widget(State):
 
         self.appear_video = self.exp.app.schedule_video(
             self.appear, self.start_time, self.set_appear_time)
-        #clock.schedule(self.appear, event_time=self.start_time)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if self.end_time is not None:
             self.disappear_video = self.exp.app.schedule_video(
                 self.disappear, self.end_time, self.set_disappear_time)
@@ -93,11 +92,6 @@ class Widget(State):
         self.on_screen = True
         self.widget = self.widget_class(**self.params)  #TODO: construct on entry and only add here?
         self.exp.app.wid.add_widget(self.widget, index=self.index)
-        try:
-            self.widget.texture_update()
-            print "texture_update()"
-        except AttributeError:
-            pass
         clock.schedule(self.leave)
 
     def disappear(self):
@@ -134,11 +128,6 @@ class Widget(State):
         if self.on_screen:
             for name, value in params.items():
                 setattr(self.widget, name, val(value))
-            try:
-                self.widget.texture_update()
-                print "texture_update()"
-            except AttributeError:
-                pass
 
     def animate(self, duration=None, parent=None, save_log=True, name=None,
                 **anim_params):
@@ -212,46 +201,10 @@ class Animate(State):
 
 
 Image = Widget.factory(kivy.uix.image.Image)
-#Label = Widget.factory(kivy.uix.label.Label)
+Label = Widget.factory(kivy.uix.label.Label)
 Button = Widget.factory(kivy.uix.button.Button)
 Slider = Widget.factory(kivy.uix.slider.Slider)
 
-
-@Widget.factory
-class Label(kivy.uix.label.Label):  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    def __init__(self, *pargs, **kwargs):
-        super(type(self), self).__init__(*pargs, **kwargs)
-        with self.canvas:
-            self._color = kivy.graphics.Color(*self.get_color())
-            self._rectangle = kivy.graphics.Rectangle(pos=self.get_pos(),
-                                                      size=self.texture_size,
-                                                      texture=self.texture)
-        self.bind(disabled_color=self.redraw,
-                  disabled=self.redraw,
-                  color=self.redraw,
-                  markup=self.redraw,
-                  texture=self.redraw,
-                  center_x=self.redraw,
-                  center_y=self.redraw,
-                  texture_size=self.redraw)
-
-    def redraw(self, *pargs):
-        self._color.rgba = self.get_color()
-        self._rectangle.pos = self.get_pos()
-        self._rectangle.size = self.texture_size
-        self._rectangle.texture = self.texture
-
-    def get_color(self):
-        if self.disabled:
-            return self.disabled_color
-        elif self.markup:
-            return (1.0, 1.0, 1.0, 1.0)
-        else:
-            return self.color
-
-    def get_pos(self):
-        return (int(self.center_x - self.texture_size[0] / 2.0),
-                int(self.center_y - self.texture_size[1] / 2.0))
 
 @Widget.factory
 class Rectangle(kivy.uix.widget.Widget):
@@ -375,6 +328,10 @@ if __name__ == '__main__':
                        width=100, height=100, duration=5.0)
             ellipse.slide(color=(0.0, 0.0, 1.0, 0.0), duration=5.0)
             rect.slide(color=(1.0, 1.0, 1.0, 0.0), duration=5.0)
+    img = Image(source="face-smile.png", size=(10, 10), allow_stretch=True,
+                keep_ratio=False, mipmap=True)
+    with UntilDone():
+        img.slide(size=(100, 200), duration=5.0)
 
     Wait(5.0)
     exp.run(trace=False)

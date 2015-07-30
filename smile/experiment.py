@@ -157,8 +157,6 @@ class ExpApp(App):
             kivy_needs_draw = False
         if kivy_needs_draw:
             EventLoop.window.dispatch('on_draw')
-            #EventLoop.window.dispatch('on_flip')  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            #self.last_flip = event_time(clock.now(), 0.0)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         if ready_for_video:
             need_flip = kivy_needs_draw and self.pending_flip_time is None
@@ -175,12 +173,12 @@ class ExpApp(App):
                 del self.video_queue[0]
             if need_flip:
                 if len(flip_time_callbacks):
-                    print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    #print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     self.blocking_flip()  #TODO: use sync events instead!
                     for cb in flip_time_callbacks:
                         cb(self.last_flip)
                 else:
-                    print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    #print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     EventLoop.window.dispatch('on_flip')
                     self.last_flip = event_time(clock.now(), 0.0)
                 self.pending_flip_time = None
@@ -194,12 +192,12 @@ class ExpApp(App):
 
     def blocking_flip(self):
         EventLoop.window.dispatch('on_flip')
-        glEnableVertexAttribArray(0)
+        #glEnableVertexAttribArray(0)  # kivy has this enabled already
         glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
                               "\x00\x00\x00\x0a\x00\x00\x00\x0a")  # Position
         glVertexAttrib4f(3, 0.0, 0.0, 0.0, 0.0)  # Color
         glDrawArrays(GL_POINTS, 0, 1)
-        glDisableVertexAttribArray(0)
+        #glDisableVertexAttribArray(0)  # kivy needs this to stay enabled
         glFinish()
         self.last_flip = event_time(clock.now(), 0.0)
         return self.last_flip
