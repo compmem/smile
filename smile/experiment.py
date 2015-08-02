@@ -21,7 +21,8 @@ import kivy_overrides
 import kivy
 import kivy.base
 from kivy.app import App
-from kivy.uix.widget import Widget
+#from kivy.uix.widget import Widget
+from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.base import EventLoop
@@ -87,7 +88,8 @@ class ExpApp(App):
             func(*pargs, **kwargs)
 
     def build(self):
-        self.wid = Widget()
+        self.wid = FloatLayout()
+        #self.wid = Widget()
         #TODO: bind kivy events...
         self._keyboard = Window.request_keyboard(self._keyboard_closed,
                                                  self.wid)
@@ -422,7 +424,7 @@ class Experiment(object):
 
         self.current_state = None
         if trace:
-            self.tron()
+            self.root_state.tron()
         try:
             # start the first state (that's the root state)
             self.root_state.enter()

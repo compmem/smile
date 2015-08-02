@@ -8,9 +8,10 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from functools import partial
+from contextlib import contextmanager
 
 import kivy_overrides
-from state import State
+from state import State, Meanwhile, UntilDone
 from ref import val, Ref
 from clock import clock
 import kivy.graphics
@@ -23,40 +24,51 @@ from kivy.properties import ListProperty, NumericProperty
 
 
 class WidgetState(State):
-    @staticmethod
-    def factory(widget_class):
+    layout_stack = []
+
+    @classmethod
+    def factory(cls, widget_class):
         #TODO: make sure widget_class is a subclass of kivy.uix.widget.Widget
         def new_factory(*pargs, **kwargs):
-            widget = WidgetState(widget_class, *pargs, **kwargs)
+            widget = cls(widget_class, *pargs, **kwargs)
             widget.override_instantiation_context()
             return widget
         return new_factory
 
     def __init__(self, widget_class, duration=None, parent=None, save_log=True,
-                 name=None, index=0, **params):
-        if name is None:
-            name = widget_class.__name__
-        super(WidgetState, self).__init__(parent=parent, 
-                                          duration=duration, 
+                 name=None, index=0, layout=None, **params):
+        super(WidgetState, self).__init__(parent=parent,
+                                          duration=duration,
                                           save_log=save_log,
                                           name=name)
+
+        self.widget_class = widget_class
+        self.index = index
+        self.widget = None
+        self.parent_widget = None
+        self.param_names = params.keys()
+        self.params = None
+        for name, value in params.items():
+            setattr(self, name, value)
+        if layout is None:
+            if len(WidgetState.layout_stack):
+                self.layout = WidgetState.layout_stack[-1]
+            else:
+                self.layout = None
+        else:
+            self.layout = layout
 
         self.appear_time = None
         self.disappear_time = None
         self.appear_video = None
         self.disappear_video = None
-        self.widget_class = widget_class
-        self.index = index
-        self.widget = None
-        self.param_names = params.keys()
-        self.params = None
-        for name, value in params.items():
-            setattr(self, name, value)
 
         # set the log attrs
         self.log_attrs.extend(['appear_time',
                                'disappear_time'])
         self.log_attrs.extend(self.param_names)
+
+        self.parallel = None
 
     def get_updated_param(self, name):
         return getattr(self.widget, name)
@@ -64,71 +76,81 @@ class WidgetState(State):
     def get(self, name):
         return Ref(gfunc=self.get_updated_param, gfunc_args=(name,))
 
-    def set_appear_time(self, appear_time):
-        self.appear_time = appear_time
-
-    def set_disappear_time(self, disappear_time):
-        self.disappear_time = disappear_time
-
-    def _enter(self):
-        self.appear_time = None
-        self.disappear_time = None
-        self.appear_video = None
-        self.disappear_video = None
-        self.on_screen = False
-
-        #TODO: is this the right time to evaluate refs?
+    def resolve_params(self):
         self.params = {name : val(getattr(self, name)) for
                        name in self.param_names}
 
-        self.appear_video = self.exp.app.schedule_video(
-            self.appear, self.start_time, self.set_appear_time)
-        if self.end_time is not None:
-            self.disappear_video = self.exp.app.schedule_video(
-                self.disappear, self.end_time, self.set_disappear_time)
+        #TODO: color names, pos_hint stand-alone arguments?
 
-    def appear(self):
-        self.claim_exceptions()
-        self.appear_video = None
-        self.on_screen = True
+        # see which absolute placement components we have directly...
+        if "pos" in self.params:
+            have_left = True
+            have_bottom = True
+        else:
+            have_left = "x" in self.params
+            have_bottom = "y" in self.params
+        have_top = "top" in self.params
+        have_right = "right" in self.params
+        if "center" in self.params:
+            have_center_x = True
+            have_center_y = True
+        else:
+            have_center_x = "center_x" in self.params
+            have_center_y = "center_y" in self.params
+        if "size" in self.params:
+            have_width = True
+            have_height = True
+        else:
+            have_width = "width" in self.params
+            have_height = "height" in self.params
+
+        # see which absolute placement components we have indirectly...
+        if sum([have_left, have_right, have_center_x, have_width]) >= 2:
+            have_left = True
+            have_right = True
+            have_center_x = True
+            have_width = True
+        if sum([have_top, have_bottom, have_center_y, have_height]) >= 2:
+            have_top = True
+            have_bottom = True
+            have_center_y = True
+            have_height = True
+
+        # override size hints where we have absolute sizes...
+        if have_width:
+            self.params["size_hint_x"] = None
+        if have_height:
+            self.params["size_hint_y"] = None
+
+        # see which pos hints we have...
+        #TODO: make copy of pos_hint dict?
+        pos_hint = self.params.setdefault("pos_hint", {})
+        have_x_hint = any(name in pos_hint for name in ("x", "center_x", "right"))
+        have_y_hint = any(name in pos_hint for name in ("y", "center_y", "top"))
+
+        # add pos hints where we don't have prior pos hint or absolute pos...
+        if not (have_x_hint or have_left or have_right or have_center_x):
+            pos_hint["center_x"] = 0.5
+        if not (have_y_hint or have_top or have_bottom or have_center_y):
+            pos_hint["center_y"] = 0.5
+
+    def construct(self):
         self.widget = self.widget_class(**self.params)  #TODO: construct on entry and only add here?
-        self.exp.app.wid.add_widget(self.widget, index=self.index)
-        clock.schedule(self.leave)
 
-    def disappear(self):
-        self.claim_exceptions()
-        self.disappear_video = None
-        self.on_screen = False
-        self.exp.app.wid.remove_widget(self.widget)
-        clock.schedule(self.finalize)
+    def show(self):
+        if self.layout is None:
+            self.parent_widget = self.exp.app.wid
+        else:
+            self.parent_widget = self.layout.widget
+        self.parent_widget.add_widget(self.widget, index=self.index)
 
-    def cancel(self, cancel_time):
-        if self.active:
-            clock.schedule(self.leave)
-            if cancel_time <= self.start_time:
-                if self.appear_video is not None:
-                    self.exp.app.cancel_video(self.appear_video)
-                self.appear_video = None
-                if self.disappear_video is not None:
-                    self.exp.app.cancel_video(self.disappear_video)
-                if self.on_screen:
-                    self.disappear_video = self.exp.app.schedule_video(
-                        self.disappear, clock.now(), self.set_disappear_time)
-                else:
-                    self.disappear_video = None
-                    clock.schedule(self.finalize)
-                self.end_time = self.start_time
-            elif self.end_time is None or cancel_time < self.end_time:
-                if self.disappear_video is not None:
-                    self.exp.app.cancel_video(self.disappear_video)
-                self.disappear_video = self.exp.app.schedule_video(
-                    self.disappear, cancel_time, self.set_disappear_time)
-                self.end_time = cancel_time
+    def unshow(self):
+        self.parent_widget.remove_widget(self.widget)
+        self.parent_widget = None
 
     def live_change(self, **params):
-        if self.on_screen:
-            for name, value in params.items():
-                setattr(self.widget, name, val(value))
+        for name, value in params.items():
+            setattr(self.widget, name, val(value))
 
     def animate(self, duration=None, parent=None, save_log=True, name=None,
                 **anim_params):
@@ -160,6 +182,89 @@ class WidgetState(State):
                             save_log=save_log, name=name, **anim_params)
         anim.override_instantiation_context()
         return anim
+
+    def set_appear_time(self, appear_time):
+        self.appear_time = appear_time
+
+    def set_disappear_time(self, disappear_time):
+        self.disappear_time = disappear_time
+
+    def _enter(self):
+        self.appear_time = None
+        self.disappear_time = None
+        self.appear_video = None
+        self.disappear_video = None
+        self.on_screen = False
+
+        #TODO: is this the right time to evaluate refs?
+        self.resolve_params()
+
+        self.appear_video = self.exp.app.schedule_video(
+            self.appear, self.start_time, self.set_appear_time)
+        if self.end_time is not None:
+            self.disappear_video = self.exp.app.schedule_video(
+                self.disappear, self.end_time, self.set_disappear_time)
+
+    def appear(self):
+        self.claim_exceptions()
+        self.appear_video = None
+        self.on_screen = True
+        self.construct()
+        self.show()
+        clock.schedule(self.leave)
+
+    def disappear(self):
+        self.claim_exceptions()
+        self.disappear_video = None
+        self.on_screen = False
+        self.unshow()
+        clock.schedule(self.finalize)
+
+    def cancel(self, cancel_time):
+        if self.active:
+            clock.schedule(self.leave)
+            if cancel_time <= self.start_time:
+                if self.appear_video is not None:
+                    self.exp.app.cancel_video(self.appear_video)
+                self.appear_video = None
+                if self.disappear_video is not None:
+                    self.exp.app.cancel_video(self.disappear_video)
+                if self.on_screen:
+                    self.disappear_video = self.exp.app.schedule_video(
+                        self.disappear, clock.now(), self.set_disappear_time)
+                else:
+                    self.disappear_video = None
+                    clock.schedule(self.finalize)
+                self.end_time = self.start_time
+            elif self.end_time is None or cancel_time < self.end_time:
+                if self.disappear_video is not None:
+                    self.exp.app.cancel_video(self.disappear_video)
+                self.disappear_video = self.exp.app.schedule_video(
+                    self.disappear, cancel_time, self.set_disappear_time)
+                self.end_time = cancel_time
+
+    def __enter__(self):
+        if self.parallel is not None:
+            raise RuntimeError("WidgetState context is not reentrant!")  #!!!
+        #TODO: make we're the previous state?
+        WidgetState.layout_stack.append(self)
+        self.parallel = Parallel(name="LAYOUT")
+        self.parallel.override_instantiation_context()
+        self.parallel.claim_child(self)
+        self.parallel.__enter__()
+        return self
+
+    def __exit__(self, type, value, tb):
+        ret = self.parallel.__exit__(type, value, tb)
+        if self.duration is None:
+            self.parallel.set_child_blocking(0, False)
+        else:
+            for n in range(1, len(self.parallel.children)):
+                self.parallel.set_child_blocking(n, False)
+        self.parallel = None
+        if len(WidgetState.layout_stack):
+            WidgetState.layout_stack.pop()
+        return ret
 
 
 class Animate(State):
@@ -200,12 +305,28 @@ class Animate(State):
                             cancel_time < self.end_time):
             self.end_time = cancel_time
 
+layouts = [
+    "Image",
+    "Label",
+    "Button",
+    "Slider",
+    #...
+    "AnchorLayout",
+    "BoxLayout",
+    "FloatLayout",
+    "RelativeLayout",
+    "GridLayout",
+    "PageLayout",
+    "ScatterLayout",
+    "StackLayout"
+    ]
+for layout in layouts:
+    modname = "kivy.uix.%s" % layout.lower()
+    exec("import %s" % modname)
+    exec("%s = WidgetState.factory(%s.%s)" %
+         (layout, modname, layout))
 
-Image = WidgetState.factory(kivy.uix.image.Image)
-Label = WidgetState.factory(kivy.uix.label.Label)
-Button = WidgetState.factory(kivy.uix.button.Button)
-Slider = WidgetState.factory(kivy.uix.slider.Slider)
-
+#TODO: null widget?
 
 @WidgetState.factory
 class Rectangle(kivy.uix.widget.Widget):
@@ -257,10 +378,17 @@ if __name__ == '__main__':
     from experiment import Experiment
     from state import Wait, Loop, Parallel, Meanwhile, UntilDone
     from math import sin
+    from contextlib import nested
 
     exp = Experiment()
 
     Wait(5.0)
+
+    with BoxLayout(width=500, height=500, pos_hint={"top": 1}, duration=4.0):
+        rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), duration=3.0)
+        Rectangle(color=(0.0, 1.0, 0.0, 1.0), duration=2.0)
+        Rectangle(color=(0.0, 0.0, 1.0, 1.0), duration=1.0)
+        rect.slide(color=(1.0, 1.0, 1.0, 1.0), duration=3.0)
 
     with Loop(range(3)):
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),

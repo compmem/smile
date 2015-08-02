@@ -285,9 +285,9 @@ class State(object):
         self._enter()
 
         if self.tracing:
-            call_time = self.enter_time - self.exp.start_time
+            call_time = self.enter_time - self.exp.root_state.start_time
             call_duration = clock.now() - self.enter_time
-            start_time = self.start_time - self.exp.start_time
+            start_time = self.start_time - self.exp.root_state.start_time
             self.print_trace_msg(
                 "ENTER time=%fs, duration=%fs, start_time=%fs" %
                 (call_time, call_duration, start_time))
@@ -317,14 +317,14 @@ class State(object):
         self._leave()
 
         if self.tracing:
-            call_time = self.leave_time - self.exp.start_time
+            call_time = self.leave_time - self.exp.root_state.start_time
             call_duration = clock.now() - self.leave_time
             if self.end_time is None:
                  self.print_trace_msg(
                     "LEAVE time=%fs, duration=%fs, perpetual" %
                     (call_time, call_duration))
             else:
-                end_time = self.end_time - self.exp.start_time
+                end_time = self.end_time - self.exp.root_state.start_time
                 self.print_trace_msg(
                     "LEAVE time=%fs, duration=%fs, end_time=%fs" %
                     (call_time, call_duration, end_time))
@@ -347,7 +347,7 @@ class State(object):
         if self.parent:
             clock.schedule(partial(self.parent.child_finalize_callback, self))
         if self.tracing:
-            call_time = self.finalize_time - self.exp.start_time
+            call_time = self.finalize_time - self.exp.root_state.start_time
             call_duration = clock.now() - self.finalize_time
             self.print_trace_msg("FINALIZE time=%fs, duration=%fs" %
                                  (call_time, call_duration))
@@ -381,8 +381,8 @@ class ParentState(State):
     """
     def __init__(self, children=None, parent=None, duration=None,
                  save_log=True, name=None):
-        super(ParentState, self).__init__(parent=parent, 
-                                          duration=duration, 
+        super(ParentState, self).__init__(parent=parent,
+                                          duration=duration,
                                           save_log=save_log,
                                           name=name)
         # process children
@@ -454,8 +454,11 @@ class Parallel(ParentState):
     finished.
     
     """
-    def __init__(self, *pargs, **kwargs):  #TODO: fix this ... duration should not be an exposed parameter
-        super(Parallel, self).__init__(*pargs, **kwargs)
+    def __init__(self, children=None, parent=None, save_log=True, name=None):
+        super(Parallel, self).__init__(children=children,
+                                       parent=parent,
+                                       save_log=save_log,
+                                       name=name)
         self.children_blocking = []
         self.blocking_children = []
         self.blocking_remaining = []
@@ -484,6 +487,8 @@ class Parallel(ParentState):
         if len(self.children):
             for c in self.children:
                 clock.schedule(c.enter)
+            if self.end_time is not None:
+                clock.schedule(partial(self.cancel, self.end_time))
             self.blocking_children = [c for c, blocking in
                                       zip(self.children,
                                           self.children_blocking) if
@@ -543,23 +548,23 @@ def _ParallelWithPrevious(name=None, parallel_name=None):
     # build the new Parallel state
     with Parallel(name=parallel_name, parent=parallel_parent) as p:
         p.override_instantiation_context(3)
+        p.claim_child(prev_state)
         with Serial(name=name) as s:
             s.override_instantiation_context(3)
             yield p
-    p.claim_child(prev_state)
 
 
 @contextmanager
 def Meanwhile(name=None):
     with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE") as p:
         yield p
-    p.set_child_blocking(0, False)
+    p.set_child_blocking(1, False)
 
 @contextmanager
 def UntilDone(name=None):
     with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE") as p:
         yield p
-    p.set_child_blocking(1, False)
+    p.set_child_blocking(0, False)
 
 
 class Serial(ParentState):
