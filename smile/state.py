@@ -997,7 +997,7 @@ class Wait(State):
                 clock.unschedule(self.finalize)
                 clock.schedule(self.finalize)
                 self.end_time = self.start_time
-            elif cancel_time < self.end_time:
+            elif self.end_time is None or cancel_time < self.end_time:
                 clock.unschedule(self.finalize)
                 clock.schedule(self.finalize, event_time=cancel_time)
                 self.end_time = cancel_time
@@ -1077,7 +1077,7 @@ class CallbackState(AutoFinalizeState):
                 clock.unschedule(self.leave)
                 clock.schedule(self.leave)
                 self.end_time = self.start_time
-            elif cancel_time < self.end_time:
+            elif self.end_time is None or cancel_time < self.end_time:
                 clock.unschedule(self.leave)
                 clock.schedule(self.leave, event_time=cancel_time)
                 self.end_time = cancel_time

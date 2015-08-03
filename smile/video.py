@@ -11,7 +11,7 @@ from functools import partial
 from contextlib import contextmanager
 
 import kivy_overrides
-from state import State, Meanwhile, UntilDone
+from state import State, CallbackState, Parallel
 from ref import val, Ref
 from clock import clock
 import kivy.graphics
@@ -183,6 +183,11 @@ class WidgetState(State):
         anim.override_instantiation_context()
         return anim
 
+    def wait(self, *pargs, **kwargs):
+        wait_property = WaitProperty(self, *pargs, **kwargs)
+        wait_property.override_instantiation_context()
+        return wait_property
+
     def set_appear_time(self, appear_time):
         self.appear_time = appear_time
 
@@ -305,6 +310,54 @@ class Animate(State):
                             cancel_time < self.end_time):
             self.end_time = cancel_time
 
+
+class WaitProperty(CallbackState):
+    def __init__(self, target, *pargs, **kwargs):
+        super(WaitProperty, self).__init__(
+            duration=kwargs.pop("duration", None),
+            parent=kwargs.pop("parent", None),
+            save_log=kwargs.pop("save_log", True),
+            name=kwargs.pop("name", None))
+
+        self.target = target  #TODO: make sure target is a WidgetState
+        self.change_triggers = pargs
+        self.value_triggers = kwargs
+        self.event_time = None
+        self.trigger_name = None
+        self.triggered_on_values = None
+        self.bind_funcs = None
+
+        self.log_attrs.extend(["event_time",
+                               "trigger_name",
+                               "triggered_on_values"])
+
+    def _callback(self):
+        self.bind_funcs = {name : partial(self.trigger_callback, name) for
+                           name in
+                           (set(self.change_triggers) |
+                            set(self.value_triggers))}
+        self.target.widget.bind(**self.bind_funcs)
+        self.trigger_callback(None, None, None)
+
+    def trigger_callback(self, trigger_name, *_pargs):
+        self.claim_exceptions()
+        if all(getattr(self.target.widget, name) == value for
+               (name, value) in
+               self.value_triggers.iteritems()):
+            self.triggered_on_values = True
+        elif trigger_name in self.change_triggers:
+            self.triggered_on_values = False
+        else:
+            return
+        self.trigger_name = trigger_name
+        self.trigger_time = self.exp.app.event_time
+        self.cancel(self.trigger_time["time"])
+
+    def _leave(self):
+        super(WaitProperty, self)._leave()
+        self.target.widget.unbind(**self.bind_funcs)
+
+
 layouts = [
     "Image",
     "Label",
@@ -383,6 +436,10 @@ if __name__ == '__main__':
     exp = Experiment()
 
     Wait(5.0)
+
+    button = Button(text="Click to continue", size_hint=(0.25, 0.25))
+    with UntilDone():
+        button.wait(state="down")
 
     with BoxLayout(width=500, height=500, pos_hint={"top": 1}, duration=4.0):
         rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), duration=3.0)
