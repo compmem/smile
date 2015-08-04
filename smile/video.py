@@ -15,25 +15,23 @@ from state import State, CallbackState, Parallel
 from ref import val, Ref
 from clock import clock
 import kivy.graphics
-import kivy.uix.image
-import kivy.uix.label
-import kivy.uix.button
 import kivy.uix.widget
-import kivy.uix.slider
-from kivy.properties import ListProperty, NumericProperty
+from kivy.properties import ObjectProperty, ListProperty, NumericProperty
 
 
 class WidgetState(State):
     layout_stack = []
 
     @classmethod
-    def factory(cls, widget_class):
-        #TODO: make sure widget_class is a subclass of kivy.uix.widget.Widget
-        def new_factory(*pargs, **kwargs):
-            widget = cls(widget_class, *pargs, **kwargs)
-            widget.override_instantiation_context()
-            return widget
-        return new_factory
+    def wrap(cls, widget_class, name=None):
+        if not issubclass(widget_class, kivy.uix.widget.Widget):
+            raise ValueError(
+                "widget_class must be a subclass of kivy.uix.widget.Widget")
+        if name is None:
+            name = widget_class.__name__
+        def __init__(self, *pargs, **kwargs):
+            cls.__init__(self, widget_class, *pargs, **kwargs)
+        return type(name, (cls,), {"__init__" : __init__})
 
     def __init__(self, widget_class, duration=None, parent=None, save_log=True,
                  name=None, index=0, layout=None, **params):
@@ -358,7 +356,66 @@ class WaitProperty(CallbackState):
         self.target.widget.unbind(**self.bind_funcs)
 
 
-layouts = [
+def vertex_instruction_widget(instr_cls, name=None):
+    if name is None:
+        name = instr_cls.__name__
+    base_attrs = dir(kivy.graphics.instructions.VertexInstruction)
+    props = []
+    for attr in dir(instr_cls):
+        if attr in base_attrs:
+            continue
+        attr_val = getattr(instr_cls, attr, None)
+        if hasattr(attr_val, "__get__") and hasattr(attr_val, "__set__"):
+            props.append(attr)
+    dict_ = {prop : ObjectProperty(None) for prop in props if
+             prop not in ("size", "pos")}
+    dict_["color"] = ListProperty([1.0, 1.0, 1.0, 1.0])
+    
+    def __init__(self, *pargs, **kwargs):
+        super(type(self), self).__init__(*pargs, **kwargs)
+        with self.canvas:
+            self._color = kivy.graphics.Color(*self.color)
+            shape_kwargs = {}
+            for prop in props:
+                value = getattr(self, prop)
+                if value is not None:
+                    shape_kwargs[prop] = value
+            for name, value in kwargs.items():
+                if name not in shape_kwargs:
+                    shape_kwargs[name] = value
+            self._shape = instr_cls(**shape_kwargs)
+        self.bind(color=self.redraw, **{prop : self.redraw for prop in props})
+    dict_["__init__"] = __init__
+
+    def redraw(self, *pargs):
+        self._color.rgba = self.color
+        for prop in props:
+            value = getattr(self, prop)
+            if value is not None:
+                setattr(self._shape, prop, value)
+    dict_["redraw"] = redraw
+
+    return type(name, (kivy.uix.widget.Widget,), dict_)
+
+
+vertex_instructions = [
+    "Bezier",
+    #"StripMesh",
+    "Mesh",
+    "Point",
+    "Triangle",
+    "Quad",
+    "Rectangle",
+    "BorderImage",
+    "Ellipse",
+    #"RoundedRectangle"
+    ]
+for instr in vertex_instructions:
+    exec("%s = WidgetState.wrap(vertex_instruction_widget(kivy.graphics.%s))" %
+         (instr, instr))
+
+
+widgets = [
     "Image",
     "Label",
     "Button",
@@ -373,73 +430,59 @@ layouts = [
     "ScatterLayout",
     "StackLayout"
     ]
-for layout in layouts:
-    modname = "kivy.uix.%s" % layout.lower()
+for widget in widgets:
+    modname = "kivy.uix.%s" % widget.lower()
     exec("import %s" % modname)
-    exec("%s = WidgetState.factory(%s.%s)" %
-         (layout, modname, layout))
+    exec("%s = WidgetState.wrap(%s.%s)" %
+         (widget, modname, widget))
 
-#TODO: null widget?
-
-@WidgetState.factory
-class Rectangle(kivy.uix.widget.Widget):
-    color = ListProperty([1.0, 1.0, 1.0, 1.0])
-
-    def __init__(self, *pargs, **kwargs):
-        super(type(self), self).__init__(*pargs, **kwargs)
-        with self.canvas:
-            self._color = kivy.graphics.Color(*self.color)
-            self._rectangle = kivy.graphics.Rectangle(pos=self.pos,
-                                                      size=self.size)
-        self.bind(pos=self.redraw, size=self.redraw, color=self.redraw)
-
-    def redraw(self, *pargs):
-        self._color.rgba = self.color
-        self._rectangle.pos = self.pos
-        self._rectangle.size = self.size
-
-
-@WidgetState.factory
-class Ellipse(kivy.uix.widget.Widget):
-    color = ListProperty([1.0, 1.0, 1.0, 1.0])
-    segments = NumericProperty(180)
-    angle_start = NumericProperty(0)
-    angle_end = NumericProperty(360)
-
-    def __init__(self, *pargs, **kwargs):
-        super(type(self), self).__init__(*pargs, **kwargs)
-        with self.canvas:
-            self._color = kivy.graphics.Color(*self.color)
-            self._rectangle = kivy.graphics.Ellipse(
-                pos=self.pos, size=self.size, segments=self.segments,
-                angle_start=self.angle_start, angle_end=self.angle_end)
-        self.bind(pos=self.redraw, size=self.redraw, color=self.redraw,
-                  segments=self.redraw, angle_start=self.redraw,
-                  angle_end=self.redraw)
-
-    def redraw(self, *pargs):
-        self._color.rgba = self.color
-        self._rectangle.pos = self.pos
-        self._rectangle.size = self.size
-        self._rectangle.segments = self.segments
-        self._rectangle.angle_start = self.angle_start
-        self._rectangle.angle_end = self.angle_end
-
+def ButtonPress(*pargs, **kwargs):
+    button = Button(*pargs, **kwargs)
+    with UntilDone(name="BUTTONPRESS") as ud:
+        propwait = button.wait(state="down")
+    button.override_instantiation_context()
+    ud.override_instantiation_context()
+    propwait.override_instantiation_context()
+    propwait.parent.override_instantiation_context()
+    return button
 
 
 if __name__ == '__main__':
     from experiment import Experiment
     from state import Wait, Loop, Parallel, Meanwhile, UntilDone
-    from math import sin
+    from math import sin, cos
     from contextlib import nested
 
     exp = Experiment()
 
     Wait(5.0)
 
-    button = Button(text="Click to continue", size_hint=(0.25, 0.25))
+    #button = Button(text="Click to continue", size_hint=(0.25, 0.25))
+    #with UntilDone():
+    #    button.wait(state="down")
+    ButtonPress(text="Click to continue", size_hint=(0.25, 0.25))
+    with Meanwhile():
+        Triangle(points=[0, 0, 500, 500, 0, 500],
+                 color=(1.0, 1.0, 0.0, 0.5))
+
+    bez = Bezier(segments=200, color=(1.0, 1.0, 0.0, 1.0), loop=True,
+                 points=[0, 0, 200, 200, 200, 100, 100, 200, 500, 500])
     with UntilDone():
-        button.wait(state="down")
+        bez.slide(points=[200, 200, 0, 0, 500, 500, 200, 100, 100, 200],
+                  color=(0.0, 0.0, 1.0, 1.0), duration=5.0)
+        bez.slide(points=[500, 0, 0, 500, 600, 200, 100, 600, 300, 300],
+                  color=(1.0, 1.0, 1.0, 1.0), duration=5.0)
+
+    ellipse = Ellipse(x=-25, pos_hint={"center_y": 0.5}, width=25, height=25,
+                      angle_start=90.0, angle_end=460.0,
+                      color=(1.0, 1.0, 0.0, 1.0), name="Pacman")
+    with UntilDone():
+        with Parallel(name="Pacman motion"):
+            ellipse.slide(x=800, duration=8.0, name="Pacman travel")
+            ellipse.animate(
+                angle_start=lambda t, initial: initial + (cos(t * 8) + 1) * 22.5,
+                angle_end=lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
+                duration=8.0, name="Pacman gobble")
 
     with BoxLayout(width=500, height=500, pos_hint={"top": 1}, duration=4.0):
         rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), duration=3.0)
