@@ -7,9 +7,6 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-import kivy_overrides
-from kivy.core.window import Window
-
 from state import CallbackState
 from ref import Ref, val
 from clock import clock

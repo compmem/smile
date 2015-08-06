@@ -93,6 +93,10 @@ class ExpApp(App):
         #TODO: bind kivy events...
         Window._system_keyboard.bind(on_key_down=self._on_key_down,
                                      on_key_up=self._on_key_up)
+        Window.bind(on_mouse_up=self._on_mouse_up,
+                    on_mouse_down=self._on_mouse_down,
+                    on_mouse_move=self._on_mouse_move,
+                    on_motion=self._on_motion)
         #...
         self._last_time = clock.now()  #???
         self._last_kivy_tick = clock.now()  #???
@@ -109,6 +113,18 @@ class ExpApp(App):
 
     def _on_key_up(self, keyboard, keycode):
         self._trigger_callback("KEY_UP", keycode, self.event_time)
+
+    def _on_mouse_down(self, x, y, button, modifiers):
+        print "mouse down %r, %r, %r, %r" % (x, y, button, modifiers)
+
+    def _on_mouse_up(self, x, y, button, modifiers):
+        print "mouse up %r, %r, %r, %r" % (x, y, button, modifiers)
+
+    def _on_mouse_move(self, x, y, modifiers):
+        print "mouse move %r, %r, %r" % (x, y, modifiers)
+
+    def _on_motion(self, *pargs):
+        print "motion %r" % (pargs,)
 
     def _idle_callback(self, event_loop):
         # record the time range

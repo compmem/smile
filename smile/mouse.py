@@ -7,15 +7,11 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from pyglet.window import mouse
-
-from state import State
+from state import CallbackState
 from ref import Ref, val
+from clock import clock
 
-# get the last instance of the experiment class
-from experiment import Experiment, now
-
-class MousePress(State):
+class MousePress(CallbackState):
     """
     Accept mouse click as response.
     
