@@ -19,6 +19,7 @@ class Clock(object):
         return _get_time()
 
     def tick(self):
+        #TODO: limit time spent in each tick?
         now = self.now()
         while len(self._events):
             event = self._events[0]

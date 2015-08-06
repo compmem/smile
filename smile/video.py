@@ -249,7 +249,7 @@ class WidgetState(State):
     def __enter__(self):
         if self.parallel is not None:
             raise RuntimeError("WidgetState context is not reentrant!")  #!!!
-        #TODO: make we're the previous state?
+        #TODO: make sure we're the previous state?
         WidgetState.layout_stack.append(self)
         self.parallel = Parallel(name="LAYOUT")
         self.parallel.override_instantiation_context()
@@ -354,6 +354,9 @@ class WaitProperty(CallbackState):
     def _leave(self):
         super(WaitProperty, self)._leave()
         self.target.widget.unbind(**self.bind_funcs)
+
+
+#TODO: RecordProperty
 
 
 def vertex_instruction_widget(instr_cls, name=None):

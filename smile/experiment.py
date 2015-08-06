@@ -91,21 +91,14 @@ class ExpApp(App):
         self.wid = FloatLayout()
         #self.wid = Widget()
         #TODO: bind kivy events...
-        self._keyboard = Window.request_keyboard(self._keyboard_closed,
-                                                 self.wid)
-        self._keyboard.bind(on_key_down=self._on_key_down,
-                            on_key_up=self._on_key_up)
+        Window._system_keyboard.bind(on_key_down=self._on_key_down,
+                                     on_key_up=self._on_key_up)
         #...
         self._last_time = clock.now()  #???
         self._last_kivy_tick = clock.now()  #???
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
         print 1.0 / self.calc_flip_interval()  #...
         return self.wid
-
-    def _keyboard_closed(self):
-        self._keyboard.unbind(on_key_down=self._on_key_down,
-                              on_key_up=self._on_key_up)
-        self._keyboard = None
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
         if keycode[0] == 27 and "shift" in modifiers:
@@ -628,6 +621,7 @@ class Log(AutoFinalizeState):
         # init the parent class
         super(Log, self).__init__(parent=parent,
                                   name=name,
+                                  duration=0.0,
                                   save_log=False)
         self.log_file = log_file
         self.log_items = log_items
@@ -650,7 +644,6 @@ class Log(AutoFinalizeState):
         # log it to the correct file
         dump([log], self._get_stream())
         clock.schedule(self.leave)
-        self.end_time = self.start_time
 
 if __name__ == '__main__':
     # can't run inside this file

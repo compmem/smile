@@ -7,16 +7,43 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-#from pyglet.window import key
+import kivy_overrides
+from kivy.core.window import Window
 
-from state import State
+from state import CallbackState
 from ref import Ref, val
 from clock import clock
 
 # get the last instance of the experiment class
 from experiment import Experiment
 
-class KeyPress(State):
+
+class KeyState(CallbackState):
+    def on_key_down(self, keycode, text, modifiers, event_time):
+        self.claim_exceptions()
+        self._on_key_down(keycode, text, modifiers, event_time)
+
+    def _on_key_down(self, keycode, text, modifiers, event_time):
+        pass
+
+    def on_key_up(self, keycode, event_time):
+        self.claim_exceptions()
+        self._on_key_up(keycode, event_time)
+
+    def _on_key_up(self, keycode, event_time):
+        pass
+
+    def _callback(self):
+        self.exp.app.add_callback("KEY_DOWN", self.on_key_down)
+        self.exp.app.add_callback("KEY_UP", self.on_key_up)
+
+    def _leave(self):
+        self.exp.app.remove_callback("KEY_DOWN", self.on_key_down)
+        self.exp.app.remove_callback("KEY_UP", self.on_key_up)
+        super(KeyState, self)._leave()
+
+
+class KeyPress(KeyState):
     """
     Accept keyboard responses.
     
@@ -64,11 +91,11 @@ class KeyPress(State):
             Amount of time that has passed between stimulus onset
             and the participant's response. Dependent on base_time.   
     """
-    def __init__(self, keys=None, correct_resp=None, base_time=None, until=None,
-                 duration=-1, parent=None, save_log=True, name=None):
+    def __init__(self, keys=None, correct_resp=None, base_time=None,
+                 duration=None, parent=None, save_log=True, name=None):
         # init the parent class
-        super(KeyPress, self).__init__(interval=-1, parent=parent, 
-                                       duration=-1,
+        super(KeyPress, self).__init__(parent=parent,
+                                       duration=duration,
                                        save_log=save_log,
                                        name=name)
 
@@ -81,30 +108,18 @@ class KeyPress(State):
         self.correct_resp = correct_resp
         self.base_time_src = base_time  # for calc rt
         self.base_time = None
-        if not isinstance(duration, Ref) and duration == -1:
-            self.wait_duration = None
-        else:
-            self.wait_duration = duration
-        self.wait_until = until
         self.pressed = ''
         self.press_time = None
         self.correct = False
         self.rt = None
-        
-        # if wait duration is -1 wait indefinitely
-
-        # if a wait_duration is specified, that's how long to look for
-        # keypresses.
-
-        # we're not waiting yet
-        self.waiting = False
 
         # append log vars
         self.log_attrs.extend(['keys', 'correct_resp', 'base_time',
-                               'pressed', 'press_time', 
+                               'pressed', 'press_time',
                                'correct', 'rt'])
 
     def _enter(self):
+        super(KeyPress, self)._enter()
         # reset defaults
         self.pressed = ''
         self.press_time = None
@@ -112,9 +127,7 @@ class KeyPress(State):
         self.rt = None
         self.base_time = None
 
-    def _key_callback(self, keycode, text, modifiers, event_time):
-        self.claim_exceptions()
-
+    def _on_key_down(self, keycode, text, modifiers, event_time):
         # check the key and time (if this is needed)
         keys = val(self.keys)
         correct_resp = val(self.correct_resp)
@@ -123,55 +136,52 @@ class KeyPress(State):
             # it's all good!, so save it
             self.pressed = sym_str
             self.press_time = event_time
-
-            # # fill the base time val
-            # self.base_time = val(self.base_time_src)
-            # if self.base_time is None:
-            #     # set it to the state time
-            #     self.base_time = self.state_time
             
             # calc RT if something pressed
-            self.rt = event_time['time']-self.base_time
+            self.rt = event_time['time'] - self.base_time
 
             if self.pressed in correct_resp:
                 self.correct = True
 
             # let's leave b/c we're all done
-            #self.interval = 0
-            self.leave()
+            self.cancel(event_time['time'])
             
-    def _callback(self, dt):
-        if not self.waiting:
-            self.exp.app.add_callback("KEY_DOWN", self._key_callback)
-            #self.exp.window.key_callbacks.append(self._key_callback)
-            self.waiting = True
+    def _callback(self):
+        self.base_time = val(self.base_time_src)
         if self.base_time is None:
-            self.base_time = val(self.base_time_src)
-            if self.base_time is None:
-                # set it to the state time
-                self.base_time = self.state_time
-        wait_duration = val(self.wait_duration)
-        if (not wait_duration is None) and (clock.now() >=
-                                            self.base_time + wait_duration):
-            self.leave()
-        elif val(self.wait_until):
-            self.leave()
-            
-    def _leave(self):
-        # remove the keyboard callback
-        self.exp.app.remove_callback("KEY_DOWN", self._key_callback)
-        #self.exp.window.key_callbacks.remove(self._key_callback)
-        self.waiting = False
-    
+            # set it to the start time
+            self.base_time = self.start_time
+        super(KeyPress, self)._callback()
+
+
+class KeyRecord(KeyState):
+    def __init__(self, duration=None, parent=None, save_log=True, name=None):
+        # init the parent class
+        super(KeyRecord, self).__init__(parent=parent,
+                                        duration=duration,
+                                        save_log=save_log,
+                                        name=name)
+
+        #...!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    def _enter(self):
+        super(KeyRecord, self)._enter()
+        #...!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    def _on_key_down(self, keycode, text, modifiers, event_time):
+        print "TODO: Record key down: %r, %r, %r" % (keycode, text, modifiers)  #TODO: actual recording!
+
+    def _on_key_up(self, keycode, event_time):
+        print "TODO: Record key up: %r" % (keycode,)  #TODO: actual recording!
 
 
 if __name__ == '__main__':
 
     from experiment import Experiment, Get, Set, Log
-    from state import Wait, Func, Loop
+    from state import Wait, Func, Loop, UntilDone
 
     def print_dt(state, *args):
-        print args, state.dt
+        print args
 
     exp = Experiment()
     
@@ -183,18 +193,20 @@ if __name__ == '__main__':
         Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
         Set('last_pressed',kp['pressed'])
         Log(pressed=kp['pressed'], rt=kp['rt'])
-    
-    kp = KeyPress(keys=['J','K'], correct_resp='K')
-    Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
-    Wait(1.0)
 
-    kp = KeyPress()
-    Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
-    Wait(1.0)
+    KeyRecord()
+    with UntilDone():
+        kp = KeyPress(keys=['J','K'], correct_resp='K')
+        Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
+        Wait(1.0)
 
-    kp = KeyPress(duration=2.0)
-    Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
-    Wait(1.0, stay_active=True)
+        kp = KeyPress()
+        Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
+        Wait(1.0)
+
+        kp = KeyPress(duration=2.0)
+        Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
+        Wait(1.0)
 
     exp.run()
     
