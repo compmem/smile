@@ -21,7 +21,6 @@ import kivy_overrides
 import kivy
 import kivy.base
 from kivy.app import App
-#from kivy.uix.widget import Widget
 from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 from kivy.logger import Logger
@@ -89,17 +88,14 @@ class ExpApp(App):
 
     def build(self):
         self.wid = FloatLayout()
-        #self.wid = Widget()
-        #TODO: bind kivy events...
         Window._system_keyboard.bind(on_key_down=self._on_key_down,
                                      on_key_up=self._on_key_up)
-        Window.bind(on_mouse_up=self._on_mouse_up,
-                    on_mouse_down=self._on_mouse_down,
-                    on_mouse_move=self._on_mouse_move,
-                    on_motion=self._on_motion)
-        #...
-        self._last_time = clock.now()  #???
-        self._last_kivy_tick = clock.now()  #???
+        Window.bind(on_motion=self._on_motion,
+                    mouse_pos=self._on_mouse_pos)
+        self.current_touch = None
+        
+        self._last_time = clock.now()
+        self._last_kivy_tick = clock.now()
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
         print 1.0 / self.calc_flip_interval()  #...
         return self.wid
@@ -114,17 +110,27 @@ class ExpApp(App):
     def _on_key_up(self, keyboard, keycode):
         self._trigger_callback("KEY_UP", keycode, self.event_time)
 
-    def _on_mouse_down(self, x, y, button, modifiers):
-        print "mouse down %r, %r, %r, %r" % (x, y, button, modifiers)
+    def _on_mouse_pos(self, window, pos):
+        if self.current_touch is None:
+            self._trigger_callback("MOTION", pos=pos, button=None,
+                                   newly_pressed=False,
+                                   double=False, triple=False,
+                                   event_time=self.event_time)
 
-    def _on_mouse_up(self, x, y, button, modifiers):
-        print "mouse up %r, %r, %r, %r" % (x, y, button, modifiers)
-
-    def _on_mouse_move(self, x, y, modifiers):
-        print "mouse move %r, %r, %r" % (x, y, modifiers)
-
-    def _on_motion(self, *pargs):
-        print "motion %r" % (pargs,)
+    def _on_motion(self, window, etype, me):
+        if etype in ("begin", "update"):
+            self.current_touch = me
+            self._trigger_callback("MOTION", pos=me.pos, button=me.button,
+                                   newly_pressed=(etype == "begin"),
+                                   double=me.is_double_tap,
+                                   triple=me.is_triple_tap,
+                                   event_time=self.event_time)
+        else:
+            self.current_touch = None
+            self._trigger_callback("MOTION", pos=me.pos, button=None,
+                                   newly_pressed=False,
+                                   double=False, triple=False,
+                                   event_time=self.event_time)
 
     def _idle_callback(self, event_loop):
         # record the time range

@@ -11,7 +11,26 @@ from state import CallbackState
 from ref import Ref, val
 from clock import clock
 
-class MousePress(CallbackState):
+
+class MouseState(CallbackState):
+    def _on_motion(self, pos, button, newly_pressed, double, triple,
+                   event_time):
+        pass
+
+    def on_motion(self, pos, button, newly_pressed, double, triple,
+                  event_time):
+        self.claim_exceptions()
+        self._on_motion(pos, button, newly_pressed, double, triple, event_time)
+
+    def _callback(self):
+        self.exp.app.add_callback("MOTION", self.on_motion)
+
+    def _leave(self):
+        self.exp.app.remove_callback("MOTION", self.on_motion)
+        super(MouseState, self)._leave()
+
+
+class MousePress(MouseState):
     """
     Accept mouse click as response.
     
@@ -59,12 +78,13 @@ class MousePress(CallbackState):
             and the participant's response. Dependent upon base_time.  
     
     """
-    def __init__(self, buttons=None, correct_resp=None, base_time=None, until=None,
-                 duration=-1, parent=None, save_log=True):
+    def __init__(self, buttons=None, correct_resp=None, base_time=None,
+                 duration=None, parent=None, save_log=True, name=None):
         # init the parent class
-        super(MousePress, self).__init__(interval=-1, parent=parent, 
-                                         duration=-1,
-                                         save_log=save_log)
+        super(MousePress, self).__init__(parent=parent, 
+                                         duration=duration,
+                                         save_log=save_log,
+                                         name=name)
 
         # save the buttons we're watching (None for all)
         if not isinstance(buttons, list):
@@ -75,21 +95,11 @@ class MousePress(CallbackState):
         self.correct_resp = correct_resp
         self.base_time_src = base_time  # for calc rt
         self.base_time = None
-        self.wait_duration = duration
-        self.wait_until = until
 
         self.pressed = ''
         self.press_time = None
         self.correct = False
         self.rt = None
-        
-        # if wait duration is -1 wait indefinitely
-
-        # if a wait_duration is specified, that's how long to look for
-        # mousepresses.
-
-        # we're not waiting yet
-        self.waiting = False
 
         # append log vars
         self.log_attrs.extend(['buttons', 'correct_resp', 'base_time',
@@ -97,27 +107,33 @@ class MousePress(CallbackState):
                                'correct', 'rt'])
 
     def _enter(self):
+        super(MousePress, self)._enter()
         # reset defaults
         self.pressed = ''
         self.press_time = None
         self.correct = False
         self.rt = None
 
-    def _mouse_callback(self, x, y, button, modifiers, event_time):
+    def _callback(self):
+        self.base_time = val(self.base_time_src)
+        if self.base_time is None:
+            # set it to the start time
+            self.base_time = self.start_time
+        super(MousePress, self)._callback()
+
+    def _on_motion(self, pos, button, newly_pressed, double, triple,
+                   event_time):
+        if not newly_pressed:
+            return
+
         # check the mouse and time (if this is needed)
         buttons = val(self.buttons)
+        button = button.upper()
         correct_resp = val(self.correct_resp)
-        button_str = mouse.buttons_string(button)
-        if None in buttons or button_str in buttons:
+        if None in buttons or button in buttons:
             # it's all good!, so save it
-            self.pressed = button_str
+            self.pressed = button
             self.press_time = event_time
-
-            # fill the base time val
-            self.base_time = val(self.base_time_src)
-            if self.base_time is None:
-                # set it to the state time
-                self.base_time = self.state_time
             
             # calc RT if something pressed
             self.rt = event_time['time']-self.base_time
@@ -126,26 +142,7 @@ class MousePress(CallbackState):
                 self.correct = True
 
             # let's leave b/c we're all done
-            #self.interval = 0
-            self.leave()
-            
-    def _callback(self, dt):
-        if not self.waiting:
-            self.exp.window.mouse_callbacks.append(self._mouse_callback)
-            self.waiting = True
-        wait_duration = val(self.wait_duration)
-        if ((wait_duration > 0 and now() >= self.state_time+wait_duration) or
-            (val(self.wait_until))):
-            # we're done
-            self.leave()
-            #self.interval = 0
-            
-    def _leave(self):
-        # remove the mouseboard callback
-        self.exp.window.mouse_callbacks.remove(self._mouse_callback)
-        self.waiting = False
-        pass
-    
+            self.cancel(event_time['time'])
 
 
 if __name__ == '__main__':
@@ -154,7 +151,7 @@ if __name__ == '__main__':
     from state import Wait, Func, Loop
 
     def print_dt(state, *args):
-        print args, state.dt
+        print args
 
     exp = Experiment()
     
@@ -177,6 +174,6 @@ if __name__ == '__main__':
 
     kp = MousePress(duration=2.0)
     Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
-    Wait(1.0, stay_active=True)
+    Wait(1.0)
 
     exp.run()
