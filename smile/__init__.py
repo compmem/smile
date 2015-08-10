@@ -25,8 +25,6 @@ from state import (
     PrintTraceback)
 from keyboard import KeyPress, KeyRecord
 #from mouse import MousePress
-#from video import Show, Update, Unshow, Text, Image, Movie, BackColor
-#from video import Rectangle
 from video import (
     Bezier,
     Mesh,
