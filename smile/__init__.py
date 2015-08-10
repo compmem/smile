@@ -23,9 +23,31 @@ from state import (
     ResetClock,
     Debug,
     PrintTraceback)
-from keyboard import KeyPress
+from keyboard import KeyPress, KeyRecord
 #from mouse import MousePress
 #from video import Show, Update, Unshow, Text, Image, Movie, BackColor
 #from video import Rectangle
+from video import (
+    Bezier,
+    Mesh,
+    Point,
+    Triangle,
+    Quad,
+    Rectangle,
+    BorderImage,
+    Ellipse,
+    Image,
+    Label,
+    Button,
+    ButtonPress,
+    Video,
+    AnchorLayout,
+    BoxLayout,
+    FloatLayout,
+    GridLayout,
+    PageLayout,
+    ScatterLayout,
+    StackLayout
+    )
 from ref import Ref, val
 #from freekey import FreeKey

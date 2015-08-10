@@ -114,12 +114,6 @@ class WidgetState(State):
             have_center_y = True
             have_height = True
 
-        # override size hints where we have absolute sizes...
-        if have_width:
-            self.params["size_hint_x"] = None
-        if have_height:
-            self.params["size_hint_y"] = None
-
         # see which pos hints we have...
         #TODO: make copy of pos_hint dict?
         pos_hint = self.params.setdefault("pos_hint", {})
@@ -131,6 +125,11 @@ class WidgetState(State):
             pos_hint["center_x"] = 0.5
         if not (have_y_hint or have_top or have_bottom or have_center_y):
             pos_hint["center_y"] = 0.5
+
+        # remove kivy's default size hints...
+        if "size_hint" not in self.params:
+            self.params.setdefault("size_hint_x", None)
+            self.params.setdefault("size_hint_y", None)
 
     def construct(self):
         self.widget = self.widget_class(**self.params)  #TODO: construct on entry and only add here?
@@ -423,6 +422,7 @@ widgets = [
     "Label",
     "Button",
     "Slider",
+    "Video",
     #...
     "AnchorLayout",
     "BoxLayout",
@@ -460,6 +460,9 @@ if __name__ == '__main__':
 
     Wait(5.0)
 
+    Video(source="test_video.mp4", size_hint=(1, 1), state="play",
+          duration=5.0)  #TODO: duration should default to duration of video file, state should default to "play", state should be set to "stop" at end of duration!
+
     #button = Button(text="Click to continue", size_hint=(0.25, 0.25))
     #with UntilDone():
     #    button.wait(state="down")
@@ -488,10 +491,11 @@ if __name__ == '__main__':
                 duration=8.0, name="Pacman gobble")
 
     with BoxLayout(width=500, height=500, pos_hint={"top": 1}, duration=4.0):
-        rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), duration=3.0)
-        Rectangle(color=(0.0, 1.0, 0.0, 1.0), duration=2.0)
-        Rectangle(color=(0.0, 0.0, 1.0, 1.0), duration=1.0)
-        rect.slide(color=(1.0, 1.0, 1.0, 1.0), duration=3.0)
+        rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), size_hint=(1, 1),
+                         duration=3.0)
+        Rectangle(color=(0.0, 1.0, 0.0, 1.0), size_hint=(1, 1), duration=2.0)
+        Rectangle(color=(0.0, 0.0, 1.0, 1.0), size_hint=(1, 1), duration=1.0)
+        rect.slide(color=(1.0, 1.0, 1.0, 1.0), size_hint=(1, 1), duration=3.0)
 
     with Loop(range(3)):
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
@@ -503,15 +507,14 @@ if __name__ == '__main__':
 
     with Parallel():
         label = Label(text="SMILE!", duration=4.0, center_x=100, center_y=100,
-                      font_size='50sp')
-        label.slide(center_x=200, center_y=200, duration=4.0)
+                      font_size=50)
+        label.slide(center_x=400, center_y=400, font_size=100, duration=4.0)
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
                   duration=3.0)
         Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0),
                   duration=2.0)
         Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
                   duration=1.0)
-        #Image(source="face-smile.png", duration=4.0, name="Smiling Face")
 
     with Loop(range(3)):
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),

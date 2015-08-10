@@ -6,7 +6,7 @@ if any([name.startswith("kivy") for name in sys.modules.keys() if
 from kivy.config import Config
 Config.set("kivy", "exit_on_escape", 0)
 Config.set("graphics", "maxfps", 0)
-Config.set('graphics', 'show_cursor', 0)
+#Config.set('graphics', 'show_cursor', 0)
 import kivy
 EXACT_KIVY_VERSION = "1.8.0"
 if kivy.__version__ != EXACT_KIVY_VERSION:
