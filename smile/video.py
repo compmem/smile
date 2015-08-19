@@ -10,9 +10,10 @@
 from functools import partial
 from contextlib import contextmanager
 import weakref
+import operator
 
 import kivy_overrides
-from state import State, CallbackState, Parallel
+from state import State, CallbackState, Parallel, ParentState
 from ref import val, Ref
 from clock import clock
 import kivy.graphics
@@ -410,15 +411,110 @@ for widget in widgets:
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
 
-def ButtonPress(*pargs, **kwargs):
-    button = Button(*pargs, **kwargs)
-    with UntilDone(name="BUTTONPRESS") as ud:
-        propwait = Wait(until=button['state']=='down')
-    button.override_instantiation_context()
-    ud.override_instantiation_context()
-    propwait.override_instantiation_context()
-    propwait.parent.override_instantiation_context()
-    return button
+
+def iter_nested_buttons(state):
+    if isinstance(state, Button):
+        yield state
+    if isinstance(state, ParentState):
+        for child in state.children:
+            for button in iter_nested_buttons(child):
+                yield button
+
+
+class ButtonPress(CallbackState):
+    def __init__(self, buttons=None, correct_resp=None, base_time=None,
+                 duration=None, parent=None, save_log=True, name=None):
+        super(ButtonPress, self).__init__(parent=parent, 
+                                          duration=duration,
+                                          save_log=save_log,
+                                          name=name)
+        if buttons is None:
+            self.buttons = []
+        elif not isinstance(buttons, list):
+            self.buttons = [buttons]
+        else:
+            self.buttons = buttons
+        self.button_names = None
+        if correct_resp is None:
+            self.correct_resp = []
+        elif not isinstance(correct_resp, list):
+            self.correct_resp = [correct_resp]
+        else:
+            self.correct_resp = correct_resp
+        self.base_time_src = base_time  # for calc rt
+        self.base_time = None
+
+        self.pressed = ''
+        self.press_time = None
+        self.correct = False
+        self.rt = None
+
+        self.pressed_ref = None
+
+        # append log vars
+        self.log_attrs.extend(['button_names', 'correct_resp', 'base_time',
+                               'pressed', 'press_time', 'correct', 'rt'])
+
+        self.parallel = None
+
+    def _enter(self):
+        self.button_names = [button.name for button in self.buttons]
+        self.pressed_ref = Ref(
+            lambda lst: [name for name, down in lst if down],
+            [(button.name, button["state"] == "down") for button in self.buttons])
+        super(ButtonPress, self)._enter()
+
+    def _callback(self):
+        self.base_time = val(self.base_time_src)
+        if self.base_time is None:
+            self.base_time = self.start_time
+        self.pressed = ''
+        self.press_time = None
+        self.correct = False
+        self.rt = None
+        self.pos = None
+        self.pressed_ref.add_change_callback(self.button_callback)
+
+    def button_callback(self):
+        self.claim_exceptions()
+        pressed_list = self.pressed_ref.eval()
+        if not len(pressed_list):
+            return
+        button = pressed_list[0]
+        correct_resp = val(self.correct_resp)
+        self.pressed = button
+        self.press_time = self.exp.app.event_time
+
+        # calc RT if something pressed
+        self.rt = self.press_time['time'] - self.base_time
+
+        if self.pressed in correct_resp:
+            self.correct = True
+
+        # let's leave b/c we're all done
+        self.cancel(self.press_time['time'])
+
+    def _leave(self):
+        self.pressed_ref.remove_change_callback(self.button_callback)
+        super(ButtonPress, self)._leave()
+
+    def __enter__(self):
+        if self.parallel is not None:
+            raise RuntimeError("ButtonPress context is not reentrant!")  #!!!
+        #TODO: make sure we're the previous state?
+        self.parallel = Parallel(name="BUTTONPRESS")
+        self.parallel.override_instantiation_context()
+        self.parallel.claim_child(self)
+        self.parallel.__enter__()
+        return self
+
+    def __exit__(self, type, value, tb):
+        ret = self.parallel.__exit__(type, value, tb)
+        for n in range(1, len(self.parallel.children)):
+            self.parallel.set_child_blocking(n, False)
+        self.buttons.extend(iter_nested_buttons(self.parallel))
+        self.parallel = None
+        return ret
 
 
 if __name__ == '__main__':
@@ -437,7 +533,9 @@ if __name__ == '__main__':
     #button = Button(text="Click to continue", size_hint=(0.25, 0.25))
     #with UntilDone():
     #    Wait(until=button['state']=='down')
-    ButtonPress(text="Click to continue", size_hint=(0.25, 0.25))
+    with ButtonPress():
+        Button(text="Click to continue", size_hint=(0.25, 0.25))
+
     with Meanwhile():
         Triangle(points=[0, 0, 500, 500, 0, 500],
                  color=(1.0, 1.0, 0.0, 0.5))

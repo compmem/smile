@@ -19,12 +19,13 @@ from state import (
     Else,
     Loop,
     Wait,
+    Record,
     Func,
     ResetClock,
     Debug,
     PrintTraceback)
-from keyboard import KeyPress, KeyRecord
-#from mouse import MousePress
+from keyboard import Key, KeyPress, KeyRecord
+from mouse import MouseWithin, MousePos, MouseButton, MouseRecord, MousePress
 from video import (
     Bezier,
     Mesh,

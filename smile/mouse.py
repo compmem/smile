@@ -7,11 +7,12 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
+import operator
+
 from state import CallbackState, Record
 from ref import Ref, val
 from clock import clock
 from experiment import Experiment
-import operator
 
 
 def MouseWithin(widget):
@@ -87,6 +88,7 @@ class MousePress(CallbackState):
         self.button_ref.add_change_callback(self.button_callback)
 
     def button_callback(self):
+        self.claim_exceptions()
         button = self.button_ref.eval()
         if button is None:
             return
