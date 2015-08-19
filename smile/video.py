@@ -9,6 +9,7 @@
 
 from functools import partial
 from contextlib import contextmanager
+import weakref
 
 import kivy_overrides
 from state import State, CallbackState, Parallel
@@ -16,7 +17,7 @@ from ref import val, Ref
 from clock import clock
 import kivy.graphics
 import kivy.uix.widget
-from kivy.properties import ObjectProperty, ListProperty, NumericProperty
+from kivy.properties import ObjectProperty, ListProperty
 
 
 class WidgetState(State):
@@ -44,8 +45,10 @@ class WidgetState(State):
         self.index = index
         self.widget = None
         self.parent_widget = None
-        self.param_names = params.keys()
+        self.init_param_names = params.keys()
+        self.widget_param_names = widget_class().properties().keys()
         self.params = None
+        self.issued_param_refs = weakref.WeakValueDictionary()
         for name, value in params.items():
             setattr(self, name, value)
         if layout is None:
@@ -64,19 +67,39 @@ class WidgetState(State):
         # set the log attrs
         self.log_attrs.extend(['appear_time',
                                'disappear_time'])
-        self.log_attrs.extend(self.param_names)
+        self.log_attrs.extend(self.init_param_names)
 
         self.parallel = None
 
-    def get_updated_param(self, name):
+    def get_current_param(self, name):
         return getattr(self.widget, name)
 
-    def get(self, name):
-        return Ref(gfunc=self.get_updated_param, gfunc_args=(name,))
+    def __getitem__(self, name):
+        if name in self.widget_param_names:
+            #TODO: aliases???
+            try:
+                return self.issued_param_refs[name]
+            except KeyError:
+                ref = Ref(self.get_current_param, name)
+                self.issued_param_refs[name] = ref
+                return ref
+        else:
+            return Super(WidgetState, self).__getitem__(name)
 
-    def resolve_params(self):
+    def property_callback(self, name, *pargs):
+        try:
+            ref = self.issued_param_refs[name]
+        except KeyError:
+            return
+        ref.dep_changed()
+
+    def eval_init_refs(self):
         self.params = {name : val(getattr(self, name)) for
-                       name in self.param_names}
+                       name in self.init_param_names}
+
+    def resolve_params(self, **updates):
+        updates = {name : val(value) for name, value in updates.iteritems()}
+        self.params.update(updates)
 
         #TODO: color names, pos_hint stand-alone arguments?
 
@@ -132,7 +155,9 @@ class WidgetState(State):
             self.params.setdefault("size_hint_y", None)
 
     def construct(self):
-        self.widget = self.widget_class(**self.params)  #TODO: construct on entry and only add here?
+        self.widget = self.widget_class(**self.params)
+        self.widget.bind(**{name : partial(self.property_callback, name) for
+                            name in self.widget_param_names})
 
     def show(self):
         if self.layout is None:
@@ -146,7 +171,8 @@ class WidgetState(State):
         self.parent_widget = None
 
     def live_change(self, **params):
-        for name, value in params.items():
+        self.resolve_params(**params)
+        for name, value in self.params.items():
             setattr(self.widget, name, val(value))
 
     def animate(self, duration=None, parent=None, save_log=True, name=None,
@@ -180,11 +206,6 @@ class WidgetState(State):
         anim.override_instantiation_context()
         return anim
 
-    def wait(self, *pargs, **kwargs):
-        wait_property = WaitProperty(self, *pargs, **kwargs)
-        wait_property.override_instantiation_context()
-        return wait_property
-
     def set_appear_time(self, appear_time):
         self.appear_time = appear_time
 
@@ -198,8 +219,9 @@ class WidgetState(State):
         self.disappear_video = None
         self.on_screen = False
 
-        #TODO: is this the right time to evaluate refs?
+        self.eval_init_refs()
         self.resolve_params()
+        self.construct()  #???
 
         self.appear_video = self.exp.app.schedule_video(
             self.appear, self.start_time, self.set_appear_time)
@@ -211,7 +233,6 @@ class WidgetState(State):
         self.claim_exceptions()
         self.appear_video = None
         self.on_screen = True
-        self.construct()
         self.show()
         clock.schedule(self.leave)
 
@@ -290,7 +311,7 @@ class Animate(State):
         now = clock.now()
         if self.initial_params is None:
             self.initial_params = {
-                name : self.target.get_updated_param(name) for
+                name : getattr(self.target.widget, name) for
                 name in self.anim_params.keys()}
         if self.end_time is not None and now >= self.end_time:
             clock.unschedule(self.update)
@@ -306,56 +327,6 @@ class Animate(State):
         if self.active and (self.end_time is None or
                             cancel_time < self.end_time):
             self.end_time = cancel_time
-
-
-class WaitProperty(CallbackState):
-    def __init__(self, target, *pargs, **kwargs):
-        super(WaitProperty, self).__init__(
-            duration=kwargs.pop("duration", None),
-            parent=kwargs.pop("parent", None),
-            save_log=kwargs.pop("save_log", True),
-            name=kwargs.pop("name", None))
-
-        self.target = target  #TODO: make sure target is a WidgetState
-        self.change_triggers = pargs
-        self.value_triggers = kwargs
-        self.event_time = None
-        self.trigger_name = None
-        self.triggered_on_values = None
-        self.bind_funcs = None
-
-        self.log_attrs.extend(["event_time",
-                               "trigger_name",
-                               "triggered_on_values"])
-
-    def _callback(self):
-        self.bind_funcs = {name : partial(self.trigger_callback, name) for
-                           name in
-                           (set(self.change_triggers) |
-                            set(self.value_triggers))}
-        self.target.widget.bind(**self.bind_funcs)
-        self.trigger_callback(None, None, None)
-
-    def trigger_callback(self, trigger_name, *_pargs):
-        self.claim_exceptions()
-        if all(getattr(self.target.widget, name) == value for
-               (name, value) in
-               self.value_triggers.iteritems()):
-            self.triggered_on_values = True
-        elif trigger_name in self.change_triggers:
-            self.triggered_on_values = False
-        else:
-            return
-        self.trigger_name = trigger_name
-        self.trigger_time = self.exp.app.event_time
-        self.cancel(self.trigger_time["time"])
-
-    def _leave(self):
-        super(WaitProperty, self)._leave()
-        self.target.widget.unbind(**self.bind_funcs)
-
-
-#TODO: RecordProperty
 
 
 def vertex_instruction_widget(instr_cls, name=None):
@@ -422,7 +393,7 @@ widgets = [
     "Label",
     "Button",
     "Slider",
-    "Video",
+    "Video",  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     #...
     "AnchorLayout",
     "BoxLayout",
@@ -442,7 +413,7 @@ for widget in widgets:
 def ButtonPress(*pargs, **kwargs):
     button = Button(*pargs, **kwargs)
     with UntilDone(name="BUTTONPRESS") as ud:
-        propwait = button.wait(state="down")
+        propwait = Wait(until=button['state']=='down')
     button.override_instantiation_context()
     ud.override_instantiation_context()
     propwait.override_instantiation_context()
@@ -460,12 +431,12 @@ if __name__ == '__main__':
 
     Wait(5.0)
 
-    Video(source="test_video.mp4", size_hint=(1, 1), state="play",
-          duration=5.0)  #TODO: duration should default to duration of video file, state should default to "play", state should be set to "stop" at end of duration!
+    #Video(source="test_video.mp4", size_hint=(1, 1), state="play",
+    #      duration=5.0)  #TODO: duration should default to duration of video file, state should default to "play", state should be set to "stop" at end of duration!
 
     #button = Button(text="Click to continue", size_hint=(0.25, 0.25))
     #with UntilDone():
-    #    button.wait(state="down")
+    #    Wait(until=button['state']=='down')
     ButtonPress(text="Click to continue", size_hint=(0.25, 0.25))
     with Meanwhile():
         Triangle(points=[0, 0, 500, 500, 0, 500],

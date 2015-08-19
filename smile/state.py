@@ -11,9 +11,11 @@ from contextlib import contextmanager
 from functools import partial
 import copy
 import inspect
+import weakref
 
 import kivy_overrides
 import random
+import ref
 from ref import Ref, val
 from utils import rindex, get_class_name
 from log import dump
@@ -48,8 +50,7 @@ class State(object):
     """
     def __init__(self, parent=None, duration=None, save_log=True, name=None,
                  instantiation_context_obj=None):
-        """
-        """
+        self.issued_refs = weakref.WeakValueDictionary()
         self.state_time = None
         self.start_time = None
         self.end_time = None
@@ -225,20 +226,29 @@ class State(object):
         else:
             return self.exp.state_log_stream
         
-    def __getitem__(self, index):
+    def __getitem__(self, name):
     	"""
     	Returns a reference object for the specified attribute.
     	"""
-        if hasattr(self, index):
-            return Ref(self, index)
+        if hasattr(self, name):
+            try:
+                return self.issued_refs[name]
+            except KeyError:
+                ref = Ref.getattr(self, name)
+                self.issued_refs[name] = ref
+                return ref
         else:
             class_name = get_class_name(self)[0]
             raise IndexError('%s state does not have attribute "%s".' % 
-                             (class_name, index))
+                             (class_name, name))
 
-    # PBS: Must eventually check for specific attrs for this to work
-    #def __getattribute__(self, name):
-    #    return Ref(self, name)
+    def __setattr__(self, name, value):
+        super(State, self).__setattr__(name, value)
+        try:
+            ref = self.issued_refs[name]
+        except KeyError:
+            return
+        ref.dep_changed()
 
     def get_parent_state_time(self):
     	"""
@@ -882,7 +892,7 @@ class Loop(ParentState):
             # see if shuffle
             if val(self.shuffle) and not self._shuffled:
                 # eval and make a shallow copy
-                self.iterable = val(self.iterable, recurse=False)[:]  #IKS: only evaluated on the first execution of the Loop state???
+                self.iterable = val(self.iterable)[:]  #IKS: only evaluated on the first execution of the Loop state???
                 random.shuffle(self.iterable)
                 self._shuffled = True
 
@@ -945,49 +955,34 @@ class Loop(ParentState):
             self.end_time = self.current_child.end_time
 
 
-class Wait(State):
-    """
-    State that will wait a specified time in seconds.  It is possible
-    to keep the state active or simply move the parent's state time
-    ahead.
-    
-    Parameters
-    ----------
-    duration: float
-    	Time in seconds to remain in the wait state
-    jitter: float
-    	Creates the upper bound of a uniform distribution from which a jitter
-    	is randomly drawn each time Wait is executed. The uniform distribution
-    	takes the lower and upper bounds of (duration, duration + jitter)
-    stay_active: bool
-    	Determines whether the Wait state remains active, based on current time
-    	compared with the duration parameter
-    parent: object
-    	The parent state    
-    save_log: bool
-    	If set to 'True,' details about the Wait state will be automatically saved 
-    	in the log files.	
-    
-    Example
-    -------
-    Wait(2.0, 1.0)
-    	The state will wait for a duration drawn from a uniform distribution with range
-    	(2.0, 3.0)
-    
-    """
-    def __init__(self, duration, jitter=0.0, parent=None, save_log=True,
-                 name=None):
-        if duration is None:
-            raise StateConstructionError("Wait state must have a duration.")
+class Record(State):
+    def __init__(self, duration=None, parent=None, save_log=False, name=None,
+                 **refs):
+        super(Record, self).__init__(parent=parent, 
+                                     duration=duration, 
+                                     save_log=save_log,
+                                     name=name)
 
-        # init the parent class
-        super(Wait, self).__init__(parent=parent, 
-                                   duration=Ref(duration, jitter=jitter), 
-                                   save_log=save_log, name=name)
+        #TODO: make sure ref is dict mapping strings to Refs
+        self.refs = refs
 
     def _enter(self):
         clock.schedule(self.leave, event_time=self.start_time)
-        clock.schedule(self.finalize, event_time=self.end_time)
+        if self.end_time is not None:
+            clock.schedule(self.finalize, event_time=self.end_time)
+
+    def _leave(self):
+        for name, ref in self.refs.iteritems():
+            self.record_change(name, ref)
+            ref.add_change_callback(self.record_change, name, ref)
+
+    def finalize(self):
+        super(Record, self).finalize()
+        for name, ref in self.refs.iteritems():
+            ref.remove_change_callback(self.record_change, name, ref)
+
+    def record_change(self, name, ref):
+        print "TODO: log value of ref %r: %r." % (name, ref.eval())
 
     def cancel(self, cancel_time):
         if self.active:
@@ -999,6 +994,70 @@ class Wait(State):
                 self.end_time = self.start_time
             elif self.end_time is None or cancel_time < self.end_time:
                 clock.unschedule(self.finalize)
+                clock.schedule(self.finalize, event_time=cancel_time)
+                self.end_time = cancel_time
+
+
+class Wait(State):
+    def __init__(self, duration=None, jitter=None, until=None, parent=None,
+                 save_log=True, name=None):
+        if duration is not None and jitter is not None:
+            duration = ref.jitter(duration, jitter)
+
+        # init the parent class
+        super(Wait, self).__init__(parent=parent, 
+                                   duration=duration, 
+                                   save_log=save_log,
+                                   name=name)
+
+        #TODO: make sure until is Ref or None?
+        self.until = until
+        self.until_value = None
+        self.event_time = None
+
+        self.log_attrs.extend(['until_value', 'event_time'])
+
+    def _enter(self):
+        self.event_time = None
+        if self.until is None:
+            clock.schedule(self.leave, event_time=self.start_time)
+            if self.end_time is not None:
+                clock.schedule(self.finalize, event_time=self.end_time)
+        else:
+            self.until_value = val(self.until)
+            if self.until_value:
+                clock.schedule(partial(self.cancel, self.start_time))
+            else:
+                if isinstance(self.until, Ref):
+                    clock.schedule(partial(self.until.add_change_callback,
+                                           self.check_until),
+                                   event_time=self.start_time)
+                if self.end_time is not None:
+                    clock.schedule(self.leave, event_time=self.end_time)
+                    clock.schedule(self.finalize, event_time=self.end_time)
+
+    def _leave(self):
+        if isinstance(self.until, Ref):
+            self.until.remove_change_callback(self.check_until)
+
+    def check_until(self):
+        self.until_value = val(self.until)
+        if self.until_value:
+            self.event_time = self.exp.app.event_time
+            clock.schedule(partial(self.cancel, self.event_time["time"]))
+
+    def cancel(self, cancel_time):
+        if self.active:
+            if cancel_time < self.start_time:
+                clock.unschedule(self.leave)
+                clock.schedule(self.leave)
+                clock.unschedule(self.finalize)
+                clock.schedule(self.finalize)
+                self.end_time = self.start_time
+            elif self.end_time is None or cancel_time < self.end_time:
+                clock.unschedule(self.leave)
+                clock.unschedule(self.finalize)
+                clock.schedule(self.leave, event_time=cancel_time)
                 clock.schedule(self.finalize, event_time=cancel_time)
                 self.end_time = cancel_time
 
@@ -1037,7 +1096,7 @@ class ResetClock(AutoFinalizeState):
                                          name=name)
         if new_time is None:
             # eval to now if nothing specified
-            new_time = Ref(gfunc=lambda:clock.now())
+            new_time = Ref(clock.now)
         self.new_time = new_time
 
     def _enter(self):
@@ -1205,6 +1264,38 @@ if __name__ == '__main__':
             Func(print_periodic)
 
     #Debug(width=exp['window'].width, height=exp['window'].height)  #!!!!!!!!!!!!!!!!!!!!!!
+
+    Set('foo', 1)
+    Record(foo=Get('foo'))
+    with UntilDone():
+        Func(print_dt, args=["FOO!"])
+        Wait(1.0)
+        Func(print_dt, args=["FOO!"])
+        Set('foo', 2)
+        Func(print_dt, args=["FOO!"])
+        Wait(1.0)
+        Func(print_dt, args=["FOO!"])
+        Set('foo', 3)
+        Func(print_dt, args=["FOO!"])
+        Wait(1.0)
+        Func(print_dt, args=["FOO!"])
+
+    with Parallel():
+        with Serial():
+            Func(print_dt, args=["FOO!"])
+            Wait(1.0)
+            Func(print_dt, args=["FOO!"])
+            Set('foo', 4)
+            Func(print_dt, args=["FOO!"])
+            Wait(1.0)
+            Func(print_dt, args=["FOO!"])
+            Set('foo', 5)
+            Func(print_dt, args=["FOO!"])
+            Wait(1.0)
+            Func(print_dt, args=["FOO!"])
+        with Serial():
+            Wait(until=Get('foo')==5, name="wait until")
+            Func(print_dt, args=["foo=5!"])
 
     with Loop(range(10)) as loop:
         with If(loop.current > 6):

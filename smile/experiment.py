@@ -65,6 +65,12 @@ class ExpApp(App):
         self.callbacks = {}
         self.pending_flip_time = None
         self.video_queue = []
+        self.keys_down = set()
+        self.issued_key_refs = weakref.WeakValueDictionary()
+        self.mouse_pos = None
+        self.mouse_pos_ref = Ref.getattr(self, "mouse_pos")
+        self.mouse_button = None
+        self.mouse_button_ref = Ref.getattr(self, "mouse_button")
 
     def add_callback(self, event_name, func):
         self.callbacks.setdefault(event_name, []).append(func)
@@ -100,32 +106,70 @@ class ExpApp(App):
         print 1.0 / self.calc_flip_interval()  #...
         return self.wid
 
+    def is_key_down(self, name):
+        return name.upper() in self.keys_down
+
+    def get_key_ref(self, name):
+        try:
+            return self.issued_key_refs[name]
+        except KeyError:
+            ref = Ref(self.is_key_down, name)
+            self.issued_key_refs[name] = ref
+            return ref
+
     def _on_key_down(self, keyboard, keycode, text, modifiers):
         if keycode[0] == 27 and "shift" in modifiers:
             self.stop()
             return
+        name = keycode[1].upper()
+        self.keys_down.add(name)
+        try:
+            self.issued_key_refs[name].dep_changed()
+        except KeyError:
+            pass
         self._trigger_callback("KEY_DOWN", keycode, text, modifiers,
                                self.event_time)
 
     def _on_key_up(self, keyboard, keycode):
+        name = keycode[1].upper()
+        self.keys_down.discard(name)
+        try:
+            self.issued_key_refs[name].dep_changed()
+        except KeyError:
+            pass
         self._trigger_callback("KEY_UP", keycode, self.event_time)
 
     def _on_mouse_pos(self, window, pos):
         if self.current_touch is None:
+            self.mouse_pos = tuple(pos)
+            self.mouse_pos_ref.dep_changed()
             self._trigger_callback("MOTION", pos=pos, button=None,
                                    newly_pressed=False,
                                    double=False, triple=False,
                                    event_time=self.event_time)
 
     def _on_motion(self, window, etype, me):
-        if etype in ("begin", "update"):
+        if etype == "begin":
+            self.mouse_button = me.button
+            self.mouse_button_ref.dep_changed()
             self.current_touch = me
             self._trigger_callback("MOTION", pos=me.pos, button=me.button,
-                                   newly_pressed=(etype == "begin"),
+                                   newly_pressed=True,
+                                   double=me.is_double_tap,
+                                   triple=me.is_triple_tap,
+                                   event_time=self.event_time)
+        elif etype == "update":
+            self.mouse_pos = tuple(int(round(x)) for x in  me.pos)
+            self.mouse_pos_ref.dep_changed()
+            self.current_touch = me
+            self._trigger_callback("MOTION", pos=me.pos, button=me.button,
+                                   newly_pressed=False,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
                                    event_time=self.event_time)
         else:
+            self.mouse_button = None
+            self.mouse_button_ref.dep_changed()
             self.current_touch = None
             self._trigger_callback("MOTION", pos=me.pos, button=None,
                                    newly_pressed=False,
@@ -315,7 +359,9 @@ class Experiment(object):
         self.vsync = vsync
         self.fullscreen = fullscreen or self.fullscreen
         self.resolution = resolution
-        self.app = None   # will create when run
+        #self.app = None   # will create when run
+        # create the window
+        self.app = ExpApp(self)
 
         # set the clear color
         self._background_color = background_color
@@ -339,6 +385,7 @@ class Experiment(object):
 
         # place to save experimental variables
         self._vars = {}
+        self.issued_refs = weakref.WeakValueDictionary()
 
         # add log locs (state.yaml, experiment.yaml)
         self.state_log = os.path.join(self.subj_dir, 'state.yaml')
@@ -435,7 +482,7 @@ class Experiment(object):
         Run the experiment.
         """
         # create the window
-        self.app = ExpApp(self)
+        #self.app = ExpApp(self)
 
         self.current_state = None
         if trace:
@@ -492,8 +539,7 @@ class Set(AutoFinalizeState):
     recorded in the state.yaml and state.csv files. Refer to State class
     docstring for addtional logged parameters. 
     """
-    def __init__(self, variable, value, eval_var=True, parent=None,
-                 save_log=True, name=None):
+    def __init__(self, variable, value, parent=None, save_log=True, name=None):
         # init the parent class
         super(Set, self).__init__(parent=parent,
                                   save_log=save_log,
@@ -502,28 +548,22 @@ class Set(AutoFinalizeState):
         self.variable = None
         self.val = value
         self.value = None
-        self.eval_var = eval_var
 
         # append log vars
         self.log_attrs.extend(['variable','value'])
         
     def _enter(self):
         # set the exp var
-        if self.eval_var:
-            self.variable = val(self.var)
-        else:
-            self.variable = self.var
+        self.variable = val(self.var)
         self.value = val(self.val)
-        if isinstance(self.variable, str):
-            # set the experiment variable
-            self.exp._vars[self.variable] = self.value
-        elif isinstance(self.variable, Ref):
-            # set the ref
-            self.variable.set(self.value)
-        else:
-            raise ValueError('Unrecognized variable type. Must either be string or Ref')
+        self.exp._vars[self.variable] = self.value
         clock.schedule(self.leave)
         self.end_time = self.start_time
+        try:
+            ref = self.exp.issued_refs[self.variable]
+        except KeyError:
+            return
+        ref.dep_changed()
 
         
 def Get(variable):
@@ -565,8 +605,13 @@ def Get(variable):
     recorded in the state.yaml and state.csv files. Refer to State class
     docstring for addtional logged parameters. 
     """
-    gfunc = lambda : Experiment.last_instance()._vars[val(variable)]
-    return Ref(gfunc=gfunc)
+    exp = Experiment.last_instance()
+    try:
+        return exp.issued_refs[variable]
+    except KeyError:
+        ref = Ref.getitem(exp._vars, variable)
+        exp.issued_refs[variable] = ref
+        return ref
 
 
 class Log(AutoFinalizeState):

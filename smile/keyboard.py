@@ -8,11 +8,14 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from state import CallbackState
-from ref import Ref, val
+from ref import val
 from clock import clock
-
-# get the last instance of the experiment class
 from experiment import Experiment
+
+
+def Key(name):
+    exp = Experiment.last_instance()
+    return exp.app.get_key_ref(name.upper())
 
 
 class KeyState(CallbackState):
@@ -181,7 +184,9 @@ if __name__ == '__main__':
         print args
 
     exp = Experiment()
-    
+    Func(print_dt, args=['Press T+G+D or SHIFT+Q+R'])
+    Wait(until=((Key("T") & Key("G") & Key("D")) |
+                (Key("SHIFT") & Key("Q") & Key("R"))))
     Func(print_dt, args=['Key Press Test'])
 
     Set('last_pressed','')

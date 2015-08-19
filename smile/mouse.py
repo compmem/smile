@@ -7,86 +7,51 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from state import CallbackState
+from state import CallbackState, Record
 from ref import Ref, val
 from clock import clock
+from experiment import Experiment
+import operator
 
 
-class MouseState(CallbackState):
-    def _on_motion(self, pos, button, newly_pressed, double, triple,
-                   event_time):
-        pass
-
-    def on_motion(self, pos, button, newly_pressed, double, triple,
-                  event_time):
-        self.claim_exceptions()
-        self._on_motion(pos, button, newly_pressed, double, triple, event_time)
-
-    def _callback(self):
-        self.exp.app.add_callback("MOTION", self.on_motion)
-
-    def _leave(self):
-        self.exp.app.remove_callback("MOTION", self.on_motion)
-        super(MouseState, self)._leave()
+def MouseWithin(widget):
+    pos = Experiment.last_instance().app.mouse_pos_ref
+    return (pos[0] >= widget['x'] & pos[1] >= widget['y'] &
+            pos[0] <= widget['right'] & pos[1] <= widget['top'])
 
 
-class MousePress(MouseState):
-    """
-    Accept mouse click as response.
-    
-    Parameters
-    -----------
-    buttons : {['LEFT', 'RIGHT'], str}
-        The button(s) on the mouse that will register as a response.
-    correct_resp: {['LEFT', 'RIGHT'], str}
-        The correct response to the presented stimulus. 
-    base_time : int
-        Manually set a time reference for the start of the state. This
-        will be used to calculate reaction times.
-    until : int
-        Time provided to make a response.
-    duration : {0.0, float}
-        Duration of the state in seconds.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the state will be
-        automatically saved in the log files.   
-        
-    Example
-    -------
-    MousePress(correct_resp='LEFT')
-    Participant must make a mouse press response. Responses from both
-    buttons will be recorded, but only a 'LEFT' button response will
-    be counted as correct
-    
- Log Parameters
-    ---------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters.      
-        press :
-            Which button on the mouse was pressed.
-        press_time:
-            Time at which button was pressed.
-        correct:
-            Boolean indicator of whether the response was correct
-            or incorrect.
-        rt: 
-            Amount of time that has passed between stimulus onset
-            and the participant's response. Dependent upon base_time.  
-    
-    """
+def MousePos(widget=None):
+    pos = Experiment.last_instance().app.mouse_pos_ref
+    if widget is None:
+        return pos
+    else:
+        return Ref.cond(MouseWithin(widget),
+                        Ref(map, operator.sub, pos, widget['pos']),
+                        None)
+
+
+def MouseButton(widget=None):
+    button = Experiment.last_instance().app.mouse_button_ref
+    if widget is None:
+        return button
+    else:
+        return Ref.cond(MouseWithin(widget), button, None)
+
+
+def MouseRecord(widget=None, name="MouseRecord"):
+    rec = Record(pos=MousePos(widget), button=MouseButton(widget), name=name)
+    rec.override_instantiation_context()
+    return rec
+
+
+class MousePress(CallbackState):
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
-                 duration=None, parent=None, save_log=True, name=None):
-        # init the parent class
+                 widget=None, duration=None, parent=None, save_log=True,
+                 name=None):
         super(MousePress, self).__init__(parent=parent, 
                                          duration=duration,
                                          save_log=save_log,
                                          name=name)
-
-        # save the buttons we're watching (None for all)
         if not isinstance(buttons, list):
             buttons = [buttons]
         self.buttons = buttons
@@ -100,60 +65,68 @@ class MousePress(MouseState):
         self.press_time = None
         self.correct = False
         self.rt = None
+        self.pos = None
+
+        self.pos_ref = MousePos(widget)
+        self.button_ref = MouseButton(widget)
 
         # append log vars
         self.log_attrs.extend(['buttons', 'correct_resp', 'base_time',
                                'pressed', 'press_time', 
-                               'correct', 'rt'])
-
-    def _enter(self):
-        super(MousePress, self)._enter()
-        # reset defaults
-        self.pressed = ''
-        self.press_time = None
-        self.correct = False
-        self.rt = None
+                               'correct', 'rt', 'pos'])
 
     def _callback(self):
         self.base_time = val(self.base_time_src)
         if self.base_time is None:
-            # set it to the start time
             self.base_time = self.start_time
-        super(MousePress, self)._callback()
+        self.pressed = ''
+        self.press_time = None
+        self.correct = False
+        self.rt = None
+        self.pos = None
+        self.button_ref.add_change_callback(self.button_callback)
 
-    def _on_motion(self, pos, button, newly_pressed, double, triple,
-                   event_time):
-        if not newly_pressed:
+    def button_callback(self):
+        button = self.button_ref.eval()
+        if button is None:
             return
-
-        # check the mouse and time (if this is needed)
-        buttons = val(self.buttons)
         button = button.upper()
+        buttons = val(self.buttons)
         correct_resp = val(self.correct_resp)
         if None in buttons or button in buttons:
             # it's all good!, so save it
             self.pressed = button
-            self.press_time = event_time
+            self.press_time = self.exp.app.event_time
             
             # calc RT if something pressed
-            self.rt = event_time['time']-self.base_time
+            self.rt = self.press_time['time'] - self.base_time
+
+            self.pos = self.pos_ref.eval()
 
             if self.pressed in correct_resp:
                 self.correct = True
 
             # let's leave b/c we're all done
-            self.cancel(event_time['time'])
+            self.cancel(self.press_time['time'])
+
+    def _leave(self):
+        self.button_ref.remove_change_callback(self.button_callback)
+        super(MousePress, self)._leave()
 
 
 if __name__ == '__main__':
 
     from experiment import Experiment, Get, Set, Log
-    from state import Wait, Func, Loop
+    from state import Wait, Func, Loop, Meanwhile, Record
 
     def print_dt(state, *args):
         print args
 
     exp = Experiment()
+
+    with Meanwhile():
+        #Record(pos=MousePos(), button=MouseButton())
+        MouseRecord()
     
     Func(print_dt, args=['Mouse Press Test'])
 
