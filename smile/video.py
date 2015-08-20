@@ -19,6 +19,8 @@ from clock import clock
 import kivy.graphics
 import kivy.uix.widget
 from kivy.properties import ObjectProperty, ListProperty
+import kivy.clock
+_kivy_clock = kivy.clock.Clock
 
 
 class WidgetState(State):
@@ -394,7 +396,7 @@ widgets = [
     "Label",
     "Button",
     "Slider",
-    "Video",  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #"Video",  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     #...
     "AnchorLayout",
     "BoxLayout",
@@ -410,6 +412,32 @@ for widget in widgets:
     exec("import %s" % modname)
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
+
+
+import kivy.uix.video
+class Video(WidgetState.wrap(kivy.uix.video.Video)):
+    def construct(self):
+        super(Video, self).construct()
+
+        # force video to load immediately so that duration is available...
+        _kivy_clock.unschedule(self.widget._do_video_load)
+        self.widget._do_video_load()
+        self.widget._video.pause()
+        while self.widget._video.duration == -1:
+            pass  #TODO: make sure we can't get stuck here?
+        
+        if self.end_time is None:
+            self.end_time = self.start_time + self.widget._video.duration
+
+    def show(self):
+        if "state" not in self.init_param_names:
+            self.widget.state = "play"
+        self.widget._video._update(0)  # prevent white flash at start
+        super(Video, self).show()
+
+    def unshow(self):
+        super(Video, self).unshow()
+        self.widget.state = "stop"
 
 
 def iter_nested_buttons(state):
@@ -527,8 +555,7 @@ if __name__ == '__main__':
 
     Wait(5.0)
 
-    #Video(source="test_video.mp4", size_hint=(1, 1), state="play",
-    #      duration=5.0)  #TODO: duration should default to duration of video file, state should default to "play", state should be set to "stop" at end of duration!
+    Video(source="test_video.mp4", size_hint=(1, 1), duration=5.0)
 
     #button = Button(text="Click to continue", size_hint=(0.25, 0.25))
     #with UntilDone():
