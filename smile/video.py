@@ -315,20 +315,8 @@ class WidgetState(State):
     def cancel(self, cancel_time):
         if self.active:
             clock.schedule(self.leave)
-            if cancel_time <= self.start_time:
-                if self.appear_video is not None:
-                    self.exp.app.cancel_video(self.appear_video)
-                self.appear_video = None
-                if self.disappear_video is not None:
-                    self.exp.app.cancel_video(self.disappear_video)
-                if self.on_screen:
-                    self.disappear_video = self.exp.app.schedule_video(
-                        self.disappear, self.start_time, self.set_disappear_time)
-                else:
-                    self.disappear_video = None
-                    clock.schedule(self.finalize)
-                self.end_time = self.start_time
-            elif self.end_time is None or cancel_time < self.end_time:
+            cancel_time = max(cancel_time, self.start_time)
+            if self.end_time is None or cancel_time < self.end_time:
                 if self.disappear_video is not None:
                     self.exp.app.cancel_video(self.disappear_video)
                 self.disappear_video = self.exp.app.schedule_video(

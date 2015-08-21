@@ -38,6 +38,7 @@ class KeyState(CallbackState):
         self.exp.app.add_callback("KEY_UP", self.on_key_up)
 
     def _leave(self):
+        print "Moo!"
         self.exp.app.remove_callback("KEY_DOWN", self.on_key_down)
         self.exp.app.remove_callback("KEY_UP", self.on_key_up)
         super(KeyState, self)._leave()
@@ -125,7 +126,10 @@ class KeyPress(KeyState):
         self.press_time = None
         self.correct = False
         self.rt = None
-        self.base_time = None
+        self.base_time = val(self.base_time_src)
+        if self.base_time is None:
+            # set it to the start time
+            self.base_time = self.start_time
 
     def _on_key_down(self, keycode, text, modifiers, event_time):
         # check the key and time (if this is needed)
@@ -145,13 +149,6 @@ class KeyPress(KeyState):
 
             # let's leave b/c we're all done
             self.cancel(event_time['time'])
-            
-    def _callback(self):
-        self.base_time = val(self.base_time_src)
-        if self.base_time is None:
-            # set it to the start time
-            self.base_time = self.start_time
-        super(KeyPress, self)._callback()
 
 
 class KeyRecord(KeyState):

@@ -613,7 +613,7 @@ class Serial(ParentState):
     def child_enter_callback(self, child):
         super(Serial, self).child_enter_callback(child)
         if self.cancel_time is not None:
-            child.cancel(self.cancel_time)
+            clock.schedule(partial(child.cancel, self.cancel_time))
 
     def child_leave_callback(self, child):
         super(Serial, self).child_leave_callback(child)
@@ -1067,18 +1067,19 @@ class Wait(State):
 
     def cancel(self, cancel_time):
         if self.active:
-            if cancel_time < self.start_time:
-                clock.unschedule(self.leave)
-                clock.schedule(self.leave)
-                clock.unschedule(self.finalize)
-                clock.schedule(self.finalize)
-                self.end_time = self.start_time
-            elif self.end_time is None or cancel_time < self.end_time:
-                clock.unschedule(self.leave)
-                clock.unschedule(self.finalize)
-                clock.schedule(self.leave, event_time=cancel_time)
-                clock.schedule(self.finalize, event_time=cancel_time)
-                self.end_time = cancel_time
+            cancel_time = max(cancel_time, self.start_time)
+            if self.until is None:
+                if self.end_time is None or cancel_time < self.end_time:
+                    clock.unschedule(self.finalize)
+                    clock.schedule(self.finalize, event_time=cancel_time)
+                    self.end_time = cancel_time
+            else:
+                if self.end_time is None or cancel_time < self.end_time:
+                    clock.unschedule(self.leave)
+                    clock.unschedule(self.finalize)
+                    clock.schedule(self.leave, event_time=cancel_time)
+                    clock.schedule(self.finalize, event_time=cancel_time)
+                    self.end_time = cancel_time
 
 
 class AutoFinalizeState(State):
@@ -1150,12 +1151,8 @@ class CallbackState(AutoFinalizeState):
 
     def cancel(self, cancel_time):
         if self.active:
-            if cancel_time < self.start_time:
-                clock.unschedule(self.callback)
-                clock.unschedule(self.leave)
-                clock.schedule(self.leave)
-                self.end_time = self.start_time
-            elif self.end_time is None or cancel_time < self.end_time:
+            cancel_time = max(cancel_time, self.start_time)
+            if self.end_time is None or cancel_time < self.end_time:
                 clock.unschedule(self.leave)
                 clock.schedule(self.leave, event_time=cancel_time)
                 self.end_time = cancel_time
