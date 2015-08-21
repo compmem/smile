@@ -23,6 +23,71 @@ import kivy.clock
 _kivy_clock = kivy.clock.Clock
 
 
+color_name_table = {
+    # using "basic colors" from
+    #   http://www.rapidtables.com/web/color/RGB_Color.htm
+    "BLACK": (0.0, 0.0, 0.0, 1.0),
+    "WHITE": (1.0, 1.0, 1.0, 1.0),
+    "RED": (1.0, 0.0, 0.0, 1.0),
+    "LIME": (0.0, 1.0, 0.0, 1.0),
+    "BLUE": (0.0, 0.0, 1.0, 1.0),
+    "YELLOW": (1.0, 1.0, 0.0, 1.0),
+    "CYAN": (0.0, 1.0, 1.0, 1.0),
+    "AQUA": (0.0, 1.0, 1.0, 1.0),
+    "MAGENTA": (1.0, 0.0, 1.0, 1.0),
+    "FUCHSIA": (1.0, 0.0, 1.0, 1.0),
+    "SILVER": (0.75, 0.75, 0.75, 1.0),
+    "GRAY": (0.5, 0.5, 0.5, 1.0),
+    "MAROON": (0.5, 0.0, 0.0, 1.0),
+    "OLIVE": (0.5, 0.5, 0.0, 1.0),
+    "GREEN": (0.0, 0.5, 0.0, 1.0),
+    "PURPLE": (0.5, 0.0, 0.5, 1.0),
+    "TEAL": (0.0, 0.5, 0.5, 1.0),
+    "NAVY": (0.0, 0.0, 0.5, 1.0)
+    }
+def normalize_color_spec(spec):
+    if isinstance(spec, tuple) or isinstance(spec, list):
+        if len(spec) == 3:
+            return tuple(spec) + (1.0,)
+        elif len(spec) == 4:
+            return tuple(spec)
+        else:
+            raise ValueError(
+                "Color spec tuple / list must have length 3 or 4.  Got: %r" %
+                spec)
+    elif isinstance(spec, str):
+        if spec[0] == '#':
+            if len(spec) == 7:
+                try:
+                    return (int(spec[1 : 3], 16) / 255.0,
+                            int(spec[3 : 5], 16) / 255.0,
+                            int(spec[5 : 7], 16) / 255.0,
+                            1.0)
+                except ValueError:
+                    raise ValueError(
+                        "Color spec hex string has invalid characters."
+                        "  Got: %r" % spec)
+            elif len(spec) == 9:
+                try:
+                    return (int(spec[1 : 3], 16) / 255.0,
+                            int(spec[3 : 5], 16) / 255.0,
+                            int(spec[5 : 7], 16) / 255.0,
+                            int(spec[7 : 9], 16) / 255.0)
+                except ValueError:
+                    raise ValueError(
+                        "Color spec hex string has invalid characters."
+                        "  Got: %r" % spec)
+            else:
+                raise ValueError(
+                    "Color spec hex string wrong length.  Got: %r" % spec)
+        else:
+            try:
+                return color_name_table[spec.upper()]
+            except KeyError:
+                raise ValueError("Color spec string not valid.  Got: %r" %
+                                 spec)
+
+
 class WidgetState(State):
     layout_stack = []
 
@@ -75,7 +140,8 @@ class WidgetState(State):
         self.parallel = None
 
     def get_current_param(self, name):
-        return getattr(self.widget, name)
+        return getattr(self.original_state.most_recently_entered_clone.widget,
+                       name)
 
     def __getitem__(self, name):
         if name in self.widget_param_names:
@@ -224,7 +290,7 @@ class WidgetState(State):
 
         self.eval_init_refs()
         self.resolve_params()
-        self.construct()  #???
+        self.construct()
 
         self.appear_video = self.exp.app.schedule_video(
             self.appear, self.start_time, self.set_appear_time)
@@ -257,7 +323,7 @@ class WidgetState(State):
                     self.exp.app.cancel_video(self.disappear_video)
                 if self.on_screen:
                     self.disappear_video = self.exp.app.schedule_video(
-                        self.disappear, clock.now(), self.set_disappear_time)
+                        self.disappear, self.start_time, self.set_disappear_time)
                 else:
                     self.disappear_video = None
                     clock.schedule(self.finalize)
@@ -300,10 +366,13 @@ class Animate(State):
                                       save_log=save_log, name=name)
         self.target = target  #TODO: make sure target is a WidgetState
         self.anim_params = anim_params
+        self.target_clone = self
         self.initial_params = None
 
     def _enter(self):
         self.initial_params = None
+        self.target_clone = (
+            self.target.original_state.most_recently_entered_clone)
         first_update_time = self.start_time + self.exp.app.flip_interval
         clock.schedule(self.update, event_time=first_update_time,
                        repeat_interval=self.exp.app.flip_interval)
@@ -314,7 +383,7 @@ class Animate(State):
         now = clock.now()
         if self.initial_params is None:
             self.initial_params = {
-                name : getattr(self.target.widget, name) for
+                name : getattr(self.target_clone.widget, name) for
                 name in self.anim_params.keys()}
         if self.end_time is not None and now >= self.end_time:
             clock.unschedule(self.update)
@@ -324,7 +393,7 @@ class Animate(State):
         params = {name : val(func(t, self.initial_params[name])) for
                   name, func in
                   self.anim_params.items()}
-        self.target.live_change(**params)
+        self.target_clone.live_change(**params)
 
     def cancel(self, cancel_time):
         if self.active and (self.end_time is None or
@@ -396,7 +465,6 @@ widgets = [
     "Label",
     "Button",
     "Slider",
-    #"Video",  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     #...
     "AnchorLayout",
     "BoxLayout",
@@ -555,7 +623,8 @@ if __name__ == '__main__':
 
     Wait(5.0)
 
-    Video(source="test_video.mp4", size_hint=(1, 1), duration=5.0)
+    with Loop(range(3)):
+        Video(source="test_video.mp4", size_hint=(1, 1), duration=5.0)
 
     #button = Button(text="Click to continue", size_hint=(0.25, 0.25))
     #with UntilDone():

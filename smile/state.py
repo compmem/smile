@@ -96,7 +96,11 @@ class State(object):
         self.state = self.__class__.__name__
         self.log_attrs = ['state', 'state_time', 'start_time', 'end_time',
                           'enter_time', 'leave_time', 'finalize_time', 'name']
+
+        # cloning stuff
         self.deepcopy_attrs = []  #TODO: extend this for subclasses!
+        self.original_state = self
+        self.most_recently_entered_clone = self
 
     def set_instantiation_context(self, obj=None):
         if obj is None:
@@ -130,18 +134,17 @@ class State(object):
         self.instantiation_filename = filename
         self.instantiation_lineno = lineno
 
-    def clone(self):
+    def clone(self, parent):
         new_clone = copy.copy(self)
         for attr in self.deepcopy_attrs:
             setattr(new_clone, attr, copy.deepcopy(getattr(self, attr)))
+        new_clone.active = False
+        new_clone.parent = parent
         return new_clone
 
     def get_inactive_state(self, parent):
         if self.active or self.parent is not parent:
-            clone = self.clone()
-            clone.active = False
-            clone.parent = parent
-            return clone
+            return self.clone(parent)
         else:
             return self
 
@@ -225,6 +228,9 @@ class State(object):
             return None
         else:
             return self.exp.state_log_stream
+
+    def get_current_attribute_value(self, name):
+        return getattr(self.original_state.most_recently_entered_clone, name)
         
     def __getitem__(self, name):
     	"""
@@ -234,7 +240,7 @@ class State(object):
             try:
                 return self.issued_refs[name]
             except KeyError:
-                ref = Ref.getattr(self, name)
+                ref = Ref(self.get_current_attribute_value, name)
                 self.issued_refs[name] = ref
                 return ref
         else:
@@ -244,6 +250,11 @@ class State(object):
 
     def __setattr__(self, name, value):
         super(State, self).__setattr__(name, value)
+        try:
+            if self.original_state.most_recently_entered_clone is not self:
+                return
+        except AttributeError:
+            pass  # allow setting attributes before 'original_state' is set
         try:
             ref = self.issued_refs[name]
         except KeyError:
@@ -272,6 +283,7 @@ class State(object):
         self.enter_time = clock.now()
         self.leave_time = None
         self.finalize_time = None
+        self.original_state.most_recently_entered_clone = self
 
         # say we're active
         self.active = True
@@ -439,11 +451,6 @@ class ParentState(State):
         if not len(self.children) or not len(self.unfinalized_children):
             clock.schedule(self.finalize)
 
-    def cancel(self, cancel_time):
-        if self.active:
-            for c in self.children:
-                c.cancel(cancel_time)
-
     def __enter__(self):
         # push self as current parent
         if not self.exp is None:
@@ -470,9 +477,11 @@ class Parallel(ParentState):
                                        save_log=save_log,
                                        name=name)
         self.children_blocking = []
+
+        self.my_children = []
         self.blocking_children = []
-        self.blocking_remaining = []
-        self.running_child_count = 0
+        self.remaining = set()
+        self.blocking_remaining = set()
 
     def print_traceback(self, child=None, t=None):
         super(Parallel, self).print_traceback(child, t)
@@ -494,31 +503,36 @@ class Parallel(ParentState):
     def _enter(self):
         super(Parallel, self)._enter()
         self._normalize_children_blocking()
+        self.blocking_children = []
+        self.my_children = []
         if len(self.children):
-            for c in self.children:
-                clock.schedule(c.enter)
-            if self.end_time is not None:
-                clock.schedule(partial(self.cancel, self.end_time))
-            self.blocking_children = [c for c, blocking in
-                                      zip(self.children,
-                                          self.children_blocking) if
-                                      blocking]
+            for child, blocking in zip(self.children, self.children_blocking):
+                inactive_child = child.get_inactive_state(self)
+                self.my_children.append(inactive_child)
+                if blocking:
+                    self.blocking_children.append(inactive_child)
+                clock.schedule(inactive_child.enter)
+            self.remaining = set(self.my_children)
             self.blocking_remaining = set(self.blocking_children)
-            self.running_child_count = len(self.children)
         else:
             clock.schedule(self.leave)
 
     def child_leave_callback(self, child):
         super(Parallel, self).child_leave_callback(child)
-        self.running_child_count -= 1
+        self.remaining.discard(child)
         if len(self.blocking_remaining):
             self.blocking_remaining.discard(child)
             if not len(self.blocking_remaining):
                 self.set_end_time()
                 if self.end_time is not None:
                     self.cancel(self.end_time)
-        if self.running_child_count == 0:
+        if not len(self.remaining):
             self.leave()
+
+    def cancel(self, cancel_time):
+        if self.active:
+            for child in self.my_children:
+                child.cancel(cancel_time)
 
     def set_end_time(self):
         if len(self.blocking_children):
@@ -725,6 +739,7 @@ class If(ParentState):
         clock.schedule(self.selected_child.enter)
 
     def child_leave_callback(self, child):
+        super(If, self).child_leave_callback(child)
         self.leave()
 
     def __enter__(self):
@@ -732,6 +747,10 @@ class If(ParentState):
         if not self.exp is None:
             self.exp._parents.append(self.true_state)
         return self
+
+    def cancel(self, cancel_time):
+        if self.active:
+            self.selected_child.cancel(cancel_time)
 
     def set_end_time(self):
         if self.selected_child is None:
@@ -939,7 +958,7 @@ class Loop(ParentState):
 
     def cancel(self, cancel_time):
         if self.active:
-            clock.schedule(partial(self.current_child.cancel, cancel_time))
+            self.current_child.cancel(cancel_time)
             self.cancel_time = cancel_time
 
     def __enter__(self):
