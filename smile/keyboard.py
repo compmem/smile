@@ -38,7 +38,6 @@ class KeyState(CallbackState):
         self.exp.app.add_callback("KEY_UP", self.on_key_up)
 
     def _leave(self):
-        print "Moo!"
         self.exp.app.remove_callback("KEY_DOWN", self.on_key_down)
         self.exp.app.remove_callback("KEY_UP", self.on_key_up)
         super(KeyState, self)._leave()

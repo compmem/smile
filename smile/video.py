@@ -24,26 +24,27 @@ _kivy_clock = kivy.clock.Clock
 
 
 color_name_table = {
-    # using "basic colors" from
-    #   http://www.rapidtables.com/web/color/RGB_Color.htm
+    # subset from http://www.rapidtables.com/web/color/RGB_Color.htm
     "BLACK": (0.0, 0.0, 0.0, 1.0),
+    "GRAY": (0.5, 0.5, 0.5, 1.0),
+    "SILVER": (0.75, 0.75, 0.75, 1.0),
     "WHITE": (1.0, 1.0, 1.0, 1.0),
     "RED": (1.0, 0.0, 0.0, 1.0),
     "LIME": (0.0, 1.0, 0.0, 1.0),
     "BLUE": (0.0, 0.0, 1.0, 1.0),
     "YELLOW": (1.0, 1.0, 0.0, 1.0),
     "CYAN": (0.0, 1.0, 1.0, 1.0),
-    "AQUA": (0.0, 1.0, 1.0, 1.0),
     "MAGENTA": (1.0, 0.0, 1.0, 1.0),
-    "FUCHSIA": (1.0, 0.0, 1.0, 1.0),
-    "SILVER": (0.75, 0.75, 0.75, 1.0),
-    "GRAY": (0.5, 0.5, 0.5, 1.0),
     "MAROON": (0.5, 0.0, 0.0, 1.0),
-    "OLIVE": (0.5, 0.5, 0.0, 1.0),
     "GREEN": (0.0, 0.5, 0.0, 1.0),
-    "PURPLE": (0.5, 0.0, 0.5, 1.0),
+    "NAVY": (0.0, 0.0, 0.5, 1.0),
+    "OLIVE": (0.5, 0.5, 0.0, 1.0),
     "TEAL": (0.0, 0.5, 0.5, 1.0),
-    "NAVY": (0.0, 0.0, 0.5, 1.0)
+    "PURPLE": (0.5, 0.0, 0.5, 1.0),
+    "ORANGE": (1.0, 0.65, 0.0, 1.0),
+    "PINK": (1.0, 0.75, 0.8, 1.0),
+    "BROWN": (0.65, 0.16, 0.16, 1.0),
+    "INDIGO": (0.29, 0.5, 0.0, 1.0)
     }
 def normalize_color_spec(spec):
     if isinstance(spec, tuple) or isinstance(spec, list):
@@ -149,7 +150,16 @@ class WidgetState(State):
             try:
                 return self.issued_param_refs[name]
             except KeyError:
-                ref = Ref(self.get_current_param, name)
+                if name in ("x_hint",
+                            "center_x_hint",
+                            "right_hint",
+                            "y_hint",
+                            "center_y_hint",
+                            "top_hint"):
+                    ref = Ref(
+                        self.get_current_param, "pos_hint").get(name[:-5])
+                else:
+                    ref = Ref(self.get_current_param, name)
                 self.issued_param_refs[name] = ref
                 return ref
         else:
@@ -163,15 +173,30 @@ class WidgetState(State):
         ref.dep_changed()
 
     def eval_init_refs(self):
-        self.params = {name : val(getattr(self, name)) for
-                       name in self.init_param_names}
+        self.params = self.transform_params(
+            {name : val(getattr(self, name)) for name in
+             self.init_param_names})
 
-    def resolve_params(self, **updates):
-        updates = {name : val(value) for name, value in updates.iteritems()}
-        self.params.update(updates)
+    def transform_params(self, params):
+        # normalize color specifiers...
+        for name, value in params.iteritems():
+            if value is not None and "color" in name:
+                params[name] = normalize_color_spec(value)
 
-        #TODO: color names, pos_hint stand-alone arguments?
+        # stand-alone pos_hint components...
+        pos_hint = params.setdefault("pos_hint", {}).copy()
+        for hint_spec in ("x", "center_x", "right", "y", "center_y", "top"):
+            hint_param_name = hint_spec + "_hint"
+            try:
+                pos_hint[hint_spec] = params.pop(hint_param_name)
+            except KeyError:
+                continue
+        if len(pos_hint):
+            params["pos_hint"] = pos_hint
 
+        return params
+
+    def resolve_params(self):
         # see which absolute placement components we have directly...
         if "pos" in self.params:
             have_left = True
@@ -240,7 +265,9 @@ class WidgetState(State):
         self.parent_widget = None
 
     def live_change(self, **params):
-        self.resolve_params(**params)
+        updates = {name : val(value) for name, value in params.iteritems()}
+        self.params.update(self.transform_params(updates))
+        self.resolve_params()
         for name, value in self.params.items():
             setattr(self.widget, name, val(value))
 
@@ -253,8 +280,12 @@ class WidgetState(State):
 
     def slide(self, duration=None, speed=None, accel=None, parent=None,
               save_log=True, name=None, **params):
+        params = self.transform_params(params)
         def interp(a, b, w):
-            if hasattr(a, "__iter__"):
+            if isinstance(a, dict):
+                return {name : interp(a[name], b[name], w) for
+                        name in set(a) & set(b)}
+            elif hasattr(a, "__iter__"):
                 return [interp(a_prime, b_prime, w) for
                         a_prime, b_prime in
                         zip(a, b)]
@@ -611,6 +642,14 @@ if __name__ == '__main__':
 
     Wait(5.0)
 
+    rect = Rectangle(color="purple", width=50, height=50)
+    with UntilDone():
+        rect.slide(center_x_hint=1, center_y_hint=1, duration=2.0)
+        rect.slide(center_x_hint=1, center_y_hint=0, duration=2.0)
+        rect.slide(center_x_hint=0, center_y_hint=1, duration=2.0)
+        rect.slide(center_x_hint=0, center_y_hint=0, duration=2.0)
+        rect.slide(center_x_hint=0.5, center_y_hint=0.5, duration=2.0)
+
     with Loop(range(3)):
         Video(source="test_video.mp4", size_hint=(1, 1), duration=5.0)
 
@@ -624,17 +663,17 @@ if __name__ == '__main__':
         Triangle(points=[0, 0, 500, 500, 0, 500],
                  color=(1.0, 1.0, 0.0, 0.5))
 
-    bez = Bezier(segments=200, color=(1.0, 1.0, 0.0, 1.0), loop=True,
+    bez = Bezier(segments=200, color="yellow", loop=True,
                  points=[0, 0, 200, 200, 200, 100, 100, 200, 500, 500])
     with UntilDone():
         bez.slide(points=[200, 200, 0, 0, 500, 500, 200, 100, 100, 200],
-                  color=(0.0, 0.0, 1.0, 1.0), duration=5.0)
+                  color="blue", duration=5.0)
         bez.slide(points=[500, 0, 0, 500, 600, 200, 100, 600, 300, 300],
-                  color=(1.0, 1.0, 1.0, 1.0), duration=5.0)
+                  color="white", duration=5.0)
 
-    ellipse = Ellipse(x=-25, pos_hint={"center_y": 0.5}, width=25, height=25,
+    ellipse = Ellipse(x=-25, center_y_hint=0.5, width=25, height=25,
                       angle_start=90.0, angle_end=460.0,
-                      color=(1.0, 1.0, 0.0, 1.0), name="Pacman")
+                      color=(1.0, 1.0, 0.0), name="Pacman")
     with UntilDone():
         with Parallel(name="Pacman motion"):
             ellipse.slide(x=800, duration=8.0, name="Pacman travel")
@@ -643,10 +682,10 @@ if __name__ == '__main__':
                 angle_end=lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
                 duration=8.0, name="Pacman gobble")
 
-    with BoxLayout(width=500, height=500, pos_hint={"top": 1}, duration=4.0):
+    with BoxLayout(width=500, height=500, top_hint=1, duration=4.0):
         rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), size_hint=(1, 1),
                          duration=3.0)
-        Rectangle(color=(0.0, 1.0, 0.0, 1.0), size_hint=(1, 1), duration=2.0)
+        Rectangle(color="#00FF00", size_hint=(1, 1), duration=2.0)
         Rectangle(color=(0.0, 0.0, 1.0, 1.0), size_hint=(1, 1), duration=1.0)
         rect.slide(color=(1.0, 1.0, 1.0, 1.0), size_hint=(1, 1), duration=3.0)
 
@@ -664,7 +703,7 @@ if __name__ == '__main__':
         label.slide(center_x=400, center_y=400, font_size=100, duration=4.0)
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
                   duration=3.0)
-        Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0),
+        Rectangle(x=50, y=50, width=50, height=50, color="lime",
                   duration=2.0)
         Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
                   duration=1.0)
@@ -683,7 +722,7 @@ if __name__ == '__main__':
     with Meanwhile():
         Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0))
 
-    rect = Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 0.0, 1.0))
+    rect = Rectangle(x=0, y=0, width=50, height=50, color="brown")
     with UntilDone():
         rect.animate(x=lambda t, initial: t * 50, y=lambda t, initial: t * 25,
                      duration=5.0)
@@ -703,9 +742,9 @@ if __name__ == '__main__':
             rect.animate(x=lambda t, initial: initial + sin(t * 4) * 100,
                          name="oscillate")
         ellipse = Ellipse(x=75, y=50, width=50, height=50,
-                          color=(1.0, 0.5, 0.0, 1.0))
+                          color="orange")
         with UntilDone():
-            rect.slide(color=(1.0, 1.0, 1.0, 1.0), x=0, y=0,
+            rect.slide(color="pink", x=0, y=0,
                        width=100, height=100, duration=5.0)
             ellipse.slide(color=(0.0, 0.0, 1.0, 0.0), duration=5.0)
             rect.slide(color=(1.0, 1.0, 1.0, 0.0), duration=5.0)
