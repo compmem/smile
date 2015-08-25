@@ -91,6 +91,18 @@ def normalize_color_spec(spec):
 
 class WidgetState(State):
     layout_stack = []
+    property_aliases = {
+        "left": "x",
+        "bottom": "y",
+        "left_bottom": "pos",
+        "left_center": ("x", "center_y"),
+        "left_top": ("x", "top"),
+        "center_bottom": ("center_x", "y"),
+        "center_top": ("center_x", "top"),
+        "right_bottom": ("right", "y"),
+        "right_center": ("right", "center_y"),
+        "right_top": ("right", "top")
+        }
 
     @classmethod
     def wrap(cls, widget_class, name=None):
@@ -116,7 +128,6 @@ class WidgetState(State):
         self.parent_widget = None
         self.init_param_names = params.keys()
         self.widget_param_names = widget_class().properties().keys()
-        self.params = None
         self.issued_param_refs = weakref.WeakValueDictionary()
         for name, value in params.items():
             setattr(self, name, value)
@@ -133,6 +144,9 @@ class WidgetState(State):
         self.appear_video = None
         self.disappear_video = None
 
+        self.x_pos_mode = None
+        self.y_pos_mode = None
+
         # set the log attrs
         self.log_attrs.extend(['appear_time',
                                'disappear_time'])
@@ -145,25 +159,25 @@ class WidgetState(State):
                        name)
 
     def __getitem__(self, name):
-        if name in self.widget_param_names:
-            #TODO: aliases???
+        try:
+            return self.issued_param_refs[name]
+        except KeyError:
             try:
-                return self.issued_param_refs[name]
+                props = WidgetState.property_aliases[name]
             except KeyError:
-                if name in ("x_hint",
-                            "center_x_hint",
-                            "right_hint",
-                            "y_hint",
-                            "center_y_hint",
-                            "top_hint"):
-                    ref = Ref(
-                        self.get_current_param, "pos_hint").get(name[:-5])
+                if name in self.widget_param_names:
+                    props = name
                 else:
-                    ref = Ref(self.get_current_param, name)
-                self.issued_param_refs[name] = ref
-                return ref
-        else:
-            return Super(WidgetState, self).__getitem__(name)
+                    return super(WidgetState, self).__getitem__(name)
+            if isinstance(props, str):
+                ref = Ref(self.get_current_param, props)
+            elif isinstance(props, tuple):
+                ref = tuple(Ref(self.get_current_param, prop) for
+                            prop in props)
+            else:
+                raise RuntimeError("Bad value for 'props': %r" % props)
+            self.issued_param_refs[name] = ref
+            return ref
 
     def property_callback(self, name, *pargs):
         try:
@@ -173,83 +187,47 @@ class WidgetState(State):
         ref.dep_changed()
 
     def eval_init_refs(self):
-        self.params = self.transform_params(
-            {name : val(getattr(self, name)) for name in
-             self.init_param_names})
+        return self.transform_params(self.apply_aliases(
+            {name : getattr(self, name) for name in self.init_param_names}))
+
+    def apply_aliases(self, params):
+        new_params = {}
+        for name, value in params.items():
+            props = WidgetState.property_aliases.get(name, name)
+            if isinstance(props, str):
+                new_params[props] = value
+            elif isinstance(props, tuple):
+                for n, prop in enumerate(props):
+                    new_params[prop] = subvalue[n]
+            else:
+                raise RuntimeError("Bad value for 'props': %r" % props)
+        return new_params
 
     def transform_params(self, params):
-        # normalize color specifiers...
         for name, value in params.iteritems():
-            if value is not None and "color" in name:
-                params[name] = normalize_color_spec(value)
+            params[name] = self.transform_param(name, value)
+        return params
 
-        # stand-alone pos_hint components...
-        pos_hint = params.setdefault("pos_hint", {}).copy()
-        for hint_spec in ("x", "center_x", "right", "y", "center_y", "top"):
-            hint_param_name = hint_spec + "_hint"
-            try:
-                pos_hint[hint_spec] = params.pop(hint_param_name)
-            except KeyError:
-                continue
-        if len(pos_hint):
-            params["pos_hint"] = pos_hint
+    def transform_param(self, name, value):
+        value = val(value)
+
+        # normalize color specifier...
+        if value is not None and "color" in name:
+            return normalize_color_spec(value)
+        else:
+            return value
+
+    def resolve_params(self, params):
+        # remove kivy's default size hints...
+        if "size_hint" not in params:
+            params.setdefault("size_hint_x", None)
+            params.setdefault("size_hint_y", None)
 
         return params
 
-    def resolve_params(self):
-        # see which absolute placement components we have directly...
-        if "pos" in self.params:
-            have_left = True
-            have_bottom = True
-        else:
-            have_left = "x" in self.params
-            have_bottom = "y" in self.params
-        have_top = "top" in self.params
-        have_right = "right" in self.params
-        if "center" in self.params:
-            have_center_x = True
-            have_center_y = True
-        else:
-            have_center_x = "center_x" in self.params
-            have_center_y = "center_y" in self.params
-        if "size" in self.params:
-            have_width = True
-            have_height = True
-        else:
-            have_width = "width" in self.params
-            have_height = "height" in self.params
-
-        # see which absolute placement components we have indirectly...
-        if sum([have_left, have_right, have_center_x, have_width]) >= 2:
-            have_left = True
-            have_right = True
-            have_center_x = True
-            have_width = True
-        if sum([have_top, have_bottom, have_center_y, have_height]) >= 2:
-            have_top = True
-            have_bottom = True
-            have_center_y = True
-            have_height = True
-
-        # see which pos hints we have...
-        #TODO: make copy of pos_hint dict?
-        pos_hint = self.params.setdefault("pos_hint", {})
-        have_x_hint = any(name in pos_hint for name in ("x", "center_x", "right"))
-        have_y_hint = any(name in pos_hint for name in ("y", "center_y", "top"))
-
-        # add pos hints where we don't have prior pos hint or absolute pos...
-        if not (have_x_hint or have_left or have_right or have_center_x):
-            pos_hint["center_x"] = 0.5
-        if not (have_y_hint or have_top or have_bottom or have_center_y):
-            pos_hint["center_y"] = 0.5
-
-        # remove kivy's default size hints...
-        if "size_hint" not in self.params:
-            self.params.setdefault("size_hint_x", None)
-            self.params.setdefault("size_hint_y", None)
-
-    def construct(self):
-        self.widget = self.widget_class(**self.params)
+    def construct(self, params):
+        self.widget = self.widget_class(**params)
+        self.live_change(**params)
         self.widget.bind(**{name : partial(self.property_callback, name) for
                             name in self.widget_param_names})
 
@@ -265,11 +243,54 @@ class WidgetState(State):
         self.parent_widget = None
 
     def live_change(self, **params):
-        updates = {name : val(value) for name, value in params.iteritems()}
-        self.params.update(self.transform_params(updates))
-        self.resolve_params()
-        for name, value in self.params.items():
-            setattr(self.widget, name, val(value))
+        xy_pos_props = {"pos": "min", "center": "mid"}
+        x_pos_props = {"x": "min", "center_x": "mid", "right": "max"}
+        y_pos_props = {"y": "min", "center_y": "mid", "top": "max"}
+        pos_props = (xy_pos_props.keys() +
+                     x_pos_props.keys() +
+                     y_pos_props.keys())
+        new_x_pos_mode = None
+        new_y_pos_mode = None
+        for prop, mode in xy_pos_props.iteritems():
+            if prop in params:
+                new_x_pos_mode = mode
+                new_y_pos_mode = mode
+                break
+        else:
+            for prop, mode in x_pos_props.iteritems():
+                if prop in params:
+                    new_x_pos_mode = mode
+                    break
+            for prop, mode in y_pos_props.iteritems():
+                if prop in params:
+                    new_y_pos_mode = mode
+                    break
+        if new_x_pos_mode is not None:
+            self.x_pos_mode = new_x_pos_mode
+        elif self.x_pos_mode is None:
+            params["center_x"] = self.exp.screen["center_x"].eval()
+        elif self.x_pos_mode == "min":
+            params["x"] = self["x"].eval()
+        elif self.x_pos_mode == "mid":
+            params["center_x"] = self["center_x"].eval()
+        elif self.x_pos_mode == "max":
+            params["right"] = self["right"].eval()
+        if new_y_pos_mode is not None:
+            self.y_pos_mode = new_y_pos_mode
+        elif self.y_pos_mode is None:
+            params["center_y"] = self.exp.screen["center_y"].eval()
+        elif self.y_pos_mode == "min":
+            params["y"] = self["y"].eval()
+        elif self.y_pos_mode == "mid":
+            params["center_y"] = self["center_y"].eval()
+        elif self.y_pos_mode == "max":
+            params["top"] = self["top"].eval()
+        for name, value in params.iteritems():
+            if name not in pos_props:
+                setattr(self.widget, name, value)
+        for name, value in params.iteritems():
+            if name in pos_props:
+                setattr(self.widget, name, value)
 
     def animate(self, duration=None, parent=None, save_log=True, name=None,
                 **anim_params):
@@ -280,7 +301,6 @@ class WidgetState(State):
 
     def slide(self, duration=None, speed=None, accel=None, parent=None,
               save_log=True, name=None, **params):
-        params = self.transform_params(params)
         def interp(a, b, w):
             if isinstance(a, dict):
                 return {name : interp(a[name], b[name], w) for
@@ -295,8 +315,9 @@ class WidgetState(State):
         if condition == (False, True, True):  # simple, linear interpolation
             anim_params = {}
             for param_name, value in params.items():
-                def func(t, initial, value=value):
-                    return interp(initial, value, t / duration)
+                def func(t, initial, value=value, param_name=param_name):
+                    new_value = self.transform_param(param_name, value)
+                    return interp(initial, new_value, t / duration)
                 anim_params[param_name] = func
         #TODO: fancier interpolation modes!!!
         else:
@@ -318,10 +339,12 @@ class WidgetState(State):
         self.appear_video = None
         self.disappear_video = None
         self.on_screen = False
+        self.x_pos_mode = None
+        self.y_pos_mode = None
 
-        self.eval_init_refs()
-        self.resolve_params()
-        self.construct()
+        params = self.eval_init_refs()
+        params = self.resolve_params(params)
+        self.construct(params)
 
         self.appear_video = self.exp.app.schedule_video(
             self.appear, self.start_time, self.set_appear_time)
@@ -385,7 +408,6 @@ class Animate(State):
                                       save_log=save_log, name=name)
         self.target = target  #TODO: make sure target is a WidgetState
         self.anim_params = anim_params
-        self.target_clone = self
         self.initial_params = None
 
     def _enter(self):
@@ -402,17 +424,19 @@ class Animate(State):
         now = clock.now()
         if self.initial_params is None:
             self.initial_params = {
-                name : getattr(self.target_clone.widget, name) for
+                name : self.target_clone[name].eval() for
                 name in self.anim_params.keys()}
         if self.end_time is not None and now >= self.end_time:
             clock.unschedule(self.update)
             clock.schedule(self.finalize)
             now = self.end_time
         t = now - self.start_time
-        params = {name : val(func(t, self.initial_params[name])) for
+        params = {name : func(t, self.initial_params[name]) for
                   name, func in
                   self.anim_params.items()}
-        self.target_clone.live_change(**params)
+        self.target_clone.live_change(
+            **self.target_clone.transform_params(
+                self.target_clone.apply_aliases(params)))
 
     def cancel(self, cancel_time):
         if self.active and (self.end_time is None or
@@ -503,8 +527,8 @@ for widget in widgets:
 
 import kivy.uix.video
 class Video(WidgetState.wrap(kivy.uix.video.Video)):
-    def construct(self):
-        super(Video, self).construct()
+    def construct(self, params):
+        super(Video, self).construct(params)
 
         # force video to load immediately so that duration is available...
         _kivy_clock.unschedule(self.widget._do_video_load)
@@ -644,20 +668,18 @@ if __name__ == '__main__':
 
     rect = Rectangle(color="purple", width=50, height=50)
     with UntilDone():
-        rect.slide(center_x_hint=1, center_y_hint=1, duration=2.0)
-        rect.slide(center_x_hint=1, center_y_hint=0, duration=2.0)
-        rect.slide(center_x_hint=0, center_y_hint=1, duration=2.0)
-        rect.slide(center_x_hint=0, center_y_hint=0, duration=2.0)
-        rect.slide(center_x_hint=0.5, center_y_hint=0.5, duration=2.0)
+        rect.slide(center=exp.screen["right_top"], duration=2.0)
+        rect.slide(center=exp.screen["right_bottom"], duration=2.0)
+        rect.slide(center=exp.screen["left_top"], duration=2.0)
+        rect.slide(center=exp.screen["left_bottom"], duration=2.0)
+        rect.slide(center=exp.screen["center"], duration=2.0)
 
     with Loop(range(3)):
-        Video(source="test_video.mp4", size_hint=(1, 1), duration=5.0)
+        Video(source="test_video.mp4", size=exp.screen["size"], duration=5.0)
 
-    #button = Button(text="Click to continue", size_hint=(0.25, 0.25))
-    #with UntilDone():
-    #    Wait(until=button['state']=='down')
     with ButtonPress():
-        Button(text="Click to continue", size_hint=(0.25, 0.25))
+        Button(text="Click to continue", size=(exp.screen["width"] / 4,
+                                               exp.screen["height"] / 4))
 
     with Meanwhile():
         Triangle(points=[0, 0, 500, 500, 0, 500],
@@ -671,23 +693,23 @@ if __name__ == '__main__':
         bez.slide(points=[500, 0, 0, 500, 600, 200, 100, 600, 300, 300],
                   color="white", duration=5.0)
 
-    ellipse = Ellipse(x=-25, center_y_hint=0.5, width=25, height=25,
+    ellipse = Ellipse(right=exp.screen["left"],
+                      center_y=exp.screen["center_y"], width=25, height=25,
                       angle_start=90.0, angle_end=460.0,
                       color=(1.0, 1.0, 0.0), name="Pacman")
     with UntilDone():
         with Parallel(name="Pacman motion"):
-            ellipse.slide(x=800, duration=8.0, name="Pacman travel")
+            ellipse.slide(left=exp.screen["right"], duration=8.0, name="Pacman travel")
             ellipse.animate(
                 angle_start=lambda t, initial: initial + (cos(t * 8) + 1) * 22.5,
                 angle_end=lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
                 duration=8.0, name="Pacman gobble")
 
-    with BoxLayout(width=500, height=500, top_hint=1, duration=4.0):
-        rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), size_hint=(1, 1),
-                         duration=3.0)
-        Rectangle(color="#00FF00", size_hint=(1, 1), duration=2.0)
-        Rectangle(color=(0.0, 0.0, 1.0, 1.0), size_hint=(1, 1), duration=1.0)
-        rect.slide(color=(1.0, 1.0, 1.0, 1.0), size_hint=(1, 1), duration=3.0)
+    with BoxLayout(width=500, height=500, top=exp.screen["top"], duration=4.0):
+        rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=3.0)
+        Rectangle(color="#00FF00", pos=(0, 0), size_hint=(1, 1), duration=2.0)
+        Rectangle(color=(0.0, 0.0, 1.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=1.0)
+        rect.slide(color=(1.0, 1.0, 1.0, 1.0), duration=3.0)
 
     with Loop(range(3)):
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),

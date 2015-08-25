@@ -71,6 +71,35 @@ class ExpApp(App):
         self.mouse_pos_ref = Ref.getattr(self, "mouse_pos")
         self.mouse_button = None
         self.mouse_button_ref = Ref.getattr(self, "mouse_button")
+        self.width_ref = Ref.getattr(Window, "width")
+        self.height_ref = Ref.getattr(Window, "height")
+        right = self.width_ref - 1
+        top = self.height_ref - 1
+        center_x = self.width_ref // 2
+        center_y = self.height_ref // 2
+        self.screen = Ref(lambda : {
+            "width": self.width_ref,
+            "height": self.height_ref,
+            "size": (self.width_ref, self.height_ref),
+            "left": 0,
+            "bottom": 0,
+            "right": right,
+            "top": top,
+            "x": 0,
+            "y": 0,
+            "pos": (0, 0),
+            "center_x": center_x,
+            "center_y": center_y,
+            "left_bottom": (0, 0),
+            "left_center": (0, center_y),
+            "left_top": (0, top),
+            "center_bottom": (center_x, 0),
+            "center": (center_x, center_y),
+            "center_top": (center_x, top),
+            "right_bottom": (right, 0),
+            "right_center": (right, center_y),
+            "right_top": (right, top)
+            })
 
     def add_callback(self, event_name, func):
         self.callbacks.setdefault(event_name, []).append(func)
@@ -97,7 +126,8 @@ class ExpApp(App):
         Window._system_keyboard.bind(on_key_down=self._on_key_down,
                                      on_key_up=self._on_key_up)
         Window.bind(on_motion=self._on_motion,
-                    mouse_pos=self._on_mouse_pos)
+                    mouse_pos=self._on_mouse_pos,
+                    on_resize=self._on_resize)
         self.current_touch = None
         
         self._last_time = clock.now()
@@ -105,6 +135,10 @@ class ExpApp(App):
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
         print 1.0 / self.calc_flip_interval()  #...
         return self.wid
+
+    def _on_resize(self):
+        self.width_ref.dep_changed()
+        self.height_ref.dep_changed()
 
     def is_key_down(self, name):
         return name.upper() in self.keys_down
@@ -350,17 +384,11 @@ class Experiment(object):
         # first process the args
         self._process_args()
 
-        # set up the window
-        #screens = pyglet.window.get_platform().get_default_display().get_screens()  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #if screen_ind != self.screen_ind:
-        #    # command line overrides
-        #    screen_ind = self.screen_ind  #IS: isn't this if statement just equivalent to "screen_ind = self.screen_ind"?
-        self.screen = None  #screens[screen_ind]  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.vsync = vsync
         self.fullscreen = fullscreen or self.fullscreen
         self.resolution = resolution
-        #self.app = None   # will create when run
-        # create the window
+
         self.app = ExpApp(self)
 
         # set the clear color
@@ -476,6 +504,10 @@ class Experiment(object):
             else:
                 raise RuntimeError(
                     "Too many data files with the same title, extension, and timestamp!")
+
+    @property
+    def screen(self):
+        return self.app.screen
 
     def run(self, trace=False):
         """
