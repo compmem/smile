@@ -56,14 +56,14 @@ class Ref(object):
         return value
 
     def add_change_callback(self, func, *pargs, **kwargs):
-        #print "add_change_callback %r, %r, %r" % (func, pargs, kwargs)
+        #print "add_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
         if not len(self.change_callbacks):
             self.setup_dep_callbacks()
             self.cache_valid = False
         self.change_callbacks.append((func, pargs, kwargs))
 
     def remove_change_callback(self, func, *pargs, **kwargs):
-        #print "remove_change_callback %r, %r, %r" % (func, pargs, kwargs)
+        #print "remove_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
         try:
             self.change_callbacks.remove((func, pargs, kwargs))
         except ValueError:
@@ -75,12 +75,12 @@ class Ref(object):
         for dep in iter_deps((self.pargs, self.kwargs)):
             dep.add_change_callback(self.dep_changed)
 
-
     def teardown_dep_callbacks(self):
         for dep in iter_deps((self.pargs, self.kwargs)):
             dep.remove_change_callback(self.dep_changed)
 
     def dep_changed(self):
+        #print "dep_changed %r, %r" % (self, self.change_callbacks)
         self.cache_valid = False
         for func, pargs, kwargs in self.change_callbacks:
             func(*pargs, **kwargs)
@@ -172,6 +172,13 @@ class Ref(object):
 
 def jitter(lower, jitter_mag):
     return Ref(random.uniform, lower, lower + jitter_mag, use_cache=False)
+
+def _shuffle(iterable):
+    lst = list(iterable)
+    random.shuffle(lst)
+    return lst
+def shuffle(iterable):
+    return Ref(_shuffle, iterable, use_cache=False)
 
 def val(obj):
     if isinstance(obj, Ref):

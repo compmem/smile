@@ -17,8 +17,8 @@ from experiment import Experiment
 
 def MouseWithin(widget):
     pos = Experiment.last_instance().app.mouse_pos_ref
-    return (pos[0] >= widget['x'] & pos[1] >= widget['y'] &
-            pos[0] <= widget['right'] & pos[1] <= widget['top'])
+    return (pos[0] >= widget.x & pos[1] >= widget.y &
+            pos[0] <= widget.right & pos[1] <= widget.top)
 
 
 def MousePos(widget=None):
@@ -27,7 +27,7 @@ def MousePos(widget=None):
         return pos
     else:
         return Ref.cond(MouseWithin(widget),
-                        Ref(map, operator.sub, pos, widget['pos']),
+                        Ref(map, operator.sub, pos, widget.pos),
                         None)
 
 
@@ -53,73 +53,73 @@ class MousePress(CallbackState):
                                          duration=duration,
                                          save_log=save_log,
                                          name=name)
-        if not isinstance(buttons, list):
-            buttons = [buttons]
-        self.buttons = buttons
-        if not isinstance(correct_resp, list):
-            correct_resp = [correct_resp]
-        self.correct_resp = correct_resp
-        self.base_time_src = base_time  # for calc rt
-        self.base_time = None
+        self._init_buttons = buttons
+        self._init_correct_resp = correct_resp
+        self._init_base_time = base_time
 
-        self.pressed = ''
-        self.press_time = None
-        self.correct = False
-        self.rt = None
-        self.pos = None
+        self._pressed = ''
+        self._press_time = None
+        self._correct = False
+        self._rt = None
+        self._pos = None
 
-        self.pos_ref = MousePos(widget)
-        self.button_ref = MouseButton(widget)
+        self.__pos_ref = MousePos(widget)
+        self.__button_ref = MouseButton(widget)
 
         # append log vars
-        self.log_attrs.extend(['buttons', 'correct_resp', 'base_time',
-                               'pressed', 'press_time', 
-                               'correct', 'rt', 'pos'])
+        self._log_attrs.extend(['buttons', 'correct_resp', 'base_time',
+                                'pressed', 'press_time', 
+                                'correct', 'rt', 'pos'])
 
     def _callback(self):
-        self.base_time = val(self.base_time_src)
-        if self.base_time is None:
-            self.base_time = self.start_time
-        self.pressed = ''
-        self.press_time = None
-        self.correct = False
-        self.rt = None
-        self.pos = None
-        self.button_ref.add_change_callback(self.button_callback)
+        if self._base_time is None:
+            self._base_time = self._start_time
+        self._pressed = ''
+        self._press_time = None
+        self._correct = False
+        self._rt = None
+        self._pos = None
+        self.__button_ref.add_change_callback(self.button_callback)
 
     def button_callback(self):
         self.claim_exceptions()
-        button = self.button_ref.eval()
+        button = self.__button_ref.eval()
         if button is None:
             return
         button = button.upper()
-        buttons = val(self.buttons)
-        correct_resp = val(self.correct_resp)
+        if type(self._buttons) in (list, tuple):
+            buttons = self._buttons
+        else:
+            buttons = [self._buttons]
+        if type(self._correct_resp) in (list, tuple):
+            correct_resp = self._correct_resp
+        else:
+            correct_resp = [self._correct_resp]
         if None in buttons or button in buttons:
             # it's all good!, so save it
-            self.pressed = button
-            self.press_time = self.exp.app.event_time
+            self._pressed = button
+            self._press_time = self._exp.app.event_time
             
             # calc RT if something pressed
-            self.rt = self.press_time['time'] - self.base_time
+            self._rt = self._press_time['time'] - self._base_time
 
-            self.pos = self.pos_ref.eval()
+            self._pos = self.__pos_ref.eval()
 
-            if self.pressed in correct_resp:
-                self.correct = True
+            if self._pressed in correct_resp:
+                self._correct = True
 
             # let's leave b/c we're all done
-            self.cancel(self.press_time['time'])
+            self.cancel(self._press_time['time'])
 
     def _leave(self):
-        self.button_ref.remove_change_callback(self.button_callback)
+        self.__button_ref.remove_change_callback(self.button_callback)
         super(MousePress, self)._leave()
 
 
 if __name__ == '__main__':
 
     from experiment import Experiment, Get, Set, Log
-    from state import Wait, Func, Loop, Meanwhile, Record
+    from state import Wait, Debug, Loop, Meanwhile, Record
 
     def print_dt(state, *args):
         print args
@@ -130,25 +130,25 @@ if __name__ == '__main__':
         #Record(pos=MousePos(), button=MouseButton())
         MouseRecord()
     
-    Func(print_dt, args=['Mouse Press Test'])
+    Debug(name='Mouse Press Test')
 
-    Set('last_pressed','')
+    Set(last_pressed='')
     with Loop(conditional=(Get('last_pressed')!='RIGHT')):
         kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')
-        Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
-        Set('last_pressed',kp['pressed'])
-        Log(pressed=kp['pressed'], rt=kp['rt'])
+        Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
+        Set(last_pressed=kp.pressed)
+        Log(pressed=kp.pressed, rt=kp.rt)
     
     kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')
-    Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
+    Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
     Wait(1.0)
 
     kp = MousePress()
-    Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
+    Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
     Wait(1.0)
 
     kp = MousePress(duration=2.0)
-    Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
+    Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
     Wait(1.0)
 
     exp.run()

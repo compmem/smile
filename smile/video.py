@@ -122,53 +122,52 @@ class WidgetState(State):
                                           save_log=save_log,
                                           name=name)
 
-        self.widget_class = widget_class
-        self.index = index
-        self.widget = None
-        self.parent_widget = None
-        self.init_param_names = params.keys()
-        self.widget_param_names = widget_class().properties().keys()
-        self.issued_param_refs = weakref.WeakValueDictionary()
-        for name, value in params.items():
-            setattr(self, name, value)
+        self.__issued_refs = weakref.WeakValueDictionary()
+        self.__widget_param_names = widget_class().properties().keys()
+        self.__widget_class = widget_class
+        self._init_index = index
+        self._widget = None
+        self.__parent_widget = None
+        self._constructort_param_names = params.keys()
+        for name, value in params.iteritems():
+            setattr(self, "_init_" + name, value)
         if layout is None:
             if len(WidgetState.layout_stack):
-                self.layout = WidgetState.layout_stack[-1]
+                self.__layout = WidgetState.layout_stack[-1]
             else:
-                self.layout = None
+                self.__layout = None
         else:
-            self.layout = layout
+            self.__layout = layout
 
-        self.appear_time = None
-        self.disappear_time = None
-        self.appear_video = None
-        self.disappear_video = None
+        self._appear_time = None
+        self._disappear_time = None
+        self.__appear_video = None
+        self.__disappear_video = None
 
-        self.x_pos_mode = None
-        self.y_pos_mode = None
+        self.__x_pos_mode = None
+        self.__y_pos_mode = None
 
         # set the log attrs
-        self.log_attrs.extend(['appear_time',
-                               'disappear_time'])
-        self.log_attrs.extend(self.init_param_names)
+        self._log_attrs.extend(['appear_time',
+                                'disappear_time'])
+        self._log_attrs.extend(self._constructort_param_names)
 
-        self.parallel = None
+        self.__parallel = None
 
     def get_current_param(self, name):
-        return getattr(self.original_state.most_recently_entered_clone.widget,
-                       name)
+        return getattr(self.current_clone._widget, name)
 
-    def __getitem__(self, name):
+    def __getattr__(self, name):
         try:
-            return self.issued_param_refs[name]
+            return self.__issued_refs[name]
         except KeyError:
             try:
                 props = WidgetState.property_aliases[name]
             except KeyError:
-                if name in self.widget_param_names:
+                if name in self.__widget_param_names:
                     props = name
                 else:
-                    return super(WidgetState, self).__getitem__(name)
+                    return super(WidgetState, self).__getattr__(name)
             if isinstance(props, str):
                 ref = Ref(self.get_current_param, props)
             elif isinstance(props, tuple):
@@ -176,19 +175,20 @@ class WidgetState(State):
                             prop in props)
             else:
                 raise RuntimeError("Bad value for 'props': %r" % props)
-            self.issued_param_refs[name] = ref
+            self.__issued_refs[name] = ref
             return ref
 
     def property_callback(self, name, *pargs):
         try:
-            ref = self.issued_param_refs[name]
+            ref = self.__issued_refs[name]
         except KeyError:
             return
         ref.dep_changed()
 
     def eval_init_refs(self):
         return self.transform_params(self.apply_aliases(
-            {name : getattr(self, name) for name in self.init_param_names}))
+            {name : getattr(self, "_" + name) for
+             name in self._constructort_param_names}))
 
     def apply_aliases(self, params):
         new_params = {}
@@ -226,21 +226,21 @@ class WidgetState(State):
         return params
 
     def construct(self, params):
-        self.widget = self.widget_class(**params)
+        self._widget = self.__widget_class(**params)
         self.live_change(**params)
-        self.widget.bind(**{name : partial(self.property_callback, name) for
-                            name in self.widget_param_names})
+        self._widget.bind(**{name : partial(self.property_callback, name) for
+                            name in self.__widget_param_names})
 
     def show(self):
-        if self.layout is None:
-            self.parent_widget = self.exp.app.wid
+        if self.__layout is None:
+            self.__parent_widget = self._exp.app.wid
         else:
-            self.parent_widget = self.layout.widget
-        self.parent_widget.add_widget(self.widget, index=self.index)
+            self.__parent_widget = self.__layout._widget
+        self.__parent_widget.add_widget(self._widget, index=self._index)
 
     def unshow(self):
-        self.parent_widget.remove_widget(self.widget)
-        self.parent_widget = None
+        self.__parent_widget.remove_widget(self._widget)
+        self.__parent_widget = None
 
     def live_change(self, **params):
         xy_pos_props = {"pos": "min", "center": "mid"}
@@ -266,31 +266,31 @@ class WidgetState(State):
                     new_y_pos_mode = mode
                     break
         if new_x_pos_mode is not None:
-            self.x_pos_mode = new_x_pos_mode
-        elif self.x_pos_mode is None:
-            params["center_x"] = self.exp.screen["center_x"].eval()
-        elif self.x_pos_mode == "min":
-            params["x"] = self["x"].eval()
-        elif self.x_pos_mode == "mid":
-            params["center_x"] = self["center_x"].eval()
-        elif self.x_pos_mode == "max":
-            params["right"] = self["right"].eval()
+            self.__x_pos_mode = new_x_pos_mode
+        elif self.__x_pos_mode is None:
+            params["center_x"] = self._exp.screen.center_x.eval()
+        elif self.__x_pos_mode == "min":
+            params["x"] = self._widget.x
+        elif self.__x_pos_mode == "mid":
+            params["center_x"] = self._widget.center_x
+        elif self.__x_pos_mode == "max":
+            params["right"] = self._widget.right
         if new_y_pos_mode is not None:
-            self.y_pos_mode = new_y_pos_mode
-        elif self.y_pos_mode is None:
-            params["center_y"] = self.exp.screen["center_y"].eval()
-        elif self.y_pos_mode == "min":
-            params["y"] = self["y"].eval()
-        elif self.y_pos_mode == "mid":
-            params["center_y"] = self["center_y"].eval()
-        elif self.y_pos_mode == "max":
-            params["top"] = self["top"].eval()
+            self.__y_pos_mode = new_y_pos_mode
+        elif self.__y_pos_mode is None:
+            params["center_y"] = self._exp.screen.center_y.eval()
+        elif self.__y_pos_mode == "min":
+            params["y"] = self._widget.y
+        elif self.__y_pos_mode == "mid":
+            params["center_y"] = self._widget.center_y
+        elif self.__y_pos_mode == "max":
+            params["top"] = self._widget.top
         for name, value in params.iteritems():
             if name not in pos_props:
-                setattr(self.widget, name, value)
+                setattr(self._widget, name, value)
         for name, value in params.iteritems():
             if name in pos_props:
-                setattr(self.widget, name, value)
+                setattr(self._widget, name, value)
 
     def animate(self, duration=None, parent=None, save_log=True, name=None,
                 **anim_params):
@@ -328,74 +328,71 @@ class WidgetState(State):
         return anim
 
     def set_appear_time(self, appear_time):
-        self.appear_time = appear_time
+        self._appear_time = appear_time
 
     def set_disappear_time(self, disappear_time):
-        self.disappear_time = disappear_time
+        self._disappear_time = disappear_time
 
     def _enter(self):
-        self.appear_time = None
-        self.disappear_time = None
-        self.appear_video = None
-        self.disappear_video = None
-        self.on_screen = False
-        self.x_pos_mode = None
-        self.y_pos_mode = None
+        self._appear_time = None
+        self._disappear_time = None
+        self.__appear_video = None
+        self.__disappear_video = None
+        self.__x_pos_mode = None
+        self.__y_pos_mode = None
 
         params = self.eval_init_refs()
         params = self.resolve_params(params)
         self.construct(params)
 
-        self.appear_video = self.exp.app.schedule_video(
-            self.appear, self.start_time, self.set_appear_time)
-        if self.end_time is not None:
-            self.disappear_video = self.exp.app.schedule_video(
-                self.disappear, self.end_time, self.set_disappear_time)
+        self.__appear_video = self._exp.app.schedule_video(
+            self.appear, self._start_time, self.set_appear_time)
+        if self._end_time is not None:
+            self.__disappear_video = self._exp.app.schedule_video(
+                self.disappear, self._end_time, self.set_disappear_time)
 
     def appear(self):
         self.claim_exceptions()
-        self.appear_video = None
-        self.on_screen = True
+        self.__appear_video = None
         self.show()
         clock.schedule(self.leave)
 
     def disappear(self):
         self.claim_exceptions()
-        self.disappear_video = None
-        self.on_screen = False
+        self.__disappear_video = None
         self.unshow()
         clock.schedule(self.finalize)
 
     def cancel(self, cancel_time):
         if self.active:
             clock.schedule(self.leave)
-            cancel_time = max(cancel_time, self.start_time)
-            if self.end_time is None or cancel_time < self.end_time:
-                if self.disappear_video is not None:
-                    self.exp.app.cancel_video(self.disappear_video)
-                self.disappear_video = self.exp.app.schedule_video(
+            cancel_time = max(cancel_time, self._start_time)
+            if self._end_time is None or cancel_time < self._end_time:
+                if self.__disappear_video is not None:
+                    self._exp.app.cancel_video(self.__disappear_video)
+                self.__disappear_video = self._exp.app.schedule_video(
                     self.disappear, cancel_time, self.set_disappear_time)
-                self.end_time = cancel_time
+                self._end_time = cancel_time
 
     def __enter__(self):
-        if self.parallel is not None:
+        if self.__parallel is not None:
             raise RuntimeError("WidgetState context is not reentrant!")  #!!!
         #TODO: make sure we're the previous state?
         WidgetState.layout_stack.append(self)
-        self.parallel = Parallel(name="LAYOUT")
-        self.parallel.override_instantiation_context()
-        self.parallel.claim_child(self)
-        self.parallel.__enter__()
+        self.__parallel = Parallel(name="LAYOUT")
+        self.__parallel.override_instantiation_context()
+        self.__parallel.claim_child(self)
+        self.__parallel.__enter__()
         return self
 
     def __exit__(self, type, value, tb):
-        ret = self.parallel.__exit__(type, value, tb)
-        if self.duration is None:
-            self.parallel.set_child_blocking(0, False)
+        ret = self.__parallel.__exit__(type, value, tb)
+        if self._duration is None:
+            self.__parallel.set_child_blocking(0, False)
         else:
-            for n in range(1, len(self.parallel.children)):
-                self.parallel.set_child_blocking(n, False)
-        self.parallel = None
+            for n in range(1, len(self.__parallel._children)):
+                self.__parallel.set_child_blocking(n, False)
+        self.__parallel = None
         if len(WidgetState.layout_stack):
             WidgetState.layout_stack.pop()
         return ret
@@ -412,11 +409,10 @@ class Animate(State):
 
     def _enter(self):
         self.initial_params = None
-        self.target_clone = (
-            self.target.original_state.most_recently_entered_clone)
-        first_update_time = self.start_time + self.exp.app.flip_interval
+        self.target_clone = self.target.current_clone
+        first_update_time = self._start_time + self._exp.app.flip_interval
         clock.schedule(self.update, event_time=first_update_time,
-                       repeat_interval=self.exp.app.flip_interval)
+                       repeat_interval=self._exp.app.flip_interval)
         clock.schedule(self.leave)
 
     def update(self):
@@ -424,13 +420,13 @@ class Animate(State):
         now = clock.now()
         if self.initial_params is None:
             self.initial_params = {
-                name : self.target_clone[name].eval() for
+                name : getattr(self.target_clone, name).eval() for
                 name in self.anim_params.keys()}
-        if self.end_time is not None and now >= self.end_time:
+        if self._end_time is not None and now >= self._end_time:
             clock.unschedule(self.update)
             clock.schedule(self.finalize)
-            now = self.end_time
-        t = now - self.start_time
+            now = self._end_time
+        t = now - self._start_time
         params = {name : func(t, self.initial_params[name]) for
                   name, func in
                   self.anim_params.items()}
@@ -439,9 +435,9 @@ class Animate(State):
                 self.target_clone.apply_aliases(params)))
 
     def cancel(self, cancel_time):
-        if self.active and (self.end_time is None or
-                            cancel_time < self.end_time):
-            self.end_time = cancel_time
+        if self.active and (self._end_time is None or
+                            cancel_time < self._end_time):
+            self._end_time = cancel_time
 
 
 def vertex_instruction_widget(instr_cls, name=None):
@@ -531,31 +527,31 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         super(Video, self).construct(params)
 
         # force video to load immediately so that duration is available...
-        _kivy_clock.unschedule(self.widget._do_video_load)
-        self.widget._do_video_load()
-        self.widget._video.pause()
-        while self.widget._video.duration == -1:
+        _kivy_clock.unschedule(self._widget._do_video_load)
+        self._widget._do_video_load()
+        self._widget._video.pause()
+        while self._widget._video.duration == -1:
             pass  #TODO: make sure we can't get stuck here?
         
-        if self.end_time is None:
-            self.end_time = self.start_time + self.widget._video.duration
+        if self._end_time is None:
+            self._end_time = self._start_time + self._widget._video.duration
 
     def show(self):
-        if "state" not in self.init_param_names:
-            self.widget.state = "play"
-        self.widget._video._update(0)  # prevent white flash at start
+        if "state" not in self._constructort_param_names:
+            self._widget.state = "play"
+        self._widget._video._update(0)  # prevent white flash at start
         super(Video, self).show()
 
     def unshow(self):
         super(Video, self).unshow()
-        self.widget.state = "stop"
+        self._widget.state = "stop"
 
 
 def iter_nested_buttons(state):
     if isinstance(state, Button):
         yield state
     if isinstance(state, ParentState):
-        for child in state.children:
+        for child in state._children:
             for button in iter_nested_buttons(child):
                 yield button
 
@@ -568,91 +564,88 @@ class ButtonPress(CallbackState):
                                           save_log=save_log,
                                           name=name)
         if buttons is None:
-            self.buttons = []
+            self.__buttons = []
         elif not isinstance(buttons, list):
-            self.buttons = [buttons]
+            self.__buttons = [buttons]
         else:
-            self.buttons = buttons
-        self.button_names = None
+            self.__buttons = buttons
+        self._button_names = None
         if correct_resp is None:
-            self.correct_resp = []
+            self._init_correct_resp = []
         elif not isinstance(correct_resp, list):
-            self.correct_resp = [correct_resp]
+            self._init_correct_resp = [correct_resp]
         else:
-            self.correct_resp = correct_resp
-        self.base_time_src = base_time  # for calc rt
-        self.base_time = None
+            self._init_correct_resp = correct_resp
+        self._init_base_time = None
 
-        self.pressed = ''
-        self.press_time = None
-        self.correct = False
-        self.rt = None
+        self._pressed = ''
+        self._press_time = None
+        self._correct = False
+        self._rt = None
 
-        self.pressed_ref = None
+        self.__pressed_ref = None
 
         # append log vars
-        self.log_attrs.extend(['button_names', 'correct_resp', 'base_time',
-                               'pressed', 'press_time', 'correct', 'rt'])
+        self._log_attrs.extend(['button_names', 'correct_resp', 'base_time',
+                                'pressed', 'press_time', 'correct', 'rt'])
 
-        self.parallel = None
+        self.__parallel = None
 
     def _enter(self):
-        self.button_names = [button.name for button in self.buttons]
-        self.pressed_ref = Ref(
+        self._button_names = [button.name for button in self.__buttons]
+        self.__pressed_ref = Ref(
             lambda lst: [name for name, down in lst if down],
-            [(button.name, button["state"] == "down") for button in self.buttons])
+            [(button.name, button.state == "down") for
+             button in self.__buttons])
         super(ButtonPress, self)._enter()
 
     def _callback(self):
-        self.base_time = val(self.base_time_src)
-        if self.base_time is None:
-            self.base_time = self.start_time
-        self.pressed = ''
-        self.press_time = None
-        self.correct = False
-        self.rt = None
-        self.pos = None
-        self.pressed_ref.add_change_callback(self.button_callback)
+        if self._base_time is None:
+            self._base_time = self._start_time
+        self._pressed = ''
+        self._press_time = None
+        self._correct = False
+        self._rt = None
+        self.__pressed_ref.add_change_callback(self.button_callback)
 
     def button_callback(self):
         self.claim_exceptions()
-        pressed_list = self.pressed_ref.eval()
+        pressed_list = self.__pressed_ref.eval()
         if not len(pressed_list):
             return
         button = pressed_list[0]
-        correct_resp = val(self.correct_resp)
-        self.pressed = button
-        self.press_time = self.exp.app.event_time
+        self._pressed = button
+        self._press_time = self._exp.app.event_time
 
         # calc RT if something pressed
-        self.rt = self.press_time['time'] - self.base_time
+        self._rt = self._press_time['time'] - self._base_time
 
-        if self.pressed in correct_resp:
-            self.correct = True
+        if self._pressed in self._correct_resp:
+            self._correct = True
 
         # let's leave b/c we're all done
-        self.cancel(self.press_time['time'])
+        self.cancel(self._press_time['time'])
 
     def _leave(self):
-        self.pressed_ref.remove_change_callback(self.button_callback)
+        self.__pressed_ref.remove_change_callback(self.button_callback)
         super(ButtonPress, self)._leave()
 
     def __enter__(self):
-        if self.parallel is not None:
+        if self.__parallel is not None:
             raise RuntimeError("ButtonPress context is not reentrant!")  #!!!
         #TODO: make sure we're the previous state?
-        self.parallel = Parallel(name="BUTTONPRESS")
-        self.parallel.override_instantiation_context()
-        self.parallel.claim_child(self)
-        self.parallel.__enter__()
+        self.__parallel = Parallel(name="BUTTONPRESS")
+        self.__parallel.override_instantiation_context()
+        self.__parallel.claim_child(self)
+        self.__parallel.__enter__()
         return self
 
     def __exit__(self, type, value, tb):
-        ret = self.parallel.__exit__(type, value, tb)
-        for n in range(1, len(self.parallel.children)):
-            self.parallel.set_child_blocking(n, False)
-        self.buttons.extend(iter_nested_buttons(self.parallel))
-        self.parallel = None
+        ret = self.__parallel.__exit__(type, value, tb)
+        for n in range(1, len(self.__parallel._children)):
+            self.__parallel.set_child_blocking(n, False)
+        self.__buttons.extend(iter_nested_buttons(self.__parallel))
+        self.__parallel = None
         return ret
 
 
@@ -668,18 +661,18 @@ if __name__ == '__main__':
 
     rect = Rectangle(color="purple", width=50, height=50)
     with UntilDone():
-        rect.slide(center=exp.screen["right_top"], duration=2.0)
-        rect.slide(center=exp.screen["right_bottom"], duration=2.0)
-        rect.slide(center=exp.screen["left_top"], duration=2.0)
-        rect.slide(center=exp.screen["left_bottom"], duration=2.0)
-        rect.slide(center=exp.screen["center"], duration=2.0)
+        rect.slide(center=exp.screen.right_top, duration=2.0)
+        rect.slide(center=exp.screen.right_bottom, duration=2.0)
+        rect.slide(center=exp.screen.left_top, duration=2.0)
+        rect.slide(center=exp.screen.left_bottom, duration=2.0)
+        rect.slide(center=exp.screen.center, duration=2.0)
 
     with Loop(range(3)):
-        Video(source="test_video.mp4", size=exp.screen["size"], duration=5.0)
+        Video(source="test_video.mp4", size=exp.screen.size, duration=5.0)
 
     with ButtonPress():
-        Button(text="Click to continue", size=(exp.screen["width"] / 4,
-                                               exp.screen["height"] / 4))
+        Button(text="Click to continue", size=(exp.screen.width / 4,
+                                               exp.screen.height / 4))
 
     with Meanwhile():
         Triangle(points=[0, 0, 500, 500, 0, 500],
@@ -693,19 +686,19 @@ if __name__ == '__main__':
         bez.slide(points=[500, 0, 0, 500, 600, 200, 100, 600, 300, 300],
                   color="white", duration=5.0)
 
-    ellipse = Ellipse(right=exp.screen["left"],
-                      center_y=exp.screen["center_y"], width=25, height=25,
+    ellipse = Ellipse(right=exp.screen.left,
+                      center_y=exp.screen.center_y, width=25, height=25,
                       angle_start=90.0, angle_end=460.0,
                       color=(1.0, 1.0, 0.0), name="Pacman")
     with UntilDone():
         with Parallel(name="Pacman motion"):
-            ellipse.slide(left=exp.screen["right"], duration=8.0, name="Pacman travel")
+            ellipse.slide(left=exp.screen.right, duration=8.0, name="Pacman travel")
             ellipse.animate(
                 angle_start=lambda t, initial: initial + (cos(t * 8) + 1) * 22.5,
                 angle_end=lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
                 duration=8.0, name="Pacman gobble")
 
-    with BoxLayout(width=500, height=500, top=exp.screen["top"], duration=4.0):
+    with BoxLayout(width=500, height=500, top=exp.screen.top, duration=4.0):
         rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=3.0)
         Rectangle(color="#00FF00", pos=(0, 0), size_hint=(1, 1), duration=2.0)
         Rectangle(color=(0.0, 0.0, 1.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=1.0)

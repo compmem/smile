@@ -58,6 +58,90 @@ class _VideoChange(object):
         self.flipped = False
 
 
+class Screen(object):
+    def __init__(self, app):
+        self.__app = app
+
+    @property
+    def width(self):
+        return self.__app.width_ref
+
+    @property
+    def height(self):
+        return self.__app.height_ref
+
+    @property
+    def size(self):
+        return (self.width, self.height)
+
+    @property
+    def left(self):
+        return 0
+
+    @property
+    def bottom(self):
+        return 0
+
+    @property
+    def right(self):
+        return self.width - 1
+
+    @property
+    def top(self):
+        return self.height - 1
+
+    x = left
+    y = bottom
+
+    @property
+    def pos(self):
+        return (self.x, self.y)
+
+    @property
+    def center_x(self):
+        return self.width // 2
+
+    @property
+    def center_y(self):
+        return self.height // 2
+
+    @property
+    def left_bottom(self):
+        return (self.left, self.bottom)
+
+    @property
+    def left_center(self):
+        return (self.left, self.center_y)
+
+    @property
+    def left_top(self):
+        return (self.left, self.top)
+
+    @property
+    def center_bottom(self):
+        return (self.center_x, self.bottom)
+
+    @property
+    def center(self):
+        return (self.center_x, self.center_y)
+
+    @property
+    def center_top(self):
+        return (self.center_x, self.top)
+
+    @property
+    def right_bottom(self):
+        return (self.right, self.bottom)
+
+    @property
+    def right_center(self):
+        return (self.right, self.center_y)
+
+    @property
+    def right_top(self):
+        return (self.right, self.top)
+
+
 class ExpApp(App):
     def __init__(self, exp, *pargs, **kwargs):
         super(ExpApp, self).__init__(*pargs, **kwargs)
@@ -73,33 +157,11 @@ class ExpApp(App):
         self.mouse_button_ref = Ref.getattr(self, "mouse_button")
         self.width_ref = Ref.getattr(Window, "width")
         self.height_ref = Ref.getattr(Window, "height")
-        right = self.width_ref - 1
-        top = self.height_ref - 1
-        center_x = self.width_ref // 2
-        center_y = self.height_ref // 2
-        self.screen = Ref(lambda : {
-            "width": self.width_ref,
-            "height": self.height_ref,
-            "size": (self.width_ref, self.height_ref),
-            "left": 0,
-            "bottom": 0,
-            "right": right,
-            "top": top,
-            "x": 0,
-            "y": 0,
-            "pos": (0, 0),
-            "center_x": center_x,
-            "center_y": center_y,
-            "left_bottom": (0, 0),
-            "left_center": (0, center_y),
-            "left_top": (0, top),
-            "center_bottom": (center_x, 0),
-            "center": (center_x, center_y),
-            "center_top": (center_x, top),
-            "right_bottom": (right, 0),
-            "right_center": (right, center_y),
-            "right_top": (right, top)
-            })
+        self.__screen = Screen(self)
+
+    @property
+    def screen(self):
+        return self.__screen
 
     def add_callback(self, event_name, func):
         self.callbacks.setdefault(event_name, []).append(func)
@@ -282,7 +344,7 @@ class ExpApp(App):
         self._last_time = self._new_time
 
         # exit if experiment done
-        if not self.exp.root_state.active:
+        if not self.exp.root_state._active:
             self.stop()
 
     def blocking_flip(self):
@@ -337,47 +399,6 @@ class ExpApp(App):
 
 
 class Experiment(object):
-    """
-    A SMILE experiment.
-
-    This is the top level parent state for all experiments. It handles
-    the event loop, manages the window and associated input/output,
-    and processes the command line arguments.
-
-    Parameters
-    ----------
-    fullscreen : bool
-        Create the window in full screen.
-    resolution : tuple
-        Resolution of the window specified as (width, height) when not 
-        full screen.
-    name : str
-        Name on the window title bar.
-    pyglet_vsync : bool
-        Whether to instruct pyglet to sync to the vertical retrace.
-    background_color : tuple
-        4 tuple specifying the background color of the experiment 
-        window in (R,G,B,A).
-    screen_id : int
-        What screen/monitor to send the window to in multi-monitor 
-        layouts.
-    
-    Example
-    -------
-    exp = Experiment(resolution=(1920x1080), background_color=(0,1,0,1.0))
-    ...
-    run(exp)
-    Define an experiment window with a green background and a size of
-    1920x1080 pixels. This experiment window will not open until the 
-    run() command is executed. 
-            
-    Log Parameters
-    --------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters.              
-    """
     def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
                  vsync=True, background_color=(0,0,0,1), screen_ind=0):
 
@@ -540,103 +561,29 @@ class Experiment(object):
 
 
 class Set(AutoFinalizeState):
-    """
-    State to set a experiment variable.
-
-    See Get state for how to access experiment variables.
-    
-    Parameters
-    ----------
-    variable : str
-        Name of variable to save.
-    value : object
-        Value to set the variable. Can be a Reference evaluated at 
-        runtime.
-    eval_var : bool
-        If set to 'True,' the variable will be evaluated at runtime.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the state will be
-        automatically saved in the log files. 
-    
-    Example
-    -------
-    See Get state for example.
-    
-    Log Parameters
-    --------------
-    All parameters above are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters. 
-    """
-    def __init__(self, variable, value, parent=None, save_log=True, name=None):
+    def __init__(self, parent=None, save_log=True, name=None, **kwargs):
         # init the parent class
         super(Set, self).__init__(parent=parent,
                                   save_log=save_log,
-                                  name=name)
-        self.var = variable
-        self.variable = None
-        self.val = value
-        self.value = None
+                                  name=name,
+                                  duration=0.0)
+        self._init_values = kwargs
 
         # append log vars
-        self.log_attrs.extend(['variable','value'])
+        self._log_attrs.extend(['values'])
         
     def _enter(self):
-        # set the exp var
-        self.variable = val(self.var)
-        self.value = val(self.val)
-        self.exp._vars[self.variable] = self.value
+        for name, value in self._values.iteritems():
+            self._exp._vars[name] = value
+            try:
+                ref = self._exp.issued_refs[name]
+            except KeyError:
+                continue
+            ref.dep_changed()
         clock.schedule(self.leave)
-        self.end_time = self.start_time
-        try:
-            ref = self.exp.issued_refs[self.variable]
-        except KeyError:
-            return
-        ref.dep_changed()
 
         
 def Get(variable):
-    """Retrieve an experiment variable.
-
-    Parameters
-    ----------
-    variable : str
-        Name of variable to retrieve. Can be a Reference evaluated 
-        at runtime.
-        
-    Example
-    -------
-    with Parallel():
-        txt = Text('Press a key as quickly as you can!')
-        key = KeyPress(base_time=txt['last_flip']['time'])
-    Unshow(txt)
-    Set('good',key['rt']<0.5)
-    with If(Get('good')) as if_state:
-        with if_state.true_state:
-            Show(Text('Good job!'), duration=1.0)
-        with if_state.false_state:
-            Show(Text('Better luck next time.'), duration=1.0)
-            
-    Text will be shown on the screen, instructing the participant to press 
-    a key as quickly as they can. The participant will press a key while 
-    the text is on the screen, then the text will be removed. The 'Set' 
-    state will be used to define a variable for assessing the participant's 
-    reaction time for the key press that just occurred, and the 'Get' state 
-    accesses that new variable. If the participant's reaction time was 
-    faster than 0.5 seconds, the text 'Good job!' will appear on the 
-    screen. If the participant's reaction time was slower than 0.5 seconds, 
-    the text 'Better luck next time.' will appear on the screen.
-    
-    Log Parameters
-    --------------
-    All parameters above are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters. 
-    """
     exp = Experiment.last_instance()
     try:
         return exp.issued_refs[variable]
@@ -647,101 +594,26 @@ def Get(variable):
 
 
 class Log(AutoFinalizeState):
-    """
-    State to write values to a custom experiment log.
-    Write data to a YAML log file.
-
-    Parameters
-    ----------
-    log_dict : dict
-        Key-value pairs to log. Handy for logging trial information.
-    log_file : str, optional
-        Where to log, defaults to exp.yaml in the subject directory.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    **log_items : kwargs
-        Key-value pairs to log.
-        
-    Example
-    --------
-    numbers_list = [1,2,3]
-    with Loop(numbers_list) as trial:
-        num = Text(trial.current)
-        key = KeyPress()
-        Unshow(num)
-        
-    Log(stim = trial.current,
-        response = key['pressed'])
-    
-    Each number in numbers_list will appear on the screen, and will be
-    removed from the screen after the participant presses a key. For each
-    trial in the loop, the number that appeared on the screen as well as
-    the key that the participant pressed will be recorded in the log files.
-    
-    Log Parameters
-    --------------
-    The following information about each state will be stored in addition 
-    to the state-specific parameters:
-
-        duration : 
-            Duration of the state in seconds. If the duration is not set
-            as a parameter of the specific state, it will default to -1 
-            (which means it will be calculated on exit) or 0 (which means
-            the state completes immediately and does not increment the
-            experiment clock).
-        end_time :
-            Unix timestamp for when the state ended.
-        first_call_error
-            Amount of time in seconds between when the state was supposed
-            to start and when it actually started.
-        first_call_time :
-            Unix timestamp for when the state was called.
-        last_call_error :
-            Same as first_call_error, but refers to the most recent time 
-            time the state was called.
-        last_draw :
-            Unix timestamp for when the last draw of a visual stimulus
-            occurred.
-        last_flip :
-            Unix timestamp for when the last flip occurred (i.e., when 
-            the stimulus actually appeared on the screen).
-        last_update :
-            Unix timestamp for the last time the context to be drawn 
-            occurred. (NOTE: Displaying a stimulus entails updating it,
-            drqwing it to the back buffer, then flipping the front and
-            back video buffers to display the stimulus.
-        start_time :
-            Unix timestamp for when the state is supposed to begin.
-        state_time :
-            Same as start_time.
-    """
-    def __init__(self, log_dict=None, log_file=None, parent=None, name=None,
+    def __init__(self, log_file=None, parent=None, name=None,
                  **log_items):
         # init the parent class
         super(Log, self).__init__(parent=parent,
                                   name=name,
                                   duration=0.0,
                                   save_log=False)
-        self.log_file = log_file
-        self.log_items = log_items
-        self.log_dict = log_dict
+        self.__log_file = log_file
+        self._init_log_items = log_items
 
     def _get_stream(self):
-        if self.log_file is None:
-            stream = self.exp.exp_log_stream
+        if self.__log_file is None:
+            stream = self._exp.exp_log_stream
         else:
             # make it from the name
-            stream = open(os.path.join(self.exp.subj_dir,self.log_file),'a')
+            stream = open(os.path.join(self._exp.subj_dir, self.__log_file), 'a')
         return stream
         
     def _enter(self):
-        # eval the log_items and write the log
-        keyvals = [(k,val(v)) for k,v in self.log_items.iteritems()]
-        log = dict(keyvals)
-        if self.log_dict:
-            log.update(val(self.log_dict))
-        # log it to the correct file
-        dump([log], self._get_stream())
+        dump([self._log_items], self._get_stream())
         clock.schedule(self.leave)
 
 if __name__ == '__main__':

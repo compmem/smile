@@ -48,5 +48,5 @@ from video import (
     ScatterLayout,
     StackLayout
     )
-from ref import Ref, val
+from ref import Ref, val, jitter, shuffle
 #from freekey import FreeKey
