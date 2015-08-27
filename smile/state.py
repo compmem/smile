@@ -775,10 +775,11 @@ class Loop(ParentState):
         self._log_attrs.extend(['outcome', 'i'])
 
     def __current(self):
-        if self._iterable is None or isinstance(self._iterable, int):
-            return self._i
+        loop = self.current_clone
+        if loop._iterable is None or isinstance(loop._iterable, int):
+            return loop._i
         else:
-            return self._iterable[self._i]
+            return loop._iterable[loop._i]
 
     @property
     def current(self):

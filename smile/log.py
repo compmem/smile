@@ -8,6 +8,46 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 
+import cPickle
+import gzip
+
+class LogWriter(object):
+    def __init__(self, filename, field_names):
+        self._field_names - field_names
+        self._file = gzip.open(filename, "wb")
+        self._pickler = cPickl.Pickler(self._file, -1)
+        self._pickler.dump(field_names)
+
+    def write_record(self, data):
+        record = [data[field_name] for field_name in self.field_names]
+        self._pickler.dump(record)
+
+    def close(self):
+        self._file.close()
+
+class LogReader(object):
+    def __init__(self, filename):
+        self._file = gzip.open(filename, "rb")
+        self._unpickler = cPickle.Unpickler(self._file)
+        self._field_names = self._unpickler.load()
+
+    def read_record(self):
+        try:
+            return dict(zip(self._field_names, self._unpickler.load()))
+        except EOFError:
+            return None
+
+    def close(self):
+        self._file.close()
+
+    def __iter__(self):
+        record = self.read_record()
+        while record is not None:
+            yield record
+            record = self.read_record()
+
+
+
 import yaml
 import csv
 #import sys

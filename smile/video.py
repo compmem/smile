@@ -565,7 +565,7 @@ class ButtonPress(CallbackState):
                                           name=name)
         if buttons is None:
             self.__buttons = []
-        elif not isinstance(buttons, list):
+        elif not isinstance(buttons, list):  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             self.__buttons = [buttons]
         else:
             self.__buttons = buttons
