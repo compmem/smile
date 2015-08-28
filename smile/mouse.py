@@ -71,14 +71,25 @@ class MousePress(CallbackState):
                                 'pressed', 'press_time', 
                                 'correct', 'rt', 'pos'])
 
-    def _callback(self):
+    def _enter(self):
+        super(MousePress, self)._enter()
         if self._base_time is None:
             self._base_time = self._start_time
+        if self._buttons is None:
+            self._buttons = []
+        elif type(self._buttons) not in (list, tuple):
+            self._buttons = [self._buttons]
+        if self._correct_resp is None:
+            self._correct_resp = []
+        elif type(self.correct_resp) not in (list, tuple):
+            self._correct_resp = [self._correct_resp]
         self._pressed = ''
         self._press_time = None
         self._correct = False
         self._rt = None
-        self._pos = None
+        self._pos = (None, None)
+
+    def _callback(self):
         self.__button_ref.add_change_callback(self.button_callback)
 
     def button_callback(self):
@@ -87,15 +98,7 @@ class MousePress(CallbackState):
         if button is None:
             return
         button = button.upper()
-        if type(self._buttons) in (list, tuple):
-            buttons = self._buttons
-        else:
-            buttons = [self._buttons]
-        if type(self._correct_resp) in (list, tuple):
-            correct_resp = self._correct_resp
-        else:
-            correct_resp = [self._correct_resp]
-        if None in buttons or button in buttons:
+        if not len(self._buttons) or button in self._buttons:
             # it's all good!, so save it
             self._pressed = button
             self._press_time = self._exp.app.event_time
@@ -105,7 +108,7 @@ class MousePress(CallbackState):
 
             self._pos = self.__pos_ref.eval()
 
-            if self._pressed in correct_resp:
+            if self._pressed in self._correct_resp:
                 self._correct = True
 
             # let's leave b/c we're all done
@@ -118,8 +121,8 @@ class MousePress(CallbackState):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment, Get, Set, Log
-    from state import Wait, Debug, Loop, Meanwhile, Record
+    from experiment import Experiment, Get, Set
+    from state import Wait, Debug, Loop, Meanwhile, Record, Log
 
     def print_dt(state, *args):
         print args

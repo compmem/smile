@@ -7,10 +7,13 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
+import os.path
+
 from state import CallbackState
 from ref import val
 from clock import clock
 from experiment import Experiment
+from log import LogWriter, log2csv
 
 
 def Key(name):
@@ -19,6 +22,10 @@ def Key(name):
 
 
 class KeyState(CallbackState):
+    def __init__(self, parent=None, duration=None, save_log=True, name=None):
+        super(KeyState, self).__init__(parent=parent, duration=duration,
+                                       save_log=save_log, name=name)
+
     def on_key_down(self, keycode, text, modifiers, event_time):
         self.claim_exceptions()
         self._on_key_down(keycode, text, modifiers, event_time)
@@ -73,19 +80,19 @@ class KeyPress(KeyState):
         self._correct = False
         self._rt = None
         if self._base_time is None:
-            self._base_time = self.start_time
+            self._base_time = self._start_time
+        if self._keys is None:
+            self._keys = []
+        elif type(self._keys) not in (list, tuple):
+            self._keys = [self._keys]
+        if self._correct_resp is None:
+            self._correct_resp = []
+        elif type(self._correct_resp) not in (list, tuple):
+            self._correct_resp = [self._correct_resp]
 
     def _on_key_down(self, keycode, text, modifiers, event_time):
-        if type(self._keys) in (list, tuple):
-            keys = self._keys
-        else:
-            keys = [self.keys]
-        if type(self._correct_resp) in (list, tuple):
-            correct_resp = self._correct_resp
-        else:
-            correct_resp = [self._correct_resp]
         sym_str = keycode[1].upper()
-        if None in keys or sym_str in keys:
+        if not len(self._keys) or sym_str in self._keys:
             # it's all good!, so save it
             self._pressed = sym_str
             self._press_time = event_time
@@ -93,7 +100,7 @@ class KeyPress(KeyState):
             # calc RT if something pressed
             self._rt = event_time['time'] - self._base_time
 
-            if self._pressed in correct_resp:
+            if self._pressed in self._correct_resp:
                 self._correct = True
 
             # let's leave b/c we're all done
@@ -101,32 +108,53 @@ class KeyPress(KeyState):
 
 
 class KeyRecord(KeyState):
-    def __init__(self, duration=None, parent=None, save_log=True, name=None):
-        # init the parent class
-        super(KeyRecord, self).__init__(parent=parent,
-                                        duration=duration,
-                                        save_log=save_log,
-                                        name=name)
+    def __init__(self, parent=None, duration=None, name=None):
+        super(KeyState, self).__init__(parent=parent, duration=duration,
+                                       save_log=False, name=name)
 
-        #...!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    def begin_log(self):
+        super(KeyRecord, self).begin_log()
+        title = "keyrec_%s_%d_%s" % (
+            os.path.splitext(
+                os.path.basename(self._instantiation_filename))[0],
+            self._instantiation_lineno,
+            self._name)
+        self.__log_filename = self._exp.reserve_data_filename(title, "smlog")
+        self.__log_writer = LogWriter(self.__log_filename,
+                                      ["timestamp", "key", "state"])
 
-    def _enter(self):
-        super(KeyRecord, self)._enter()
-        #...!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    def end_log(self, to_csv=False):
+        super(KeyRecord, self).end_log(to_csv)
+        if self.__log_writer is not None:
+            self.__log_writer.close()
+            self.__log_writer = None
+            if to_csv:
+                csv_filename = (os.path.splitext(self.__log_filename)[0] +
+                                ".csv")
+                log2csv(self.__log_filename, csv_filename)
 
     def _on_key_down(self, keycode, text, modifiers, event_time):
-        print "TODO: Record key down: %r, %r, %r" % (keycode, text, modifiers)  #TODO: actual recording!
+        self.__log_writer.write_record({
+            "timestamp": event_time,
+            "key": keycode[1].upper(),
+            "state": "down"})
 
     def _on_key_up(self, keycode, event_time):
-        print "TODO: Record key up: %r" % (keycode,)  #TODO: actual recording!
+        self.__log_writer.write_record({
+            "timestamp": event_time,
+            "key": keycode[1].upper(),
+            "state": "up"})
 
 
 if __name__ == '__main__':
 
-    from experiment import Experiment, Get, Set, Log
-    from state import Wait, Debug, Loop, UntilDone
+    from experiment import Experiment, Get, Set
+    from state import Wait, Debug, Loop, UntilDone, Log, Meanwhile
 
     exp = Experiment()
+    with Meanwhile():
+        KeyRecord(name="record_all_key_presses")
+
     Debug(name='Press T+G+D or SHIFT+Q+R')
     Wait(until=((Key("T") & Key("G") & Key("D")) |
                 (Key("SHIFT") & Key("Q") & Key("R"))))

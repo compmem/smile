@@ -12,12 +12,13 @@ from functools import partial
 import copy
 import inspect
 import weakref
+import os.path
 
 import kivy_overrides
 import ref
 from ref import Ref, val
 from utils import rindex, get_class_name
-from log import dump
+from log import LogWriter, log2csv
 from clock import clock
 
 
@@ -42,6 +43,8 @@ class State(object):
         self._name = name
         self.__depth = 0
         self.__tracing = False
+        self.__log_writer = None
+        self.__log_filename = None
 
         # get instantiation context
         self.set_instantiation_context()
@@ -71,8 +74,9 @@ class State(object):
             self._parent._children.append(self)
 
         # start the log
-        self._log_attrs = ['state_time', 'start_time', 'end_time', 'enter_time',
-                           'leave_time', 'finalize_time', 'name']
+        self._log_attrs = ['instantiation_filename', 'instantiation_lineno',
+                           'name', 'state_time', 'start_time', 'end_time',
+                           'enter_time', 'leave_time', 'finalize_time']
 
         # cloning stuff
         self._deepcopy_attrs = []  #TODO: extend this for subclasses!
@@ -188,23 +192,15 @@ class State(object):
         if self._exp is not None:
             self._exp.current_state = self
 
-    def get_log(self):
-    	"""
-        Evaluate all the log attributes and generate a dict.
-        """
-        
-        keyvals = [(a,val(getattr(self,a))) if hasattr(self,a) 
-                   else (a,None) for a in self._log_attrs]
-        return dict(keyvals)
+    def get_log_fields(self):
+        return self._log_attrs
 
-    def get_log_stream(self):
-    	"""
-    	Gets log stream for the current experiment
-    	"""
-        if self._exp is None:
-            return None
-        else:
-            return self._exp.state_log_stream
+    def begin_log(self):
+        if self.__save_log:
+            self._exp.setup_state_logger(type(self).__name__, self.get_log_fields())
+
+    def end_log(self, to_csv=False):
+        pass
 
     @property
     def current_clone(self):
@@ -347,6 +343,11 @@ class State(object):
             if self._end_time is None or cancel_time < self._end_time:
                 self._end_time = cancel_time
 
+    def save_log(self):
+        self._exp.write_to_state_log(
+            type(self).__name__,
+            {name : getattr(self, "_" + name) for name in self._log_attrs})
+
     def finalize(self):  #TODO: call a _finalize method?
         if not self._active:
             return
@@ -354,7 +355,7 @@ class State(object):
         self._finalize_time = clock.now()
         self._active = False
         if self.__save_log:
-            dump([self.get_log()],self.get_log_stream())
+            self.save_log()
         if self._parent:
             clock.schedule(partial(self._parent.child_finalize_callback, self))
         if self.__tracing:
@@ -415,6 +416,16 @@ class ParentState(State):
         super(ParentState, self).troff()
         for child in self._children:
             child.troff()
+
+    def begin_log(self):
+        super(ParentState, self).begin_log()
+        for child in self._children:
+            child.begin_log()
+
+    def end_log(self, to_csv=False):
+        super(ParentState, self).end_log(to_csv)
+        for child in self._children:
+            child.end_log(to_csv)
 
     def claim_child(self, child):
         if not child._parent is None:
@@ -634,6 +645,7 @@ class If(ParentState):
 
         # save a list of conds to be evaluated (last one always True, acts as the Else)
         self._init_cond = [conditional, True]
+        self._outcome_index = None
         self.__true_state = true_state
         self.__false_state = false_state
 
@@ -659,13 +671,14 @@ class If(ParentState):
         self._out_states = [self.__true_state, self.__false_state]
         
         # append outcome to log
-        self._log_attrs.append('cond')
+        self._log_attrs.append('outcome_index')
         
     def _enter(self):
         super(If, self)._enter()
 
+        self._outcome_index = self._cond.index(True)
         self.__selected_child = (
-            self._out_states[self._cond.index(True)].get_inactive_state(self))
+            self._out_states[self._outcome_index].get_inactive_state(self))
         clock.schedule(self.__selected_child.enter)
 
     def child_leave_callback(self, child):
@@ -803,9 +816,6 @@ class Loop(ParentState):
                 count = len(self._iterable)
 
             for i in xrange(count):
-                # dump log
-                dump([self.get_log()],self.get_log_stream())  #???
-
                 yield i
 
     def _enter(self):
@@ -862,14 +872,34 @@ class Loop(ParentState):
 
 
 class Record(State):
-    def __init__(self, duration=None, parent=None, save_log=False, name=None,
-                 **kwargs):
+    def __init__(self, duration=None, parent=None, name=None, **kwargs):
         super(Record, self).__init__(parent=parent, 
                                      duration=duration, 
-                                     save_log=save_log,
+                                     save_log=False,
                                      name=name)
 
         self.__refs = kwargs
+
+    def begin_log(self):
+        super(Record, self).begin_log()
+        title = "record_%s_%d_%s" % (
+            os.path.splitext(
+                os.path.basename(self._instantiation_filename))[0],
+            self._instantiation_lineno,
+            self._name)
+        self.__log_filename = self._exp.reserve_data_filename(title, "smlog")
+        self.__log_writer = LogWriter(self.__log_filename,
+                                      self.__refs.keys() + ["timestamp"])
+
+    def end_log(self, to_csv=False):
+        super(Record, self).end_log(to_csv)
+        if self.__log_writer is not None:
+            self.__log_writer.close()
+            self.__log_writer = None
+            if to_csv:
+                csv_filename = (os.path.splitext(self.__log_filename)[0] +
+                                ".csv")
+                log2csv(self.__log_filename, csv_filename)
 
     def _enter(self):
         clock.schedule(self.leave, event_time=self._start_time)
@@ -878,16 +908,18 @@ class Record(State):
 
     def _leave(self):
         for name, ref in self.__refs.iteritems():
-            self.record_change(name, ref)
-            ref.add_change_callback(self.record_change, name, ref)
+            self.record_change()
+            ref.add_change_callback(self.record_change)
 
     def finalize(self):
         super(Record, self).finalize()
         for name, ref in self.__refs.iteritems():
-            ref.remove_change_callback(self.record_change, name, ref)
+            ref.remove_change_callback(self.record_change)
 
-    def record_change(self, name, ref):
-        print "TODO: log value of ref %r: %r." % (name, val(ref))
+    def record_change(self):
+        record = val(self.__refs)
+        record["timestamp"] = self._exp.app.event_time
+        self.__log_writer.write_record(record)
 
     def cancel(self, cancel_time):
         if self._active:
@@ -901,6 +933,49 @@ class Record(State):
                 clock.unschedule(self.finalize)
                 clock.schedule(self.finalize, event_time=cancel_time)
                 self._end_time = cancel_time
+
+
+class AutoFinalizeState(State):
+    def leave(self):
+        super(AutoFinalizeState, self).leave()
+        clock.schedule(self.finalize)
+
+
+class Log(AutoFinalizeState):
+    def __init__(self, parent=None, name=None, **kwargs):
+        # init the parent class
+        super(Log, self).__init__(parent=parent,
+                                  name=name,
+                                  duration=0.0,
+                                  save_log=False)
+        self._init_log_items = kwargs
+
+    def begin_log(self):
+        super(Log, self).begin_log()
+        title = "log_%s_%d_%s" % (
+            os.path.splitext(
+                os.path.basename(self._instantiation_filename))[0],
+            self._instantiation_lineno,
+            self._name)
+        self.__log_filename = self._exp.reserve_data_filename(title, "smlog")
+        self.__log_writer = LogWriter(self.__log_filename,
+                                      ["time"] + self._init_log_items.keys())
+
+    def end_log(self, to_csv=False):
+        super(Log, self).end_log(to_csv)
+        if self.__log_writer is not None:
+            self.__log_writer.close()
+            self.__log_writer = None
+            if to_csv:
+                csv_filename = (os.path.splitext(self.__log_filename)[0] +
+                                ".csv")
+                log2csv(self.__log_filename, csv_filename)
+
+    def _enter(self):
+        record = self._log_items.copy()
+        record["time"] = self._start_time
+        self.__log_writer.write_record(record)
+        clock.schedule(self.leave)
 
 
 class Wait(State):
@@ -917,12 +992,12 @@ class Wait(State):
 
         self.__until = until  #TODO: make sure until is Ref or None
         self._until_value = None
-        self._event_time = None
+        self._event_time = {"time": None, "error": None}
 
         self._log_attrs.extend(['until_value', 'event_time'])
 
     def _enter(self):
-        self._event_time = None
+        self._event_time = {"time": None, "error": None}
         if self.__until is None:
             clock.schedule(self.leave, event_time=self._start_time)
             if self._end_time is not None:
@@ -964,12 +1039,6 @@ class Wait(State):
                     clock.schedule(self.leave, event_time=cancel_time)
                     clock.schedule(self.finalize, event_time=cancel_time)
                     self._end_time = cancel_time
-
-
-class AutoFinalizeState(State):
-    def leave(self):
-        super(AutoFinalizeState, self).leave()
-        clock.schedule(self.finalize)
 
 
 class ResetClock(AutoFinalizeState):

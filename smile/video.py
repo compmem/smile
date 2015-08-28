@@ -128,7 +128,8 @@ class WidgetState(State):
         self._init_index = index
         self._widget = None
         self.__parent_widget = None
-        self._constructort_param_names = params.keys()
+        self._constructor_param_names = params.keys()
+        self._init_constructor_params = params
         for name, value in params.iteritems():
             setattr(self, "_init_" + name, value)
         if layout is None:
@@ -139,8 +140,8 @@ class WidgetState(State):
         else:
             self.__layout = layout
 
-        self._appear_time = None
-        self._disappear_time = None
+        self._appear_time = {"time": None, "error": None}
+        self._disappear_time = {"time": None, "error": None}
         self.__appear_video = None
         self.__disappear_video = None
 
@@ -149,8 +150,8 @@ class WidgetState(State):
 
         # set the log attrs
         self._log_attrs.extend(['appear_time',
-                                'disappear_time'])
-        self._log_attrs.extend(self._constructort_param_names)
+                                'disappear_time',
+                                'constructor_params'])
 
         self.__parallel = None
 
@@ -188,7 +189,7 @@ class WidgetState(State):
     def eval_init_refs(self):
         return self.transform_params(self.apply_aliases(
             {name : getattr(self, "_" + name) for
-             name in self._constructort_param_names}))
+             name in self._constructor_param_names}))
 
     def apply_aliases(self, params):
         new_params = {}
@@ -329,13 +330,15 @@ class WidgetState(State):
 
     def set_appear_time(self, appear_time):
         self._appear_time = appear_time
+        clock.schedule(self.leave)
 
     def set_disappear_time(self, disappear_time):
         self._disappear_time = disappear_time
+        clock.schedule(self.finalize)
 
     def _enter(self):
-        self._appear_time = None
-        self._disappear_time = None
+        self._appear_time = {"time": None, "error": None}
+        self._disappear_time = {"time": None, "error": None}
         self.__appear_video = None
         self.__disappear_video = None
         self.__x_pos_mode = None
@@ -355,16 +358,14 @@ class WidgetState(State):
         self.claim_exceptions()
         self.__appear_video = None
         self.show()
-        clock.schedule(self.leave)
 
     def disappear(self):
         self.claim_exceptions()
         self.__disappear_video = None
         self.unshow()
-        clock.schedule(self.finalize)
 
     def cancel(self, cancel_time):
-        if self.active:
+        if self._active:
             clock.schedule(self.leave)
             cancel_time = max(cancel_time, self._start_time)
             if self._end_time is None or cancel_time < self._end_time:
@@ -399,17 +400,18 @@ class WidgetState(State):
 
 
 class Animate(State):
+    #TODO: log updates!
     def __init__(self, target, duration=None, parent=None, save_log=True,
                  name=None, **anim_params):
         super(Animate, self).__init__(duration=duration, parent=parent,
                                       save_log=save_log, name=name)
         self.target = target  #TODO: make sure target is a WidgetState
-        self.anim_params = anim_params
-        self.initial_params = None
+        self.__anim_params = anim_params
+        self.__initial_params = None
 
     def _enter(self):
-        self.initial_params = None
-        self.target_clone = self.target.current_clone
+        self.__initial_params = None
+        self.__target_clone = self.target.current_clone
         first_update_time = self._start_time + self._exp.app.flip_interval
         clock.schedule(self.update, event_time=first_update_time,
                        repeat_interval=self._exp.app.flip_interval)
@@ -418,24 +420,24 @@ class Animate(State):
     def update(self):
         self.claim_exceptions()
         now = clock.now()
-        if self.initial_params is None:
-            self.initial_params = {
-                name : getattr(self.target_clone, name).eval() for
-                name in self.anim_params.keys()}
+        if self.__initial_params is None:
+            self.__initial_params = {
+                name : getattr(self.__target_clone, name).eval() for
+                name in self.__anim_params.keys()}
         if self._end_time is not None and now >= self._end_time:
             clock.unschedule(self.update)
             clock.schedule(self.finalize)
             now = self._end_time
         t = now - self._start_time
-        params = {name : func(t, self.initial_params[name]) for
+        params = {name : func(t, self.__initial_params[name]) for
                   name, func in
-                  self.anim_params.items()}
-        self.target_clone.live_change(
-            **self.target_clone.transform_params(
-                self.target_clone.apply_aliases(params)))
+                  self.__anim_params.items()}
+        self.__target_clone.live_change(
+            **self.__target_clone.transform_params(
+                self.__target_clone.apply_aliases(params)))
 
     def cancel(self, cancel_time):
-        if self.active and (self._end_time is None or
+        if self._active and (self._end_time is None or
                             cancel_time < self._end_time):
             self._end_time = cancel_time
 
@@ -537,7 +539,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
             self._end_time = self._start_time + self._widget._video.duration
 
     def show(self):
-        if "state" not in self._constructort_param_names:
+        if "state" not in self._constructor_param_names:
             self._widget.state = "play"
         self._widget._video._update(0)  # prevent white flash at start
         super(Video, self).show()
@@ -565,21 +567,16 @@ class ButtonPress(CallbackState):
                                           name=name)
         if buttons is None:
             self.__buttons = []
-        elif not isinstance(buttons, list):  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        elif type(buttons) not in (list, tuple):
             self.__buttons = [buttons]
         else:
             self.__buttons = buttons
         self._button_names = None
-        if correct_resp is None:
-            self._init_correct_resp = []
-        elif not isinstance(correct_resp, list):
-            self._init_correct_resp = [correct_resp]
-        else:
-            self._init_correct_resp = correct_resp
+        self._init_correct_resp = correct_resp
         self._init_base_time = None
 
         self._pressed = ''
-        self._press_time = None
+        self._press_time = {"time": None, "error": None}
         self._correct = False
         self._rt = None
 
@@ -592,7 +589,11 @@ class ButtonPress(CallbackState):
         self.__parallel = None
 
     def _enter(self):
-        self._button_names = [button.name for button in self.__buttons]
+        self._button_names = [button._name for button in self.__buttons]
+        if self._correct_resp is None:
+            self._correct_resp = []
+        elif type(self.correct_resp) not in (list, tuple):
+            self._correct_resp = [self._correct_resp]
         self.__pressed_ref = Ref(
             lambda lst: [name for name, down in lst if down],
             [(button.name, button.state == "down") for
@@ -667,13 +668,12 @@ if __name__ == '__main__':
         rect.slide(center=exp.screen.left_bottom, duration=2.0)
         rect.slide(center=exp.screen.center, duration=2.0)
 
-    with Loop(range(3)):
+    with Loop(3):
         Video(source="test_video.mp4", size=exp.screen.size, duration=5.0)
 
     with ButtonPress():
         Button(text="Click to continue", size=(exp.screen.width / 4,
                                                exp.screen.height / 4))
-
     with Meanwhile():
         Triangle(points=[0, 0, 500, 500, 0, 500],
                  color=(1.0, 1.0, 0.0, 0.5))

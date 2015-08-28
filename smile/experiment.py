@@ -42,8 +42,8 @@ _kivy_clock = kivy.clock.Clock
 # local imports
 from state import Serial, AutoFinalizeState
 from ref import val, Ref
-from log import dump, yaml2csv
 from clock import clock
+from log import LogWriter, log2csv
 
 def event_time(time, time_error=0.0):
     return {'time': time, 'error': time_error}
@@ -151,7 +151,7 @@ class ExpApp(App):
         self.video_queue = []
         self.keys_down = set()
         self.issued_key_refs = weakref.WeakValueDictionary()
-        self.mouse_pos = None
+        self.mouse_pos = (None, None)
         self.mouse_pos_ref = Ref.getattr(self, "mouse_pos")
         self.mouse_button = None
         self.mouse_button_ref = Ref.getattr(self, "mouse_button")
@@ -436,25 +436,9 @@ class Experiment(object):
         self._vars = {}
         self.issued_refs = weakref.WeakValueDictionary()
 
-        # add log locs (state.yaml, experiment.yaml)
-        self.state_log = os.path.join(self.subj_dir, 'state.yaml')
-        self.state_log_stream = open(self.state_log, 'a')
-        self.exp_log = os.path.join(self.subj_dir, 'exp.yaml')
-        self.exp_log_stream = open(self.exp_log, 'a')
         self._reserved_data_filenames = set(os.listdir(self.subj_dir))
         self._reserved_data_filenames_lock = threading.Lock()
-
-        # # grab the nice
-        # import psutil
-        # self._current_proc = psutil.Process(os.getpid())
-        # cur_nice = self._current_proc.get_nice()
-        # print "Current nice: %d" % cur_nice
-        # if hasattr(psutil,'HIGH_PRIORITY_CLASS'):
-        #     new_nice = psutil.HIGH_PRIORITY_CLASS
-        # else:
-        #     new_nice = -10
-        # self._current_proc.set_nice(new_nice)
-        # print "New nice: %d" % self._current_proc.get_nice()
+        self._state_loggers = {}
 
     def _process_args(self):
         # set up the arg parser
@@ -497,7 +481,7 @@ class Experiment(object):
         # set whether to log csv
         self.csv = args.csv
 
-    def reserve_data_filename(self, title, ext=None):
+    def reserve_data_filename(self, title, ext=None, use_timestamp=False):
         """
         Construct a unique filename for a data file in the log directory.  The
         filename will incorporate the specified 'title' string and it will have
@@ -510,21 +494,45 @@ class Experiment(object):
 
         Returns the new filename.
         """
-        timestamp = time.strftime("%Y%m%d%H%M%S", time.gmtime())
+        if use_timestamp:
+            title = "%s_%s" % (title, time.strftime("%Y%m%d%H%M%S",
+                                                    time.gmtime()))
         with self._reserved_data_filenames_lock:
             self._reserved_data_filenames |= set(os.listdir(self.subj_dir))
             for distinguisher in xrange(256):
                 if ext is None:
-                    filename = "%s_%s_%d" % (title, timestamp, distinguisher)
+                    filename = "%s_%d" % (title, distinguisher)
                 else:
-                    filename = "%s_%s_%s.%s" % (title, timestamp,
-                                                distinguisher, ext)
+                    filename = "%s_%d.%s" % (title, distinguisher, ext)
                 if filename not in self._reserved_data_filenames:
                     self._reserved_data_filenames.add(filename)
-                    return filename
+                    return os.path.join(self.subj_dir, filename)
             else:
                 raise RuntimeError(
                     "Too many data files with the same title, extension, and timestamp!")
+
+    def setup_state_logger(self, state_class_name, field_names):
+        field_names = tuple(field_names)
+        if state_class_name in self._state_loggers:
+            if field_names == self._state_loggers[state_class_name][2]:
+                return
+            raise ValueError("'field_names' changed for state class %r!" %
+                             state_class_name)
+        title = "state_" + state_class_name
+        filename = self.reserve_data_filename(title, "smlog") 
+        logger = LogWriter(filename, field_names)
+        self._state_loggers[state_class_name] = filename, logger, field_names
+
+    def close_state_loggers(self, to_csv):
+        for filename, logger, field_names in self._state_loggers.itervalues():
+            logger.close()
+            if to_csv:
+                csv_filename = (os.path.splitext(filename)[0] + ".csv")
+                log2csv(filename, csv_filename)
+        self._state_loggers = {}
+
+    def write_to_state_log(self, state_class_name, record):
+        self._state_loggers[state_class_name][1].write_record(record)
 
     @property
     def screen(self):
@@ -540,6 +548,7 @@ class Experiment(object):
         self.current_state = None
         if trace:
             self.root_state.tron()
+        self.root_state.begin_log()
         try:
             # start the first state (that's the root state)
             self.root_state.enter()
@@ -550,14 +559,8 @@ class Experiment(object):
             if self.current_state is not None:
                 self.current_state.print_traceback()
             raise
-
-        # write out csv logs if desired
-        if self.csv:
-            self.state_log_stream.flush()
-            yaml2csv(self.state_log,
-                     os.path.splitext(self.state_log)[0] + '.csv')
-            self.exp_log_stream.flush()
-            yaml2csv(self.exp_log, os.path.splitext(self.exp_log)[0] + '.csv')
+        self.root_state.end_log(True) #self.csv) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.close_state_loggers(True) #self.csv) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 class Set(AutoFinalizeState):
@@ -569,8 +572,24 @@ class Set(AutoFinalizeState):
                                   duration=0.0)
         self._init_values = kwargs
 
-        # append log vars
         self._log_attrs.extend(['values'])
+
+    def get_log_fields(self):
+        return ['instantiation_filename', 'instantiation_lineno', 'name',
+                'time', 'var_name', 'value']
+
+    def save_log(self):
+        class_name = type(self).__name__
+        for name, value in self._values.iteritems():
+            field_values = {
+                "instantiation_filename": self._instantiation_filename,
+                "instantiation_lineno": self._instantiation_lineno,
+                "name": self._name,
+                "time": self._start_time,
+                "var_name": name,
+                "value": value
+                }
+            self._exp.write_to_state_log(class_name, field_values)
         
     def _enter(self):
         for name, value in self._values.iteritems():
@@ -592,29 +611,6 @@ def Get(variable):
         exp.issued_refs[variable] = ref
         return ref
 
-
-class Log(AutoFinalizeState):
-    def __init__(self, log_file=None, parent=None, name=None,
-                 **log_items):
-        # init the parent class
-        super(Log, self).__init__(parent=parent,
-                                  name=name,
-                                  duration=0.0,
-                                  save_log=False)
-        self.__log_file = log_file
-        self._init_log_items = log_items
-
-    def _get_stream(self):
-        if self.__log_file is None:
-            stream = self._exp.exp_log_stream
-        else:
-            # make it from the name
-            stream = open(os.path.join(self._exp.subj_dir, self.__log_file), 'a')
-        return stream
-        
-    def _enter(self):
-        dump([self._log_items], self._get_stream())
-        clock.schedule(self.leave)
 
 if __name__ == '__main__':
     # can't run inside this file

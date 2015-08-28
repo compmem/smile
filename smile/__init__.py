@@ -8,7 +8,7 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # SMILE components
-from experiment import Experiment, Set, Get, Log
+from experiment import Experiment, Set, Get
 from state import (
     Parallel,
     Meanwhile,
@@ -20,6 +20,7 @@ from state import (
     Loop,
     Wait,
     Record,
+    Log,
     Func,
     ResetClock,
     Debug,
