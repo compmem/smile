@@ -8,10 +8,12 @@ Config.set("kivy", "exit_on_escape", 0)
 Config.set("graphics", "maxfps", 0)
 #Config.set('graphics', 'show_cursor', 0)
 import kivy
-EXACT_KIVY_VERSION = "1.8.0"
-if kivy.__version__ != EXACT_KIVY_VERSION:
-    raise ImportError("kivy version must be exactly %r, got %r" %
-                      (EXACT_KIVY_VERSION, kivy.__version__))
+EXACT_KIVY_VERSIONS = (
+    "1.8.0",
+    "1.9.0")
+if kivy.__version__ not in EXACT_KIVY_VERSIONS:
+    raise ImportError("kivy version must be one of %r, got %r" %
+                      (EXACT_KIVY_VERSIONS, kivy.__version__))
 import kivy.base
 class SmileEventLoop(kivy.base.EventLoopBase):
     def __init__(self):
