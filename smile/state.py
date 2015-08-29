@@ -29,7 +29,6 @@ class StateConstructionError(RuntimeError):
 class State(object):
     def __init__(self, parent=None, duration=None, save_log=True, name=None):
         self.__issued_refs = weakref.WeakValueDictionary()
-        self._state_time = None  #????????????????????????????????????????????????????????????????????
         self._start_time = None
         self._end_time = None
         self._enter_time = None
@@ -75,8 +74,8 @@ class State(object):
 
         # start the log
         self._log_attrs = ['instantiation_filename', 'instantiation_lineno',
-                           'name', 'state_time', 'start_time', 'end_time',
-                           'enter_time', 'leave_time', 'finalize_time']
+                           'name', 'start_time', 'end_time', 'enter_time',
+                           'leave_time', 'finalize_time']
 
         # cloning stuff
         self._deepcopy_attrs = []  #TODO: extend this for subclasses!
@@ -243,25 +242,15 @@ class State(object):
         lst = super(State, self).__dir__()
         return lst + self._log_attrs
 
-    def get_parent_state_time(self):
-    	"""
-    	Returns state time for the parent. If no parent, logs current time. 
-    	"""
-        if self._parent:
-            return self._parent._state_time
-        else:
-            return clock.now()
-
     def _enter(self):
         pass
 
-    def enter(self):
+    def enter(self, start_time):
         """
         Gets the starting time from the parent state
         """
         self.claim_exceptions()
-        self._state_time = self.get_parent_state_time()
-        self._start_time = self._state_time
+        self._start_time = start_time
         self._enter_time = clock.now()
         self._leave_time = None
         self._finalize_time = None
@@ -314,8 +303,6 @@ class State(object):
 
         self._leave_time = clock.now()
 
-        self.set_end_time()
-
         self._following_may_run = True
         if self._parent:
             clock.schedule(partial(self._parent.child_leave_callback, self))
@@ -363,9 +350,6 @@ class State(object):
             call_duration = clock.now() - self._finalize_time
             self.print_trace_msg("FINALIZE time=%fs, duration=%fs" %
                                  (call_time, call_duration))
-
-    def set_end_time(self):
-        pass
 
 
 class ParentState(State):
@@ -504,10 +488,11 @@ class Parallel(ParentState):
                 self.__my_children.append(inactive_child)
                 if blocking:
                     self.__blocking_children.append(inactive_child)
-                clock.schedule(inactive_child.enter)
+                clock.schedule(partial(inactive_child.enter, self._start_time))
             self.__remaining = set(self.__my_children)
             self.__blocking_remaining = set(self.__blocking_children)
         else:
+            self._end_time = self._start_time
             clock.schedule(self.leave)
 
     def child_leave_callback(self, child):
@@ -516,7 +501,7 @@ class Parallel(ParentState):
         if len(self.__blocking_remaining):
             self.__blocking_remaining.discard(child)
             if not len(self.__blocking_remaining):
-                self.set_end_time()
+                self._set_end_time()
                 if self._end_time is not None:
                     self.cancel(self._end_time)
         if not len(self.__remaining):
@@ -527,15 +512,12 @@ class Parallel(ParentState):
             for child in self.__my_children:
                 child.cancel(cancel_time)
 
-    def set_end_time(self):
-        if len(self.__blocking_children):
-            end_times = [c._end_time for c in self.__blocking_children]
-            if any([et is None for et in end_times]):
-                self._end_time = None
-            else:
-                self._end_time = max(end_times)
+    def _set_end_time(self):
+        end_times = [c._end_time for c in self.__blocking_children]
+        if any([et is None for et in end_times]):
+            self._end_time = None
         else:
-            self._end_time = self._start_time
+            self._end_time = max(end_times)
 
 
 @contextmanager
@@ -599,8 +581,9 @@ class Serial(ParentState):
         try:
             self.__current_child = (
                 self.__child_iterator.next().get_inactive_state(self))
-            clock.schedule(self.__current_child.enter)
+            clock.schedule(partial(self.__current_child.enter, self._start_time))
         except StopIteration:
+            self._end_time = self._start_time
             clock.schedule(self.leave)
 
     def child_enter_callback(self, child):
@@ -610,30 +593,26 @@ class Serial(ParentState):
 
     def child_leave_callback(self, child):
         super(Serial, self).child_leave_callback(child)
-        self._state_time = self.__current_child._end_time
-        if self._state_time is None:
+        next_time = self.__current_child._end_time
+        if next_time is None:
             self.leave()
         elif (self.__cancel_time is not None and
-            self._state_time >= self.__cancel_time):
+            next_time >= self.__cancel_time):
+            self._end_time = self.__cancel_time
             self.leave()
         else:
             try:
                 self.__current_child = (
                     self.__child_iterator.next().get_inactive_state(self))
-                clock.schedule(self.__current_child.enter)
+                clock.schedule(partial(self.__current_child.enter, next_time))
             except StopIteration:
+                self._end_time = next_time
                 clock.schedule(self.leave)
 
     def cancel(self, cancel_time):
         if self._active:
             clock.schedule(partial(self.__current_child.cancel, cancel_time))
             self.__cancel_time = cancel_time
-
-    def set_end_time(self):
-        if self.__current_child is None:
-            self._end_time = self._start_time
-        else:
-            self._end_time = self._state_time
 
     
 class If(ParentState):
@@ -679,10 +658,11 @@ class If(ParentState):
         self._outcome_index = self._cond.index(True)
         self.__selected_child = (
             self._out_states[self._outcome_index].get_inactive_state(self))
-        clock.schedule(self.__selected_child.enter)
+        clock.schedule(partial(self.__selected_child.enter, self._start_time))
 
     def child_leave_callback(self, child):
         super(If, self).child_leave_callback(child)
+        self._end_time = child._end_time
         self.leave()
 
     def __enter__(self):
@@ -694,12 +674,6 @@ class If(ParentState):
     def cancel(self, cancel_time):
         if self._active:
             self.__selected_child.cancel(cancel_time)
-
-    def set_end_time(self):
-        if self.__selected_child is None:
-            self._end_time = self._start_time
-        else:
-            self._end_time = self.__selected_child._end_time
 
 
 class Elif(Serial):
@@ -826,16 +800,17 @@ class Loop(ParentState):
         self.__current_child = None
         self.__cancel_time = None
         self.__i_iterator = self.iter_i()
-        self.start_next_iteration()
+        self.start_next_iteration(self._start_time)
 
-    def start_next_iteration(self):
+    def start_next_iteration(self, next_time):
         try:
             self._i = self.__i_iterator.next()
         except StopIteration:
+            self._end_time = next_time
             clock.schedule(self.leave)
             return
         self.__current_child = self.__body_state.get_inactive_state(self)
-        clock.schedule(self.__current_child.enter)
+        clock.schedule(partial(self.__current_child.enter, next_time))
 
     def child_enter_callback(self, child):
         super(Loop, self).child_enter_callback(child)
@@ -844,14 +819,15 @@ class Loop(ParentState):
 
     def child_leave_callback(self, child):
         super(Loop, self).child_leave_callback(child)
-        self._state_time = self.__current_child._end_time
-        if self._state_time is None:
+        next_time = self.__current_child._end_time
+        if next_time is None:
             self.leave()
         elif (self.__cancel_time is not None and
-              self._state_time >= self.__cancel_time):
+              next_time >= self.__cancel_time):
+            self._end_time = self.__cancel_time
             self.leave()
         else:
-            self.start_next_iteration()
+            self.start_next_iteration(next_time)
 
     def cancel(self, cancel_time):
         if self._active:
@@ -863,12 +839,6 @@ class Loop(ParentState):
         if not self._exp is None:
             self._exp._parents.append(self.__body_state)
         return self
-
-    def set_end_time(self):
-        if self.__current_child is None:
-            self._end_time = self._start_time
-        else:
-            self._end_time = self.__current_child._end_time
 
 
 class Record(State):
@@ -1053,10 +1023,8 @@ class ResetClock(AutoFinalizeState):
              self._init_new_time = new_time
 
     def _enter(self):
-        clock.schedule(self.leave)
-
-    def set_end_time(self):
         self._end_time = max(self._new_time, self._start_time)
+        clock.schedule(self.leave)
 
 
 class CallbackState(AutoFinalizeState):

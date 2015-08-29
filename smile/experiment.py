@@ -551,7 +551,7 @@ class Experiment(object):
         self.root_state.begin_log()
         try:
             # start the first state (that's the root state)
-            self.root_state.enter()
+            self.root_state.enter(clock.now() + 1.0)
 
             # kivy main loop
             self.app.run()
