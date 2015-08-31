@@ -252,7 +252,10 @@ class State(object):
             if (isinstance(tm, dict) and
                 len(tm) == 2 and
                 "time" in tm and "error" in tm):
-                error = ", error=%fs" % tm["error"]
+                if tm["error"] is None:
+                    error = ""
+                else:
+                    error = ", error=%fs" % tm["error"]
                 tm = tm["time"]
             else:
                 error = ""

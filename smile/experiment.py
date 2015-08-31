@@ -8,7 +8,6 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # import main modules
-#from __future__ import with_statement
 import sys
 import os
 import weakref
@@ -20,12 +19,14 @@ import threading
 import kivy_overrides
 import kivy
 import kivy.base
+from kivy.config import Config
 from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.base import EventLoop
-from kivy.core.window import Window
+#from kivy.core.window import Window
+Window = None
 from kivy.graphics.opengl import (
     glEnableVertexAttribArray,
     glVertexAttribPointer,
@@ -143,8 +144,12 @@ class Screen(object):
 
 
 class ExpApp(App):
-    def __init__(self, exp, *pargs, **kwargs):
-        super(ExpApp, self).__init__(*pargs, **kwargs)
+    def __init__(self, exp, fullscreen=None, size=None):
+        super(ExpApp, self).__init__()
+        #if size is not None:
+        #    Window.size=size
+        #if fullscreen is not None:
+        #    Window.fullscreen = fullscreen
         self.exp = exp
         self.callbacks = {}
         self.pending_flip_time = None
@@ -198,7 +203,7 @@ class ExpApp(App):
         print 1.0 / self.calc_flip_interval()  #...
         return self.wid
 
-    def _on_resize(self):
+    def _on_resize(self, *pargs):
         self.width_ref.dep_changed()
         self.height_ref.dep_changed()
 
@@ -399,18 +404,18 @@ class ExpApp(App):
 
 
 class Experiment(object):
-    def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
-                 vsync=True, background_color=(0,0,0,1), screen_ind=0):
-
-        # first process the args
+    def __init__(self, fullscreen=None, resolution=None, name="Smile"):
+        global Window
         self._process_args()
-
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #self.vsync = vsync
-        #self.fullscreen = fullscreen or self.fullscreen
-        #self.resolution = resolution
-
-        self._app = ExpApp(self)
+        self._fullscreen = self._fullscreen or fullscreen
+        self._resolution = self._resolution or resolution
+        if self._fullscreen:
+            Config.set("graphics", "fullscreen", self._fullscreen)
+        if self._resolution:
+            Config.set("graphics", "width", self._resolution[0])
+            Config.set("graphics", "height", self._resolution[1])
+        from kivy.core.window import Window
+        self._app = ExpApp(self, fullscreen=fullscreen, size=resolution)#???
 
         # set up instance for access throughout code
         self.__class__._last_instance = weakref.ref(self)
@@ -486,7 +491,9 @@ class Experiment(object):
             os.makedirs(self._subj_dir)
 
         # check for fullscreen
-        #self.fullscreen = args.fullscreen
+        self._fullscreen = args.fullscreen
+
+        self._resolution = None #...
 
         # check screen ind
         #self.screen_ind = args.screen
