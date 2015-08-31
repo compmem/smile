@@ -344,7 +344,7 @@ class ExpApp(App):
         self._last_time = self._new_time
 
         # exit if experiment done
-        if not self.exp.root_state._active:
+        if not self.exp._root_state._active:
             self.stop()
 
     def blocking_flip(self):
@@ -406,39 +406,55 @@ class Experiment(object):
         self._process_args()
 
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.vsync = vsync
-        self.fullscreen = fullscreen or self.fullscreen
-        self.resolution = resolution
+        #self.vsync = vsync
+        #self.fullscreen = fullscreen or self.fullscreen
+        #self.resolution = resolution
 
-        self.app = ExpApp(self)
-
-        # set the clear color
-        self._background_color = background_color
+        self._app = ExpApp(self)
 
         # set up instance for access throughout code
-        self.__class__.last_instance = weakref.ref(self)
+        self.__class__._last_instance = weakref.ref(self)
 
         # set up initial root state and parent stack
         Serial(name="EXPERIMENT BODY", parent=self)
-        self.root_state.set_instantiation_context(self)
-        self._parents = [self.root_state]
-
-        # we have not flipped yet
-        self.last_flip = event_time(0.0)
-        
-        # event time
-        self.last_event = event_time(0.0)
-
-        # default flip interval
-        self.flip_interval = 1.0 / 60.0
+        self._root_state.set_instantiation_context(self)
+        self._parents = [self._root_state]
 
         # place to save experimental variables
         self._vars = {}
-        self.issued_refs = weakref.WeakValueDictionary()
+        self.__issued_refs = weakref.WeakValueDictionary()
 
-        self._reserved_data_filenames = set(os.listdir(self.subj_dir))
+        self._reserved_data_filenames = set(os.listdir(self._subj_dir))
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
+
+    def get_var_ref(self, name):
+        try:
+            return self.__issued_refs[name]
+        except KeyError:
+            ref = Ref.getitem(self._vars, name)
+            self.__issued_refs[name] = ref
+            return ref
+
+    def set_var(self, name, value):
+        self._vars[name] = value
+        try:
+            ref = self.__issued_refs[name]
+        except KeyError:
+            return
+        ref.dep_changed()
+
+    def __getattr__(self, name):
+        if name[0] == "_":
+            super(Experiment, self).__getattribute__(name)
+        else:
+            return self.get_var_ref(name)
+
+    def __setattr__(self, name, value):
+        if name[0] == "_":
+            super(Experiment, self).__setattr__(name, value)
+        else:
+            return Set(**{name : value})
 
     def _process_args(self):
         # set up the arg parser
@@ -464,22 +480,22 @@ class Experiment(object):
         args = parser.parse_args()
 
         # set up the subject and subj dir
-        self.subj = args.subject
-        self.subj_dir = os.path.join('data',self.subj)
-        if not os.path.exists(self.subj_dir):
-            os.makedirs(self.subj_dir)
+        self._subj = args.subject
+        self._subj_dir = os.path.join('data', self._subj)
+        if not os.path.exists(self._subj_dir):
+            os.makedirs(self._subj_dir)
 
         # check for fullscreen
-        self.fullscreen = args.fullscreen
+        #self.fullscreen = args.fullscreen
 
         # check screen ind
-        self.screen_ind = args.screen
+        #self.screen_ind = args.screen
 
         # set the additional info
-        self.info = args.info
+        #self.info = args.info
 
         # set whether to log csv
-        self.csv = args.csv
+        self._csv = args.csv
 
     def reserve_data_filename(self, title, ext=None, use_timestamp=False):
         """
@@ -498,7 +514,7 @@ class Experiment(object):
             title = "%s_%s" % (title, time.strftime("%Y%m%d%H%M%S",
                                                     time.gmtime()))
         with self._reserved_data_filenames_lock:
-            self._reserved_data_filenames |= set(os.listdir(self.subj_dir))
+            self._reserved_data_filenames |= set(os.listdir(self._subj_dir))
             for distinguisher in xrange(256):
                 if ext is None:
                     filename = "%s_%d" % (title, distinguisher)
@@ -506,7 +522,7 @@ class Experiment(object):
                     filename = "%s_%d.%s" % (title, distinguisher, ext)
                 if filename not in self._reserved_data_filenames:
                     self._reserved_data_filenames.add(filename)
-                    return os.path.join(self.subj_dir, filename)
+                    return os.path.join(self._subj_dir, filename)
             else:
                 raise RuntimeError(
                     "Too many data files with the same title, extension, and timestamp!")
@@ -536,31 +552,25 @@ class Experiment(object):
 
     @property
     def screen(self):
-        return self.app.screen
+        return self._app.screen
 
     def run(self, trace=False):
-        """
-        Run the experiment.
-        """
-        # create the window
-        #self.app = ExpApp(self)
-
-        self.current_state = None
+        self._current_state = None
         if trace:
-            self.root_state.tron()
-        self.root_state.begin_log()
+            self._root_state.tron()
+        self._root_state.begin_log()
         try:
             # start the first state (that's the root state)
-            self.root_state.enter(clock.now() + 1.0)
+            self._root_state.enter(clock.now() + 1.0)
 
             # kivy main loop
-            self.app.run()
+            self._app.run()
         except:
-            if self.current_state is not None:
-                self.current_state.print_traceback()
+            if self._current_state is not None:
+                self._current_state.print_traceback()
             raise
-        self.root_state.end_log(True) #self.csv) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.close_state_loggers(True) #self.csv) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self._root_state.end_log(True) #self._csv) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.close_state_loggers(True) #self._csv) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 class Set(AutoFinalizeState):
@@ -593,23 +603,12 @@ class Set(AutoFinalizeState):
         
     def _enter(self):
         for name, value in self._values.iteritems():
-            self._exp._vars[name] = value
-            try:
-                ref = self._exp.issued_refs[name]
-            except KeyError:
-                continue
-            ref.dep_changed()
+            self._exp.set_var(name, value)
         clock.schedule(self.leave)
 
-        
-def Get(variable):
-    exp = Experiment.last_instance()
-    try:
-        return exp.issued_refs[variable]
-    except KeyError:
-        ref = Ref.getitem(exp._vars, variable)
-        exp.issued_refs[variable] = ref
-        return ref
+
+def Get(name):
+    return Experiment._last_instance().get_var_ref(name)
 
 
 if __name__ == '__main__':

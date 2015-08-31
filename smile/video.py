@@ -234,7 +234,7 @@ class WidgetState(State):
 
     def show(self):
         if self.__layout is None:
-            self.__parent_widget = self._exp.app.wid
+            self.__parent_widget = self._exp._app.wid
         else:
             self.__parent_widget = self.__layout._widget
         self.__parent_widget.add_widget(self._widget, index=self._index)
@@ -348,10 +348,10 @@ class WidgetState(State):
         params = self.resolve_params(params)
         self.construct(params)
 
-        self.__appear_video = self._exp.app.schedule_video(
+        self.__appear_video = self._exp._app.schedule_video(
             self.appear, self._start_time, self.set_appear_time)
         if self._end_time is not None:
-            self.__disappear_video = self._exp.app.schedule_video(
+            self.__disappear_video = self._exp._app.schedule_video(
                 self.disappear, self._end_time, self.set_disappear_time)
 
     def appear(self):
@@ -370,8 +370,8 @@ class WidgetState(State):
             cancel_time = max(cancel_time, self._start_time)
             if self._end_time is None or cancel_time < self._end_time:
                 if self.__disappear_video is not None:
-                    self._exp.app.cancel_video(self.__disappear_video)
-                self.__disappear_video = self._exp.app.schedule_video(
+                    self._exp._app.cancel_video(self.__disappear_video)
+                self.__disappear_video = self._exp._app.schedule_video(
                     self.disappear, cancel_time, self.set_disappear_time)
                 self._end_time = cancel_time
 
@@ -388,7 +388,7 @@ class WidgetState(State):
 
     def __exit__(self, type, value, tb):
         ret = self.__parallel.__exit__(type, value, tb)
-        if self._duration is None:
+        if self._init_duration is None:
             self.__parallel.set_child_blocking(0, False)
         else:
             for n in range(1, len(self.__parallel._children)):
@@ -412,9 +412,9 @@ class Animate(State):
     def _enter(self):
         self.__initial_params = None
         self.__target_clone = self.target.current_clone
-        first_update_time = self._start_time + self._exp.app.flip_interval
+        first_update_time = self._start_time + self._exp._app.flip_interval
         clock.schedule(self.update, event_time=first_update_time,
-                       repeat_interval=self._exp.app.flip_interval)
+                       repeat_interval=self._exp._app.flip_interval)
         clock.schedule(self.leave)
 
     def update(self):
@@ -616,7 +616,7 @@ class ButtonPress(CallbackState):
             return
         button = pressed_list[0]
         self._pressed = button
-        self._press_time = self._exp.app.event_time
+        self._press_time = self._exp._app.event_time
 
         # calc RT if something pressed
         self._rt = self._press_time['time'] - self._base_time

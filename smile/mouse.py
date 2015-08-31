@@ -16,13 +16,13 @@ from experiment import Experiment
 
 
 def MouseWithin(widget):
-    pos = Experiment.last_instance().app.mouse_pos_ref
+    pos = Experiment._last_instance()._app.mouse_pos_ref
     return (pos[0] >= widget.x & pos[1] >= widget.y &
             pos[0] <= widget.right & pos[1] <= widget.top)
 
 
 def MousePos(widget=None):
-    pos = Experiment.last_instance().app.mouse_pos_ref
+    pos = Experiment._last_instance()._app.mouse_pos_ref
     if widget is None:
         return pos
     else:
@@ -32,7 +32,7 @@ def MousePos(widget=None):
 
 
 def MouseButton(widget=None):
-    button = Experiment.last_instance().app.mouse_button_ref
+    button = Experiment._last_instance()._app.mouse_button_ref
     if widget is None:
         return button
     else:
@@ -101,7 +101,7 @@ class MousePress(CallbackState):
         if not len(self._buttons) or button in self._buttons:
             # it's all good!, so save it
             self._pressed = button
-            self._press_time = self._exp.app.event_time
+            self._press_time = self._exp._app.event_time
             
             # calc RT if something pressed
             self._rt = self._press_time['time'] - self._base_time

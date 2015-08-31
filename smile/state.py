@@ -23,68 +23,124 @@ from clock import clock
 
 
 class StateConstructionError(RuntimeError):
+    """
+    An error with constructing a SMILE state machine.
+    """
     pass
 
 
 class State(object):
     def __init__(self, parent=None, duration=None, save_log=True, name=None):
+        # Weak value dictionary to track Refs issued by this state.  Necessary
+        # because those Refs need to be notified when their dependencies
+        # change.  This is first so that __setattr__ will work.
         self.__issued_refs = weakref.WeakValueDictionary()
+
+        # If true, we write a log entry every time this state finalizes.
+        self.__save_log = save_log
+
+        # The custom name for this state.
+        self._name = name
+
+        # This is a convenience argument for automatically setting the end time
+        # relative to the start time.  If it evaluates to None, it has no
+        # effect.
+        self._init_duration = duration
+
+        # Start and end time for the state.  Start time is set at enter time.
+        # End time must be set before leave time.  End time will be set
+        # automatically at enter time if a duration is provided.
         self._start_time = None
         self._end_time = None
+
+        # Record of enter time, leave time, and finalize time at and after the
+        # most recent enter.
         self._enter_time = None
         self._leave_time = None
         self._finalize_time = None
 
-        self._init_duration = duration
+        # This flag is set True at enter time and False at finalize time.  It
+        # indicates that it is not safe to enter this instance for a new
+        # execution of the state.  If the instance is active a new clone of the
+        # state can be constructed and that one entered instead.
         self._active = False
-        self._following_may_run = False
-        self.__save_log = save_log
-        self._name = name
-        self.__depth = 0
-        self.__tracing = False
-        self.__log_writer = None
-        self.__log_filename = None
 
-        # get instantiation context
+        # This flag is set False at enter time and True at leave time.
+        # It indicates that it is safe for subsequent states in a series to
+        # enter.
+        self._following_may_run = False
+
+        # This indicates the correct indentation level for this state in trace
+        # output.
+        self.__depth = 0
+
+        # This flag indicates that trace output should be generated.
+        self.__tracing = False
+
+        # Record which source file and line number this constructor was called
+        # from.
         self.set_instantiation_context()
 
-        # get the exp reference
+        # Associate this state with the most recently instantiated Experiment.
         from experiment import Experiment
         try:
-            self._exp = Experiment.last_instance()
+            self._exp = Experiment._last_instance()
         except AttributeError:
             self._exp = None
 
-        # try and set the current parent
+        # Determine the parent for this state...
         if parent is None:
             if self._exp is None:
+                # If there is no explicit parent and no associated experiment,
+                # set parent to None.
                 self._parent = None
             else:
+                # If there is not explicit parent, use the state at the top of
+                # the associated experiment's parent stack.
                 self._parent = self._exp._parents[-1]
         elif parent is self._exp:
+            # If the associated experment is passed in as the parent, set this
+            # state as the associated experiment's root state.
             self._parent = None
-            self._exp.root_state = self
+            self._exp._root_state = self
         else:
             self._parent = parent
 
-        # add self to children if we have a parent
+        # If this state has a parent, add this state to its parent's children.
         if self._parent:
-            # append to children
             self._parent._children.append(self)
 
-        # start the log
+        # These are the names of attributes (minus leading underscores) which
+        # will be logged at finalization time.  Subclasses should extend this
+        # list to cause additional attributes to be logged.
         self._log_attrs = ['instantiation_filename', 'instantiation_lineno',
                            'name', 'start_time', 'end_time', 'enter_time',
                            'leave_time', 'finalize_time']
 
-        # cloning stuff
-        self._deepcopy_attrs = []  #TODO: extend this for subclasses!
+        # Concerning state cloning...
+
+        # List of attributes that should be deep copied during cloning.
+        # Subclasses should extend this list as needed.
+        self._deepcopy_attrs = []
+
+        # This will allows be the originally constructed state, even in cloned
+        # copies.
         self.__original_state = self
+
+        # This is only valid in the original state.  It is the most recent
+        # clone of the state (which could be the original itself) to have been
+        # entered.  This is used to seemlessly evaluate Refs to values from the
+        # most recently started execution of a state.
         self.__most_recently_entered_clone = self
 
     def set_instantiation_context(self, obj=None):
+        # If no object is provide as the source of he context, use self.
         if obj is None:
             obj = self
+
+        # Build a dict mapping source filenames to lists of line numbers within
+        # the corresponding file which are part of any __init__ method of obj
+        # any of obj's (recursive) base classes...
         base_inits = {}
         for base in inspect.getmro(type(obj)):
             if base is not object and hasattr(base, "__init__"):
@@ -93,10 +149,17 @@ class State(object):
                 lines, start_lineno = inspect.getsourcelines(init)
                 base_inits.setdefault(filename, []).extend(
                     range(start_lineno, start_lineno + len(lines)))
+
+        # Find the highest frame on the call stack whose source filename / line
+        # number is NOT represented in base_inits...
         for (frame, filename, lineno,
              function, code_context, index) in inspect.stack()[1:]:
             if filename in base_inits and lineno in base_inits[filename]:
                 continue
+
+            # Record the filename and line number found.  This will be the
+            # place where this state was instantiated by the user because it
+            # excludes calls to constructors State subclasses.
             self._instantiation_filename = filename
             self._instantiation_lineno = lineno
             break
@@ -105,27 +168,40 @@ class State(object):
                 "Can't figure out where instantiation took place!")
 
     def override_instantiation_context(self, depth=0):
+        # Get the desired frame from the call stack.
         (frame,
          filename,
          lineno,
          function,
          code_context,
          index) = inspect.stack()[depth + 2]
+
+        # Record the source filename and line number from the stack frame.
         self._instantiation_filename = filename
         self._instantiation_lineno = lineno
 
     def clone(self, parent):
+        # Make a shallow copy of self.
         new_clone = copy.copy(self)
+
+        # Replace certain attributes with deep copies of themselves.
         for attr in self._deepcopy_attrs:
             setattr(new_clone, attr, copy.deepcopy(getattr(self, attr)))
+
+        # Set the clone inactive.
         new_clone._active = False
+
+        # Set the parent of the clone.
         new_clone._parent = parent
+
         return new_clone
 
     def get_inactive_state(self, parent):
         if self._active or self._parent is not parent:
+            # If the state is active or has the wrong parent, return a clone.
             return self.clone(parent)
         else:
+            # Otherwise, return the state as is.
             return self
 
     def tron(self, depth=0):
@@ -136,12 +212,16 @@ class State(object):
         self.__tracing = False
 
     def print_trace_msg(self, msg):
+        # Create list of strings to identify this state (which will appear
+        # comma-separated).  Name is included only if name is not None...
         id_strs = [
             "file: %r" % self._instantiation_filename,
             "line: %d" % self._instantiation_lineno
             ]
         if self._name is not None:
             id_strs.append("name: %s" % self._name)
+
+        # Print the trace message.
         print "*** %s%s (%s): %s" % (
             "  " * self.__depth,
             type(self).__name__,
@@ -150,16 +230,24 @@ class State(object):
             )
 
     def print_traceback(self, child=None, t=None):
+        # Use the current time, if none is provided.
         if t is None:
             t = clock.now()
         if self._parent is None:
+            # If we are the root of the state tree, print the header.
             print " SMILE Traceback:"
         else:
+            # Otherwise, let our parent print its traceback first.
             self._parent.print_traceback(self, t)
+
+        # Get a string for the parenthesized state name, or an empty string if
+        # the state has no custom name...
         if self._name is None:
             name_spec = ""
         else:
             name_spec = " (%s)" % self._name
+
+        # Nested function to format time values as strings...
         def tstr(tm):
             if (isinstance(tm, dict) and
                 len(tm) == 2 and
@@ -175,11 +263,15 @@ class State(object):
                 return "%fs from now%s" % (-offset, error)
             else:
                 return "%fs ago%s" % (offset, error)
+
+        # Print traceback state header.
         print "   %s%s - file: %s, line: %d" % (
             type(self).__name__,
             name_spec,
             self._instantiation_filename,
             self._instantiation_lineno)
+
+        # Print out log attributes...
         for attr_name in self._log_attrs:
             value = val(getattr(self, attr_name))
             if attr_name.endswith("_time"):
@@ -189,49 +281,79 @@ class State(object):
 
     def claim_exceptions(self):
         if self._exp is not None:
-            self._exp.current_state = self
+            # Set self as "current_state" in associated Experiment.
+            self._exp._current_state = self
 
     def get_log_fields(self):
         return self._log_attrs
 
     def begin_log(self):
         if self.__save_log:
+            # Use the state logger facily of the associated Experiment so that
+            # only one state log is produced for the state class (rather than
+            # one per instance).
             self._exp.setup_state_logger(type(self).__name__, self.get_log_fields())
 
     def end_log(self, to_csv=False):
+        # The associated Experiment cleans up its own state loggers.
         pass
 
     @property
     def current_clone(self):
+        # This will be called in the process of setting up
+        # self,__original_state and self._most_recently_entered_clone, so it
+        # has to work without those...
         if ("_State__original_state" in self.__dict__ and
             "_State__most_recently_entered_clone" in self.__dict__):
+            # Return the most recently entered clone of the original state.
             return self.__original_state.__most_recently_entered_clone
         else:
-            return None
+            # If those attributes are not set up yet, assume self is the
+            # current clone, since no clones could have been created yet.
+            return self
 
     def get_current_attribute_value(self, name):
+        # Return the named attribute from the current clone.
         return getattr(self.current_clone, name)
 
     def __getattr__(self, name):
         internal_name = "_" + name
         if hasattr(self, internal_name):
+            # If we have an internal attribute by this name, produce a Ref that
+            # evaluates to the attribute's current value.
             try:
+                # If we already issued such a Ref, return that preexisting Ref.
                 return self.__issued_refs[name]
             except KeyError:
+                # Otherwise, create the Ref, store it, and return it.
                 ref = Ref(self.get_current_attribute_value, internal_name)
                 self.__issued_refs[name] = ref
                 return ref
         else:
+            # If we don't have an internal attribute by this name, try normal
+            # attribute retrieval method.
             return super(State, self).__getattribute__(name)
 
     def __setattr__(self, name, value):
+        # First, set the sttribute value as normal.
         super(State, self).__setattr__(name, value)
-        if name[0] != "_":
+
+        # If this isn't an internal value (with a leading underscore) or if
+        # this state is not the current clone of the original state, no further
+        # action is taken...
+        if name[0] != "_" or self.current_clone is not self:
+            #TODO: error if trying to assign to Ref attribute
             return
+
+        # If the name has the prefix "_init_" create a corresponding internal
+        # attribute without that prefix.  Set it to None for now.  At enter
+        # time it will be set to that val of the "_init_" value (resolving any
+        # Refs)...
         if name[:6] == "_init_":
             setattr(self, name[5:], None)
-        if self.current_clone is not self:
-            return
+
+        # If we've issued a Ref for this attribute, notify the Ref that its
+        # dependencies have changed.
         try:
             ref = self.__issued_refs[name[1:]]
         except KeyError:
@@ -246,9 +368,6 @@ class State(object):
         pass
 
     def enter(self, start_time):
-        """
-        Gets the starting time from the parent state
-        """
         self.claim_exceptions()
         self._start_time = start_time
         self._enter_time = clock.now()
@@ -266,9 +385,9 @@ class State(object):
         # if we don't have the exp reference, get it now
         if self._exp is None:
             from experiment import Experiment
-            self._exp = Experiment.last_instance()
+            self._exp = Experiment._last_instance()
 
-        for name, value in self.__dict__.iteritems():
+        for name, value in self.__dict__.items():
             if name[:6] == "_init_":
                 setattr(self, name[5:], val(value))
 
@@ -281,9 +400,9 @@ class State(object):
         self._enter()
 
         if self.__tracing:
-            call_time = self._enter_time - self._exp.root_state._start_time
+            call_time = self._enter_time - self._exp._root_state._start_time
             call_duration = clock.now() - self._enter_time
-            start_time = self._start_time - self._exp.root_state._start_time
+            start_time = self._start_time - self._exp._root_state._start_time
             self.print_trace_msg(
                 "ENTER time=%fs, duration=%fs, start_time=%fs" %
                 (call_time, call_duration, start_time))
@@ -311,14 +430,14 @@ class State(object):
         self._leave()
 
         if self.__tracing:
-            call_time = self._leave_time - self._exp.root_state._start_time
+            call_time = self._leave_time - self._exp._root_state._start_time
             call_duration = clock.now() - self._leave_time
             if self._end_time is None:
                  self.print_trace_msg(
                     "LEAVE time=%fs, duration=%fs, perpetual" %
                     (call_time, call_duration))
             else:
-                end_time = self._end_time - self._exp.root_state._start_time
+                end_time = self._end_time - self._exp._root_state._start_time
                 self.print_trace_msg(
                     "LEAVE time=%fs, duration=%fs, end_time=%fs" %
                     (call_time, call_duration, end_time))
@@ -346,7 +465,7 @@ class State(object):
         if self._parent:
             clock.schedule(partial(self._parent.child_finalize_callback, self))
         if self.__tracing:
-            call_time = self._finalize_time - self._exp.root_state._start_time
+            call_time = self._finalize_time - self._exp._root_state._start_time
             call_duration = clock.now() - self._finalize_time
             self.print_trace_msg("FINALIZE time=%fs, duration=%fs" %
                                  (call_time, call_duration))
@@ -525,7 +644,7 @@ def _ParallelWithPrevious(name=None, parallel_name=None):
     # get the exp reference
     from experiment import Experiment
     try:
-        exp = Experiment.last_instance()
+        exp = Experiment._last_instance()
     except AttributeError:
         raise StateConstructionError(
             "You must first instantiate an Experiment.")
@@ -648,7 +767,7 @@ class If(ParentState):
 
         # save the out_states
         self._out_states = [self.__true_state, self.__false_state]
-        
+
         # append outcome to log
         self._log_attrs.append('outcome_index')
         
@@ -713,7 +832,7 @@ def Else(name="ELSE BODY"):
     # get the exp reference
     from experiment import Experiment
     try:
-        exp = Experiment.last_instance()
+        exp = Experiment._last_instance()
     except AttributeError:
         raise StateConstructionError(
             "You must first instantiate an Experiment.")
@@ -888,7 +1007,7 @@ class Record(State):
 
     def record_change(self):
         record = val(self.__refs)
-        record["timestamp"] = self._exp.app.event_time
+        record["timestamp"] = self._exp._app.event_time
         self.__log_writer.write_record(record)
 
     def cancel(self, cancel_time):
@@ -991,7 +1110,7 @@ class Wait(State):
     def check_until(self):
         self._until_value = self.__until.eval()
         if self._until_value:
-            self._event_time = self._exp.app.event_time
+            self._event_time = self._exp._app.event_time
             clock.schedule(partial(self.cancel, self._event_time["time"]))
 
     def cancel(self, cancel_time):
@@ -1135,7 +1254,7 @@ if __name__ == '__main__':
 
     Debug(width=exp.screen.width, height=exp.screen.height)
 
-    Set(foo=1)
+    exp.foo=1
     Record(foo=Get('foo'))
     with UntilDone():
         Debug(name="FOO!")
@@ -1165,7 +1284,7 @@ if __name__ == '__main__':
             Debug(name="FOO!")
         with Serial():
             Debug(name="FOO!!!")
-            Wait(until=Get('foo')==5, name="wait until")
+            Wait(until=exp.foo==5, name="wait until")
             Debug(name="foo=5!")
 
     with Loop(10) as loop:
