@@ -45,6 +45,7 @@ from state import Serial, AutoFinalizeState
 from ref import val, Ref
 from clock import clock
 from log import LogWriter, log2csv
+from video import normalize_color_spec
 
 def event_time(time, time_error=0.0):
     return {'time': time, 'error': time_error}
@@ -404,7 +405,8 @@ class ExpApp(App):
 
 
 class Experiment(object):
-    def __init__(self, fullscreen=None, resolution=None, name="Smile"):
+    def __init__(self, fullscreen=None, resolution=None, background_color=None,
+                 name="Smile"):
         global Window
         self._process_args()
         self._fullscreen = self._fullscreen or fullscreen
@@ -415,6 +417,8 @@ class Experiment(object):
             Config.set("graphics", "width", self._resolution[0])
             Config.set("graphics", "height", self._resolution[1])
         from kivy.core.window import Window
+        if background_color is not None:
+            Window.clearcolor = normalize_color_spec(background_color)
         self._app = ExpApp(self, fullscreen=fullscreen, size=resolution)#???
 
         # set up instance for access throughout code
@@ -492,7 +496,7 @@ class Experiment(object):
         else:
             self._fullscreen = None
 
-        self._resolution = None #...
+        self._resolution = None  #TODO: command line option for resolution
 
         # set the additional info
         self._info = args.info  #?????????

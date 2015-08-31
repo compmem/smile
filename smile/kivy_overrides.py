@@ -1,5 +1,4 @@
 import sys
-import os
 
 if any([name.startswith("kivy") for name in sys.modules.keys() if
         name != "kivy_overrides"]):

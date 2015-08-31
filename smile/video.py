@@ -656,7 +656,7 @@ if __name__ == '__main__':
     from math import sin, cos
     from contextlib import nested
 
-    exp = Experiment()
+    exp = Experiment(background_color="#330000")
 
     Wait(5.0)
 
