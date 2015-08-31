@@ -25,7 +25,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.base import EventLoop
-#from kivy.core.window import Window
+# Window imported later because kivy graphics configs must come first...
 Window = None
 from kivy.graphics.opengl import (
     glEnableVertexAttribArray,
@@ -464,25 +464,21 @@ class Experiment(object):
     def _process_args(self):
         # set up the arg parser
         parser = argparse.ArgumentParser(description='Run a SMILE experiment.')
-        parser.add_argument("-s", "--subject", 
-                            help="unique subject id", 
-                            default='test000')        
-        parser.add_argument("-f", "--fullscreen", 
-                            help="toggle fullscreen", 
-                            action='store_true')   
-        parser.add_argument("-si", "--screen", 
-                            help="screen index", 
-                            type=int,
-                            default=0)        
-        parser.add_argument("-i", "--info", 
-                            help="additional run info", 
-                            default='')        
-        parser.add_argument("-c", "--csv", 
-                            help="perform automatic conversion of yaml logs to csv", 
-                            action='store_true')   
+        parser.add_argument("-s", "--subject",
+                            help="unique subject id",
+                            default='test000')
+        parser.add_argument("-f", "--fullscreen",
+                            help="toggle fullscreen",
+                            action='store_true')
+        parser.add_argument("-i", "--info",
+                            help="additional run info",
+                            default='')
+        parser.add_argument("-c", "--csv",
+                            help="perform automatic conversion of SMILE logs to csv",
+                            action='store_true')
 
         # do the parsing
-        args = parser.parse_args()
+        args = parser.parse_args(kivy_overrides.sys_argv)
 
         # set up the subject and subj dir
         self._subj = args.subject
@@ -491,15 +487,15 @@ class Experiment(object):
             os.makedirs(self._subj_dir)
 
         # check for fullscreen
-        self._fullscreen = args.fullscreen
+        if args.fullscreen:
+            self._fullscreen = "auto"
+        else:
+            self._fullscreen = None
 
         self._resolution = None #...
 
-        # check screen ind
-        #self.screen_ind = args.screen
-
         # set the additional info
-        #self.info = args.info
+        self._info = args.info  #?????????
 
         # set whether to log csv
         self._csv = args.csv

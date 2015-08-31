@@ -1,8 +1,14 @@
 import sys
+import os
 
 if any([name.startswith("kivy") for name in sys.modules.keys() if
         name != "kivy_overrides"]):
     raise ImportError("smile must be imported before kivy")
+
+# Prevent kivy from reading command line options...
+sys_argv = sys.argv[1:]
+sys.argv = sys.argv[:1]
+
 from kivy.config import Config
 Config.set("kivy", "exit_on_escape", 0)
 Config.set("graphics", "maxfps", 0)
