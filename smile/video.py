@@ -89,7 +89,97 @@ def normalize_color_spec(spec):
                                  spec)
 
 
-class WidgetState(State):
+class VisualState(State):
+    def __init__(self, duration=None, parent=None, save_log=True, name=None):
+        super(VisualState, self).__init__(parent=parent,
+                                          duration=duration,
+                                          save_log=save_log,
+                                          name=name)
+
+        self._appear_time = {"time": None, "error": None}
+        self._disappear_time = {"time": None, "error": None}
+        self.__appear_video = None
+        self.__disappear_video = None
+
+        # set the log attrs
+        self._log_attrs.extend(['appear_time',
+                                'disappear_time'])
+
+    def set_appear_time(self, appear_time):
+        self._appear_time = appear_time
+        clock.schedule(self.leave)
+
+    def set_disappear_time(self, disappear_time):
+        self._disappear_time = disappear_time
+        clock.schedule(self.finalize)
+
+    def _enter(self):
+        self._appear_time = {"time": None, "error": None}
+        self._disappear_time = {"time": None, "error": None}
+        self.__appear_video = None
+        self.__disappear_video = None
+
+        self.__appear_video = self._exp._app.schedule_video(
+            self.appear, self._start_time, self.set_appear_time)
+        if self._end_time is not None:
+            self.__disappear_video = self._exp._app.schedule_video(
+                self.disappear, self._end_time, self.set_disappear_time)
+
+    def show(self):
+        pass
+
+    def unshow(self):
+        pass
+
+    def appear(self):
+        self.claim_exceptions()
+        self.__appear_video = None
+        self.show()
+
+    def disappear(self):
+        self.claim_exceptions()
+        self.__disappear_video = None
+        self.unshow()
+
+    def cancel(self, cancel_time):
+        if self._active:
+            clock.schedule(self.leave)
+            cancel_time = max(cancel_time, self._start_time)
+            if self._end_time is None or cancel_time < self._end_time:
+                if self.__disappear_video is not None:
+                    self._exp._app.cancel_video(self.__disappear_video)
+                self.__disappear_video = self._exp._app.schedule_video(
+                    self.disappear, cancel_time, self.set_disappear_time)
+                self._end_time = cancel_time
+
+
+class BackgroundColor(VisualState):
+    layers = []
+    def __init__(self, color, duration=None, parent=None, save_log=True,
+                 name=None):
+        super(BackgroundColor, self).__init__(parent=parent,
+                                              duration=duration,
+                                              save_log=save_log,
+                                              name=name)
+        self._init_color = color
+
+    def show(self):
+        BackgroundColor.layers.append(self)
+        self._exp.set_background_color(self._color)
+
+    def unshow(self):
+        if BackgroundColor.layers[-1] is self:
+            BackgroundColor.layers.pop()
+            try:
+                color = BackgroundColor.layers[-1]._color
+            except IndexError:
+                color = None
+            self._exp.set_background_color(color)
+        else:
+            BackgroundColor.layers.remove(self)
+
+
+class WidgetState(VisualState):
     layout_stack = []
     property_aliases = {
         "left": "x",
@@ -140,18 +230,11 @@ class WidgetState(State):
         else:
             self.__layout = layout
 
-        self._appear_time = {"time": None, "error": None}
-        self._disappear_time = {"time": None, "error": None}
-        self.__appear_video = None
-        self.__disappear_video = None
-
         self.__x_pos_mode = None
         self.__y_pos_mode = None
 
         # set the log attrs
-        self._log_attrs.extend(['appear_time',
-                                'disappear_time',
-                                'constructor_params'])
+        self._log_attrs.extend(['constructor_params'])
 
         self.__parallel = None
 
@@ -337,43 +420,13 @@ class WidgetState(State):
         clock.schedule(self.finalize)
 
     def _enter(self):
-        self._appear_time = {"time": None, "error": None}
-        self._disappear_time = {"time": None, "error": None}
-        self.__appear_video = None
-        self.__disappear_video = None
+        super(WidgetState, self)._enter()
         self.__x_pos_mode = None
         self.__y_pos_mode = None
 
         params = self.eval_init_refs()
         params = self.resolve_params(params)
         self.construct(params)
-
-        self.__appear_video = self._exp._app.schedule_video(
-            self.appear, self._start_time, self.set_appear_time)
-        if self._end_time is not None:
-            self.__disappear_video = self._exp._app.schedule_video(
-                self.disappear, self._end_time, self.set_disappear_time)
-
-    def appear(self):
-        self.claim_exceptions()
-        self.__appear_video = None
-        self.show()
-
-    def disappear(self):
-        self.claim_exceptions()
-        self.__disappear_video = None
-        self.unshow()
-
-    def cancel(self, cancel_time):
-        if self._active:
-            clock.schedule(self.leave)
-            cancel_time = max(cancel_time, self._start_time)
-            if self._end_time is None or cancel_time < self._end_time:
-                if self.__disappear_video is not None:
-                    self._exp._app.cancel_video(self.__disappear_video)
-                self.__disappear_video = self._exp._app.schedule_video(
-                    self.disappear, cancel_time, self.set_disappear_time)
-                self._end_time = cancel_time
 
     def __enter__(self):
         if self.__parallel is not None:
@@ -652,13 +705,27 @@ class ButtonPress(CallbackState):
 
 if __name__ == '__main__':
     from experiment import Experiment
-    from state import Wait, Loop, Parallel, Meanwhile, UntilDone
+    from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial
     from math import sin, cos
     from contextlib import nested
 
     exp = Experiment(background_color="#330000")
 
-    Wait(5.0)
+    Wait(2.0)
+
+    Ellipse(color="white", width=100, height=100)
+    with UntilDone():
+        with Parallel():
+            BackgroundColor("blue", duration=6.0)
+            with Serial():
+                Wait(1.0)
+                BackgroundColor("green", duration=2.0)
+            with Serial():
+                Wait(2.0)
+                BackgroundColor("red", duration=2.0)
+            with Serial():
+                Wait(3.0)
+                BackgroundColor("yellow", duration=2.0)
 
     rect = Rectangle(color="purple", width=50, height=50)
     with UntilDone():
@@ -768,5 +835,5 @@ if __name__ == '__main__':
     with UntilDone():
         img.slide(size=(100, 200), duration=5.0)
 
-    Wait(5.0)
+    Wait(2.0)
     exp.run(trace=False)

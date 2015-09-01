@@ -314,7 +314,7 @@ class ExpApp(App):
             Builder.sync()
             _kivy_clock.tick_draw()
             Builder.sync()
-            kivy_needs_draw = EventLoop.window.canvas.needs_redraw
+            kivy_needs_draw = EventLoop.window.canvas.needs_redraw or need_draw
             #print (_kivy_clock.get_fps(), _kivy_clock.get_rfps(), self._new_time)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         else:
             kivy_needs_draw = False
@@ -417,8 +417,8 @@ class Experiment(object):
             Config.set("graphics", "width", self._resolution[0])
             Config.set("graphics", "height", self._resolution[1])
         from kivy.core.window import Window
-        if background_color is not None:
-            Window.clearcolor = normalize_color_spec(background_color)
+        self._background_color = background_color
+        self.set_background_color()
         self._app = ExpApp(self, fullscreen=fullscreen, size=resolution)#???
 
         # set up instance for access throughout code
@@ -436,6 +436,13 @@ class Experiment(object):
         self._reserved_data_filenames = set(os.listdir(self._subj_dir))
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
+
+    def set_background_color(self, color=None):
+        if color is None:
+            if self._background_color is None:
+                return
+            color = self._background_color
+        Window.clearcolor = normalize_color_spec(color)
 
     def get_var_ref(self, name):
         try:
