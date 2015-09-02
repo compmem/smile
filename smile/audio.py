@@ -38,6 +38,8 @@ _pyo_server = None
 # _pyo_server.start()
 
 
+#TODO: compensate for buffer lag where possible?
+
 def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1, 
                       audio='portaudio', jackname='pyo', 
                       input_device=None, output_device=None):

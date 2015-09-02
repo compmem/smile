@@ -138,23 +138,12 @@ class State(object):
         if obj is None:
             obj = self
 
-        # Build a dict mapping source filenames to lists of line numbers within
-        # the corresponding file which are part of any __init__ method of obj
-        # any of obj's (recursive) base classes...
-        base_inits = {}
-        for base in inspect.getmro(type(obj)):
-            if base is not object and hasattr(base, "__init__"):
-                init = base.__init__
-                filename = inspect.getsourcefile(init)
-                lines, start_lineno = inspect.getsourcelines(init)
-                base_inits.setdefault(filename, []).extend(
-                    range(start_lineno, start_lineno + len(lines)))
-
-        # Find the highest frame on the call stack whose source filename / line
-        # number is NOT represented in base_inits...
+        # Find the highest frame on the call stack whose function is not an
+        # "__init__" for a parent class
+        mro = inspect.getmro(type(obj))
         for (frame, filename, lineno,
-             function, code_context, index) in inspect.stack()[1:]:
-            if filename in base_inits and lineno in base_inits[filename]:
+             fname, fcode, index) in inspect.stack()[1:]:
+            if fname == "__init__" and type(frame.f_locals["self"]) in mro:
                 continue
 
             # Record the filename and line number found.  This will be the
