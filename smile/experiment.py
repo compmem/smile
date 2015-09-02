@@ -8,7 +8,6 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # import main modules
-#from __future__ import with_statement
 import sys
 import os
 import weakref
@@ -20,12 +19,14 @@ import threading
 import kivy_overrides
 import kivy
 import kivy.base
+from kivy.config import Config
 from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.base import EventLoop
-from kivy.core.window import Window
+# Window imported later because kivy graphics configs must come first...
+Window = None
 from kivy.graphics.opengl import (
     glEnableVertexAttribArray,
     glVertexAttribPointer,
@@ -44,6 +45,7 @@ from state import Serial, AutoFinalizeState
 from ref import val, Ref
 from clock import clock
 from log import LogWriter, log2csv
+from video import normalize_color_spec
 
 def event_time(time, time_error=0.0):
     return {'time': time, 'error': time_error}
@@ -143,8 +145,12 @@ class Screen(object):
 
 
 class ExpApp(App):
-    def __init__(self, exp, *pargs, **kwargs):
-        super(ExpApp, self).__init__(*pargs, **kwargs)
+    def __init__(self, exp, fullscreen=None, size=None):
+        super(ExpApp, self).__init__()
+        #if size is not None:
+        #    Window.size=size
+        #if fullscreen is not None:
+        #    Window.fullscreen = fullscreen
         self.exp = exp
         self.callbacks = {}
         self.pending_flip_time = None
@@ -198,7 +204,7 @@ class ExpApp(App):
         print 1.0 / self.calc_flip_interval()  #...
         return self.wid
 
-    def _on_resize(self):
+    def _on_resize(self, *pargs):
         self.width_ref.dep_changed()
         self.height_ref.dep_changed()
 
@@ -308,7 +314,7 @@ class ExpApp(App):
             Builder.sync()
             _kivy_clock.tick_draw()
             Builder.sync()
-            kivy_needs_draw = EventLoop.window.canvas.needs_redraw
+            kivy_needs_draw = EventLoop.window.canvas.needs_redraw or need_draw
             #print (_kivy_clock.get_fps(), _kivy_clock.get_rfps(), self._new_time)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         else:
             kivy_needs_draw = False
@@ -344,8 +350,11 @@ class ExpApp(App):
         self._last_time = self._new_time
 
         # exit if experiment done
-        if not self.exp.root_state._active:
+        if not self.exp._root_state._active:
             self.stop()
+
+        # give time to other threads
+        clock.usleep(250)
 
     def blocking_flip(self):
         EventLoop.window.dispatch('on_flip')
@@ -399,87 +408,111 @@ class ExpApp(App):
 
 
 class Experiment(object):
-    def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
-                 vsync=True, background_color=(0,0,0,1), screen_ind=0):
-
-        # first process the args
+    def __init__(self, fullscreen=None, resolution=None, background_color=None,
+                 name="Smile"):
+        global Window
         self._process_args()
-
-        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.vsync = vsync
-        self.fullscreen = fullscreen or self.fullscreen
-        self.resolution = resolution
-
-        self.app = ExpApp(self)
-
-        # set the clear color
+        self._fullscreen = self._fullscreen or fullscreen
+        self._resolution = self._resolution or resolution
+        if self._fullscreen:
+            Config.set("graphics", "fullscreen", self._fullscreen)
+        if self._resolution:
+            Config.set("graphics", "width", self._resolution[0])
+            Config.set("graphics", "height", self._resolution[1])
+        from kivy.core.window import Window
         self._background_color = background_color
+        self.set_background_color()
+        self._app = ExpApp(self, fullscreen=fullscreen, size=resolution)#???
 
         # set up instance for access throughout code
-        self.__class__.last_instance = weakref.ref(self)
+        self.__class__._last_instance = weakref.ref(self)
 
         # set up initial root state and parent stack
         Serial(name="EXPERIMENT BODY", parent=self)
-        self.root_state.set_instantiation_context(self)
-        self._parents = [self.root_state]
-
-        # we have not flipped yet
-        self.last_flip = event_time(0.0)
-        
-        # event time
-        self.last_event = event_time(0.0)
-
-        # default flip interval
-        self.flip_interval = 1.0 / 60.0
+        self._root_state.set_instantiation_context(self)
+        self._parents = [self._root_state]
 
         # place to save experimental variables
         self._vars = {}
-        self.issued_refs = weakref.WeakValueDictionary()
+        self.__issued_refs = weakref.WeakValueDictionary()
 
-        self._reserved_data_filenames = set(os.listdir(self.subj_dir))
+        self._reserved_data_filenames = set(os.listdir(self._subj_dir))
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
+
+    def set_background_color(self, color=None):
+        if color is None:
+            if self._background_color is None:
+                return
+            color = self._background_color
+        Window.clearcolor = normalize_color_spec(color)
+
+    def get_var_ref(self, name):
+        try:
+            return self.__issued_refs[name]
+        except KeyError:
+            ref = Ref.getitem(self._vars, name)
+            self.__issued_refs[name] = ref
+            return ref
+
+    def set_var(self, name, value):
+        self._vars[name] = value
+        try:
+            ref = self.__issued_refs[name]
+        except KeyError:
+            return
+        ref.dep_changed()
+
+    def __getattr__(self, name):
+        if name[0] == "_":
+            super(Experiment, self).__getattribute__(name)
+        else:
+            return self.get_var_ref(name)
+
+    def __setattr__(self, name, value):
+        if name[0] == "_":
+            super(Experiment, self).__setattr__(name, value)
+        else:
+            return Set(**{name : value})
 
     def _process_args(self):
         # set up the arg parser
         parser = argparse.ArgumentParser(description='Run a SMILE experiment.')
-        parser.add_argument("-s", "--subject", 
-                            help="unique subject id", 
-                            default='test000')        
-        parser.add_argument("-f", "--fullscreen", 
-                            help="toggle fullscreen", 
-                            action='store_true')   
-        parser.add_argument("-si", "--screen", 
-                            help="screen index", 
-                            type=int,
-                            default=0)        
-        parser.add_argument("-i", "--info", 
-                            help="additional run info", 
-                            default='')        
-        parser.add_argument("-c", "--csv", 
-                            help="perform automatic conversion of yaml logs to csv", 
-                            action='store_true')   
+        parser.add_argument("-s", "--subject",
+                            help="unique subject id",
+                            default='test000')
+        parser.add_argument("-f", "--fullscreen",
+                            help="toggle fullscreen",
+                            action='store_true')
+        parser.add_argument("-i", "--info",
+                            help="additional run info",
+                            default='')
+        parser.add_argument("-c", "--csv",
+                            help="perform automatic conversion of SMILE logs to csv",
+                            action='store_true')
 
         # do the parsing
-        args = parser.parse_args()
+        args = parser.parse_args(kivy_overrides.sys_argv)
 
         # set up the subject and subj dir
-        self.subj = args.subject
-        self.subj_dir = os.path.join('data',self.subj)
-        if not os.path.exists(self.subj_dir):
-            os.makedirs(self.subj_dir)
+        self._subj = args.subject
+        self._subj_dir = os.path.join('data', self._subj)
+        if not os.path.exists(self._subj_dir):
+            os.makedirs(self._subj_dir)
 
         # check for fullscreen
-        self.fullscreen = args.fullscreen
+        if args.fullscreen:
+            self._fullscreen = "auto"
+        else:
+            self._fullscreen = None
 
-        # check screen ind
-        self.screen_ind = args.screen
+        self._resolution = None  #TODO: command line option for resolution
 
         # set the additional info
-        self.info = args.info
+        self._info = args.info  #?????????
 
         # set whether to log csv
-        self.csv = args.csv
+        self._csv = args.csv
 
     def reserve_data_filename(self, title, ext=None, use_timestamp=False):
         """
@@ -498,7 +531,7 @@ class Experiment(object):
             title = "%s_%s" % (title, time.strftime("%Y%m%d%H%M%S",
                                                     time.gmtime()))
         with self._reserved_data_filenames_lock:
-            self._reserved_data_filenames |= set(os.listdir(self.subj_dir))
+            self._reserved_data_filenames |= set(os.listdir(self._subj_dir))
             for distinguisher in xrange(256):
                 if ext is None:
                     filename = "%s_%d" % (title, distinguisher)
@@ -506,7 +539,7 @@ class Experiment(object):
                     filename = "%s_%d.%s" % (title, distinguisher, ext)
                 if filename not in self._reserved_data_filenames:
                     self._reserved_data_filenames.add(filename)
-                    return os.path.join(self.subj_dir, filename)
+                    return os.path.join(self._subj_dir, filename)
             else:
                 raise RuntimeError(
                     "Too many data files with the same title, extension, and timestamp!")
@@ -536,31 +569,25 @@ class Experiment(object):
 
     @property
     def screen(self):
-        return self.app.screen
+        return self._app.screen
 
     def run(self, trace=False):
-        """
-        Run the experiment.
-        """
-        # create the window
-        #self.app = ExpApp(self)
-
-        self.current_state = None
+        self._current_state = None
         if trace:
-            self.root_state.tron()
-        self.root_state.begin_log()
+            self._root_state.tron()
+        self._root_state.begin_log()
         try:
             # start the first state (that's the root state)
-            self.root_state.enter()
+            self._root_state.enter(clock.now() + 1.0)
 
             # kivy main loop
-            self.app.run()
+            self._app.run()
         except:
-            if self.current_state is not None:
-                self.current_state.print_traceback()
+            if self._current_state is not None:
+                self._current_state.print_traceback()
             raise
-        self.root_state.end_log(True) #self.csv) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.close_state_loggers(True) #self.csv) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self._root_state.end_log(self._csv)
+        self.close_state_loggers(self._csv)
 
 
 class Set(AutoFinalizeState):
@@ -593,23 +620,12 @@ class Set(AutoFinalizeState):
         
     def _enter(self):
         for name, value in self._values.iteritems():
-            self._exp._vars[name] = value
-            try:
-                ref = self._exp.issued_refs[name]
-            except KeyError:
-                continue
-            ref.dep_changed()
+            self._exp.set_var(name, value)
         clock.schedule(self.leave)
 
-        
-def Get(variable):
-    exp = Experiment.last_instance()
-    try:
-        return exp.issued_refs[variable]
-    except KeyError:
-        ref = Ref.getitem(exp._vars, variable)
-        exp.issued_refs[variable] = ref
-        return ref
+
+def Get(name):
+    return Experiment._last_instance().get_var_ref(name)
 
 
 if __name__ == '__main__':

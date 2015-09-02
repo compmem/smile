@@ -17,8 +17,8 @@ from log import LogWriter, log2csv
 
 
 def Key(name):
-    exp = Experiment.last_instance()
-    return exp.app.get_key_ref(name.upper())
+    exp = Experiment._last_instance()
+    return exp._app.get_key_ref(name.upper())
 
 
 class KeyState(CallbackState):
@@ -41,12 +41,12 @@ class KeyState(CallbackState):
         pass
 
     def _callback(self):
-        self._exp.app.add_callback("KEY_DOWN", self.on_key_down)
-        self._exp.app.add_callback("KEY_UP", self.on_key_up)
+        self._exp._app.add_callback("KEY_DOWN", self.on_key_down)
+        self._exp._app.add_callback("KEY_UP", self.on_key_up)
 
     def _leave(self):
-        self._exp.app.remove_callback("KEY_DOWN", self.on_key_down)
-        self._exp.app.remove_callback("KEY_UP", self.on_key_up)
+        self._exp._app.remove_callback("KEY_DOWN", self.on_key_down)
+        self._exp._app.remove_callback("KEY_UP", self.on_key_up)
         super(KeyState, self)._leave()
 
 
