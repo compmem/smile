@@ -475,6 +475,9 @@ class Experiment(object):
         else:
             return Set(**{name : value})
 
+    def __dir__(self):
+        return super(Experiment, self).__dir__() + self._vars.keys()
+
     def _process_args(self):
         # set up the arg parser
         parser = argparse.ArgumentParser(description='Run a SMILE experiment.')

@@ -863,6 +863,7 @@ class Loop(ParentState):
         self._outcome = True
 
         self._i = None
+        self._current = None
 
         self.__body_state = Serial(parent=self, name="LOOP BODY")
         self.__body_state._instantiation_filename = self._instantiation_filename
@@ -870,18 +871,7 @@ class Loop(ParentState):
         self.__current_child = None
         self.__cancel_time = None
 
-        self._log_attrs.extend(['outcome', 'i'])
-
-    def __current(self):
-        loop = self.current_clone
-        if loop._iterable is None or isinstance(loop._iterable, int):
-            return loop._i
-        else:
-            return loop._iterable[loop._i]
-
-    @property
-    def current(self):
-        return Ref(self.__current)
+        self._log_attrs.extend(['outcome', 'i', 'current'])
 
     def iter_i(self):
         self._outcome = val(self._cond)
@@ -916,6 +906,10 @@ class Loop(ParentState):
     def start_next_iteration(self, next_time):
         try:
             self._i = self.__i_iterator.next()
+            if self._iterable is None or isinstance(self._iterable, int):
+                self._current = self._i
+            else:
+                self._current = self._iterable[self._i]
         except StopIteration:
             self._end_time = next_time
             clock.schedule(self.leave)

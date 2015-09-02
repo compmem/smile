@@ -47,7 +47,8 @@ from video import (
     GridLayout,
     PageLayout,
     ScatterLayout,
-    StackLayout
+    StackLayout,
+    BackgroundColor
     )
 from ref import Ref, val, jitter, shuffle
 #from freekey import FreeKey
