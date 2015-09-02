@@ -1119,6 +1119,8 @@ class Wait(State):
     def cancel(self, cancel_time):
         if self._active:
             cancel_time = max(cancel_time, self._start_time)
+            if self._end_time is not None:
+                cancel_time = min(cancel_time, self._end_time)
             if self.__until is None:
                 if self._end_time is None or cancel_time < self._end_time:
                     clock.unschedule(self.finalize)

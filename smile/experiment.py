@@ -353,6 +353,9 @@ class ExpApp(App):
         if not self.exp._root_state._active:
             self.stop()
 
+        # give time to other threads
+        clock.usleep(250)
+
     def blocking_flip(self):
         EventLoop.window.dispatch('on_flip')
         #glEnableVertexAttribArray(0)  # kivy has this enabled already
@@ -583,8 +586,8 @@ class Experiment(object):
             if self._current_state is not None:
                 self._current_state.print_traceback()
             raise
-        self._root_state.end_log(True) #self._csv) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.close_state_loggers(True) #self._csv) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self._root_state.end_log(self._csv)
+        self.close_state_loggers(self._csv)
 
 
 class Set(AutoFinalizeState):

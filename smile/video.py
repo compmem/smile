@@ -145,6 +145,8 @@ class VisualState(State):
         if self._active:
             clock.schedule(self.leave)
             cancel_time = max(cancel_time, self._start_time)
+            if self._end_time is not None:
+                cancel_time = min(cancel_time, self._end_time)
             if self._end_time is None or cancel_time < self._end_time:
                 if self.__disappear_video is not None:
                     self._exp._app.cancel_video(self.__disappear_video)
