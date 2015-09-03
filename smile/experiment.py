@@ -252,7 +252,10 @@ class ExpApp(App):
 
     def _on_motion(self, window, etype, me):
         if etype == "begin":
-            self.mouse_button = me.button
+            try:
+                self.mouse_button = me.button
+            except AttributeError:
+                self.mouse_button = None
             self.mouse_button_ref.dep_changed()
             self.current_touch = me
             self._trigger_callback("MOTION", pos=me.pos, button=me.button,
