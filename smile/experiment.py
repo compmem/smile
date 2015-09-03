@@ -258,7 +258,8 @@ class ExpApp(App):
                 self.mouse_button = None
             self.mouse_button_ref.dep_changed()
             self.current_touch = me
-            self._trigger_callback("MOTION", pos=me.pos, button=me.button,
+            self._trigger_callback("MOTION", pos=me.pos,
+                                   button=self.mouse_button,
                                    newly_pressed=True,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
@@ -267,7 +268,8 @@ class ExpApp(App):
             self.mouse_pos = tuple(int(round(x)) for x in  me.pos)
             self.mouse_pos_ref.dep_changed()
             self.current_touch = me
-            self._trigger_callback("MOTION", pos=me.pos, button=me.button,
+            self._trigger_callback("MOTION", pos=me.pos,
+                                   button=self.mouse_button,
                                    newly_pressed=False,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
