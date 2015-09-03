@@ -308,6 +308,9 @@ class State(object):
         # Return the named attribute from the current clone.
         return getattr(self.current_clone, name)
 
+    def attribute_update_state(self, name, value):
+        raise NotImplementedError
+
     def __getattr__(self, name):
         internal_name = "_" + name
         if hasattr(self, internal_name):
@@ -327,14 +330,21 @@ class State(object):
             return super(State, self).__getattribute__(name)
 
     def __setattr__(self, name, value):
+        # If this isn't an internal value (with a leading underscore), create
+        # an attribute update state or raise an error...
+        if name[0] != "_":
+            try:
+                self.__original_state.attribute_update_state(name, value)
+                return
+            except NotImplementedError:
+                raise AttributeError("State does not support attribute setting!")
+
         # First, set the sttribute value as normal.
         super(State, self).__setattr__(name, value)
 
-        # If this isn't an internal value (with a leading underscore) or if
-        # this state is not the current clone of the original state, no further
-        # action is taken...
-        if name[0] != "_" or self.current_clone is not self:
-            #TODO: error if trying to assign to Ref attribute
+        # If this state is not the current clone of the original state, no
+        # further action is taken...
+        if self.current_clone is not self:
             return
 
         # If the name has the prefix "_init_" create a corresponding internal

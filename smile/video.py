@@ -240,6 +240,13 @@ class WidgetState(VisualState):
 
         self.__parallel = None
 
+    def attribute_update_state(self, name, value):
+        if name in self.__widget_param_names:
+            return UpdateWidget(self, **{name : value})
+        else:
+            raise AttributeError("%r is not a property of this widget (%r)." %
+                                 (name, self))
+
     def get_current_param(self, name):
         return getattr(self.current_clone._widget, name)
 
@@ -454,19 +461,38 @@ class WidgetState(VisualState):
         return ret
 
 
+class UpdateWidget(CallbackState):
+    def __init__(self, target, parent=None, save_log=True, name=None,
+                 **kwargs):
+        super(UpdateWidget, self).__init__(duration=0.0,
+                                           parent=parent,
+                                           save_log=save_log,
+                                           name=name)
+        self.__target = target
+        self._init_values = kwargs
+        self._log_attrs.extend(['values'])
+
+    def _enter(self):
+        super(UpdateWidget, self)._enter()
+        self.__target_clone = self.__target.current_clone
+
+    def _callback(self):
+        self.__target_clone.live_change(**self._values)
+
+
 class Animate(State):
     #TODO: log updates!
     def __init__(self, target, duration=None, parent=None, save_log=True,
                  name=None, **anim_params):
         super(Animate, self).__init__(duration=duration, parent=parent,
                                       save_log=save_log, name=name)
-        self.target = target  #TODO: make sure target is a WidgetState
+        self.__target = target  #TODO: make sure target is a WidgetState
         self.__anim_params = anim_params
         self.__initial_params = None
 
     def _enter(self):
         self.__initial_params = None
-        self.__target_clone = self.target.current_clone
+        self.__target_clone = self.__target.current_clone
         first_update_time = self._start_time + self._exp._app.flip_interval
         clock.schedule(self.update, event_time=first_update_time,
                        repeat_interval=self._exp._app.flip_interval)
@@ -478,7 +504,7 @@ class Animate(State):
         if self.__initial_params is None:
             self.__initial_params = {
                 name : getattr(self.__target_clone, name).eval() for
-                name in self.__anim_params.keys()}
+                name in self.__anim_params.iterkeys()}
         if self._end_time is not None and now >= self._end_time:
             clock.unschedule(self.update)
             clock.schedule(self.finalize)
@@ -486,7 +512,7 @@ class Animate(State):
         t = now - self._start_time
         params = {name : func(t, self.__initial_params[name]) for
                   name, func in
-                  self.__anim_params.items()}
+                  self.__anim_params.iteritems()}
         self.__target_clone.live_change(
             **self.__target_clone.transform_params(
                 self.__target_clone.apply_aliases(params)))
@@ -731,6 +757,17 @@ if __name__ == '__main__':
 
     rect = Rectangle(color="purple", width=50, height=50)
     with UntilDone():
+        Wait(1.0)
+        rect.center = exp.screen.right_top
+        Wait(1.0)
+        rect.center = exp.screen.right_bottom
+        Wait(1.0)
+        rect.center = exp.screen.left_top
+        Wait(1.0)
+        rect.center = exp.screen.left_bottom
+        Wait(1.0)
+        rect.center = exp.screen.center
+        Wait(1.0)
         rect.slide(center=exp.screen.right_top, duration=2.0)
         rect.slide(center=exp.screen.right_bottom, duration=2.0)
         rect.slide(center=exp.screen.left_top, duration=2.0)
