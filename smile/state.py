@@ -30,7 +30,8 @@ class StateConstructionError(RuntimeError):
 
 
 class State(object):
-    def __init__(self, parent=None, duration=None, save_log=True, name=None):
+    def __init__(self, parent=None, duration=None, save_log=True, name=None,
+                 blocking=True):
         # Weak value dictionary to track Refs issued by this state.  Necessary
         # because those Refs need to be notified when their dependencies
         # change.  This is first so that __setattr__ will work.
@@ -41,6 +42,9 @@ class State(object):
 
         # The custom name for this state.
         self._name = name
+
+        # Whether or not this state blocks in the context of a Parallel parent.
+        self._blocking = blocking
 
         # This is a convenience argument for automatically setting the end time
         # relative to the start time.  If it evaluates to None, it has no
@@ -105,6 +109,14 @@ class State(object):
             self._exp._root_state = self
         else:
             self._parent = parent
+
+        # Raise an error if we are non-blocking, but not the child of a
+        # Parallel...
+        #TODO: check this any time self._blocking is assigned!
+        if not self._blocking and not isinstance(self._parent, Parallel):
+            raise StateConstructionError(
+                "A state which is not a child of a Parallel cannot be "
+                "non-blocking.")
 
         # If this state has a parent, add this state to its parent's children.
         if self._parent:
@@ -497,11 +509,12 @@ class ParentState(State):
 
     """
     def __init__(self, children=None, parent=None, duration=None,
-                 save_log=True, name=None):
+                 save_log=True, name=None, blocking=True):
         super(ParentState, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
-                                          name=name)
+                                          name=name,
+                                          blocking=blocking)
         # process children
         if children is None:
             children = []
@@ -569,13 +582,13 @@ class ParentState(State):
 
 
 class Parallel(ParentState):
-    def __init__(self, children=None, parent=None, save_log=True, name=None):
+    def __init__(self, children=None, parent=None, save_log=True, name=None,
+                 blocking=True):
         super(Parallel, self).__init__(children=children,
                                        parent=parent,
                                        save_log=save_log,
-                                       name=name)
-        self._children_blocking = []
-
+                                       name=name,
+                                       blocking=blocking)
         self.__my_children = []
         self.__blocking_children = []
         self.__remaining = set()
@@ -583,31 +596,21 @@ class Parallel(ParentState):
 
     def print_traceback(self, child=None, t=None):
         super(Parallel, self).print_traceback(child, t)
-        self._normalize_children_blocking()
         if child is not None:
-            if self._children_blocking[self._children.index(child)]:
+            if child._blocking:
                 print "     Blocking child..."
             else:
                 print "     Non-blocking child..."
 
-    def _normalize_children_blocking(self):
-        for _n in range(len(self._children_blocking), len(self._children)):
-            self._children_blocking.append(True)
-
-    def set_child_blocking(self, n, blocking):
-        self._normalize_children_blocking()
-        self._children_blocking[n] = blocking
-
     def _enter(self):
         super(Parallel, self)._enter()
-        self._normalize_children_blocking()
         self.__blocking_children = []
         self.__my_children = []
         if len(self._children):
-            for child, blocking in zip(self._children, self._children_blocking):
+            for child in self._children:
                 inactive_child = child.get_inactive_state(self)
                 self.__my_children.append(inactive_child)
-                if blocking:
+                if child._blocking:
                     self.__blocking_children.append(inactive_child)
                 clock.schedule(partial(inactive_child.enter, self._start_time))
             self.__remaining = set(self.__my_children)
@@ -642,7 +645,7 @@ class Parallel(ParentState):
 
 
 @contextmanager
-def _ParallelWithPrevious(name=None, parallel_name=None):
+def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
     # get the exp reference
     from experiment import Experiment
     try:
@@ -666,7 +669,8 @@ def _ParallelWithPrevious(name=None, parallel_name=None):
             parallel_parent = parent._parent
 
     # build the new Parallel state
-    with Parallel(name=parallel_name, parent=parallel_parent) as p:
+    with Parallel(name=parallel_name, parent=parallel_parent,
+                  blocking=blocking) as p:
         p.override_instantiation_context(3)
         p.claim_child(prev_state)
         with Serial(name=name) as s:
@@ -675,16 +679,18 @@ def _ParallelWithPrevious(name=None, parallel_name=None):
 
 
 @contextmanager
-def Meanwhile(name=None):
-    with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE") as p:
+def Meanwhile(name=None, blocking=True):
+    with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE",
+                               blocking=blocking) as p:
         yield p
-    p.set_child_blocking(1, False)
+    p._children[1]._blocking = False
 
 @contextmanager
-def UntilDone(name=None):
-    with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE") as p:
+def UntilDone(name=None, blocking=True):
+    with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE",
+                               blocking=blocking) as p:
         yield p
-    p.set_child_blocking(0, False)
+    p._children[0]._blocking = False
 
 
 class Serial(ParentState):
@@ -738,10 +744,11 @@ class Serial(ParentState):
     
 class If(ParentState):
     def __init__(self, conditional, true_state=None, false_state=None, 
-                 parent=None, save_log=True, name=None):
+                 parent=None, save_log=True, name=None, blocking=True):
 
         # init the parent class
-        super(If, self).__init__(parent=parent, save_log=save_log, name=name)
+        super(If, self).__init__(parent=parent, save_log=save_log, name=name,
+                                 blocking=blocking)
 
         # save a list of conds to be evaluated (last one always True, acts as the Else)
         self._init_cond = [conditional, True]
@@ -801,9 +808,11 @@ class Elif(Serial):
     """State to attach an elif to and If state.
 
     """
-    def __init__(self, conditional, parent=None, save_log=True, name=None):
+    def __init__(self, conditional, parent=None, save_log=True, name=None,
+                 blocking=True):
         # init the parent class
-        super(Elif, self).__init__(parent=parent, save_log=save_log, name=name)
+        super(Elif, self).__init__(parent=parent, save_log=save_log, name=name,
+                                   blocking=blocking)
 
         # we now know our parent, so ensure the previous child is
         # either and If or Elif state
@@ -862,8 +871,9 @@ def Else(name="ELSE BODY"):
 
 class Loop(ParentState):
     def __init__(self, iterable=None, shuffle=False, conditional=True,
-                 parent=None, save_log=True, name=None):
-        super(Loop, self).__init__(parent=parent, save_log=save_log, name=name)
+                 parent=None, save_log=True, name=None, blocking=True):
+        super(Loop, self).__init__(parent=parent, save_log=save_log, name=name,
+                                   blocking=blocking)
 
         if shuffle:
             self._init_iterable = ref.shuffle(iterable)
@@ -957,11 +967,13 @@ class Loop(ParentState):
 
 
 class Record(State):
-    def __init__(self, duration=None, parent=None, name=None, **kwargs):
+    def __init__(self, duration=None, parent=None, name=None, blocking=True,
+                 **kwargs):
         super(Record, self).__init__(parent=parent, 
                                      duration=duration, 
                                      save_log=False,
-                                     name=name)
+                                     name=name,
+                                     blocking=blocking)
 
         self.__refs = kwargs
 
@@ -1065,7 +1077,7 @@ class Log(AutoFinalizeState):
 
 class Wait(State):
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
-                 save_log=True, name=None):
+                 save_log=True, name=None, blocking=True):
         if duration is not None and jitter is not None:
             duration = ref.jitter(duration, jitter)
 
@@ -1073,7 +1085,8 @@ class Wait(State):
         super(Wait, self).__init__(parent=parent, 
                                    duration=duration, 
                                    save_log=save_log,
-                                   name=name)
+                                   name=name,
+                                   blocking=blocking)
 
         self.__until = until  #TODO: make sure until is Ref or None
         self._until_value = None
@@ -1128,27 +1141,58 @@ class Wait(State):
                     self._end_time = cancel_time
 
 
+def When(condition, body=None, name="WHEN", blocking=True):
+    if body is None:
+        body = Serial(name="WHEN_BODY")
+        body.override_instantiation_context()
+    with Serial(name=name, blocking=blocking) as s:
+        Wait(until=condition)
+    s.claim_child(body)
+    s.override_instantiation_context()
+    return body
+
+
+def While(condition, body=None, name="WHILE", blocking=True):
+    if body is None:
+        body = Serial(name="WHILE_BODY")
+        body.override_instantiation_context()
+    with Serial(name=name, blocking=blocking) as s:
+        Wait(until=condition, name="WAIT_TO_START")
+        with Parallel(name=name) as p:
+            Wait(until=Ref.not_(condition), name="WAIT_TO_STOP")
+    p.claim_child(body)
+    body._blocking = False
+    p.override_instantiation_context()
+    s.override_instantiation_context()
+    return body
+
+
 class ResetClock(AutoFinalizeState):
-    def __init__(self, new_time=None, parent=None, save_log=True, name=None):
+    def __init__(self, new_time=None, parent=None, save_log=True, name=None,
+                 blocking=True):
         # init the parent class
         super(ResetClock, self).__init__(parent=parent,
                                          save_log=save_log,
-                                         name=name)
+                                         name=name,
+                                         blocking=blocking)
         if new_time is None:
-             self._init_new_time = Ref(clock.now, use_cache=False)
+            #TODO: define "now" in ref.py
+            #TODO: use maximum of now and start time?
+            self._init_new_time = Ref(clock.now, use_cache=False)
         else:
-             self._init_new_time = new_time
+            self._init_new_time = new_time
 
     def _enter(self):
-        self._end_time = max(self._new_time, self._start_time)
+        self._end_time = self._new_time
         clock.schedule(self.leave)
 
 
 class CallbackState(AutoFinalizeState):
     def __init__(self, repeat_interval=None, duration=0.0, parent=None,
-                 save_log=True, name=None):
+                 save_log=True, name=None, blocking=True):
         super(CallbackState, self).__init__(duration=duration, parent=parent,
-                                            save_log=save_log, name=name)
+                                            save_log=save_log, name=name,
+                                            blocking=blocking)
         self._init_repeat_interval = repeat_interval
 
     def _enter(self):
@@ -1184,7 +1228,8 @@ class Func(CallbackState):
             repeat_interval=kwargs.pop("repeat_interval", None),
             duration=kwargs.pop("duration", 0.0),
             save_log=kwargs.pop("save_log", True),
-            name=kwargs.pop("name", None))
+            name=kwargs.pop("name", None),
+            blocking=kwargs.pop("blocking", True))
 
         # set up the state
         self._init_func = func
@@ -1251,6 +1296,25 @@ if __name__ == '__main__':
             Func(print_periodic)
 
     Debug(width=exp.screen.width, height=exp.screen.height)
+
+    exp.bar = False
+    with Parallel():
+        with Serial():
+            Wait(2.0)
+            Func(lambda: None)  # force variable assignment to wait until correct time
+            exp.bar = True
+            Wait(2.0)
+            Func(lambda: None)  # force variable assignment to wait until correct time
+            exp.bar = False
+            Wait(1.0)
+        When(exp.bar, Debug(name="when test"))
+        with While(exp.bar):
+            with Loop():
+                Wait(0.2)
+                Debug(name="while test")
+        with Loop(blocking=False):
+            Wait(0.5)
+            Debug(name="non-blocking test")
 
     exp.foo=1
     Record(foo=Get('foo'))

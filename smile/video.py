@@ -90,14 +90,19 @@ def normalize_color_spec(spec):
 
 
 class VisualState(State):
-    def __init__(self, duration=None, parent=None, save_log=True, name=None):
+    def __init__(self, duration=None, parent=None, save_log=True, name=None,
+                 blocking=True):
         super(VisualState, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
-                                          name=name)
+                                          name=name,
+                                          blocking=blocking)
 
         self._appear_time = {"time": None, "error": None}
         self._disappear_time = {"time": None, "error": None}
+        self._appeared = False
+        self._disappeared = False
+        self._on_screen = False
         self.__appear_video = None
         self.__disappear_video = None
 
@@ -107,15 +112,22 @@ class VisualState(State):
 
     def set_appear_time(self, appear_time):
         self._appear_time = appear_time
+        self._on_screen = True
+        self._appeared = True
         clock.schedule(self.leave)
 
     def set_disappear_time(self, disappear_time):
         self._disappear_time = disappear_time
+        self._on_screen = False
+        self._disappeared = True
         clock.schedule(self.finalize)
 
     def _enter(self):
         self._appear_time = {"time": None, "error": None}
         self._disappear_time = {"time": None, "error": None}
+        self._appeared = False
+        self._disappeared = False
+        self._on_screen = False
         self.__appear_video = None
         self.__disappear_video = None
 
@@ -158,11 +170,12 @@ class VisualState(State):
 class BackgroundColor(VisualState):
     layers = []
     def __init__(self, color, duration=None, parent=None, save_log=True,
-                 name=None):
+                 name=None, blocking=True):
         super(BackgroundColor, self).__init__(parent=parent,
                                               duration=duration,
                                               save_log=save_log,
-                                              name=name)
+                                              name=name,
+                                              blocking=blocking)
         self._init_color = color
 
     def show(self):
@@ -208,11 +221,12 @@ class WidgetState(VisualState):
         return type(name, (cls,), {"__init__" : __init__})
 
     def __init__(self, widget_class, duration=None, parent=None, save_log=True,
-                 name=None, index=0, layout=None, **params):
+                 name=None, blocking=True, index=0, layout=None, **params):
         super(WidgetState, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
-                                          name=name)
+                                          name=name,
+                                          blocking=blocking)
 
         self.__issued_refs = weakref.WeakValueDictionary()
         self.__widget_param_names = widget_class().properties().keys()
@@ -291,7 +305,7 @@ class WidgetState(VisualState):
                 new_params[props] = value
             elif isinstance(props, tuple):
                 for n, prop in enumerate(props):
-                    new_params[prop] = subvalue[n]
+                    new_params[prop] = value[n]
             else:
                 raise RuntimeError("Bad value for 'props': %r" % props)
         return new_params
@@ -451,10 +465,10 @@ class WidgetState(VisualState):
     def __exit__(self, type, value, tb):
         ret = self.__parallel.__exit__(type, value, tb)
         if self._init_duration is None:
-            self.__parallel.set_child_blocking(0, False)
+            self.__parallel._children[0]._blocking = False
         else:
-            for n in range(1, len(self.__parallel._children)):
-                self.__parallel.set_child_blocking(n, False)
+            for child in self.__parallel._children[1:]:
+                child._blocking = False
         self.__parallel = None
         if len(WidgetState.layout_stack):
             WidgetState.layout_stack.pop()
@@ -462,12 +476,14 @@ class WidgetState(VisualState):
 
 
 class UpdateWidget(CallbackState):
+    #TODO: separate log entry for each value (as in Set)
     def __init__(self, target, parent=None, save_log=True, name=None,
-                 **kwargs):
+                 blocking=True, **kwargs):
         super(UpdateWidget, self).__init__(duration=0.0,
                                            parent=parent,
                                            save_log=save_log,
-                                           name=name)
+                                           name=name,
+                                           blocking=blocking)
         self.__target = target
         self._init_values = kwargs
         self._log_attrs.extend(['values'])
@@ -483,9 +499,10 @@ class UpdateWidget(CallbackState):
 class Animate(State):
     #TODO: log updates!
     def __init__(self, target, duration=None, parent=None, save_log=True,
-                 name=None, **anim_params):
+                 name=None, blocking=True, **anim_params):
         super(Animate, self).__init__(duration=duration, parent=parent,
-                                      save_log=save_log, name=name)
+                                      save_log=save_log, name=name,
+                                      blocking=blocking)
         self.__target = target  #TODO: make sure target is a WidgetState
         self.__anim_params = anim_params
         self.__initial_params = None
@@ -587,6 +604,9 @@ widgets = [
     "Label",
     "Button",
     "Slider",
+    "TextInput",
+    "ToggleButton",
+    
     #...
     "AnchorLayout",
     "BoxLayout",
@@ -602,6 +622,8 @@ for widget in widgets:
     exec("import %s" % modname)
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
+import kivy.uix.rst
+RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
 
 
 import kivy.uix.video
@@ -641,11 +663,13 @@ def iter_nested_buttons(state):
 
 class ButtonPress(CallbackState):
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
-                 duration=None, parent=None, save_log=True, name=None):
+                 duration=None, parent=None, save_log=True, name=None,
+                 blocking=True):
         super(ButtonPress, self).__init__(parent=parent, 
                                           duration=duration,
                                           save_log=save_log,
-                                          name=name)
+                                          name=name,
+                                          blocking=blocking)
         if buttons is None:
             self.__buttons = []
         elif type(buttons) not in (list, tuple):
@@ -724,8 +748,8 @@ class ButtonPress(CallbackState):
 
     def __exit__(self, type, value, tb):
         ret = self.__parallel.__exit__(type, value, tb)
-        for n in range(1, len(self.__parallel._children)):
-            self.__parallel.set_child_blocking(n, False)
+        for child in self.__parallel._children[1:]:
+            child._blocking = False
         self.__buttons.extend(iter_nested_buttons(self.__parallel))
         self.__parallel = None
         return ret
@@ -740,6 +764,17 @@ if __name__ == '__main__':
     exp = Experiment(background_color="#330000")
 
     Wait(2.0)
+
+    with Parallel():
+        slider = Slider(min=exp.screen.left, max=exp.screen.right, duration=5.0)
+        rect = Rectangle(color="purple", width=50, height=50,
+                         center_top=exp.screen.left_top, duration=5.0)
+    with Meanwhile():
+        rect.animate(center_x=lambda t, initial: slider.value)
+
+    ti = TextInput(text="EDIT!", duration=5.0)
+    Wait(until=ti.text)
+    Label(text=ti.text, duration=5.0, font_size=50, color="white")
 
     Ellipse(color="white", width=100, height=100)
     with UntilDone():
@@ -774,8 +809,9 @@ if __name__ == '__main__':
         rect.slide(center=exp.screen.left_bottom, duration=2.0)
         rect.slide(center=exp.screen.center, duration=2.0)
 
-    with Loop(3):
-        Video(source="test_video.mp4", size=exp.screen.size, duration=5.0)
+    with Loop(3) as loop:
+        Video(source="test_video.mp4", size=exp.screen.size,
+              allow_stretch=loop.i%2, duration=5.0)
 
     with ButtonPress():
         Button(text="Click to continue", size=(exp.screen.width / 4,

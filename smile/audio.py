@@ -22,6 +22,9 @@ except ImportError:
         os_sp_dir = '/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages'
     elif sys.platform.startswith('win'):
         os_sp_dir = 'C:\Python27\Lib\site-packages'
+    else:
+        raise ImportError("Could not import pyo and no special pyo path for "
+                          "this platform (%s)." % sys.platform)
     if not os_sp_dir in sys.path:
         sys.path.append(os_sp_dir)
         import pyo
@@ -80,11 +83,12 @@ def default_init_audio_server():
 
 class Beep(Wait):
     def __init__(self, duration=None, freq=400, fadein=0.05, fadeout=0.05,
-                 volume=0.5, parent=None, save_log=True, name=None):
+                 volume=0.5, parent=None, save_log=True, name=None, blocking=True):
         super(Beep, self).__init__(parent=parent, 
                                    duration=duration, 
                                    save_log=save_log,
-                                   name=name)
+                                   name=name,
+                                   blocking=blocking)
 
         self._init_freq = freq
         self._init_fadein = fadein
@@ -136,11 +140,12 @@ class Beep(Wait):
 class SoundFile(Wait):
     def __init__(self, filename, volume=0.5, start=0.0, stop=None,
                  duration=None, loop=False, parent=None, save_log=True,
-                 name=None):
+                 name=None, blocking=True):
         super(SoundFile, self).__init__(parent=parent,
                                         duration=duration,
                                         save_log=save_log,
-                                        name=name)
+                                        name=name,
+                                        blocking=blocking)
         self._init_filename = filename
         self._init_volume = volume
         self._init_start = start
@@ -197,12 +202,14 @@ class SoundFile(Wait):
 
 
 class RecordSoundFile(Wait):
-    def __init__(self, duration=None, filename=None, parent=None, save_log=True, name=None):
+    def __init__(self, duration=None, filename=None, parent=None,
+                 save_log=True, name=None, blocking=True):
         # init the parent class
         super(RecordSoundFile, self).__init__(parent=parent,
                                               duration=duration,
                                               save_log=save_log,
-                                              name=name)
+                                              name=name,
+                                              blocking=blocking)
 
         self._init_filename = filename
         self._rec_start = None

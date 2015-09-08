@@ -43,6 +43,10 @@ class Ref(object):
     def cond(cond, true_val, false_val):
         return Ref(lambda : (true_val if cond else false_val))
 
+    @staticmethod
+    def not_(obj):
+        return Ref(operator.not_, obj)
+
     def eval(self):
         if self.cache_valid and len(self.change_callbacks):
             return self.cache_value

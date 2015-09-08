@@ -22,9 +22,11 @@ def Key(name):
 
 
 class KeyState(CallbackState):
-    def __init__(self, parent=None, duration=None, save_log=True, name=None):
+    def __init__(self, parent=None, duration=None, save_log=True, name=None,
+                 blocking=True):
         super(KeyState, self).__init__(parent=parent, duration=duration,
-                                       save_log=save_log, name=name)
+                                       save_log=save_log, name=name,
+                                       blocking=blocking)
 
     def on_key_down(self, keycode, text, modifiers, event_time):
         self.claim_exceptions()
@@ -52,12 +54,14 @@ class KeyState(CallbackState):
 
 class KeyPress(KeyState):
     def __init__(self, keys=None, correct_resp=None, base_time=None,
-                 duration=None, parent=None, save_log=True, name=None):
+                 duration=None, parent=None, save_log=True, name=None,
+                 blocking=True):
         # init the parent class
         super(KeyPress, self).__init__(parent=parent,
                                        duration=duration,
                                        save_log=save_log,
-                                       name=name)
+                                       name=name,
+                                       blocking=blocking)
 
         self._init_keys = keys
         self._init_correct_resp = correct_resp
@@ -108,9 +112,10 @@ class KeyPress(KeyState):
 
 
 class KeyRecord(KeyState):
-    def __init__(self, parent=None, duration=None, name=None):
+    def __init__(self, parent=None, duration=None, name=None, blocking=True):
         super(KeyState, self).__init__(parent=parent, duration=duration,
-                                       save_log=False, name=name)
+                                       save_log=False, name=name,
+                                       blocking=blocking)
 
     def begin_log(self):
         super(KeyRecord, self).begin_log()

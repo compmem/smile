@@ -48,11 +48,12 @@ def MouseRecord(widget=None, name="MouseRecord"):
 class MousePress(CallbackState):
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
                  widget=None, duration=None, parent=None, save_log=True,
-                 name=None):
+                 name=None, blocking=True):
         super(MousePress, self).__init__(parent=parent, 
                                          duration=duration,
                                          save_log=save_log,
-                                         name=name)
+                                         name=name,
+                                         blocking=blocking)
         self._init_buttons = buttons
         self._init_correct_resp = correct_resp
         self._init_base_time = base_time

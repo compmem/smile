@@ -51,4 +51,5 @@ from video import (
     BackgroundColor
     )
 from ref import Ref, val, jitter, shuffle
+from smile.audio import Beep, SoundFile, RecordSoundFile
 #from freekey import FreeKey
