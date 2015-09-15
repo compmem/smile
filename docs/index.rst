@@ -11,17 +11,12 @@ Welcome to smile's documentation!
 Getting Started
 ---------------
 
-* :ref:'gettingStarted'
-* :ref:'documentation'
-* :ref:'tutorial'
-* :ref:'exampleExperiments'
-* :ref:'android'
+* :ref:'So, What is Smile? <whatissmile>'
+* :ref:'Documentation <smile>'
+* :ref:'Tutorial <tutorial>'
+* :ref:'Example Experiments in Smile <exampleExperiments>'
+* :ref:'How to run smile on Android Devices <android>'
 
-
-Documentaion
-------------
-
-* :ref:'smile'
 
 	
 Indices and tables
