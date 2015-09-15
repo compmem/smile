@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Smile Tutorial Basics! &mdash; smile .99.99 documentation</title>
+    <title>Smile Tutorial Basics! &mdash; smile  documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '.99.99',
+        VERSION:     '',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,9 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="smile .99.99 documentation" href="index.html" />
+    <link rel="top" title="smile  documentation" href="index.html" />
+    <link rel="next" title="Instructions on installing and using Smile on Android" href="android.html" />
+    <link rel="prev" title="Welcome to smile’s documentation!" href="index.html" />
    
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
@@ -108,6 +110,10 @@ it <code class="docutils literal"><span class="pre">trial</span></code>. <code c
 middle of the experiment window. Notice that <code class="docutils literal"><span class="pre">trial.current</span></code>. In order to access the numbers from our random list, we need to use
 <code class="docutils literal"><span class="pre">trial.current</span></code> instead of listOfNumbers[x]. <code class="docutils literal"><span class="pre">trial.current</span></code> is a way to tell smile to access the <em>current</em> member of the
 <code class="docutils literal"><span class="pre">listOfNumbers</span></code> while looping.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Do not try and access or test the value of trial.current. As it is a reference variable, you will not be able to test the value of it outside of a smile state.</p>
+</div>
 <p>The following is a complete version of randNum1.py</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">smile</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">import</span> <span class="nn">random</span>
@@ -136,6 +142,12 @@ middle of the experiment window. Notice that <code class="docutils literal"><spa
 </pre></div>
 </div>
 </div>
+<div class="section" id="and-now-with-user-input">
+<h2>And Now, With user Input!<a class="headerlink" href="#and-now-with-user-input" title="Permalink to this headline">¶</a></h2>
+<p>The final step for our basic smile tutorial is to add user input and loggin.  Lets define the experiment. Lets say we need to ask the
+participant to press J if the number on the screen is bigger than the last number presented, and K if the number is smaller than the
+last number presented.</p>
+</div>
 </div>
 
 
@@ -149,6 +161,7 @@ middle of the experiment window. Notice that <code class="docutils literal"><spa
 <li><a class="reference internal" href="#">Smile Tutorial Basics!</a><ul>
 <li><a class="reference internal" href="#hello-world-lets-start-smiling">Hello World, Lets start Smiling!</a></li>
 <li><a class="reference internal" href="#looping-over-lists-in-style">Looping over Lists! in Style</a></li>
+<li><a class="reference internal" href="#and-now-with-user-input">And Now, With user Input!</a></li>
 </ul>
 </li>
 </ul>
@@ -156,13 +169,15 @@ middle of the experiment window. Notice that <code class="docutils literal"><spa
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to smile&#8217;s documentation!</a></li>
+      <li>Next: <a href="android.html" title="next chapter">Instructions on installing and using Smile on Android</a></li>
   </ul></li>
 </ul>
 </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/tutorial1.txt"
+      <li><a href="_sources/tutorial.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -184,14 +199,14 @@ middle of the experiment window. Notice that <code class="docutils literal"><spa
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2015, Per Sederberg.
+      &copy;2015, Author.
       
       |
       Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
       
       |
-      <a href="_sources/tutorial1.txt"
+      <a href="_sources/tutorial.txt"
           rel="nofollow">Page source</a>
     </div>
 
