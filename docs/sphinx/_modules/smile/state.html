@@ -1,0 +1,773 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>smile.state &mdash; smile  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="smile  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for smile.state</h1><div class="highlight"><pre>
+<span class="c">#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-</span>
+<span class="c">#ex: set sts=4 ts=4 sw=4 et:</span>
+<span class="c">### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##</span>
+<span class="c">#</span>
+<span class="c">#   See the COPYING file distributed along with the smile package for the</span>
+<span class="c">#   copyright and license terms.</span>
+<span class="c">#</span>
+<span class="c">### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##</span>
+
+<span class="kn">from</span> <span class="nn">pyglet</span> <span class="kn">import</span> <span class="n">clock</span>
+<span class="n">now</span> <span class="o">=</span> <span class="n">clock</span><span class="o">.</span><span class="n">_default</span><span class="o">.</span><span class="n">time</span>
+<span class="kn">import</span> <span class="nn">random</span>
+
+<span class="kn">from</span> <span class="nn">ref</span> <span class="kn">import</span> <span class="n">Ref</span><span class="p">,</span> <span class="n">val</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">rindex</span>
+<span class="kn">from</span> <span class="nn">log</span> <span class="kn">import</span> <span class="n">dump</span>
+
+<span class="c"># custom schedule functions (add delays)</span>
+<span class="k">def</span> <span class="nf">_schedule_interval_callback</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Schedule a callback with specified interval.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># schedule it</span>
+    <span class="k">if</span> <span class="n">interval</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">clock</span><span class="o">.</span><span class="n">schedule_interval</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="c"># call it</span>
+    <span class="n">func</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="viewcode-block" id="schedule_delayed_interval"><a class="viewcode-back" href="../../smile.html#smile.state.schedule_delayed_interval">[docs]</a><span class="k">def</span> <span class="nf">schedule_delayed_interval</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Schedule a callback with specified interval to begin after the</span>
+<span class="sd">    specified delay.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">clock</span><span class="o">.</span><span class="n">schedule_once</span><span class="p">(</span><span class="n">_schedule_interval_callback</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">interval</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    </div>
+<span class="k">def</span> <span class="nf">_schedule_callback</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Schedule a callback to occur every event loop.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># schedule it</span>
+    <span class="n">clock</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="c"># call it</span>
+    <span class="n">func</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="viewcode-block" id="schedule_delayed"><a class="viewcode-back" href="../../smile.html#smile.state.schedule_delayed">[docs]</a><span class="k">def</span> <span class="nf">schedule_delayed</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Schedule a callback to occur every event loop after the specified</span>
+<span class="sd">    initial delay.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">clock</span><span class="o">.</span><span class="n">schedule_once</span><span class="p">(</span><span class="n">_schedule_callback</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="RunOnEnter"><a class="viewcode-back" href="../../smile.html#smile.state.RunOnEnter">[docs]</a><span class="k">class</span> <span class="nc">RunOnEnter</span><span class="p">():</span>
+    <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="State"><a class="viewcode-back" href="../../smile.html#smile.state.State">[docs]</a><span class="k">class</span> <span class="nc">State</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base State object for the hierarchical state machine.</span>
+
+<span class="sd">    Provides framework for entering, processing, and leaving states.</span>
+
+<span class="sd">    Subclasses can customize behavior by implementing the _enter,</span>
+<span class="sd">    _callback, and _leave methods.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    interval : {0, -1, float}</span>
+<span class="sd">        The number of seconds between each call.</span>
+<span class="sd">    parent : {None, ``ParentState``}</span>
+<span class="sd">        ???</span>
+<span class="sd">    duration : {0.0, float}</span>
+<span class="sd">        Duration of the state.</span>
+<span class="sd">    save_log : bool</span>
+<span class="sd">        Whether the state logs itself.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> 
+                 <span class="n">save_log</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        interval of 0 means once, -1 means every frame.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_time</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_call_time</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_call_error</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_call_time</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_call_error</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">duration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">active</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">done</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_log</span> <span class="o">=</span> <span class="n">save_log</span>
+
+        <span class="c"># get the exp reference</span>
+        <span class="kn">from</span> <span class="nn">experiment</span> <span class="kn">import</span> <span class="n">Experiment</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exp</span> <span class="o">=</span> <span class="n">Experiment</span><span class="o">.</span><span class="n">last_instance</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exp</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># try and set the current parent</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">exp</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># try and get it from the exp</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exp</span><span class="o">.</span><span class="n">_parents</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c"># add self to children if we have a parent</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">:</span>
+            <span class="c"># append to children</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c"># start the log</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_attrs</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">,</span><span class="s">&#39;state_time&#39;</span><span class="p">,</span><span class="s">&#39;start_time&#39;</span><span class="p">,</span><span class="s">&#39;end_time&#39;</span><span class="p">,</span>
+                          <span class="s">&#39;first_call_time&#39;</span><span class="p">,</span><span class="s">&#39;first_call_error&#39;</span><span class="p">,</span>
+                          <span class="s">&#39;last_call_time&#39;</span><span class="p">,</span><span class="s">&#39;last_call_error&#39;</span><span class="p">,</span>
+                          <span class="s">&#39;duration&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="State.get_log"><a class="viewcode-back" href="../../smile.html#smile.state.State.get_log">[docs]</a>    <span class="k">def</span> <span class="nf">get_log</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">keyvals</span> <span class="o">=</span> <span class="p">[(</span><span class="n">a</span><span class="p">,</span><span class="n">val</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">a</span><span class="p">)))</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">a</span><span class="p">)</span> 
+                   <span class="k">else</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="bp">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_attrs</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">keyvals</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="State.get_log_stream"><a class="viewcode-back" href="../../smile.html#smile.state.State.get_log_stream">[docs]</a>    <span class="k">def</span> <span class="nf">get_log_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exp</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">exp</span><span class="o">.</span><span class="n">state_log_stream</span>
+        </div>
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+
+    <span class="c"># PBS: Must eventually check for specific attrs for this to work</span>
+    <span class="c">#def __getattribute__(self, name):</span>
+    <span class="c">#    return Ref(self, name)</span>
+
+    <span class="k">def</span> <span class="nf">_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="k">pass</span>
+        
+<div class="viewcode-block" id="State.callback"><a class="viewcode-back" href="../../smile.html#smile.state.State.callback">[docs]</a>    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="c"># log when we&#39;ve entered the callback the first time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_call_time</span> <span class="o">=</span> <span class="n">now</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_call_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_call_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_time</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_call_time</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_call_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_call_time</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_call_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_call_error</span>
+
+        <span class="c"># call the user-defined callback</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_callback</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+
+        <span class="c"># save the dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span>
+
+        <span class="c"># see if done (check to make sure we didn&#39;t already call leave)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">done</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># we&#39;re done</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">leave</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="State.get_parent_state_time"><a class="viewcode-back" href="../../smile.html#smile.state.State.get_parent_state_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_parent_state_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">get_state_time</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">now</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="State.advance_parent_state_time"><a class="viewcode-back" href="../../smile.html#smile.state.State.advance_parent_state_time">[docs]</a>    <span class="k">def</span> <span class="nf">advance_parent_state_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">advance_state_time</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_enter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="State.enter"><a class="viewcode-back" href="../../smile.html#smile.state.State.enter">[docs]</a>    <span class="k">def</span> <span class="nf">enter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># get the starting time from the parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parent_state_time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_time</span>
+
+        <span class="c"># add the callback to the schedule</span>
+        <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_time</span> <span class="o">-</span> <span class="n">now</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">delay</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">issubclass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span><span class="n">RunOnEnter</span><span class="p">):</span>
+            <span class="c"># parents states (and states like Logging) run immediately</span>
+            <span class="n">delay</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c"># schedule it for every frame</span>
+            <span class="n">schedule_delayed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">callback</span><span class="p">,</span> <span class="n">delay</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># schedule the interval (0 means once)</span>
+            <span class="n">schedule_delayed_interval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">callback</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">)</span>
+
+        <span class="c"># say we&#39;re active</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">active</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># if we don&#39;t have the exp reference, get it now</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exp</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">experiment</span> <span class="kn">import</span> <span class="n">Experiment</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exp</span> <span class="o">=</span> <span class="n">Experiment</span><span class="o">.</span><span class="n">last_instance</span><span class="p">()</span>
+            
+        <span class="c"># custom enter code</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enter</span><span class="p">()</span>
+
+        <span class="c"># update the parent time if necessary</span>
+        <span class="c"># moved to after _enter in case we update duration</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">advance_parent_state_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+
+        <span class="k">pass</span>
+</div>
+    <span class="k">def</span> <span class="nf">_leave</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="State.leave"><a class="viewcode-back" href="../../smile.html#smile.state.State.leave">[docs]</a>    <span class="k">def</span> <span class="nf">leave</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># get the end time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span> <span class="o">=</span> <span class="n">now</span><span class="p">()</span>
+        
+        <span class="c"># update the parent state time to actual elapsed time if necessary</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span><span class="n">ParentState</span><span class="p">):</span> <span class="c">#isinstance(self, ParentState):</span>
+                <span class="c"># advance the duration the children moved the this parent</span>
+                <span class="n">duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_time</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># advance the duration of this state</span>
+                <span class="n">duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">advance_parent_state_time</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
+
+        <span class="c"># remove the callback from the schedule</span>
+        <span class="n">clock</span><span class="o">.</span><span class="n">unschedule</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">callback</span><span class="p">)</span>
+
+        <span class="c"># notify the parent that we&#39;re done</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">active</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">done</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">check</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># call custom leave code</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_leave</span><span class="p">()</span>
+
+        <span class="c"># write log to the state log</span>
+        <span class="c">#print self.get_log()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_log</span><span class="p">:</span>
+            <span class="n">dump</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">get_log</span><span class="p">()],</span><span class="bp">self</span><span class="o">.</span><span class="n">get_log_stream</span><span class="p">())</span>
+        <span class="k">pass</span>
+    
+</div></div>
+<div class="viewcode-block" id="ParentState"><a class="viewcode-back" href="../../smile.html#smile.state.ParentState">[docs]</a><span class="k">class</span> <span class="nc">ParentState</span><span class="p">(</span><span class="n">State</span><span class="p">,</span> <span class="n">RunOnEnter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base state for parents that can hold children states. Only parent</span>
+<span class="sd">    states can contain other states.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">save_log</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ParentState</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">interval</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span> 
+                                          <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span> 
+                                          <span class="n">save_log</span><span class="o">=</span><span class="n">save_log</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="ParentState.get_state_time"><a class="viewcode-back" href="../../smile.html#smile.state.ParentState.get_state_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_state_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_time</span>
+</div>
+<div class="viewcode-block" id="ParentState.advance_state_time"><a class="viewcode-back" href="../../smile.html#smile.state.ParentState.advance_state_time">[docs]</a>    <span class="k">def</span> <span class="nf">advance_state_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_time</span> <span class="o">+=</span> <span class="n">duration</span>
+</div>
+<div class="viewcode-block" id="ParentState.claim_child"><a class="viewcode-back" href="../../smile.html#smile.state.ParentState.claim_child">[docs]</a>    <span class="k">def</span> <span class="nf">claim_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">child</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">rindex</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">children</span><span class="p">,</span><span class="n">child</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">child</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+        <span class="n">child</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_enter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># set all children to not done</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">done</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_advanced</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># for Parallel children</span>
+
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># push self as current parent</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">exp</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exp</span><span class="o">.</span><span class="n">_parents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">tb</span><span class="p">):</span>
+        <span class="c"># pop self off</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">exp</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exp</span><span class="o">.</span><span class="n">_parents</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="Parallel"><a class="viewcode-back" href="../../smile.html#smile.state.Parallel">[docs]</a><span class="k">class</span> <span class="nc">Parallel</span><span class="p">(</span><span class="n">ParentState</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Parallel Parent State is done when all its children have</span>
+<span class="sd">    finished.</span>
+<span class="sd">    &quot;&quot;&quot;</span>        
+    <span class="k">def</span> <span class="nf">_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="c"># process the children</span>
+            <span class="c"># start those that are not active and not done</span>
+            <span class="n">num_done</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">done</span><span class="p">:</span>
+                    <span class="n">num_done</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+                    <span class="n">c</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">num_done</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">):</span>
+                <span class="c"># we&#39;re done</span>
+                <span class="c">#self.interval = 0</span>
+                <span class="c"># advance the state_time</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">state_time</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_advanced</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">leave</span><span class="p">()</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="Parallel.advance_state_time"><a class="viewcode-back" href="../../smile.html#smile.state.Parallel.advance_state_time">[docs]</a>    <span class="k">def</span> <span class="nf">advance_state_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">):</span>
+        <span class="c"># advance the longest duration</span>
+        <span class="n">to_advance</span> <span class="o">=</span> <span class="n">duration</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_advanced</span>
+        <span class="k">if</span> <span class="n">to_advance</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c">#self.state_time += to_advance</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_advanced</span> <span class="o">+=</span> <span class="n">to_advance</span>
+
+</div></div>
+<div class="viewcode-block" id="Serial"><a class="viewcode-back" href="../../smile.html#smile.state.Serial">[docs]</a><span class="k">class</span> <span class="nc">Serial</span><span class="p">(</span><span class="n">ParentState</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Serial Parent State is done when the last state in the chain is</span>
+<span class="sd">    finished.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="c"># process the children</span>
+            <span class="c"># start those that are not active and not done</span>
+            <span class="n">num_done</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">done</span><span class="p">:</span>
+                    <span class="n">num_done</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> \
+                            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">done</span> <span class="ow">and</span> \
+                            <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">duration</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="c"># we have to wait until it&#39;s done</span>
+                        <span class="k">break</span>
+
+                    <span class="c"># start the next one</span>
+                    <span class="n">c</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">num_done</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">):</span>
+                <span class="c"># we&#39;re done</span>
+                <span class="c">#self.interval = 0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">leave</span><span class="p">()</span>
+        <span class="k">pass</span>
+
+    </div>
+<div class="viewcode-block" id="If"><a class="viewcode-back" href="../../smile.html#smile.state.If">[docs]</a><span class="k">class</span> <span class="nc">If</span><span class="p">(</span><span class="n">ParentState</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parent state to implement conditional branching.</span>
+
+<span class="sd">    key = KeyResponse([&#39;Y&#39;,&#39;N&#39;])</span>
+<span class="sd">    If((key[&#39;rt&#39;]&gt;2.0)&amp;(key[&#39;resp&#39;] != None), stateA, stateB)</span>
+
+<span class="sd">    True and false states are created if they are not</span>
+<span class="sd">    passed in.  That way we can do</span>
+
+<span class="sd">    with If((key[&#39;rt&#39;]&gt;2.0)&amp;(key[&#39;resp&#39;] != None)) as if_state:</span>
+<span class="sd">        with if_state.true_state:</span>
+<span class="sd">            # fill the true state</span>
+<span class="sd">            pass</span>
+<span class="sd">        with if_state.false_state:</span>
+<span class="sd">            # fill the false state</span>
+<span class="sd">            pass</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conditional</span><span class="p">,</span> <span class="n">true_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">false_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> 
+                 <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">save_log</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+        <span class="c"># init the parent class</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">If</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span> <span class="n">duration</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> 
+                                 <span class="n">save_log</span><span class="o">=</span><span class="n">save_log</span><span class="p">)</span>
+
+        <span class="c"># save the cond</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond</span> <span class="o">=</span> <span class="n">conditional</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outcome</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">true_state</span> <span class="o">=</span> <span class="n">true_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">false_state</span> <span class="o">=</span> <span class="n">false_state</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">true_state</span><span class="p">:</span>
+            <span class="c"># make sure to set this as the parent of the true state</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">claim_child</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">true_state</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># create the true state</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">true_state</span> <span class="o">=</span> <span class="n">Serial</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c"># process the false state similarly</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">false_state</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">claim_child</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">false_state</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># create the true state</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">false_state</span> <span class="o">=</span> <span class="n">Serial</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c"># append outcome to log</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_attrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;outcome&#39;</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">_enter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># reset outcome so we re-evaluate if called in loop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outcome</span> <span class="o">=</span> <span class="n">val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cond</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">If</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_enter</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">done</span> <span class="o">=</span> <span class="bp">False</span>
+
+            <span class="c"># process the outcome</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">outcome</span><span class="p">:</span>
+                <span class="c"># get the first state</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">true_state</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">false_state</span>
+
+            <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">c</span><span class="o">.</span><span class="n">done</span><span class="p">:</span>
+                <span class="n">done</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+                <span class="c"># start the winning state</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>
+
+            <span class="c"># check if done</span>
+            <span class="k">if</span> <span class="n">done</span><span class="p">:</span>
+                <span class="c">#self.interval = 0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">leave</span><span class="p">()</span>
+
+                </div>
+<div class="viewcode-block" id="Loop"><a class="viewcode-back" href="../../smile.html#smile.state.Loop">[docs]</a><span class="k">class</span> <span class="nc">Loop</span><span class="p">(</span><span class="n">Serial</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Loop state that can loop over an iterable or run repeatedly while</span>
+<span class="sd">    a conditional evaluates to True.</span>
+<span class="sd">    </span>
+<span class="sd">    with Loop(block) as trial:</span>
+<span class="sd">        Show(Image(trial.current[&#39;image&#39;]), 2.0)</span>
+<span class="sd">        Wait(.5)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterable</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">conditional</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> 
+                 <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">save_log</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Loop</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span> <span class="n">duration</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> 
+                                   <span class="n">save_log</span><span class="o">=</span><span class="n">save_log</span><span class="p">)</span>
+
+        <span class="c"># otherwise, assume it&#39;s a list of dicts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iterable</span> <span class="o">=</span> <span class="n">iterable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond</span> <span class="o">=</span> <span class="n">conditional</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outcome</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># set to first in loop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+                    
+        <span class="c"># append outcome to log</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_attrs</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;outcome&#39;</span><span class="p">,</span><span class="s">&#39;i&#39;</span><span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">current</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterable</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;iterable&#39;</span><span class="p">][</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;i&#39;</span><span class="p">]]</span>
+
+    <span class="k">def</span> <span class="nf">_enter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># get the parent enter</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Loop</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_enter</span><span class="p">()</span>
+
+        <span class="c"># reset outcome so we re-evaluate if called in loop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outcome</span> <span class="o">=</span> <span class="n">val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cond</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">check</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="c"># check the outcome each time</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">outcome</span><span class="p">:</span>
+                <span class="c"># we should stop now</span>
+                <span class="c">#self.interval = 0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">leave</span><span class="p">()</span>
+                <span class="k">return</span>
+                
+            <span class="c"># process the children            </span>
+            <span class="c"># start those that are not active and not done</span>
+            <span class="n">num_done</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">done</span><span class="p">:</span>
+                    <span class="n">num_done</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">active</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> \
+                            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">done</span> <span class="ow">and</span> \
+                            <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">duration</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="c"># we have to wait until it&#39;s done</span>
+                        <span class="k">break</span>
+
+                    <span class="c"># start the next one</span>
+                    <span class="n">c</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">num_done</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">):</span>
+                <span class="c"># we&#39;re done with this sequence</span>
+                <span class="n">finished</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterable</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="c"># see if we&#39;re done with the loop</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iterable</span><span class="p">,</span><span class="n">recurse</span><span class="o">=</span><span class="bp">False</span><span class="p">)):</span>
+                        <span class="c"># we&#39;re really done</span>
+                        <span class="n">finished</span> <span class="o">=</span> <span class="bp">True</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">leave</span><span class="p">()</span>
+                        <span class="c"># reset to start if inside another loop</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c"># dump log</span>
+                        <span class="n">dump</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">get_log</span><span class="p">()],</span><span class="bp">self</span><span class="o">.</span><span class="n">get_log_stream</span><span class="p">())</span>
+
+                        <span class="c"># set to next</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                        
+                <span class="c"># update everything for the next loop</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">finished</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_enter</span><span class="p">()</span>
+                    
+        <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="Wait"><a class="viewcode-back" href="../../smile.html#smile.state.Wait">[docs]</a><span class="k">class</span> <span class="nc">Wait</span><span class="p">(</span><span class="n">State</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    State that will wait a specified time in seconds.  It is possible</span>
+<span class="sd">    to keep the state active or simply move the parent&#39;s state time</span>
+<span class="sd">    ahead.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">jitter</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">stay_active</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> 
+                 <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">save_log</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="c"># init the parent class</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Wait</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">interval</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span> 
+                                   <span class="n">duration</span><span class="o">=</span><span class="n">val</span><span class="p">(</span><span class="n">duration</span><span class="p">),</span> 
+                                   <span class="n">save_log</span><span class="o">=</span><span class="n">save_log</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stay_active</span> <span class="o">=</span> <span class="n">stay_active</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jitter</span> <span class="o">=</span> <span class="n">jitter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wait_duration</span> <span class="o">=</span> <span class="n">duration</span>
+
+    <span class="k">def</span> <span class="nf">_enter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># get the parent enter</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Wait</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_enter</span><span class="p">()</span>
+
+        <span class="c"># set the duration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wait_duration</span><span class="p">),</span>
+                                       <span class="n">val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wait_duration</span><span class="p">)</span><span class="o">+</span><span class="n">val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jitter</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stay_active</span> <span class="ow">or</span> <span class="n">now</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_time</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
+            <span class="c"># we&#39;re done</span>
+            <span class="c">#self.interval = 0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">leave</span><span class="p">()</span>
+
+</div>
+<div class="viewcode-block" id="ResetClock"><a class="viewcode-back" href="../../smile.html#smile.state.ResetClock">[docs]</a><span class="k">class</span> <span class="nc">ResetClock</span><span class="p">(</span><span class="n">State</span><span class="p">,</span> <span class="n">RunOnEnter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    State that will reset the clock of its parent to a specific time</span>
+<span class="sd">    (or now if not specified).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_time</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">save_log</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="c"># init the parent class</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ResetClock</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span> 
+                                         <span class="n">duration</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> 
+                                         <span class="n">save_log</span><span class="o">=</span><span class="n">save_log</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_time</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># eval to now if nothing specified</span>
+            <span class="n">new_time</span> <span class="o">=</span> <span class="n">Ref</span><span class="p">(</span><span class="n">gfunc</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span><span class="n">now</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">new_time</span> <span class="o">=</span> <span class="n">new_time</span>
+
+    <span class="k">def</span> <span class="nf">_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">val</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">new_time</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parent_state_time</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">advance_parent_state_time</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
+    
+</div>
+<div class="viewcode-block" id="Func"><a class="viewcode-back" href="../../smile.html#smile.state.Func">[docs]</a><span class="k">class</span> <span class="nc">Func</span><span class="p">(</span><span class="n">State</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    State that will call a Python function, passing this state as the</span>
+<span class="sd">    first argument.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> 
+                 <span class="n">interval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> 
+                 <span class="n">save_log</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="c"># init the parent class</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Func</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span> 
+                                   <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span> 
+                                   <span class="n">save_log</span><span class="o">=</span><span class="n">save_log</span><span class="p">)</span>
+
+        <span class="c"># set up the state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="c"># process the refs</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">]</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="kn">from</span> <span class="nn">experiment</span> <span class="kn">import</span> <span class="n">Experiment</span>
+
+    <span class="k">def</span> <span class="nf">print_dt</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="o">*</span><span class="n">txt</span><span class="p">):</span>
+        <span class="k">print</span> <span class="n">txt</span><span class="p">,</span> <span class="n">now</span><span class="p">()</span><span class="o">-</span><span class="n">state</span><span class="o">.</span><span class="n">state_time</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">dt</span>
+
+    <span class="n">exp</span> <span class="o">=</span> <span class="n">Experiment</span><span class="p">()</span>
+
+    <span class="c"># with implied parents</span>
+    <span class="n">block</span> <span class="o">=</span> <span class="p">[{</span><span class="s">&#39;val&#39;</span><span class="p">:</span><span class="n">i</span><span class="p">}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+    <span class="k">with</span> <span class="n">Loop</span><span class="p">(</span><span class="n">block</span><span class="p">)</span> <span class="k">as</span> <span class="n">trial</span><span class="p">:</span>
+        <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">trial</span><span class="o">.</span><span class="n">current</span><span class="p">[</span><span class="s">&#39;val&#39;</span><span class="p">]])</span>
+        <span class="n">Wait</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">If</span><span class="p">(</span><span class="n">trial</span><span class="o">.</span><span class="n">current</span><span class="p">[</span><span class="s">&#39;val&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">block</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+           <span class="n">Wait</span><span class="p">(</span><span class="mf">2.</span><span class="p">))</span>
+
+    <span class="n">block</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">Loop</span><span class="p">(</span><span class="n">block</span><span class="p">)</span> <span class="k">as</span> <span class="n">trial</span><span class="p">:</span>
+        <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">trial</span><span class="o">.</span><span class="n">current</span><span class="p">])</span>
+        <span class="n">Wait</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">If</span><span class="p">(</span><span class="n">trial</span><span class="o">.</span><span class="n">current</span><span class="o">==</span><span class="n">block</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+           <span class="n">Wait</span><span class="p">(</span><span class="mf">2.</span><span class="p">))</span>
+
+
+    <span class="n">If</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> 
+       <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;True&quot;</span><span class="p">]),</span>
+       <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;False&quot;</span><span class="p">]))</span>
+    <span class="n">Wait</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">If</span><span class="p">(</span><span class="bp">False</span><span class="p">,</span> 
+       <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;True&quot;</span><span class="p">]),</span>
+       <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;False&quot;</span><span class="p">]))</span>
+    <span class="n">Wait</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+    <span class="n">If</span><span class="p">(</span><span class="bp">False</span><span class="p">,</span> <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;True&quot;</span><span class="p">]))</span> <span class="c"># won&#39;t do anything</span>
+    <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;two&quot;</span><span class="p">])</span>
+    <span class="n">Wait</span><span class="p">(</span><span class="mf">3.0</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">Parallel</span><span class="p">():</span>
+        <span class="k">with</span> <span class="n">Serial</span><span class="p">():</span>
+            <span class="n">Wait</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;three&#39;</span><span class="p">])</span>
+        <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;four&#39;</span><span class="p">])</span>
+    <span class="n">Wait</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+
+    <span class="n">block</span> <span class="o">=</span> <span class="p">[{</span><span class="s">&#39;text&#39;</span><span class="p">:</span><span class="s">&#39;a&#39;</span><span class="p">},{</span><span class="s">&#39;text&#39;</span><span class="p">:</span><span class="s">&#39;b&#39;</span><span class="p">},{</span><span class="s">&#39;text&#39;</span><span class="p">:</span><span class="s">&#39;c&#39;</span><span class="p">}]</span>
+    <span class="k">with</span> <span class="n">Loop</span><span class="p">(</span><span class="n">block</span><span class="p">)</span> <span class="k">as</span> <span class="n">trial</span><span class="p">:</span>
+        <span class="n">Func</span><span class="p">(</span><span class="n">print_dt</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">trial</span><span class="o">.</span><span class="n">current</span><span class="p">[</span><span class="s">&#39;text&#39;</span><span class="p">]])</span>
+        <span class="n">Wait</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+        
+    <span class="n">Wait</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">stay_active</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="n">exp</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+
+
+
+
+
+
+    <span class="c"># # with explicit parents</span>
+    <span class="c"># If(True, </span>
+    <span class="c">#    Func(print_dt, args=[&quot;True&quot;], interval=0.0),</span>
+    <span class="c">#    Func(print_dt, args=[&quot;False&quot;], interval=0.0),</span>
+    <span class="c">#    parent=exp)</span>
+    <span class="c"># Wait(1.0, parent=exp)</span>
+    <span class="c"># If(False, </span>
+    <span class="c">#    Func(print_dt, args=[&quot;True&quot;], interval=0.0),</span>
+    <span class="c">#    Func(print_dt, args=[&quot;False&quot;], interval=0.0),</span>
+    <span class="c">#    parent=exp)</span>
+    <span class="c"># Wait(2.0, parent=exp)</span>
+    <span class="c"># Func(print_dt, args=[&quot;two&quot;], interval=0.0, parent=exp)</span>
+    <span class="c"># Wait(3.0, parent=exp)</span>
+    <span class="c"># with Parallel(parent=exp) as trial:</span>
+    <span class="c">#     with Serial(parent=trial) as x:</span>
+    <span class="c">#         Wait(1.0, parent=x)</span>
+    <span class="c">#         Func(print_dt, args=[&#39;three&#39;], interval=0.0, parent=x)</span>
+    <span class="c">#     Func(print_dt, args=[&#39;four&#39;], interval=0.0, parent=trial)</span>
+    <span class="c">#     print trial.children</span>
+    <span class="c"># Wait(2.0, stay_active=True, parent=exp)</span>
+
+
+    
+    <span class="k">pass</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

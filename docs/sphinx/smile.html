@@ -1,0 +1,572 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>smile package &mdash; smile  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="smile  documentation" href="index.html" />
+    <link rel="prev" title="Instructions on installing and using Smile on Android" href="android.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="smile-package">
+<h1>smile package<a class="headerlink" href="#smile-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="smile-audio-module">
+<h2>smile.audio module<a class="headerlink" href="#smile-audio-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="smile-clock-module">
+<h2>smile.clock module<a class="headerlink" href="#smile-clock-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="smile-dag-module">
+<h2>smile.dag module<a class="headerlink" href="#smile-dag-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-smile.experiment">
+<span id="smile-experiment-module"></span><h2>smile.experiment module<a class="headerlink" href="#module-smile.experiment" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="smile.experiment.ExpWindow">
+<em class="property">class </em><code class="descclassname">smile.experiment.</code><code class="descname">ExpWindow</code><span class="sig-paren">(</span><em>exp</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#ExpWindow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.ExpWindow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">pyglet.window.win32.Win32Window</span></code></p>
+<dl class="method">
+<dt id="smile.experiment.ExpWindow.on_draw">
+<code class="descname">on_draw</code><span class="sig-paren">(</span><em>force=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#ExpWindow.on_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.ExpWindow.on_draw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.experiment.ExpWindow.on_key_press">
+<code class="descname">on_key_press</code><span class="sig-paren">(</span><em>symbol</em>, <em>modifiers</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#ExpWindow.on_key_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.ExpWindow.on_key_press" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.experiment.ExpWindow.on_key_release">
+<code class="descname">on_key_release</code><span class="sig-paren">(</span><em>symbol</em>, <em>modifiers</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#ExpWindow.on_key_release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.ExpWindow.on_key_release" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.experiment.ExpWindow.on_mouse_motion">
+<code class="descname">on_mouse_motion</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>dx</em>, <em>dy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#ExpWindow.on_mouse_motion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.ExpWindow.on_mouse_motion" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.experiment.ExpWindow.on_mouse_press">
+<code class="descname">on_mouse_press</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>button</em>, <em>modifiers</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#ExpWindow.on_mouse_press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.ExpWindow.on_mouse_press" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.experiment.ExpWindow.set_clear_color">
+<code class="descname">set_clear_color</code><span class="sig-paren">(</span><em>color=(0</em>, <em>0</em>, <em>0</em>, <em>1)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#ExpWindow.set_clear_color"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.ExpWindow.set_clear_color" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.experiment.Experiment">
+<em class="property">class </em><code class="descclassname">smile.experiment.</code><code class="descname">Experiment</code><span class="sig-paren">(</span><em>fullscreen=False</em>, <em>resolution=(800</em>, <em>600)</em>, <em>name='Smile'</em>, <em>pyglet_vsync=False</em>, <em>background_color=(0</em>, <em>0</em>, <em>0</em>, <em>1)</em>, <em>screen_ind=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#Experiment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.Experiment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.Serial" title="smile.state.Serial"><code class="xref py py-class docutils literal"><span class="pre">smile.state.Serial</span></code></a></p>
+<dl class="method">
+<dt id="smile.experiment.Experiment.blocking_flip">
+<code class="descname">blocking_flip</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#Experiment.blocking_flip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.Experiment.blocking_flip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.experiment.Experiment.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>initial_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#Experiment.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.Experiment.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the experiment.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="smile.experiment.Get">
+<code class="descclassname">smile.experiment.</code><code class="descname">Get</code><span class="sig-paren">(</span><em>variable</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#Get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.Get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="smile.experiment.Log">
+<em class="property">class </em><code class="descclassname">smile.experiment.</code><code class="descname">Log</code><span class="sig-paren">(</span><em>log_file=None</em>, <em>parent=None</em>, <em>**log_items</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#Log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.Log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.State" title="smile.state.State"><code class="xref py py-class docutils literal"><span class="pre">smile.state.State</span></code></a>, <a class="reference internal" href="#smile.state.RunOnEnter" title="smile.state.RunOnEnter"><code class="xref py py-class docutils literal"><span class="pre">smile.state.RunOnEnter</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.experiment.Set">
+<em class="property">class </em><code class="descclassname">smile.experiment.</code><code class="descname">Set</code><span class="sig-paren">(</span><em>variable</em>, <em>value</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#Set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.Set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.State" title="smile.state.State"><code class="xref py py-class docutils literal"><span class="pre">smile.state.State</span></code></a>, <a class="reference internal" href="#smile.state.RunOnEnter" title="smile.state.RunOnEnter"><code class="xref py py-class docutils literal"><span class="pre">smile.state.RunOnEnter</span></code></a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="smile.experiment.event_time">
+<code class="descclassname">smile.experiment.</code><code class="descname">event_time</code><span class="sig-paren">(</span><em>time</em>, <em>time_error=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/experiment.html#event_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.experiment.event_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="smile-freekey-module">
+<h2>smile.freekey module<a class="headerlink" href="#smile-freekey-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-smile.keyboard">
+<span id="smile-keyboard-module"></span><h2>smile.keyboard module<a class="headerlink" href="#module-smile.keyboard" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="smile.keyboard.KeyPress">
+<em class="property">class </em><code class="descclassname">smile.keyboard.</code><code class="descname">KeyPress</code><span class="sig-paren">(</span><em>keys=None</em>, <em>correct_resp=None</em>, <em>base_time=None</em>, <em>until=None</em>, <em>duration=-1</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/keyboard.html#KeyPress"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.keyboard.KeyPress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.State" title="smile.state.State"><code class="xref py py-class docutils literal"><span class="pre">smile.state.State</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="smile-kivy-overrides-module">
+<h2>smile.kivy_overrides module<a class="headerlink" href="#smile-kivy-overrides-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-smile.log">
+<span id="smile-log-module"></span><h2>smile.log module<a class="headerlink" href="#module-smile.log" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="smile.log.dump">
+<code class="descclassname">smile.log.</code><code class="descname">dump</code><span class="sig-paren">(</span><em>logline</em>, <em>stream=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/log.html#dump"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.log.dump" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="smile.log.load_yaml">
+<code class="descclassname">smile.log.</code><code class="descname">load_yaml</code><span class="sig-paren">(</span><em>yaml_file</em>, <em>**append_cols</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/log.html#load_yaml"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.log.load_yaml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="smile.log.unwrap">
+<code class="descclassname">smile.log.</code><code class="descname">unwrap</code><span class="sig-paren">(</span><em>d</em>, <em>prefix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/log.html#unwrap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.log.unwrap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process the items of a dict and unwrap them to the top level based
+on the key names.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="smile.log.yaml2csv">
+<code class="descclassname">smile.log.</code><code class="descname">yaml2csv</code><span class="sig-paren">(</span><em>dictlist</em>, <em>csv_file</em>, <em>**append_cols</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/log.html#yaml2csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.log.yaml2csv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="smile.log.yaml2dl">
+<code class="descclassname">smile.log.</code><code class="descname">yaml2dl</code><span class="sig-paren">(</span><em>yaml_file</em>, <em>**append_cols</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/log.html#yaml2dl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.log.yaml2dl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-smile.mouse">
+<span id="smile-mouse-module"></span><h2>smile.mouse module<a class="headerlink" href="#module-smile.mouse" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="smile.mouse.MousePress">
+<em class="property">class </em><code class="descclassname">smile.mouse.</code><code class="descname">MousePress</code><span class="sig-paren">(</span><em>buttons=None</em>, <em>correct_resp=None</em>, <em>base_time=None</em>, <em>until=None</em>, <em>duration=-1</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/mouse.html#MousePress"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.mouse.MousePress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.State" title="smile.state.State"><code class="xref py py-class docutils literal"><span class="pre">smile.state.State</span></code></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-smile.pulse">
+<span id="smile-pulse-module"></span><h2>smile.pulse module<a class="headerlink" href="#module-smile.pulse" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="smile.pulse.Pulse">
+<em class="property">class </em><code class="descclassname">smile.pulse.</code><code class="descname">Pulse</code><span class="sig-paren">(</span><em>code=15</em>, <em>duration=0.01</em>, <em>port=0</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/pulse.html#Pulse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.pulse.Pulse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.State" title="smile.state.State"><code class="xref py py-class docutils literal"><span class="pre">smile.state.State</span></code></a></p>
+<p>State that will wait a specified time in seconds.  It is possible
+to keep the state active or simply move the parent&#8217;s state time
+ahead.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-smile.ref">
+<span id="smile-ref-module"></span><h2>smile.ref module<a class="headerlink" href="#module-smile.ref" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="smile.ref.Ref">
+<em class="property">class </em><code class="descclassname">smile.ref.</code><code class="descname">Ref</code><span class="sig-paren">(</span><em>obj=None</em>, <em>attr=None</em>, <em>gfunc=None</em>, <em>gfunc_args=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/ref.html#Ref"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.ref.Ref" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="smile.ref.Ref.append">
+<code class="descname">append</code><span class="sig-paren">(</span><em>o</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/ref.html#Ref.append"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.ref.Ref.append" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.ref.Ref.set">
+<code class="descname">set</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/ref.html#Ref.set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.ref.Ref.set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="smile.ref.val">
+<code class="descclassname">smile.ref.</code><code class="descname">val</code><span class="sig-paren">(</span><em>x</em>, <em>recurse=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/ref.html#val"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.ref.val" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-smile.state">
+<span id="smile-state-module"></span><h2>smile.state module<a class="headerlink" href="#module-smile.state" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="smile.state.Func">
+<em class="property">class </em><code class="descclassname">smile.state.</code><code class="descname">Func</code><span class="sig-paren">(</span><em>func</em>, <em>args=None</em>, <em>kwargs=None</em>, <em>interval=0</em>, <em>parent=None</em>, <em>duration=0.0</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#Func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.Func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.State" title="smile.state.State"><code class="xref py py-class docutils literal"><span class="pre">smile.state.State</span></code></a></p>
+<p>State that will call a Python function, passing this state as the
+first argument.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.state.If">
+<em class="property">class </em><code class="descclassname">smile.state.</code><code class="descname">If</code><span class="sig-paren">(</span><em>conditional</em>, <em>true_state=None</em>, <em>false_state=None</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#If"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.If" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.ParentState" title="smile.state.ParentState"><code class="xref py py-class docutils literal"><span class="pre">smile.state.ParentState</span></code></a></p>
+<p>Parent state to implement conditional branching.</p>
+<p>key = KeyResponse([&#8216;Y&#8217;,&#8217;N&#8217;])
+If((key[&#8216;rt&#8217;]&gt;2.0)&amp;(key[&#8216;resp&#8217;] != None), stateA, stateB)</p>
+<p>True and false states are created if they are not
+passed in.  That way we can do</p>
+<dl class="docutils">
+<dt>with If((key[&#8216;rt&#8217;]&gt;2.0)&amp;(key[&#8216;resp&#8217;] != None)) as if_state:</dt>
+<dd><dl class="first last docutils">
+<dt>with if_state.true_state:</dt>
+<dd># fill the true state
+pass</dd>
+<dt>with if_state.false_state:</dt>
+<dd># fill the false state
+pass</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.state.Loop">
+<em class="property">class </em><code class="descclassname">smile.state.</code><code class="descname">Loop</code><span class="sig-paren">(</span><em>iterable=None</em>, <em>conditional=True</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#Loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.Loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.Serial" title="smile.state.Serial"><code class="xref py py-class docutils literal"><span class="pre">smile.state.Serial</span></code></a></p>
+<p>Loop state that can loop over an iterable or run repeatedly while
+a conditional evaluates to True.</p>
+<dl class="docutils">
+<dt>with Loop(block) as trial:</dt>
+<dd>Show(Image(trial.current[&#8216;image&#8217;]), 2.0)
+Wait(.5)</dd>
+</dl>
+<dl class="attribute">
+<dt id="smile.state.Loop.current">
+<code class="descname">current</code><a class="headerlink" href="#smile.state.Loop.current" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.state.Parallel">
+<em class="property">class </em><code class="descclassname">smile.state.</code><code class="descname">Parallel</code><span class="sig-paren">(</span><em>parent=None</em>, <em>duration=-1</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#Parallel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.Parallel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.ParentState" title="smile.state.ParentState"><code class="xref py py-class docutils literal"><span class="pre">smile.state.ParentState</span></code></a></p>
+<p>A Parallel Parent State is done when all its children have
+finished.</p>
+<dl class="method">
+<dt id="smile.state.Parallel.advance_state_time">
+<code class="descname">advance_state_time</code><span class="sig-paren">(</span><em>duration</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#Parallel.advance_state_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.Parallel.advance_state_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.state.ParentState">
+<em class="property">class </em><code class="descclassname">smile.state.</code><code class="descname">ParentState</code><span class="sig-paren">(</span><em>parent=None</em>, <em>duration=-1</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#ParentState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.ParentState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.State" title="smile.state.State"><code class="xref py py-class docutils literal"><span class="pre">smile.state.State</span></code></a>, <a class="reference internal" href="#smile.state.RunOnEnter" title="smile.state.RunOnEnter"><code class="xref py py-class docutils literal"><span class="pre">smile.state.RunOnEnter</span></code></a></p>
+<p>Base state for parents that can hold children states. Only parent
+states can contain other states.</p>
+<dl class="method">
+<dt id="smile.state.ParentState.advance_state_time">
+<code class="descname">advance_state_time</code><span class="sig-paren">(</span><em>duration</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#ParentState.advance_state_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.ParentState.advance_state_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.state.ParentState.claim_child">
+<code class="descname">claim_child</code><span class="sig-paren">(</span><em>child</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#ParentState.claim_child"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.ParentState.claim_child" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.state.ParentState.get_state_time">
+<code class="descname">get_state_time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#ParentState.get_state_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.ParentState.get_state_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.state.ResetClock">
+<em class="property">class </em><code class="descclassname">smile.state.</code><code class="descname">ResetClock</code><span class="sig-paren">(</span><em>new_time=None</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#ResetClock"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.ResetClock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.State" title="smile.state.State"><code class="xref py py-class docutils literal"><span class="pre">smile.state.State</span></code></a>, <a class="reference internal" href="#smile.state.RunOnEnter" title="smile.state.RunOnEnter"><code class="xref py py-class docutils literal"><span class="pre">smile.state.RunOnEnter</span></code></a></p>
+<p>State that will reset the clock of its parent to a specific time
+(or now if not specified).</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.state.RunOnEnter">
+<em class="property">class </em><code class="descclassname">smile.state.</code><code class="descname">RunOnEnter</code><a class="reference internal" href="_modules/smile/state.html#RunOnEnter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.RunOnEnter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="smile.state.Serial">
+<em class="property">class </em><code class="descclassname">smile.state.</code><code class="descname">Serial</code><span class="sig-paren">(</span><em>parent=None</em>, <em>duration=-1</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#Serial"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.Serial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.ParentState" title="smile.state.ParentState"><code class="xref py py-class docutils literal"><span class="pre">smile.state.ParentState</span></code></a></p>
+<p>A Serial Parent State is done when the last state in the chain is
+finished.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.state.State">
+<em class="property">class </em><code class="descclassname">smile.state.</code><code class="descname">State</code><span class="sig-paren">(</span><em>interval=0</em>, <em>parent=None</em>, <em>duration=0.0</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#State"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.State" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Base State object for the hierarchical state machine.</p>
+<p>Provides framework for entering, processing, and leaving states.</p>
+<p>Subclasses can customize behavior by implementing the _enter,
+_callback, and _leave methods.</p>
+<dl class="docutils">
+<dt>interval <span class="classifier-delimiter">:</span> <span class="classifier">{0, -1, float}</span></dt>
+<dd>The number of seconds between each call.</dd>
+<dt>parent <span class="classifier-delimiter">:</span> <span class="classifier">{None, <code class="docutils literal"><span class="pre">ParentState</span></code>}</span></dt>
+<dd>???</dd>
+<dt>duration <span class="classifier-delimiter">:</span> <span class="classifier">{0.0, float}</span></dt>
+<dd>Duration of the state.</dd>
+<dt>save_log <span class="classifier-delimiter">:</span> <span class="classifier">bool</span></dt>
+<dd>Whether the state logs itself.</dd>
+</dl>
+<dl class="method">
+<dt id="smile.state.State.advance_parent_state_time">
+<code class="descname">advance_parent_state_time</code><span class="sig-paren">(</span><em>duration</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#State.advance_parent_state_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.State.advance_parent_state_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.state.State.callback">
+<code class="descname">callback</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#State.callback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.State.callback" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.state.State.enter">
+<code class="descname">enter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#State.enter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.State.enter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.state.State.get_log">
+<code class="descname">get_log</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#State.get_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.State.get_log" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.state.State.get_log_stream">
+<code class="descname">get_log_stream</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#State.get_log_stream"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.State.get_log_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.state.State.get_parent_state_time">
+<code class="descname">get_parent_state_time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#State.get_parent_state_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.State.get_parent_state_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.state.State.leave">
+<code class="descname">leave</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#State.leave"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.State.leave" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.state.Wait">
+<em class="property">class </em><code class="descclassname">smile.state.</code><code class="descname">Wait</code><span class="sig-paren">(</span><em>duration=0.0</em>, <em>jitter=0.0</em>, <em>stay_active=False</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#Wait"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.Wait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.State" title="smile.state.State"><code class="xref py py-class docutils literal"><span class="pre">smile.state.State</span></code></a></p>
+<p>State that will wait a specified time in seconds.  It is possible
+to keep the state active or simply move the parent&#8217;s state time
+ahead.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="smile.state.schedule_delayed">
+<code class="descclassname">smile.state.</code><code class="descname">schedule_delayed</code><span class="sig-paren">(</span><em>func</em>, <em>delay</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#schedule_delayed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.schedule_delayed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Schedule a callback to occur every event loop after the specified
+initial delay.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="smile.state.schedule_delayed_interval">
+<code class="descclassname">smile.state.</code><code class="descname">schedule_delayed_interval</code><span class="sig-paren">(</span><em>func</em>, <em>delay</em>, <em>interval</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/state.html#schedule_delayed_interval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.state.schedule_delayed_interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Schedule a callback with specified interval to begin after the
+specified delay.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-smile.utils">
+<span id="smile-utils-module"></span><h2>smile.utils module<a class="headerlink" href="#module-smile.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="smile.utils.rindex">
+<code class="descclassname">smile.utils.</code><code class="descname">rindex</code><span class="sig-paren">(</span><em>lst</em>, <em>item</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/utils.html#rindex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.utils.rindex" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-smile.video">
+<span id="smile-video-module"></span><h2>smile.video module<a class="headerlink" href="#module-smile.video" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="smile.video.BackColor">
+<em class="property">class </em><code class="descclassname">smile.video.</code><code class="descname">BackColor</code><span class="sig-paren">(</span><em>color=(0</em>, <em>0</em>, <em>0</em>, <em>1.0)</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#BackColor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.BackColor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.video.VisualState" title="smile.video.VisualState"><code class="xref py py-class docutils literal"><span class="pre">smile.video.VisualState</span></code></a></p>
+<p>Set the background color.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.video.Image">
+<em class="property">class </em><code class="descclassname">smile.video.</code><code class="descname">Image</code><span class="sig-paren">(</span><em>imgstr</em>, <em>x=None</em>, <em>y=None</em>, <em>anchor_x=None</em>, <em>anchor_y=None</em>, <em>flip_x=False</em>, <em>flip_y=False</em>, <em>rotation=0</em>, <em>scale=1.0</em>, <em>opacity=255</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#Image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.Image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.video.VisualState" title="smile.video.VisualState"><code class="xref py py-class docutils literal"><span class="pre">smile.video.VisualState</span></code></a></p>
+<p>Visual state to present an image.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.video.Movie">
+<em class="property">class </em><code class="descclassname">smile.video.</code><code class="descname">Movie</code><span class="sig-paren">(</span><em>movstr</em>, <em>x=None</em>, <em>y=None</em>, <em>rotation=0</em>, <em>scale=1.0</em>, <em>opacity=255</em>, <em>framerate=0.03333333333333333</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#Movie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.Movie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.video.VisualState" title="smile.video.VisualState"><code class="xref py py-class docutils literal"><span class="pre">smile.video.VisualState</span></code></a></p>
+<p>Visual state to present an movie.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.video.Show">
+<em class="property">class </em><code class="descclassname">smile.video.</code><code class="descname">Show</code><span class="sig-paren">(</span><em>vstate</em>, <em>parent=None</em>, <em>duration=1.0</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#Show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.Show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.Serial" title="smile.state.Serial"><code class="xref py py-class docutils literal"><span class="pre">smile.state.Serial</span></code></a></p>
+<p>Show a visual state for a specified duration before unshowing it.</p>
+<p>Show(Text(&#8220;jubba&#8221;), duration=2.0)</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.video.Text">
+<em class="property">class </em><code class="descclassname">smile.video.</code><code class="descname">Text</code><span class="sig-paren">(</span><em>textstr</em>, <em>x=None</em>, <em>y=None</em>, <em>anchor_x='center'</em>, <em>anchor_y='center'</em>, <em>font_name=None</em>, <em>font_size=18</em>, <em>color=(255</em>, <em>255</em>, <em>255</em>, <em>255)</em>, <em>bold=False</em>, <em>italic=False</em>, <em>halign='center'</em>, <em>width=None</em>, <em>height=None</em>, <em>multiline=False</em>, <em>dpi=None</em>, <em>group=None</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#Text"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.Text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.video.VisualState" title="smile.video.VisualState"><code class="xref py py-class docutils literal"><span class="pre">smile.video.VisualState</span></code></a></p>
+<p>Visual state to present text.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.video.Unshow">
+<em class="property">class </em><code class="descclassname">smile.video.</code><code class="descname">Unshow</code><span class="sig-paren">(</span><em>vstate</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#Unshow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.Unshow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.video.VisualState" title="smile.video.VisualState"><code class="xref py py-class docutils literal"><span class="pre">smile.video.VisualState</span></code></a></p>
+<p>Visual state to unshow a shown item.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.video.Update">
+<em class="property">class </em><code class="descclassname">smile.video.</code><code class="descname">Update</code><span class="sig-paren">(</span><em>vstate</em>, <em>attr</em>, <em>value</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#Update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.Update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.video.VisualState" title="smile.video.VisualState"><code class="xref py py-class docutils literal"><span class="pre">smile.video.VisualState</span></code></a></p>
+<p>Visual state to update a shown item.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="smile.video.VisualState">
+<em class="property">class </em><code class="descclassname">smile.video.</code><code class="descname">VisualState</code><span class="sig-paren">(</span><em>interval=0</em>, <em>duration=0.0</em>, <em>parent=None</em>, <em>save_log=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#VisualState"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.VisualState" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#smile.state.State" title="smile.state.State"><code class="xref py py-class docutils literal"><span class="pre">smile.state.State</span></code></a></p>
+<p>State that handles drawing and showing of a visual
+stimulus.</p>
+<p>The key is to register that we want a flip, but only flip once if
+multiple stimuli are to be shown at the same time.</p>
+<dl class="method">
+<dt id="smile.video.VisualState.draw_callback">
+<code class="descname">draw_callback</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#VisualState.draw_callback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.VisualState.draw_callback" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.video.VisualState.schedule_update">
+<code class="descname">schedule_update</code><span class="sig-paren">(</span><em>flip_delay</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#VisualState.schedule_update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.VisualState.schedule_update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="smile.video.VisualState.update_callback">
+<code class="descname">update_callback</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/smile/video.html#VisualState.update_callback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smile.video.VisualState.update_callback" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-smile">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-smile" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">smile package</a><ul>
+<li><a class="reference internal" href="#smile-audio-module">smile.audio module</a></li>
+<li><a class="reference internal" href="#smile-clock-module">smile.clock module</a></li>
+<li><a class="reference internal" href="#smile-dag-module">smile.dag module</a></li>
+<li><a class="reference internal" href="#module-smile.experiment">smile.experiment module</a></li>
+<li><a class="reference internal" href="#smile-freekey-module">smile.freekey module</a></li>
+<li><a class="reference internal" href="#module-smile.keyboard">smile.keyboard module</a></li>
+<li><a class="reference internal" href="#smile-kivy-overrides-module">smile.kivy_overrides module</a></li>
+<li><a class="reference internal" href="#module-smile.log">smile.log module</a></li>
+<li><a class="reference internal" href="#module-smile.mouse">smile.mouse module</a></li>
+<li><a class="reference internal" href="#module-smile.pulse">smile.pulse module</a></li>
+<li><a class="reference internal" href="#module-smile.ref">smile.ref module</a></li>
+<li><a class="reference internal" href="#module-smile.state">smile.state module</a></li>
+<li><a class="reference internal" href="#module-smile.utils">smile.utils module</a></li>
+<li><a class="reference internal" href="#module-smile.video">smile.video module</a></li>
+<li><a class="reference internal" href="#module-smile">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="android.html" title="previous chapter">Instructions on installing and using Smile on Android</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/smile.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/smile.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

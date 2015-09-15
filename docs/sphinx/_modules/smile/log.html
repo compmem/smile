@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>smile.log &mdash; smile  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="smile  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for smile.log</h1><div class="highlight"><pre>
+<span class="c">#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-</span>
+<span class="c">#ex: set sts=4 ts=4 sw=4 et:</span>
+<span class="c">### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##</span>
+<span class="c">#</span>
+<span class="c">#   See the COPYING file distributed along with the smile package for the</span>
+<span class="c">#   copyright and license terms.</span>
+<span class="c">#</span>
+<span class="c">### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##</span>
+
+
+<span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="c">#import sys</span>
+
+<span class="c"># set up a dumper that does not do anchors or aliases</span>
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">yaml</span><span class="p">,</span><span class="s">&#39;CSafeDumper&#39;</span><span class="p">):</span>
+    <span class="n">Dumper</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">CSafeDumper</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">Dumper</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">SafeDumper</span>
+<span class="n">Dumper</span><span class="o">.</span><span class="n">ignore_aliases</span> <span class="o">=</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="bp">True</span>
+<div class="viewcode-block" id="dump"><a class="viewcode-back" href="../../smile.html#smile.log.dump">[docs]</a><span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="n">logline</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">logline</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">Dumper</span><span class="o">=</span><span class="n">Dumper</span><span class="p">)</span>
+
+<span class="c"># for eventually writing CSV files with headers</span>
+<span class="c"># from: http://stackoverflow.com/questions/2982023/writing-header-in-csv-python-with-dlictwriter</span></div>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">from collections import OrderedDict</span>
+<span class="sd">ordered_fieldnames = OrderedDict([(&#39;field1&#39;,None),(&#39;field2&#39;,None)])</span>
+<span class="sd">with open(outfile,&#39;wb&#39;) as fou:</span>
+<span class="sd">    dw = csv.DictWriter(fou, delimiter=&#39;\t&#39;, fieldnames=ordered_fieldnames)</span>
+<span class="sd">    dw.writeheader()</span>
+<span class="sd">    # continue on to write data</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="load_yaml"><a class="viewcode-back" href="../../smile.html#smile.log.load_yaml">[docs]</a><span class="k">def</span> <span class="nf">load_yaml</span><span class="p">(</span><span class="n">yaml_file</span><span class="p">,</span> <span class="o">**</span><span class="n">append_cols</span><span class="p">):</span>
+    <span class="c"># load the dictlist</span>
+    <span class="n">dictlist</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">yaml_file</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">dictlist</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dictlist</span><span class="p">)):</span>
+        <span class="n">dictlist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">append_cols</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dictlist</span>
+</div>
+<div class="viewcode-block" id="unwrap"><a class="viewcode-back" href="../../smile.html#smile.log.unwrap">[docs]</a><span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Process the items of a dict and unwrap them to the top level based</span>
+<span class="sd">    on the key names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">new_item</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+       	<span class="c"># add prefix</span>
+    	<span class="n">key</span> <span class="o">=</span> <span class="n">prefix</span><span class="o">+</span><span class="n">k</span>
+        
+        <span class="c"># see if dict</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="nb">dict</span><span class="p">):</span>
+            <span class="n">new_item</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">unwrap</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">prefix</span><span class="o">=</span><span class="n">key</span><span class="o">+</span><span class="s">&#39;_&#39;</span><span class="p">))</span>
+            <span class="k">continue</span>
+
+        <span class="c"># see if tuple</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="nb">tuple</span><span class="p">):</span>
+            <span class="c"># turn into indexed dict</span>
+            <span class="n">tdict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])):</span>
+                <span class="n">tdict</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">new_item</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">unwrap</span><span class="p">(</span><span class="n">tdict</span><span class="p">,</span><span class="n">prefix</span><span class="o">=</span><span class="n">key</span><span class="o">+</span><span class="s">&#39;_&#39;</span><span class="p">))</span>
+            <span class="k">continue</span>
+
+        <span class="c"># just add it in</span>
+        <span class="n">new_item</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">new_item</span>
+    </div>
+<div class="viewcode-block" id="yaml2dl"><a class="viewcode-back" href="../../smile.html#smile.log.yaml2dl">[docs]</a><span class="k">def</span> <span class="nf">yaml2dl</span><span class="p">(</span><span class="n">yaml_file</span><span class="p">,</span> <span class="o">**</span><span class="n">append_cols</span><span class="p">):</span>
+    <span class="c"># load in the yaml as a dict list</span>
+    <span class="n">dl</span> <span class="o">=</span> <span class="n">load_yaml</span><span class="p">(</span><span class="n">yaml_file</span><span class="p">,</span> <span class="o">**</span><span class="n">append_cols</span><span class="p">)</span>
+
+    <span class="c"># loop over each kv pair and unwrap it</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dl</span><span class="p">)):</span>
+        <span class="n">dl</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">unwrap</span><span class="p">(</span><span class="n">dl</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">dl</span>
+</div>
+<div class="viewcode-block" id="yaml2csv"><a class="viewcode-back" href="../../smile.html#smile.log.yaml2csv">[docs]</a><span class="k">def</span> <span class="nf">yaml2csv</span><span class="p">(</span><span class="n">dictlist</span><span class="p">,</span> <span class="n">csv_file</span><span class="p">,</span> <span class="o">**</span><span class="n">append_cols</span><span class="p">):</span>
+    <span class="c"># see if dictlist is a yaml file</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dictlist</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+        <span class="c"># assume it&#39;s a file and read it in</span>
+        <span class="c"># get the unwraped dict list</span>
+        <span class="n">dictlist</span> <span class="o">=</span> <span class="n">yaml2dl</span><span class="p">(</span><span class="n">dictlist</span><span class="p">,</span> <span class="o">**</span><span class="n">append_cols</span><span class="p">)</span>
+    <span class="n">dl</span> <span class="o">=</span> <span class="n">dictlist</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dl</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="c"># get all unique colnames</span>
+    <span class="n">colnames</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dl</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">dl</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">colnames</span><span class="p">:</span>
+                <span class="n">colnames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                      
+    <span class="c"># write it out</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">csv_file</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fout</span><span class="p">:</span>
+        <span class="c"># create file and write header</span>
+        <span class="n">dw</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictWriter</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="n">fieldnames</span><span class="o">=</span><span class="n">colnames</span><span class="p">)</span>
+        <span class="n">dw</span><span class="o">.</span><span class="n">writeheader</span><span class="p">()</span>
+        <span class="c"># continue on to write data</span>
+        <span class="n">dw</span><span class="o">.</span><span class="n">writerows</span><span class="p">(</span><span class="n">dl</span><span class="p">)</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
