@@ -11,23 +11,17 @@ Welcome to smile's documentation!
 Getting Started
 ---------------
 
-.. toctree::
-	:maxdepth: 1
-
-	gettingStarted
-	documentation
-	tutorial
-	exampleExperiments
-	android
+* :ref:'gettingStarted'
+* :ref:'documentation'
+* :ref:'tutorial'
+* :ref:'exampleExperiments'
+* :ref:'android'
 
 
 Documentaion
 ------------
 
-.. toctree::
-	:maxdepth: 2
-
-	smile
+* :ref:'smile'
 
 	
 Indices and tables
