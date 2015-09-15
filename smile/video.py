@@ -7,1259 +7,835 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from state import State, Wait, Serial
-from state import schedule_delayed_interval, schedule_delayed
-from ref import Ref, val
+from functools import partial
+from contextlib import contextmanager
+import weakref
+import operator
 
-# get the last instance of the experiment class
-from experiment import Experiment, now
+import kivy_overrides
+from state import State, CallbackState, Parallel, ParentState
+from ref import val, Ref
+from clock import clock
+import kivy.graphics
+import kivy.uix.widget
+from kivy.properties import ObjectProperty, ListProperty
+import kivy.clock
+_kivy_clock = kivy.clock.Clock
 
-from pyglet import clock
-import pyglet
 
-import random
-import math
+color_name_table = {
+    # subset from http://www.rapidtables.com/web/color/RGB_Color.htm
+    "BLACK": (0.0, 0.0, 0.0, 1.0),
+    "GRAY": (0.5, 0.5, 0.5, 1.0),
+    "SILVER": (0.75, 0.75, 0.75, 1.0),
+    "WHITE": (1.0, 1.0, 1.0, 1.0),
+    "RED": (1.0, 0.0, 0.0, 1.0),
+    "LIME": (0.0, 1.0, 0.0, 1.0),
+    "BLUE": (0.0, 0.0, 1.0, 1.0),
+    "YELLOW": (1.0, 1.0, 0.0, 1.0),
+    "CYAN": (0.0, 1.0, 1.0, 1.0),
+    "MAGENTA": (1.0, 0.0, 1.0, 1.0),
+    "MAROON": (0.5, 0.0, 0.0, 1.0),
+    "GREEN": (0.0, 0.5, 0.0, 1.0),
+    "NAVY": (0.0, 0.0, 0.5, 1.0),
+    "OLIVE": (0.5, 0.5, 0.0, 1.0),
+    "TEAL": (0.0, 0.5, 0.5, 1.0),
+    "PURPLE": (0.5, 0.0, 0.5, 1.0),
+    "ORANGE": (1.0, 0.65, 0.0, 1.0),
+    "PINK": (1.0, 0.75, 0.8, 1.0),
+    "BROWN": (0.65, 0.16, 0.16, 1.0),
+    "INDIGO": (0.29, 0.5, 0.0, 1.0)
+    }
+def normalize_color_spec(spec):
+    if isinstance(spec, tuple) or isinstance(spec, list):
+        if len(spec) == 3:
+            return tuple(spec) + (1.0,)
+        elif len(spec) == 4:
+            return tuple(spec)
+        else:
+            raise ValueError(
+                "Color spec tuple / list must have length 3 or 4.  Got: %r" %
+                spec)
+    elif isinstance(spec, str):
+        if spec[0] == '#':
+            if len(spec) == 7:
+                try:
+                    return (int(spec[1 : 3], 16) / 255.0,
+                            int(spec[3 : 5], 16) / 255.0,
+                            int(spec[5 : 7], 16) / 255.0,
+                            1.0)
+                except ValueError:
+                    raise ValueError(
+                        "Color spec hex string has invalid characters."
+                        "  Got: %r" % spec)
+            elif len(spec) == 9:
+                try:
+                    return (int(spec[1 : 3], 16) / 255.0,
+                            int(spec[3 : 5], 16) / 255.0,
+                            int(spec[5 : 7], 16) / 255.0,
+                            int(spec[7 : 9], 16) / 255.0)
+                except ValueError:
+                    raise ValueError(
+                        "Color spec hex string has invalid characters."
+                        "  Got: %r" % spec)
+            else:
+                raise ValueError(
+                    "Color spec hex string wrong length.  Got: %r" % spec)
+        else:
+            try:
+                return color_name_table[spec.upper()]
+            except KeyError:
+                raise ValueError("Color spec string not valid.  Got: %r" %
+                                 spec)
 
 
 class VisualState(State):
-    """
-    State that handles drawing and showing of a visual
-    stimulus.
+    def __init__(self, duration=None, parent=None, save_log=True, name=None):
+        super(VisualState, self).__init__(parent=parent,
+                                          duration=duration,
+                                          save_log=save_log,
+                                          name=name)
 
-    The key is to register that we want a flip, but only flip once if
-    multiple stimuli are to be shown at the same time.
-    
-    Parameters
-    ----------
-    interval : {0, -1, float}
-        The number of seconds between each call.
-    duration : {0.0, float}
-        Duration of the state in seconds. 
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the state will be
-        automatically saved in the log files.        
-
-    Log Parameters
-    --------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code. The following information 
-    about each state will be stored in addition to the state-specific 
-    parameters:
-
-        duration : 
-            Duration of the state in seconds. If the duration is not set
-            as a parameter of the specific state, it will default to -1 
-            (which means it will be calculated on exit) or 0 (which means
-            the state completes immediately and does not increment the
-            experiment clock).
-        end_time :
-            Unix timestamp for when the state ended.
-        first_call_error
-            Amount of time in seconds between when the state was supposed
-            to start and when it actually started.
-        first_call_time :
-            Unix timestamp for when the state was called.
-        last_call_error :
-            Same as first_call_error, but refers to the most recent time 
-            time the state was called.
-        last_draw :
-            Unix timestamp for when the last draw of a visual stimulus
-            occurred.
-        last_flip :
-            Unix timestamp for when the last flip occurred (i.e., when 
-            the stimulus actually appeared on the screen).
-        last_update :
-            Unix timestamp for the last time the context to be drawn 
-            occurred. (NOTE: Displaying a stimulus entails updating it,
-            drqwing it to the back buffer, then flipping the front and
-            back video buffers to display the stimulus.
-        start_time :
-            Unix timestamp for when the state is supposed to begin.
-        state_time :
-            Same as start_time.
-    """
-    def __init__(self, interval=0, duration=0.0, parent=None, 
-                 save_log=True):
-        # init the parent class
-        super(VisualState, self).__init__(interval=interval, parent=parent, 
-                                          duration=duration, 
-                                          save_log=save_log)
-
-        # we haven't shown anything yet
-        self.shown = None
-        self.last_update = 0
-        self.last_flip = 0
-        self.last_draw = 0
-        self.first_update = 0
-        self.first_flip = 0
-        self.first_draw = 0
+        self._appear_time = {"time": None, "error": None}
+        self._disappear_time = {"time": None, "error": None}
+        self.__appear_video = None
+        self.__disappear_video = None
 
         # set the log attrs
-        self.log_attrs.extend(['last_draw', 'last_update', 'last_flip'])
-                               
-    def _update_callback(self, dt):
-        # children must implement drawing the showable to make it shown
-        pass
+        self._log_attrs.extend(['appear_time',
+                                'disappear_time'])
 
-    def update_callback(self, dt):
-        # call the user-defined show
-        self.shown = self._update_callback(dt)
-        self.last_update = now()
-        if self.first_update == 0:
-            self.first_update = self.last_update
+    def set_appear_time(self, appear_time):
+        self._appear_time = appear_time
+        clock.schedule(self.leave)
 
-        # tell the exp window we need a draw
-        self.exp.window.need_draw = True
-
-    def draw_callback(self, dt):
-        # call the draw (not forced, so it can skip it)
-        self.exp.window.on_draw()
-        self.last_draw = now()
-        if self.first_draw == 0:
-            self.first_draw = self.last_draw
-
-    def _callback(self, dt):
-        # call the flip, recording the time
-        self.last_flip = self.exp.blocking_flip()
-        if self.first_flip == 0:
-            self.first_flip = self.last_flip
-        
-    def schedule_update(self, flip_delay):
-        # the show will be 3/4 of a flip interval before the flip
-        update_delay = flip_delay - self.exp.flip_interval*(3/4.)
-        if update_delay <= 0:
-            # do it now
-            self.update_callback(0)
-            
-            # if interval, must still schedule it
-            if self.interval > 0:
-                schedule_delayed_interval(self.update_callback, 
-                                          self.interval - self.exp.flip_interval*3/4., 
-                                          self.interval)
-        else:
-            schedule_delayed_interval(self.update_callback, 
-                                      update_delay, self.interval)
-
-        # the window draw will be 1/2 of a flip interval before the flip
-        draw_delay = flip_delay - self.exp.flip_interval/2.
-        if draw_delay <= 0:
-            # do it now
-            self.draw_callback(0)
-
-            # if interval, must still schedule it
-            if self.interval > 0:
-                schedule_delayed_interval(self.draw_callback, 
-                                          self.interval - self.exp.flip_interval/2., 
-                                          self.interval)
-        else:
-            schedule_delayed_interval(self.draw_callback, 
-                                      draw_delay, self.interval)
+    def set_disappear_time(self, disappear_time):
+        self._disappear_time = disappear_time
+        clock.schedule(self.finalize)
 
     def _enter(self):
-        # reset times
-        self.last_update = 0
-        self.last_flip = 0
-        self.last_draw = 0
-        self.first_update = 0
-        self.first_flip = 0
-        self.first_draw = 0
+        self._appear_time = {"time": None, "error": None}
+        self._disappear_time = {"time": None, "error": None}
+        self.__appear_video = None
+        self.__disappear_video = None
 
-        # the flip will already be scheduled
-        # schedule the show
-        update_delay = self.state_time - now()
-        if update_delay < 0:
-            update_delay = 0
-        self.schedule_update(update_delay)
+        self.__appear_video = self._exp._app.schedule_video(
+            self.appear, self._start_time, self.set_appear_time)
+        if self._end_time is not None:
+            self.__disappear_video = self._exp._app.schedule_video(
+                self.disappear, self._end_time, self.set_disappear_time)
 
-    def _leave(self):
-        # unschedule the various callbacks
-        clock.unschedule(self.update_callback)
-        clock.unschedule(self.draw_callback)
-
-
-class Unshow(VisualState):
-    """
-    Visual state to unshow a shown item. 
-    
-    Parameters
-    -----------
-    vstate : {None, ``VisualState``}
-        The variable associated with the stimulus that you want 
-        to be removed from the screen.     
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the Unshow state will be
-        automatically saved in the log files. 
-        
-    Example
-    -------
-    txt = Text("jubba")
-    Wait(1.0)
-    Unshow(txt)
-    The text string "jubba" will be shown for one second and then
-    removed from the screen.
-    
-    Log Parameters
-    --------------
-    All parameters above are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters.       
-    """
-    def __init__(self, vstate, parent=None, save_log=True):
-        # init the parent class
-        super(Unshow, self).__init__(interval=0, parent=parent, 
-                                     duration=0,
-                                     save_log=save_log)
-
-        # we haven't shown anything yet
-        self.vstate = vstate
-
-    def _update_callback(self, dt):
-        # children must implement drawing the showable to make it shown
-        # grab the vstate and associated shown
-        vstate = val(self.vstate)
-        shown = val(vstate.shown)
-        # if something is shown, then delete it
-        if shown:
-            shown.delete()
-        return shown
-
-
-class Show(Serial):
-    """
-    Show a visual state for a specified duration before unshowing it.
-    
-    Parameters
-    -----------
-    vstate : {None, ``VisualState``}
-        The VisualState associated with the stimulus that you want 
-        to appear on the screen for a certain duration. You will 
-        need to specify both the VisualState (i.e. Text, Image, Movie, 
-        etc.) along with the necessary parameters for that state.
-    duration : {1.0, float, State}
-        Duration of the state in seconds or a State/ParentState to insert
-        between the Show and Unshow.
-    jitter : {0.0, float}
-        Duration of the state in seconds. Is ignored if duration is a State.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the Show state will be
-        automatically saved in the log files.
-        
-    Example
-    -------
-    Show(Text("jubba"), duration=2.0)
-    The text string "jubba" will be shown on the screen for 2 seconds.
-    
-    Log Parameters
-    --------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters.
-        show_time :
-            Time at which the stimulus appeared.
-        unshow_time :
-            Time at which the stimulus was removed from the screen. 
-    """
-    def __init__(self, vstate, duration=1.0, jitter=0.0, 
-                 parent=None, save_log=True):
-        # proc the duration first
-        if issubclass(duration.__class__, State):
-            self._wait_state = duration
-            duration = self._wait_state.duration
-            claim_wait = True
-        else:
-            claim_wait = False
-
-        # handle the parent class
-        super(Show, self).__init__(parent=parent, duration=duration, 
-                                   save_log=save_log)
-
-        # remove vstate from parent if it exists
-        self.claim_child(vstate)
-
-        # add the wait and unshow states
-        self._show_state = vstate
-        if claim_wait:
-            # must claim that state as a child
-            self.claim_child(self._wait_state)
-        else:
-            # process as an actual Wait
-            self._wait_state = Wait(duration=duration, jitter=jitter,
-                                    parent=self)
-        self._unshow_state = Unshow(vstate, parent=self)
-
-        # expose the shown
-        self.shown = vstate['shown']
-
-        # save the show and hide times
-        self.show_time = Ref(self._show_state,'first_flip')
-        self.unshow_time = Ref(self._unshow_state,'first_flip')
-
-        # append times to log
-        self.log_attrs.extend(['show_time','unshow_time'])
-
-
-class Update(VisualState):
-    """
-    Visual state to update a shown item.
-    
-    Parameters
-    ----------
-    vstate : {None, ``VisualState``}
-        The variable refering to the visual stimulus who's attributes
-        you want to update while the stimulus is still on the screen.
-    attr : str
-        The particular attribute being updated. Must be a parameter
-        of the VisualState used to present the stimulus.
-    value : object
-        Indicates what change should be made to the stimulus's 
-        attribute.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the Update state will be
-        automatically saved in the log files. 
-                
-    Example
-    -------
-    txt = Text('jubba', color=(255,255,255,255))
-    Wait(1.0)
-    Update(txt,'color',(0,0,255,255))
-    Wait(1.0)
-    Unshow(txt)
-    The text string 'jubba' will appear on the screen in white text
-    for 1.0 second, then the text color will change to blue, and the
-    text string will remain on the screen for an additional 1.0 second.
-    
-    Log Parameters
-    --------------
-    All parameters above are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters. 
-    """
-    def __init__(self, vstate, attr, value,
-                 parent=None, save_log=True):
-        # init the parent class
-        super(Update, self).__init__(interval=0, parent=parent, 
-                                     duration=0,
-                                     save_log=save_log)
-
-        # we haven't shown anything yet
-        self.shown = None
-        self.vstate = vstate
-        self.attr = attr
-        self.value = value
-
-        # update more log attrs
-        self.log_attrs.extend(['attr', 'value'])
-
-    def _update_callback(self, dt):
-        self.shown = val(self.vstate).shown
-        setattr(self.shown,
-                val(self.attr),
-                val(self.value))
-
-
-class BackColor(VisualState):
-    """
-    Set the background color.
-    
-    Parameters
-    -----------
-    color : tuple
-        Color of backgound specified by a 4- tuple of RGBA (Red Green
-        Blue Alpha) components ranging from 0 to 1.0, where the 'Alpha' 
-        component represents degree of transparency. Default is
-        (0,0,0,1.0), which corresponds to opaque black.        
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the presentation of the 
-        background will be automatically saved in the log files.
-        
-    Example
-    --------
-    BackColor(color=(0,1,0,1.0))
-    The background color will be set to green.
-        
-    Log Parameters
-    --------------
-    All parameters above are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters.
-    """
-    def __init__(self, color=(0,0,0,1.0), parent=None, 
-                 save_log=True):
-        super(BackColor, self).__init__(interval=0, parent=parent, 
-                                        duration=0,
-                                        save_log=save_log)
-
-        self.color = color
-        self.log_attrs.extend(['color'])
-
-    def _update_callback(self, dt):
-        self.exp.window.set_clear_color(val(self.color))
-
-class Rectangle(VisualState):
-    """
-    Draw a colored rectangle.
-    
-    Parameters
-    -----------
-    x : int
-        The horizontal location of the image on the screen, in the 
-        units specified by the stimulus or window. Defauts to half the
-        width of the experiment window.
-    y: int
-        The vertical location of the image on the screen, in the units
-        specified by the stimulus or window. Defaults to half the height
-        of the experiment window.
-    width : int
-        Width of the rectangle in pixels.
-    height : int
-        Height of the rectangle in pixels.
-    anchor_x : str
-        Horizontal anchor alignment, which determines the meaning
-        of the x parameter.
-            "center" (default) : x value indicates position of the
-            center of the layout
-            "left" : x value indicates position of the left edge of 
-            the layout
-            "right" : x value indicates position of the right edge
-            of the layout
-    anchor_y : str
-        Vertical anchor alignment, which determines the meaning 
-        of the y parameter.
-            "center" (default): y value indicates position of the
-            center of the layout
-            "top" : y value indicates position of the top edge of the
-            layout
-            "bottom" : y value indicates position of the bottom edge
-            of the layout    
-    color : tuple
-        Color of rectangle specified by a 4- tuple of RGBA (Red Green
-        Blue Alpha) components ranging from 0 to 255, where the 'Alpha' 
-        component represents degree of transparency. Default is
-        (255,255,255,255), which corresponds to opaque white.
-    group : Group
-        Optional graphics settings.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the presentation of the 
-        background will be automatically saved in the log files.
-        
-    Example
-    --------
-    Rectangle(color=(0,255,0,255))
-    The green rectangle will be drawn in the center of the screen.
-        
-    Log Parameters
-    --------------
-    All of the above parameters for each Rectangle state will be 
-    recorded in the state.yaml and state.csv files. The following
-    information about the background will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time 
-    """
-    def __init__(self, x=None, y=None, 
-                 width=100, height=100,
-                 anchor_x='center', anchor_y='center', 
-                 color=(0,0,0,255), 
-                 group=None, parent=None, 
-                 save_log=True):
-        super(Rectangle, self).__init__(interval=0, parent=parent, 
-                                        duration=0,
-                                        save_log=save_log)
-
-        # set loc to center if none supplied
-        if x is None:
-            x = Ref(self['exp']['window'],'width')//2
-        self.x = x
-        if y is None:
-            y = Ref(self['exp']['window'],'height')//2
-        self.y = y
-        self.anchor_x = anchor_x
-        self.anchor_y = anchor_y
-        self.width = width
-        self.height = height
-        self.color = color
-        self.group = group
-        self.log_attrs.extend(['x','y','anchor_x','anchor_y','width','height','color'])
-
-    def _update_callback(self, dt):
-        # calc corners from x,y and width,height
-        width = val(self.width)
-        height = val(self.height)
-        x1 = val(self.x)
-        y1 = val(self.y)
-        anchor_x = val(self.anchor_x)
-        anchor_y = val(self.anchor_y)
-        if anchor_x == 'center':
-            x1 -= width//2
-        elif anchor_x == 'right':
-            x1 -= width
-        if anchor_y == 'center':
-            y1 -= height//2
-        elif anchor_y == 'top':
-            y1 -= height
-        x2 = x1+width
-        y2 = y1+height
-        color = list(val(self.color))
-        self.shown = self.exp.window.batch.add(4, pyglet.gl.GL_QUADS, 
-                                               val(self.group),
-                                               ('v2i', [x1, y1, x2, y1, x2, y2, x1, y2]),
-                                               ('c4B', color * 4))
-
-        return self.shown
-
-
-class grPointSize (pyglet.graphics.Group):
-    """
-    This pyglet rendering group sets a specific point size.
-    """
-    def __init__(self, size=4.0):
-        super(grPointSize, self).__init__()
-        self.size = size
-    def set_state(self):
-        pyglet.gl.glPointSize(self.size)
-    def unset_state(self):
-        pyglet.gl.glPointSize(1.0)
-
-class DotBox(VisualState):
-    """
-    Draw a random dots in a box shape.
-
-    You will need to combine with Rectangle if you want to draw a
-    colored box behind the dots.
-    
-    Parameters
-    -----------
-    x : int
-        The horizontal location of the image on the screen, in the 
-        units specified by the stimulus or window. Defauts to half the
-        width of the experiment window.
-    y: int
-        The vertical location of the image on the screen, in the units
-        specified by the stimulus or window. Defaults to half the height
-        of the experiment window.
-    width : int
-        Width of the rectangle in pixels.
-    height : int
-        Height of the rectangle in pixels.
-    anchor_x : str
-        Horizontal anchor alignment, which determines the meaning
-        of the x parameter.
-            "center" (default) : x value indicates position of the
-            center of the layout
-            "left" : x value indicates position of the left edge of 
-            the layout
-            "right" : x value indicates position of the right edge
-            of the layout
-    anchor_y : str
-        Vertical anchor alignment, which determines the meaning 
-        of the y parameter.
-            "center" (default): y value indicates position of the
-            center of the layout
-            "top" : y value indicates position of the top edge of the
-            layout
-            "bottom" : y value indicates position of the bottom edge
-            of the layout    
-    num_dots : int
-        Number of dots to draw.
-    dot_size : int
-        Number of pixels in the dot
-    color : tuple
-        Color of dots specified by a 4- tuple of RGBA (Red Green
-        Blue Alpha) components ranging from 0 to 255, where the 'Alpha' 
-        component represents degree of transparency. Default is
-        (255,255,255,255), which corresponds to opaque white.
-    group : Group
-        Optional graphics settings.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the presentation of the 
-        background will be automatically saved in the log files.
-        
-    Example
-    --------
-    DotBox(color=(0,255,0,255), num_dots=100)
-
-    A box of 100 green dots will be drawn (with no background box).
-        
-    Log Parameters
-    --------------
-    All of the above parameters for each Rectangle state will be 
-    recorded in the state.yaml and state.csv files. The following
-    information about the background will be stored as well:
-    
-        duration 
-        end_time  
-        first_call_error
-        first_call_time 
-        last_call_error 
-        last_draw 
-        last_flip 
-        last_update 
-        start_time 
-        state_time 
-    """
-    def __init__(self, x=None, y=None, 
-                 width=100, height=100,
-                 anchor_x='center', anchor_y='center', 
-                 num_dots = 100,
-                 dot_size = 1,
-                 color=(255,255,255,255),
-                 group=None, parent=None, 
-                 save_log=True):
-        super(DotBox, self).__init__(interval=0, parent=parent, 
-                                     duration=0,
-                                     save_log=save_log)
-
-        # set loc to center if none supplied
-        if x is None:
-            x = Ref(self['exp']['window'],'width')//2
-        self.x = x
-        if y is None:
-            y = Ref(self['exp']['window'],'height')//2
-        self.y = y
-        self.anchor_x = anchor_x
-        self.anchor_y = anchor_y
-        self.width = width
-        self.height = height
-        self.num_dots = num_dots
-        self.dot_size = dot_size
-        self.color = color
-        self.group = group
-        self.log_attrs.extend(['x','y','anchor_x','anchor_y','width','height',
-                               'num_dots','dot_size','color'])
-
-    def _update_callback(self, dt):
-        # calc corners from x,y and width,height
-        width = val(self.width)
-        height = val(self.height)
-        x1 = val(self.x)
-        y1 = val(self.y)
-        anchor_x = val(self.anchor_x)
-        anchor_y = val(self.anchor_y)
-        if anchor_x == 'center':
-            x1 -= width//2
-        elif anchor_x == 'right':
-            x1 -= width
-        if anchor_y == 'center':
-            y1 -= height//2
-        elif anchor_y == 'top':
-            y1 -= height
-        x2 = x1+width
-        y2 = y1+height
-
-        # specify the dots
-        num_dots = val(self.num_dots)
-        dot_size = val(self.dot_size)
-        buf = int(math.ceil(dot_size/2.))
-
-        # make list of point pairs
-        points = [[random.randint(x1+buf,x2-buf), 
-                   random.randint(y1+buf,y2-buf)] 
-                  for i in xrange(num_dots)]
-        
-        # flatten the points into a single list
-        points = [item for sublist in points for item in sublist]
-
-        # make a list of the dot colors
-        color = list(val(self.color))
-        
-        # draw the dots
-        self.shown = self.exp.window.batch.add(num_dots, pyglet.gl.GL_POINTS, 
-                                               grPointSize(dot_size),
-                                               ('v2i', points),
-                                               ('c4B', color*num_dots))
-        return self.shown
-
-
-class Text(VisualState):
-    """
-    Visual state to present text.
-    
-    Parameters
-    -----------
-    textstr : str
-        The text that will be displayed to the participant. It may
-        contain letters, numbers, spaces, or punctuation.
-    x : int
-        The horizontal location of the text string, in the units 
-        specified by the stimulus or window. Defaults to half the width
-        of the experiment window.
-    y : int
-        The vertical location of the text string, in the units 
-        specified by the stimulus or window. Defaults to half the height
-        of the experiment window.
-    anchor_x : str
-        Horizontal anchor alignment, which determines the meaning
-        of the x parameter.
-            "center" (default) : x value indicates position of the
-            center of the layout
-            "left" : x value indicates position of the left edge of 
-            the layout
-            "right" : x value indicates position of the right edge
-            of the layout
-    anchor_y : str   
-        Vertical anchor alignment, which determines the meaning 
-        of the y parameter.
-            "center" (default): y value indicates position of the
-            center of the layout
-            "top" : y value indicates position of the top edge of the
-            layout
-            "baseline" : y value indicates position of the first line
-            of text in the layout
-            "bottom" : y value indicates position of the bottom edge
-            of the layout
-    font_name : str
-        Choose the font style by indicating a font family that is 
-        available on your operating system. For example, all 
-        operating systems include the "Times New Roman" font.
-        Default will be the same as the default font on your operating
-        system.
-    font_size : int
-        Font size in points.
-    color : tuple
-        Color of text specified by a 4- tuple of RGBA (Red Green Blue
-        Alpha) components ranging from 0 to 255, where the 'Alpha' 
-        component represents degree of transparency. Default is
-        (255,255,255,255), which corresponds to opaque white.
-    bold : bool
-        Bold font option.
-    italic : bool
-        Italic font option.
-    halign : str
-        Horizontal alignment of text on a line. Only applies if width
-        is set as well.
-            "left" (default)
-            "center"
-            "right"
-    width : int
-        Width of the text block in pixels. Multiline must be set to 
-        'True' if the width is less than the width of textstr.
-    height : int
-        Height of the text block in pixels.
-    multiline : bool
-        If set to 'True,' the text string will be word-wrapped in 
-        accordance with newline characters and the 'width' parameter.
-    dpi : float
-        Resolution of the fonts in the current layout. Defaults to 96.
-    group : Group
-        Optional graphics settings.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the presentation of the text
-        will be automatically saved in the log files.
-    
-    Example
-    -------
-    Text("Jubba", font_size = 20, bold = True)
-    The text string "Jubba" will appear in bold, size 20 font.
-        
-    Log Parameters
-    --------------
-    All parameters above are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters. 
-    """
-    def __init__(self, textstr, x=None, y=None, anchor_x='center', anchor_y='center',
-                 font_name=None, font_size=18, color=(255,255,255,255),
-                 bold=False, italic=False, halign='center', 
-                 width=None, height=None, multiline=False,
-                 dpi=None, group=None,
-                 parent=None, save_log=True):
-        super(Text, self).__init__(interval=0, parent=parent, 
-                                   duration=0,
-                                   save_log=save_log)
-
-        self.textstr = textstr
-        self.font_name = font_name
-        self.font_size = font_size
-        self.color = color
-
-        # set loc to center if none supplied
-        if x is None:
-            x = Ref(self['exp']['window'],'width')//2
-        self.x = x
-        if y is None:
-            y = Ref(self['exp']['window'],'height')//2
-        self.y = y
-
-        self.anchor_x = anchor_x
-        self.anchor_y = anchor_y
-        self.bold = bold
-        self.italic = italic
-        self.halign = halign
-        self.width = width
-        self.height = height
-        self.multiline = multiline
-        self.dpi = dpi
-        self.group = group
-
-        self.log_attrs.extend(['textstr', 'font_name', 'font_size', 'color',
-                               'x', 'y', 'anchor_x', 'anchor_y', 'bold',
-                               'italic', 'halign', 'width', 'height', 'multiline'])
-
+    def show(self):
         pass
 
-    def _update_callback(self, dt):
-        # children must implement drawing the showable to make it shown
-        if False: #self.shown:
-            # update with the values
-            pass
-        else:
-            # make the new shown and return it
-            self.shown = pyglet.text.Label(val(self.textstr),
-                                           font_name=val(self.font_name),
-                                           font_size=val(self.font_size),
-                                           color=val(self.color),
-                                           x=val(self.x), y=val(self.y),
-                                           anchor_x=val(self.anchor_x), 
-                                           anchor_y=val(self.anchor_y),
-                                           bold=val(self.bold),
-                                           italic=val(self.italic),
-                                           halign=val(self.halign),
-                                           width=val(self.width),
-                                           height=val(self.height),
-                                           multiline=val(self.multiline),
-                                           dpi=val(self.dpi),
-                                           group=val(self.group),
-                                           batch=self.exp.window.batch)
-
-        return self.shown
-
-
-class Image(VisualState):
-    """
-    Visual state to present an image.
-    
-    Parameters
-    ----------
-    
-    imgstr : str
-        The filename of the image that will be displayed.
-    x : int
-        The horizontal location of the image on the screen, in the 
-        units specified by the stimulus or window. Defauts to half the
-        width of the experiment window.
-    y: int
-        The vertical location of the image on the screen, in the units
-        specified by the stimulus or window. Defaults to half the height
-        of the experiment window.
-    anchor_x : str
-        Horizontal anchor alignment, which determines the meaning
-        of the x parameter.
-            "center" (default) : x value indicates position of the
-            center of the layout
-            "left" : x value indicates position of the left edge of 
-            the layout
-            "right" : x value indicates position of the right edge
-            of the layout
-    anchor_y : str
-        Vertical anchor alignment, which determines the meaning 
-        of the y parameter.
-            "center" (default): y value indicates position of the
-            center of the layout
-            "top" : y value indicates position of the top edge of the
-            layout
-            "bottom" : y value indicates position of the bottom edge
-            of the layout    
-    flip_x : bool
-        If set to 'True,' the displayed image will be flipped 
-        horizontally.
-    flip_y : bool
-        If set to 'True,' the displayed image will be flipped
-        vertically.
-    rotation : int
-        Degrees of clockwise rotation of the displayed image. Only
-        90-degree increments are supported.
-    scale : float
-        Scaling factor. By setting the scale at 2, for example, the
-        image will be drawn at twice its original size. 
-    opacity : int
-        Sets the aplpha component of the image's color properties. If
-        set at a value less than 255, the image will appear translucent.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the presentation of the image
-        will be automatically saved in the log files.        
-    
-    Example
-    --------
-    Image('smile-image.png', rotation=180, scale = 3)
-    The image with the filename 'face-smile.png' will be shown on 
-    the screen at 3x its original size and flipped upside down.
-        
-    Log Parameters
-    --------------
-    All parameters above are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters. 
-        
-    """
-    def __init__(self, imgstr, x=None, y=None, 
-                 anchor_x=None, anchor_y=None,
-                 flip_x=False, flip_y=False,
-                 rotation=0, scale=1.0, opacity=255, group=None,
-                 parent=None, save_log=True):
-        super(Image, self).__init__(interval=0, parent=parent, 
-                                    duration=0,
-                                    save_log=save_log)
-
-        self.imgstr = imgstr
-        self.rotation = rotation
-        self.scale = scale
-        self.opacity = opacity
-        self.group = group
-
-        # set loc to center if none supplied
-        if x is None:
-            x = Ref(self['exp']['window'],'width')//2
-        self.x = x
-        if y is None:
-            y = Ref(self['exp']['window'],'height')//2
-        self.y = y
-
-        # eventually process for strings indicating where to anchor,
-        # such as LEFT, BOTTOM_RIGHT, etc...
-        self.anchor_x = anchor_x
-        self.anchor_y = anchor_y
-
-        self.flip_x = flip_x
-        self.flip_y = flip_y
-
-        # append log attrs
-        self.log_attrs.extend(['imgstr', 'rotation', 'scale', 'opacity',
-                               'x', 'y', 'flip_x', 'flip_y'])
-        
+    def unshow(self):
         pass
 
-    def _update_callback(self, dt):
-        # children must implement drawing the showable to make it shown
-        if False: #not self.shown is None:
-            # update with the values
-            pass
+    def appear(self):
+        self.claim_exceptions()
+        self.__appear_video = None
+        self.show()
+
+    def disappear(self):
+        self.claim_exceptions()
+        self.__disappear_video = None
+        self.unshow()
+
+    def cancel(self, cancel_time):
+        if self._active:
+            clock.schedule(self.leave)
+            cancel_time = max(cancel_time, self._start_time)
+            if self._end_time is not None:
+                cancel_time = min(cancel_time, self._end_time)
+            if self._end_time is None or cancel_time < self._end_time:
+                if self.__disappear_video is not None:
+                    self._exp._app.cancel_video(self.__disappear_video)
+                self.__disappear_video = self._exp._app.schedule_video(
+                    self.disappear, cancel_time, self.set_disappear_time)
+                self._end_time = cancel_time
+
+
+class BackgroundColor(VisualState):
+    layers = []
+    def __init__(self, color, duration=None, parent=None, save_log=True,
+                 name=None):
+        super(BackgroundColor, self).__init__(parent=parent,
+                                              duration=duration,
+                                              save_log=save_log,
+                                              name=name)
+        self._init_color = color
+
+    def show(self):
+        BackgroundColor.layers.append(self)
+        self._exp.set_background_color(self._color)
+
+    def unshow(self):
+        if BackgroundColor.layers[-1] is self:
+            BackgroundColor.layers.pop()
+            try:
+                color = BackgroundColor.layers[-1]._color
+            except IndexError:
+                color = None
+            self._exp.set_background_color(color)
         else:
-            # make the new image
-            self.img = pyglet.resource.image(val(self.imgstr), 
-                                             flip_x=val(self.flip_x),
-                                             flip_y=val(self.flip_y))
-
-            # process the anchors
-            anchor_x = val(self.anchor_x)
-            if anchor_x is None:
-                # set to center
-                anchor_x = self.img.width//2
-            self.img.anchor_x = anchor_x
-            anchor_y = val(self.anchor_y)
-            if anchor_y is None:
-                # set to center
-                anchor_y = self.img.height//2
-            self.img.anchor_y = anchor_y
-            
-            # make the sprite from the image
-            self.shown = pyglet.sprite.Sprite(self.img,
-                                              x=val(self.x), y=val(self.y),
-                                              group=val(self.group),
-                                              batch=self.exp.window.batch)
-            self.shown.scale = val(self.scale)
-            self.shown.rotation = val(self.rotation)
-            self.shown.opacity = val(self.opacity)
-
-        return self.shown
+            BackgroundColor.layers.remove(self)
 
 
-class Movie(VisualState):
-    """
-    Visual state to present a movie.
-    
-    Parameters
-    -----------
-    movstr : str
-        The filename of the movie that will be presented.
-    x : int
-        The horizontal location of the movie frame, in the units 
-        specified by the stimulus or window. Defaults to half the width
-        of the experiment window.
-    y : int
-        The vertical location of the movie frame, in the units 
-        specified by the stimulus or window. Defaults to half the height
-        of the experiment window.    
-    anchor_x : str
-        Horizontal anchor alignment, which determines the meaning
-        of the x parameter.
-            "center" (default) : x value indicates position of the
-            center of the layout
-            "left" : x value indicates position of the left edge of 
-            the layout
-            "right" : x value indicates position of the right edge
-            of the layout    
-    anchor_y : str
-        Vertical anchor alignment, which determines the meaning 
-        of the y parameter.
-            "center" (default): y value indicates position of the
-            center of the layout
-            "top" : y value indicates position of the top edge of the
-            layout
-            "baseline" : y value indicates position of the first line
-            of text in the layout
-            "bottom" : y value indicates position of the bottom edge
-            of the layout    
-    rotation : int
-        Degrees of clockwise rotation of the displayed movie frame. Only
-        90-degree increments are supported.    
-    scale : float
-        Scaling factor. By setting the scale at 2, for example, the
-        movie frame will be drawn at twice its original size.    
-    opacity : int
-        Sets the aplpha component of the movie's color properties. If
-        set at a value less than 255, the image will appear 
-        translucent.    
-    framerate : float
-        The rate at which each frame is flashed on the screen and 
-        replaced with the next. Units are seconds. Default is 1/30,
-        meaning each frame is on the screen for one-thirtieth of a
-        second.  
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if 
-        None.   
-    save_log : bool
-        If set to 'True,' details about the presentation of the movie
-        will be automatically saved in the log files.  
-        
-    Example
-    --------  
-    Movie('smile-movie.mp4', framerate = 1/24)
-    The movie with the filename 'smile-movie.mp4' will play with each
-    frame being replaced at a rate of 1/24 seconds. 
-    
-    Log Parameters
-    --------------
-    All parameters above are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters. 
-    """
-    def __init__(self, movstr, x=None, y=None,
-                 anchor_x=None, anchor_y=None,
-                 rotation=0, scale=1.0, opacity=255, framerate=1/30., group=None,
-                 parent=None, save_log=True):
-        super(Movie, self).__init__(interval=framerate, parent=parent, 
-                                    duration=-1,
-                                    save_log=save_log)
+class WidgetState(VisualState):
+    layout_stack = []
+    property_aliases = {
+        "left": "x",
+        "bottom": "y",
+        "left_bottom": "pos",
+        "left_center": ("x", "center_y"),
+        "left_top": ("x", "top"),
+        "center_bottom": ("center_x", "y"),
+        "center_top": ("center_x", "top"),
+        "right_bottom": ("right", "y"),
+        "right_center": ("right", "center_y"),
+        "right_top": ("right", "top")
+        }
 
-        self.movstr = movstr
-        self.rotation = rotation
-        self.scale = scale
-        self.opacity = opacity
-        self.group = group
-        self.current_time = 0.0
+    @classmethod
+    def wrap(cls, widget_class, name=None):
+        if not issubclass(widget_class, kivy.uix.widget.Widget):
+            raise ValueError(
+                "widget_class must be a subclass of kivy.uix.widget.Widget")
+        if name is None:
+            name = widget_class.__name__
+        def __init__(self, *pargs, **kwargs):
+            cls.__init__(self, widget_class, *pargs, **kwargs)
+        return type(name, (cls,), {"__init__" : __init__})
 
-        # set loc to center if none supplied
-        if x is None:
-            x = Ref(self['exp']['window'],'width')//2
-        self.x = x
-        if y is None:
-            y = Ref(self['exp']['window'],'height')//2
-        self.y = y
+    def __init__(self, widget_class, duration=None, parent=None, save_log=True,
+                 name=None, index=0, layout=None, **params):
+        super(WidgetState, self).__init__(parent=parent,
+                                          duration=duration,
+                                          save_log=save_log,
+                                          name=name)
 
-        # eventually process for strings indicating where to anchor,
-        # such as LEFT, BOTTOM_RIGHT, etc...
-        self.anchor_x = anchor_x
-        self.anchor_y = anchor_y
-
-        self._player = pyglet.media.Player()
-        self._player.eos_action = self._player.EOS_PAUSE
-
-        # append log attrs
-        self.log_attrs.extend(['movstr', 'rotation', 'scale', 'opacity',
-                               'x', 'y'])
-        
-        pass
-
-    def _enter(self):
-        # load the media
-        self._source = pyglet.media.load(val(self.movstr))
-
-        # pop off any current sources
-        while self._player.source:
-            self._player.next()
-
-        # queue source
-        self._player.queue(self._source)
-        self.current_time = 0.0
-
-        # process enter from parent (VisualState)
-        super(Movie, self)._enter()
-
-    def _update_callback(self, dt):
-        # children must implement drawing the showable to make it shown
-        if not self.shown is None:
-            # update with the values
-            if not self._player.playing:
-                if self.shown:
-                    self.shown.delete()
-                    self.shown = None
-                self.leave()
-                return None
-                
-            if self._player.source: 
-                img = self._player.get_texture()
+        self.__issued_refs = weakref.WeakValueDictionary()
+        self.__widget_param_names = widget_class().properties().keys()
+        self.__widget_class = widget_class
+        self._init_index = index
+        self._widget = None
+        self.__parent_widget = None
+        self._constructor_param_names = params.keys()
+        self._init_constructor_params = params
+        for name, value in params.iteritems():
+            setattr(self, "_init_" + name, value)
+        if layout is None:
+            if len(WidgetState.layout_stack):
+                self.__layout = WidgetState.layout_stack[-1]
             else:
-                img = None
-            if img is None:
-                self._player.pause()
-                if self.shown:
-                    self.shown.delete()
-                    self.shown = None
-                self.leave()
-                return None
-            self.shown.image = img
+                self.__layout = None
         else:
-            # if playing, then stopped from outside
-            if self._player.playing:
-                # we need to leave
-                self._player.pause()
-                self.leave()
-                return None
-            # make the new shown and return it
-            # start the player
-            self._player.play()
+            self.__layout = layout
 
-            # get the image
-            img = self._player.get_texture()
-            
-            if img is None:
-                self._player.pause()
-                if self.shown:
-                    self.shown.delete()
-                    self.shown = None
-                self.leave()
-                return None
+        self.__x_pos_mode = None
+        self.__y_pos_mode = None
 
-            # process the anchors
-            anchor_x = val(self.anchor_x)
-            if anchor_x is None:
-                # set to center
-                anchor_x = img.width//2
-            img.anchor_x = anchor_x
-            anchor_y = val(self.anchor_y)
-            if anchor_y is None:
-                # set to center
-                anchor_y = img.height//2
-            img.anchor_y = anchor_y
+        # set the log attrs
+        self._log_attrs.extend(['constructor_params'])
 
-            self.shown = pyglet.sprite.Sprite(img,
-                                              x=val(self.x), y=val(self.y),
-                                              group=val(self.group),
-                                              batch=self.exp.window.batch)
-            self.shown.scale = val(self.scale)
-            self.shown.rotation = val(self.rotation)
-            self.shown.opacity = val(self.opacity)
+        self.__parallel = None
 
-        # update the time
-        self.current_time = self._player.time
+    def get_current_param(self, name):
+        return getattr(self.current_clone._widget, name)
 
-        return self.shown
+    def __getattr__(self, name):
+        try:
+            return self.__issued_refs[name]
+        except KeyError:
+            try:
+                props = WidgetState.property_aliases[name]
+            except KeyError:
+                if name in self.__widget_param_names:
+                    props = name
+                else:
+                    return super(WidgetState, self).__getattr__(name)
+            if isinstance(props, str):
+                ref = Ref(self.get_current_param, props)
+            elif isinstance(props, tuple):
+                ref = tuple(Ref(self.get_current_param, prop) for
+                            prop in props)
+            else:
+                raise RuntimeError("Bad value for 'props': %r" % props)
+            self.__issued_refs[name] = ref
+            return ref
+
+    def property_callback(self, name, *pargs):
+        try:
+            ref = self.__issued_refs[name]
+        except KeyError:
+            return
+        ref.dep_changed()
+
+    def eval_init_refs(self):
+        return self.transform_params(self.apply_aliases(
+            {name : getattr(self, "_" + name) for
+             name in self._constructor_param_names}))
+
+    def apply_aliases(self, params):
+        new_params = {}
+        for name, value in params.items():
+            props = WidgetState.property_aliases.get(name, name)
+            if isinstance(props, str):
+                new_params[props] = value
+            elif isinstance(props, tuple):
+                for n, prop in enumerate(props):
+                    new_params[prop] = subvalue[n]
+            else:
+                raise RuntimeError("Bad value for 'props': %r" % props)
+        return new_params
+
+    def transform_params(self, params):
+        for name, value in params.iteritems():
+            params[name] = self.transform_param(name, value)
+        return params
+
+    def transform_param(self, name, value):
+        value = val(value)
+
+        # normalize color specifier...
+        if value is not None and "color" in name:
+            return normalize_color_spec(value)
+        else:
+            return value
+
+    def resolve_params(self, params):
+        # remove kivy's default size hints...
+        if "size_hint" not in params:
+            params.setdefault("size_hint_x", None)
+            params.setdefault("size_hint_y", None)
+
+        return params
+
+    def construct(self, params):
+        self._widget = self.__widget_class(**params)
+        self.live_change(**params)
+        self._widget.bind(**{name : partial(self.property_callback, name) for
+                            name in self.__widget_param_names})
+
+    def show(self):
+        if self.__layout is None:
+            self.__parent_widget = self._exp._app.wid
+        else:
+            self.__parent_widget = self.__layout._widget
+        self.__parent_widget.add_widget(self._widget, index=self._index)
+
+    def unshow(self):
+        self.__parent_widget.remove_widget(self._widget)
+        self.__parent_widget = None
+
+    def live_change(self, **params):
+        xy_pos_props = {"pos": "min", "center": "mid"}
+        x_pos_props = {"x": "min", "center_x": "mid", "right": "max"}
+        y_pos_props = {"y": "min", "center_y": "mid", "top": "max"}
+        pos_props = (xy_pos_props.keys() +
+                     x_pos_props.keys() +
+                     y_pos_props.keys())
+        new_x_pos_mode = None
+        new_y_pos_mode = None
+        for prop, mode in xy_pos_props.iteritems():
+            if prop in params:
+                new_x_pos_mode = mode
+                new_y_pos_mode = mode
+                break
+        else:
+            for prop, mode in x_pos_props.iteritems():
+                if prop in params:
+                    new_x_pos_mode = mode
+                    break
+            for prop, mode in y_pos_props.iteritems():
+                if prop in params:
+                    new_y_pos_mode = mode
+                    break
+        if new_x_pos_mode is not None:
+            self.__x_pos_mode = new_x_pos_mode
+        elif self.__x_pos_mode is None:
+            params["center_x"] = self._exp.screen.center_x.eval()
+        elif self.__x_pos_mode == "min":
+            params["x"] = self._widget.x
+        elif self.__x_pos_mode == "mid":
+            params["center_x"] = self._widget.center_x
+        elif self.__x_pos_mode == "max":
+            params["right"] = self._widget.right
+        if new_y_pos_mode is not None:
+            self.__y_pos_mode = new_y_pos_mode
+        elif self.__y_pos_mode is None:
+            params["center_y"] = self._exp.screen.center_y.eval()
+        elif self.__y_pos_mode == "min":
+            params["y"] = self._widget.y
+        elif self.__y_pos_mode == "mid":
+            params["center_y"] = self._widget.center_y
+        elif self.__y_pos_mode == "max":
+            params["top"] = self._widget.top
+        for name, value in params.iteritems():
+            if name not in pos_props:
+                setattr(self._widget, name, value)
+        for name, value in params.iteritems():
+            if name in pos_props:
+                setattr(self._widget, name, value)
+
+    def animate(self, duration=None, parent=None, save_log=True, name=None,
+                **anim_params):
+        anim = Animate(self, duration=duration, parent=parent, name=name,
+                       save_log=save_log, **anim_params)
+        anim.override_instantiation_context()
+        return anim
+
+    def slide(self, duration=None, speed=None, accel=None, parent=None,
+              save_log=True, name=None, **params):
+        def interp(a, b, w):
+            if isinstance(a, dict):
+                return {name : interp(a[name], b[name], w) for
+                        name in set(a) & set(b)}
+            elif hasattr(a, "__iter__"):
+                return [interp(a_prime, b_prime, w) for
+                        a_prime, b_prime in
+                        zip(a, b)]
+            else:
+                return a * (1.0 - w) + b * w
+        condition = duration is None, speed is None, accel is None
+        if condition == (False, True, True):  # simple, linear interpolation
+            anim_params = {}
+            for param_name, value in params.items():
+                def func(t, initial, value=value, param_name=param_name):
+                    new_value = self.transform_param(param_name, value)
+                    return interp(initial, new_value, t / duration)
+                anim_params[param_name] = func
+        #TODO: fancier interpolation modes!!!
+        else:
+            raise ValueError("Invalid combination of parameters.")  #...
+        anim = self.animate(duration=duration, parent=parent,
+                            save_log=save_log, name=name, **anim_params)
+        anim.override_instantiation_context()
+        return anim
+
+    def set_appear_time(self, appear_time):
+        self._appear_time = appear_time
+        clock.schedule(self.leave)
+
+    def set_disappear_time(self, disappear_time):
+        self._disappear_time = disappear_time
+        clock.schedule(self.finalize)
+
+    def _enter(self):
+        super(WidgetState, self)._enter()
+        self.__x_pos_mode = None
+        self.__y_pos_mode = None
+
+        params = self.eval_init_refs()
+        params = self.resolve_params(params)
+        self.construct(params)
+
+    def __enter__(self):
+        if self.__parallel is not None:
+            raise RuntimeError("WidgetState context is not reentrant!")  #!!!
+        #TODO: make sure we're the previous state?
+        WidgetState.layout_stack.append(self)
+        self.__parallel = Parallel(name="LAYOUT")
+        self.__parallel.override_instantiation_context()
+        self.__parallel.claim_child(self)
+        self.__parallel.__enter__()
+        return self
+
+    def __exit__(self, type, value, tb):
+        ret = self.__parallel.__exit__(type, value, tb)
+        if self._init_duration is None:
+            self.__parallel.set_child_blocking(0, False)
+        else:
+            for n in range(1, len(self.__parallel._children)):
+                self.__parallel.set_child_blocking(n, False)
+        self.__parallel = None
+        if len(WidgetState.layout_stack):
+            WidgetState.layout_stack.pop()
+        return ret
+
+
+class Animate(State):
+    #TODO: log updates!
+    def __init__(self, target, duration=None, parent=None, save_log=True,
+                 name=None, **anim_params):
+        super(Animate, self).__init__(duration=duration, parent=parent,
+                                      save_log=save_log, name=name)
+        self.target = target  #TODO: make sure target is a WidgetState
+        self.__anim_params = anim_params
+        self.__initial_params = None
+
+    def _enter(self):
+        self.__initial_params = None
+        self.__target_clone = self.target.current_clone
+        first_update_time = self._start_time + self._exp._app.flip_interval
+        clock.schedule(self.update, event_time=first_update_time,
+                       repeat_interval=self._exp._app.flip_interval)
+        clock.schedule(self.leave)
+
+    def update(self):
+        self.claim_exceptions()
+        now = clock.now()
+        if self.__initial_params is None:
+            self.__initial_params = {
+                name : getattr(self.__target_clone, name).eval() for
+                name in self.__anim_params.keys()}
+        if self._end_time is not None and now >= self._end_time:
+            clock.unschedule(self.update)
+            clock.schedule(self.finalize)
+            now = self._end_time
+        t = now - self._start_time
+        params = {name : func(t, self.__initial_params[name]) for
+                  name, func in
+                  self.__anim_params.items()}
+        self.__target_clone.live_change(
+            **self.__target_clone.transform_params(
+                self.__target_clone.apply_aliases(params)))
+
+    def cancel(self, cancel_time):
+        if self._active and (self._end_time is None or
+                            cancel_time < self._end_time):
+            self._end_time = cancel_time
+
+
+def vertex_instruction_widget(instr_cls, name=None):
+    if name is None:
+        name = instr_cls.__name__
+    base_attrs = dir(kivy.graphics.instructions.VertexInstruction)
+    props = []
+    for attr in dir(instr_cls):
+        if attr in base_attrs:
+            continue
+        attr_val = getattr(instr_cls, attr, None)
+        if hasattr(attr_val, "__get__") and hasattr(attr_val, "__set__"):
+            props.append(attr)
+    dict_ = {prop : ObjectProperty(None) for prop in props if
+             prop not in ("size", "pos")}
+    dict_["color"] = ListProperty([1.0, 1.0, 1.0, 1.0])
+    
+    def __init__(self, *pargs, **kwargs):
+        super(type(self), self).__init__(*pargs, **kwargs)
+        with self.canvas:
+            self._color = kivy.graphics.Color(*self.color)
+            shape_kwargs = {}
+            for prop in props:
+                value = getattr(self, prop)
+                if value is not None:
+                    shape_kwargs[prop] = value
+            for name, value in kwargs.items():
+                if name not in shape_kwargs:
+                    shape_kwargs[name] = value
+            self._shape = instr_cls(**shape_kwargs)
+        self.bind(color=self.redraw, **{prop : self.redraw for prop in props})
+    dict_["__init__"] = __init__
+
+    def redraw(self, *pargs):
+        self._color.rgba = self.color
+        for prop in props:
+            value = getattr(self, prop)
+            if value is not None:
+                setattr(self._shape, prop, value)
+    dict_["redraw"] = redraw
+
+    return type(name, (kivy.uix.widget.Widget,), dict_)
+
+
+vertex_instructions = [
+    "Bezier",
+    #"StripMesh",
+    "Mesh",
+    "Point",
+    "Triangle",
+    "Quad",
+    "Rectangle",
+    "BorderImage",
+    "Ellipse",
+    #"RoundedRectangle"
+    ]
+for instr in vertex_instructions:
+    exec("%s = WidgetState.wrap(vertex_instruction_widget(kivy.graphics.%s))" %
+         (instr, instr))
+
+
+widgets = [
+    "Image",
+    "Label",
+    "Button",
+    "Slider",
+    #...
+    "AnchorLayout",
+    "BoxLayout",
+    "FloatLayout",
+    "RelativeLayout",
+    "GridLayout",
+    "PageLayout",
+    "ScatterLayout",
+    "StackLayout"
+    ]
+for widget in widgets:
+    modname = "kivy.uix.%s" % widget.lower()
+    exec("import %s" % modname)
+    exec("%s = WidgetState.wrap(%s.%s)" %
+         (widget, modname, widget))
+
+
+import kivy.uix.video
+class Video(WidgetState.wrap(kivy.uix.video.Video)):
+    def construct(self, params):
+        super(Video, self).construct(params)
+
+        # force video to load immediately so that duration is available...
+        _kivy_clock.unschedule(self._widget._do_video_load)
+        self._widget._do_video_load()
+        self._widget._video.pause()
+        while self._widget._video.duration == -1:
+            pass  #TODO: make sure we can't get stuck here?
+        
+        if self._end_time is None:
+            self._end_time = self._start_time + self._widget._video.duration
+
+    def show(self):
+        if "state" not in self._constructor_param_names:
+            self._widget.state = "play"
+        self._widget._video._update(0)  # prevent white flash at start
+        super(Video, self).show()
+
+    def unshow(self):
+        super(Video, self).unshow()
+        self._widget.state = "stop"
+
+
+def iter_nested_buttons(state):
+    if isinstance(state, Button):
+        yield state
+    if isinstance(state, ParentState):
+        for child in state._children:
+            for button in iter_nested_buttons(child):
+                yield button
+
+
+class ButtonPress(CallbackState):
+    def __init__(self, buttons=None, correct_resp=None, base_time=None,
+                 duration=None, parent=None, save_log=True, name=None):
+        super(ButtonPress, self).__init__(parent=parent, 
+                                          duration=duration,
+                                          save_log=save_log,
+                                          name=name)
+        if buttons is None:
+            self.__buttons = []
+        elif type(buttons) not in (list, tuple):
+            self.__buttons = [buttons]
+        else:
+            self.__buttons = buttons
+        self._button_names = None
+        self._init_correct_resp = correct_resp
+        self._init_base_time = None
+
+        self._pressed = ''
+        self._press_time = {"time": None, "error": None}
+        self._correct = False
+        self._rt = None
+
+        self.__pressed_ref = None
+
+        # append log vars
+        self._log_attrs.extend(['button_names', 'correct_resp', 'base_time',
+                                'pressed', 'press_time', 'correct', 'rt'])
+
+        self.__parallel = None
+
+    def _enter(self):
+        self._button_names = [button._name for button in self.__buttons]
+        if self._correct_resp is None:
+            self._correct_resp = []
+        elif type(self.correct_resp) not in (list, tuple):
+            self._correct_resp = [self._correct_resp]
+        self.__pressed_ref = Ref(
+            lambda lst: [name for name, down in lst if down],
+            [(button.name, button.state == "down") for
+             button in self.__buttons])
+        super(ButtonPress, self)._enter()
+
+    def _callback(self):
+        if self._base_time is None:
+            self._base_time = self._start_time
+        self._pressed = ''
+        self._press_time = None
+        self._correct = False
+        self._rt = None
+        self.__pressed_ref.add_change_callback(self.button_callback)
+
+    def button_callback(self):
+        self.claim_exceptions()
+        pressed_list = self.__pressed_ref.eval()
+        if not len(pressed_list):
+            return
+        button = pressed_list[0]
+        self._pressed = button
+        self._press_time = self._exp._app.event_time
+
+        # calc RT if something pressed
+        self._rt = self._press_time['time'] - self._base_time
+
+        if self._pressed in self._correct_resp:
+            self._correct = True
+
+        # let's leave b/c we're all done
+        self.cancel(self._press_time['time'])
 
     def _leave(self):
-        # process leave from parent (VisualState)
-        super(Movie, self)._leave()
+        self.__pressed_ref.remove_change_callback(self.button_callback)
+        super(ButtonPress, self)._leave()
 
-        # stop playing if not already
-        self._player.pause()
+    def __enter__(self):
+        if self.__parallel is not None:
+            raise RuntimeError("ButtonPress context is not reentrant!")  #!!!
+        #TODO: make sure we're the previous state?
+        self.__parallel = Parallel(name="BUTTONPRESS")
+        self.__parallel.override_instantiation_context()
+        self.__parallel.claim_child(self)
+        self.__parallel.__enter__()
+        return self
 
-        # pop off any current sources
-        while self._player.source:
-            self._player.next()
+    def __exit__(self, type, value, tb):
+        ret = self.__parallel.__exit__(type, value, tb)
+        for n in range(1, len(self.__parallel._children)):
+            self.__parallel.set_child_blocking(n, False)
+        self.__buttons.extend(iter_nested_buttons(self.__parallel))
+        self.__parallel = None
+        return ret
 
-        
+
 if __name__ == '__main__':
+    from experiment import Experiment
+    from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial
+    from math import sin, cos
+    from contextlib import nested
 
-    from experiment import Experiment, Get, Set
-    from state import Parallel, Loop, Func
+    exp = Experiment(background_color="#330000")
 
-    exp = Experiment()
+    Wait(2.0)
 
-    Wait(.5)
+    Ellipse(color="white", width=100, height=100)
+    with UntilDone():
+        with Parallel():
+            BackgroundColor("blue", duration=6.0)
+            with Serial():
+                Wait(1.0)
+                BackgroundColor("green", duration=2.0)
+            with Serial():
+                Wait(2.0)
+                BackgroundColor("red", duration=2.0)
+            with Serial():
+                Wait(3.0)
+                BackgroundColor("yellow", duration=2.0)
 
-    Show(Text('Jubba!!!'), duration=Show(Text('********'),duration=1.0))
+    rect = Rectangle(color="purple", width=50, height=50)
+    with UntilDone():
+        rect.slide(center=exp.screen.right_top, duration=2.0)
+        rect.slide(center=exp.screen.right_bottom, duration=2.0)
+        rect.slide(center=exp.screen.left_top, duration=2.0)
+        rect.slide(center=exp.screen.left_bottom, duration=2.0)
+        rect.slide(center=exp.screen.center, duration=2.0)
 
-    # Show(Text('Jubba!!!', x=exp.window.width//2, y=exp.window.height//2), 
-    #      duration=1.0)
-    # Wait(1.0)
-    # with Parallel():
-    #     Show(Text('Wubba!!!', x=exp.window.width//2, y=exp.window.height//2, 
-    #               color=(255,0,0,255)), 
-    #          duration=1.0)
-    #     Show(Image('face-smile.png', x=exp.window.width//2, y=exp.window.height//2), 
-    #          duration=2.0)
+    with Loop(3):
+        Video(source="test_video.mp4", size=exp.screen.size, duration=5.0)
 
-    # Wait(1.0)
+    with ButtonPress():
+        Button(text="Click to continue", size=(exp.screen.width / 4,
+                                               exp.screen.height / 4))
+    with Meanwhile():
+        Triangle(points=[0, 0, 500, 500, 0, 500],
+                 color=(1.0, 1.0, 0.0, 0.5))
 
-    Show(Rectangle(color=(0,255,0,255)), 1.0)
-    Show(Rectangle(width=200,color=(0,255,0,255)), 1.0)
-    Show(Rectangle(height=200,color=(0,255,0,255)), 1.0)
-    Show(Rectangle(height=200,anchor_x='left',color=(0,0,255,255)), 1.0)
-    Show(Rectangle(height=200,anchor_x='right',color=(0,0,255,255)), 1.0)
-    Show(Rectangle(height=200,anchor_y='top',color=(0,0,255,255)), 1.0)
-    Show(Rectangle(height=200,anchor_y='bottom',color=(0,0,255,255)), 1.0)
+    bez = Bezier(segments=200, color="yellow", loop=True,
+                 points=[0, 0, 200, 200, 200, 100, 100, 200, 500, 500])
+    with UntilDone():
+        bez.slide(points=[200, 200, 0, 0, 500, 500, 200, 100, 100, 200],
+                  color="blue", duration=5.0)
+        bez.slide(points=[500, 0, 0, 500, 600, 200, 100, 600, 300, 300],
+                  color="white", duration=5.0)
 
-    def print_dt(state, *txt):
-        for t in txt:
-            print t
-        print now()-state.state_time, state.dt
-        print
-    
-    block = [{'text':['a','b','c']},
-             {'text':['d','e','f']},
-             {'text':['g','h','i']}]
-    with Loop(block) as trial:
-        Set('stim_times',[])
-        with Loop(trial.current['text']) as item:
-            ss = Show(Text(item.current, 
-                      color=(255,0,0,255)),
-                      duration=1.0)
-            #Wait(1.0)
-            #Unshow(ss)
-            Wait(.5)
-            #Set('stim_times',Get('stim_times')+[ss['last_flip']])
-            #Set('stim_times',Get('stim_times')+[ss['show_time']])
-            Set('stim_times',Get('stim_times').append(ss.show_time))
-            #Set('stim_times',
-            #    Get('stim_times')+Ref(gfunc=lambda : list(ss.show_time)))
+    ellipse = Ellipse(right=exp.screen.left,
+                      center_y=exp.screen.center_y, width=25, height=25,
+                      angle_start=90.0, angle_end=460.0,
+                      color=(1.0, 1.0, 0.0), name="Pacman")
+    with UntilDone():
+        with Parallel(name="Pacman motion"):
+            ellipse.slide(left=exp.screen.right, duration=8.0, name="Pacman travel")
+            ellipse.animate(
+                angle_start=lambda t, initial: initial + (cos(t * 8) + 1) * 22.5,
+                angle_end=lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
+                duration=8.0, name="Pacman gobble")
 
-            Func(print_dt, args=[ss.show_time,Get('stim_times')])
-                        
-    Wait(1.0, stay_active=True)
-    exp.run()
+    with BoxLayout(width=500, height=500, top=exp.screen.top, duration=4.0):
+        rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=3.0)
+        Rectangle(color="#00FF00", pos=(0, 0), size_hint=(1, 1), duration=2.0)
+        Rectangle(color=(0.0, 0.0, 1.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=1.0)
+        rect.slide(color=(1.0, 1.0, 1.0, 1.0), duration=3.0)
 
+    with Loop(range(3)):
+        Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
+                  duration=1.0)
+        Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0),
+                  duration=1.0)
+        Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
+                  duration=1.0)
 
-         
-    
+    with Parallel():
+        label = Label(text="SMILE!", duration=4.0, center_x=100, center_y=100,
+                      font_size=50)
+        label.slide(center_x=400, center_y=400, font_size=100, duration=4.0)
+        Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
+                  duration=3.0)
+        Rectangle(x=50, y=50, width=50, height=50, color="lime",
+                  duration=2.0)
+        Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
+                  duration=1.0)
+
+    with Loop(range(3)):
+        Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
+                  duration=1.0)
+        #NOTE: This will flip between iterations, but the rectangle should remain on screen continuously.
+
+    Wait(1.0)
+    Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
+              duration=0.0)  #NOTE: This should flip once but display nothing
+    Wait(1.0)
+
+    Wait(1.0)
+    with Meanwhile():
+        Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0))
+
+    rect = Rectangle(x=0, y=0, width=50, height=50, color="brown")
+    with UntilDone():
+        rect.animate(x=lambda t, initial: t * 50, y=lambda t, initial: t * 25,
+                     duration=5.0)
+        with Meanwhile():
+            Rectangle(x=50, y=50, width=50, height=50, color=(0.5, 0.5, 0.5, 1.0))
+        with Parallel():
+            rect.animate(color=lambda t, initial: (1.0, 1.0 - t / 5.0, t / 5.0, 1.0),
+                         duration=5.0)
+            rect.animate(height=lambda t, initial: 50.0 + t * 25, duration=5.0)
+        Wait(1.0)
+        rect.animate(
+            height=lambda t, initial: (initial * (1.0 - t / 5.0) +
+                                       25 * (t / 5.0)),
+            duration=5.0, name="shrink vertically")
+        rect.slide(color=(0.0, 1.0, 1.0, 1.0), duration=10.0, name="color fade")
+        with Meanwhile():
+            rect.animate(x=lambda t, initial: initial + sin(t * 4) * 100,
+                         name="oscillate")
+        ellipse = Ellipse(x=75, y=50, width=50, height=50,
+                          color="orange")
+        with UntilDone():
+            rect.slide(color="pink", x=0, y=0,
+                       width=100, height=100, duration=5.0)
+            ellipse.slide(color=(0.0, 0.0, 1.0, 0.0), duration=5.0)
+            rect.slide(color=(1.0, 1.0, 1.0, 0.0), duration=5.0)
+    img = Image(source="face-smile.png", size=(10, 10), allow_stretch=True,
+                keep_ratio=False, mipmap=True)
+    with UntilDone():
+        img.slide(size=(100, 200), duration=5.0)
+
+    Wait(2.0)
+    exp.run(trace=False)

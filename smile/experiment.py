@@ -8,7 +8,6 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # import main modules
-#from __future__ import with_statement
 import sys
 import os
 import weakref
@@ -16,237 +15,506 @@ import argparse
 import time
 import threading
 
-# pyglet imports
-import pyglet
-from pyglet.gl import *
-from pyglet import clock
-from pyglet.window import key,Window
+# kivy imports
+import kivy_overrides
+import kivy
+import kivy.base
+from kivy.config import Config
+from kivy.app import App
+from kivy.uix.floatlayout import FloatLayout
+from kivy.lang import Builder
+from kivy.logger import Logger
+from kivy.base import EventLoop
+# Window imported later because kivy graphics configs must come first...
+Window = None
+from kivy.graphics.opengl import (
+    glEnableVertexAttribArray,
+    glVertexAttribPointer,
+    glVertexAttrib4f,
+    glDrawArrays,
+    glDisableVertexAttribArray,
+    glFinish,
+    GL_INT,
+    GL_FALSE,
+    GL_POINTS)
+import kivy.clock
+_kivy_clock = kivy.clock.Clock
 
 # local imports
-from state import Serial, State, RunOnEnter
+from state import Serial, AutoFinalizeState
 from ref import val, Ref
-from log import dump, yaml2csv
+from clock import clock
+from log import LogWriter, log2csv
+from video import normalize_color_spec
 
-# set up the basic timer
-now = clock._default.time
 def event_time(time, time_error=0.0):
-    return {'time':time, 'error':time_error}
-    
-class ExpWindow(Window):
-    def __init__(self, exp, *args, **kwargs):
-        # init the pyglet window
-        super(ExpWindow, self).__init__(*args, **kwargs)
+    return {'time': time, 'error': time_error}
 
-        # set up the exp
+
+class _VideoChange(object):
+    def __init__(self, update_cb, flip_time, flip_time_cb):
+        self.update_cb = update_cb
+        self.flip_time = flip_time
+        self.flip_time_cb = flip_time_cb
+        self.drawn = False
+        self.flipped = False
+
+
+class Screen(object):
+    def __init__(self, app):
+        self.__app = app
+
+    @property
+    def width(self):
+        return self.__app.width_ref
+
+    @property
+    def height(self):
+        return self.__app.height_ref
+
+    @property
+    def size(self):
+        return (self.width, self.height)
+
+    @property
+    def left(self):
+        return 0
+
+    @property
+    def bottom(self):
+        return 0
+
+    @property
+    def right(self):
+        return self.width - 1
+
+    @property
+    def top(self):
+        return self.height - 1
+
+    x = left
+    y = bottom
+
+    @property
+    def pos(self):
+        return (self.x, self.y)
+
+    @property
+    def center_x(self):
+        return self.width // 2
+
+    @property
+    def center_y(self):
+        return self.height // 2
+
+    @property
+    def left_bottom(self):
+        return (self.left, self.bottom)
+
+    @property
+    def left_center(self):
+        return (self.left, self.center_y)
+
+    @property
+    def left_top(self):
+        return (self.left, self.top)
+
+    @property
+    def center_bottom(self):
+        return (self.center_x, self.bottom)
+
+    @property
+    def center(self):
+        return (self.center_x, self.center_y)
+
+    @property
+    def center_top(self):
+        return (self.center_x, self.top)
+
+    @property
+    def right_bottom(self):
+        return (self.right, self.bottom)
+
+    @property
+    def right_center(self):
+        return (self.right, self.center_y)
+
+    @property
+    def right_top(self):
+        return (self.right, self.top)
+
+
+class ExpApp(App):
+    def __init__(self, exp, fullscreen=None, size=None):
+        super(ExpApp, self).__init__()
+        #if size is not None:
+        #    Window.size=size
+        #if fullscreen is not None:
+        #    Window.fullscreen = fullscreen
         self.exp = exp
+        self.callbacks = {}
+        self.pending_flip_time = None
+        self.video_queue = []
+        self.keys_down = set()
+        self.issued_key_refs = weakref.WeakValueDictionary()
+        self.mouse_pos = (None, None)
+        self.mouse_pos_ref = Ref.getattr(self, "mouse_pos")
+        self.mouse_button = None
+        self.mouse_button_ref = Ref.getattr(self, "mouse_button")
+        self.width_ref = Ref.getattr(Window, "width")
+        self.height_ref = Ref.getattr(Window, "height")
+        self.__screen = Screen(self)
 
-        # set up easy key logging
-        self.keys = key.KeyStateHandler()
-        self.push_handlers(self.keys)
+    @property
+    def screen(self):
+        return self.__screen
 
-        # set empty list of key and mouse handler callbacks
-        self.key_callbacks = []
-        self.mouse_callbacks = []
+    def add_callback(self, event_name, func):
+        self.callbacks.setdefault(event_name, []).append(func)
 
-        # set up a batch for fast rendering
-        # eventually we'll need multiple groups
-        self.batch = pyglet.graphics.Batch()
+    def remove_callback(self, event_name, event_func):
+        try:
+            callbacks = self.callbacks[event_name]
+        except KeyError:
+            return
+        self.callbacks[event_name] = [func for func in
+                                      self.callbacks[event_name] if
+                                      func != event_func]
 
-        # say we've got nothing to plot
-        self.need_flip = False
-        self.need_draw = False
+    def _trigger_callback(self, event_name, *pargs, **kwargs):
+        try:
+            callbacks = self.callbacks[event_name]
+        except KeyError:
+            return
+        for func in callbacks:
+            func(*pargs, **kwargs)
 
-    def on_draw(self, force=False):
-        if force or self.need_draw:
-            self.clear()
-            self.batch.draw()
-            self.need_flip = True
-
-    def set_clear_color(self,color=(0,0,0,1)):
-        glClearColor(*color)
-                
-    def on_mouse_motion(self, x, y, dx, dy):
-        pass
-
-    def on_mouse_press(self, x, y, button, modifiers):
-        for c in self.mouse_callbacks:
-            # pass it the x, y, button, mod, and event time
-            c(x, y, button, modifiers, self.exp.event_time)
-        pass
+    def build(self):
+        self.wid = FloatLayout()
+        Window._system_keyboard.bind(on_key_down=self._on_key_down,
+                                     on_key_up=self._on_key_up)
+        Window.bind(on_motion=self._on_motion,
+                    mouse_pos=self._on_mouse_pos,
+                    on_resize=self._on_resize)
+        self.current_touch = None
         
-    def on_mouse_release(self, x, y, button, modifiers):
-        pass
+        self._last_time = clock.now()
+        self._last_kivy_tick = clock.now()
+        kivy.base.EventLoop.set_idle_callback(self._idle_callback)
+        print 1.0 / self.calc_flip_interval()  #...
+        return self.wid
 
-    def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
-        pass
+    def _on_resize(self, *pargs):
+        self.width_ref.dep_changed()
+        self.height_ref.dep_changed()
 
-    def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
-        pass
+    def is_key_down(self, name):
+        return name.upper() in self.keys_down
 
-    def on_key_press(self, symbol, modifiers):
-        if (symbol == key.ESCAPE) and (modifiers & key.MOD_SHIFT):
-            self.has_exit = True
+    def get_key_ref(self, name):
+        try:
+            return self.issued_key_refs[name]
+        except KeyError:
+            ref = Ref(self.is_key_down, name)
+            self.issued_key_refs[name] = ref
+            return ref
 
-        # call the registered callbacks
-        #print self.key_callbacks
-        for c in self.key_callbacks:
-            # pass it the key, mod, and event time
-            c(symbol, modifiers, self.exp.event_time)
+    def _on_key_down(self, keyboard, keycode, text, modifiers):
+        if keycode[0] == 27 and "shift" in modifiers:
+            self.stop()
+            return
+        name = keycode[1].upper()
+        self.keys_down.add(name)
+        try:
+            self.issued_key_refs[name].dep_changed()
+        except KeyError:
+            pass
+        self._trigger_callback("KEY_DOWN", keycode, text, modifiers,
+                               self.event_time)
 
-    def on_key_release(self, symbol, modifiers):
-        pass
+    def _on_key_up(self, keyboard, keycode):
+        name = keycode[1].upper()
+        self.keys_down.discard(name)
+        try:
+            self.issued_key_refs[name].dep_changed()
+        except KeyError:
+            pass
+        self._trigger_callback("KEY_UP", keycode, self.event_time)
 
-class Experiment(Serial):
-    """
-    A SMILE experiment.
+    def _on_mouse_pos(self, window, pos):
+        if self.current_touch is None:
+            self.mouse_pos = tuple(pos)
+            self.mouse_pos_ref.dep_changed()
+            self._trigger_callback("MOTION", pos=pos, button=None,
+                                   newly_pressed=False,
+                                   double=False, triple=False,
+                                   event_time=self.event_time)
 
-    This is the top level parent state for all experiments. It handles
-    the event loop, manages the window and associated input/output,
-    and processes the command line arguments.
+    def _on_motion(self, window, etype, me):
+        if etype == "begin":
+            self.mouse_button = me.button
+            self.mouse_button_ref.dep_changed()
+            self.current_touch = me
+            self._trigger_callback("MOTION", pos=me.pos, button=me.button,
+                                   newly_pressed=True,
+                                   double=me.is_double_tap,
+                                   triple=me.is_triple_tap,
+                                   event_time=self.event_time)
+        elif etype == "update":
+            self.mouse_pos = tuple(int(round(x)) for x in  me.pos)
+            self.mouse_pos_ref.dep_changed()
+            self.current_touch = me
+            self._trigger_callback("MOTION", pos=me.pos, button=me.button,
+                                   newly_pressed=False,
+                                   double=me.is_double_tap,
+                                   triple=me.is_triple_tap,
+                                   event_time=self.event_time)
+        else:
+            self.mouse_button = None
+            self.mouse_button_ref.dep_changed()
+            self.current_touch = None
+            self._trigger_callback("MOTION", pos=me.pos, button=None,
+                                   newly_pressed=False,
+                                   double=False, triple=False,
+                                   event_time=self.event_time)
 
-    Parameters
-    ----------
-    fullscreen : bool
-        Create the window in full screen.
-    resolution : tuple
-        Resolution of the window specified as (width, height) when not 
-        full screen.
-    name : str
-        Name on the window title bar.
-    pyglet_vsync : bool
-        Whether to instruct pyglet to sync to the vertical retrace.
-    background_color : tuple
-        4 tuple specifying the background color of the experiment 
-        window in (R,G,B,A).
-    screen_id : int
-        What screen/monitor to send the window to in multi-monitor 
-        layouts.
-    
-    Example
-    -------
-    exp = Experiment(resolution=(1920x1080), background_color=(0,1,0,1.0))
-    ...
-    run(exp)
-    Define an experiment window with a green background and a size of
-    1920x1080 pixels. This experiment window will not open until the 
-    run() command is executed. 
-            
-    Log Parameters
-    --------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters.              
-    """
-    def __init__(self, fullscreen=False, resolution=(800,600), name="Smile",
-                 pyglet_vsync=True, background_color=(0,0,0,1), screen_ind=0):
+    def _idle_callback(self, event_loop):
+        # record the time range
+        self._new_time = clock.now()
+        time_err = (self._new_time - self._last_time) / 2.0
+        self.event_time = event_time(self._last_time + time_err, time_err)
 
-        # first process the args
+        clock.tick()
+
+        ready_for_video = (self._new_time - self.last_flip["time"] >=
+                           self.flip_interval)
+        ready_for_kivy_tick = ready_for_video and (self._new_time -
+                                                   self._last_kivy_tick >=
+                                                   self.flip_interval)
+
+        need_draw = False
+        for video in self.video_queue:
+            if (not video.drawn and
+                ((self.pending_flip_time is None and
+                  self._new_time >= video.flip_time -
+                  self.flip_interval / 2.0) or
+                 video.flip_time == self.pending_flip_time)):
+                video.update_cb()
+                need_draw = True
+                video.drawn = True
+                self.pending_flip_time = video.flip_time
+            else:
+                break
+        do_kivy_tick = ready_for_kivy_tick or need_draw
+        if do_kivy_tick:
+            _kivy_clock.tick()
+            self._last_kivy_tick = self._new_time
+        event_loop.dispatch_input()
+        if do_kivy_tick:
+            Builder.sync()
+            _kivy_clock.tick_draw()
+            Builder.sync()
+            kivy_needs_draw = EventLoop.window.canvas.needs_redraw or need_draw
+            #print (_kivy_clock.get_fps(), _kivy_clock.get_rfps(), self._new_time)  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        else:
+            kivy_needs_draw = False
+        if kivy_needs_draw:
+            EventLoop.window.dispatch('on_draw')
+
+        if ready_for_video:
+            need_flip = kivy_needs_draw and self.pending_flip_time is None
+            flip_time_callbacks = []
+            for video in self.video_queue:
+                if video.drawn and video.flip_time == self.pending_flip_time:
+                    need_flip = True
+                    if video.flip_time_cb is not None:
+                        flip_time_callbacks.append(video.flip_time_cb)
+                    video.flipped = True
+                else:
+                    break
+            while len(self.video_queue) and self.video_queue[0].flipped:
+                del self.video_queue[0]
+            if need_flip:
+                if len(flip_time_callbacks):
+                    #print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    self.blocking_flip()  #TODO: use sync events instead!
+                    for cb in flip_time_callbacks:
+                        cb(self.last_flip)
+                else:
+                    #print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    EventLoop.window.dispatch('on_flip')
+                    self.last_flip = event_time(clock.now(), 0.0)
+                self.pending_flip_time = None
+
+        # save the time
+        self._last_time = self._new_time
+
+        # exit if experiment done
+        if not self.exp._root_state._active:
+            self.stop()
+
+        # give time to other threads
+        clock.usleep(250)
+
+    def blocking_flip(self):
+        EventLoop.window.dispatch('on_flip')
+        #glEnableVertexAttribArray(0)  # kivy has this enabled already
+        glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
+                              "\x00\x00\x00\x0a\x00\x00\x00\x0a")  # Position
+        glVertexAttrib4f(3, 0.0, 0.0, 0.0, 0.0)  # Color
+        glDrawArrays(GL_POINTS, 0, 1)
+        #glDisableVertexAttribArray(0)  # kivy needs this to stay enabled
+        glFinish()
+        self.last_flip = event_time(clock.now(), 0.0)
+        return self.last_flip
+
+    def calc_flip_interval(self, nflips=55, nignore=5):
+        diffs = 0.0
+        last_time = 0.0
+        count = 0.0
+        for i in range(nflips):
+            # perform the flip and record the flip interval
+            cur_time = self.blocking_flip()
+            if last_time > 0.0 and i >= nignore:
+                diffs += cur_time['time'] - last_time['time']
+                count += 1
+            last_time = cur_time
+
+            # add in sleep of something definitely less than the refresh rate
+            clock.usleep(5000)  # 5ms for 200Hz
+        
+        # take the mean and return
+        self.flip_interval = diffs / count
+        return self.flip_interval
+
+    def schedule_video(self, update_cb, flip_time=None, flip_time_cb=None):
+        if flip_time is None:
+            flip_time = self.last_flip["time"] + self.flip_interval
+        new_video = _VideoChange(update_cb, flip_time, flip_time_cb)
+        for n, video in enumerate(self.video_queue):
+            if video.flip_time > flip_time:
+                self.video_queue.insert(n, new_video)
+                break
+        else:
+            self.video_queue.append(new_video)
+        return new_video
+
+    def cancel_video(self, video):
+        if not video.drawn:
+            try:
+                self.video_queue.remove(video)
+            except ValueError:
+                pass
+
+
+class Experiment(object):
+    def __init__(self, fullscreen=None, resolution=None, background_color=None,
+                 name="Smile"):
+        global Window
         self._process_args()
-        
-        # set up the state
-        super(Experiment, self).__init__(parent=None, duration=-1)
-
-        # set up the window
-        screens = pyglet.window.get_platform().get_default_display().get_screens()
-        if screen_ind != self.screen_ind:
-            # command line overrides
-            screen_ind = self.screen_ind
-        self.screen = screens[screen_ind]
-        self.pyglet_vsync = pyglet_vsync
-        self.fullscreen = fullscreen or self.fullscreen
-        self.resolution = resolution
-        self.name = name
-        self.window = None   # will create when run
-
-        # set the clear color
+        self._fullscreen = self._fullscreen or fullscreen
+        self._resolution = self._resolution or resolution
+        if self._fullscreen:
+            Config.set("graphics", "fullscreen", self._fullscreen)
+        if self._resolution:
+            Config.set("graphics", "width", self._resolution[0])
+            Config.set("graphics", "height", self._resolution[1])
+        from kivy.core.window import Window
         self._background_color = background_color
-
-        # get a clock for sleeping 
-        self.clock = pyglet.clock._default
+        self.set_background_color()
+        self._app = ExpApp(self, fullscreen=fullscreen, size=resolution)#???
 
         # set up instance for access throughout code
-        self.__class__.last_instance = weakref.ref(self)
+        self.__class__._last_instance = weakref.ref(self)
 
-        # init parents (with self at top)
-        self._parents = [self]
-        #global state._global_parents
-        #state._global_parents.append(self)
-
-        # we have not flipped yet
-        self.last_flip = event_time(0.0)
-        
-        # event time
-        self.last_event = event_time(0.0)
-
-        # default flip interval
-        self.flip_interval = 1/60.
+        # set up initial root state and parent stack
+        Serial(name="EXPERIMENT BODY", parent=self)
+        self._root_state.set_instantiation_context(self)
+        self._parents = [self._root_state]
 
         # place to save experimental variables
         self._vars = {}
+        self.__issued_refs = weakref.WeakValueDictionary()
 
-        # add log locs (state.yaml, experiment.yaml)
-        self.state_log = os.path.join(self.subj_dir,'state.yaml')
-        self.state_log_stream = open(self.state_log,'a')
-        self.exp_log = os.path.join(self.subj_dir,'exp.yaml')
-        self.exp_log_stream = open(self.exp_log,'a')
-        self._reserved_data_filenames = set(os.listdir(self.subj_dir))
+        self._reserved_data_filenames = set(os.listdir(self._subj_dir))
         self._reserved_data_filenames_lock = threading.Lock()
+        self._state_loggers = {}
 
-        # # grab the nice
-        # import psutil
-        # self._current_proc = psutil.Process(os.getpid())
-        # cur_nice = self._current_proc.get_nice()
-        # print "Current nice: %d" % cur_nice
-        # if hasattr(psutil,'HIGH_PRIORITY_CLASS'):
-        #     new_nice = psutil.HIGH_PRIORITY_CLASS
-        # else:
-        #     new_nice = -10
-        # self._current_proc.set_nice(new_nice)
-        # print "New nice: %d" % self._current_proc.get_nice()
+    def set_background_color(self, color=None):
+        if color is None:
+            if self._background_color is None:
+                return
+            color = self._background_color
+        Window.clearcolor = normalize_color_spec(color)
+
+    def get_var_ref(self, name):
+        try:
+            return self.__issued_refs[name]
+        except KeyError:
+            ref = Ref.getitem(self._vars, name)
+            self.__issued_refs[name] = ref
+            return ref
+
+    def set_var(self, name, value):
+        self._vars[name] = value
+        try:
+            ref = self.__issued_refs[name]
+        except KeyError:
+            return
+        ref.dep_changed()
+
+    def __getattr__(self, name):
+        if name[0] == "_":
+            super(Experiment, self).__getattribute__(name)
+        else:
+            return self.get_var_ref(name)
+
+    def __setattr__(self, name, value):
+        if name[0] == "_":
+            super(Experiment, self).__setattr__(name, value)
+        else:
+            return Set(**{name : value})
 
     def _process_args(self):
         # set up the arg parser
         parser = argparse.ArgumentParser(description='Run a SMILE experiment.')
-        parser.add_argument("-s", "--subject", 
-                            help="unique subject id", 
-                            default='test000')        
-        parser.add_argument("-f", "--fullscreen", 
-                            help="toggle fullscreen", 
-                            action='store_true')   
-        parser.add_argument("-si", "--screen", 
-                            help="screen index", 
-                            type=int,
-                            default=0)        
-        parser.add_argument("-i", "--info", 
-                            help="additional run info", 
-                            default='')        
-        parser.add_argument("-c", "--csv", 
-                            help="perform automatic conversion of yaml logs to csv", 
-                            action='store_true')   
+        parser.add_argument("-s", "--subject",
+                            help="unique subject id",
+                            default='test000')
+        parser.add_argument("-f", "--fullscreen",
+                            help="toggle fullscreen",
+                            action='store_true')
+        parser.add_argument("-i", "--info",
+                            help="additional run info",
+                            default='')
+        parser.add_argument("-c", "--csv",
+                            help="perform automatic conversion of SMILE logs to csv",
+                            action='store_true')
 
         # do the parsing
-        args = parser.parse_args()
+        args = parser.parse_args(kivy_overrides.sys_argv)
 
         # set up the subject and subj dir
-        self.subj = args.subject
-        self.subj_dir = os.path.join('data',self.subj)
-        if not os.path.exists(self.subj_dir):
-            os.makedirs(self.subj_dir)
+        self._subj = args.subject
+        self._subj_dir = os.path.join('data', self._subj)
+        if not os.path.exists(self._subj_dir):
+            os.makedirs(self._subj_dir)
 
         # check for fullscreen
-        self.fullscreen = args.fullscreen
+        if args.fullscreen:
+            self._fullscreen = "auto"
+        else:
+            self._fullscreen = None
 
-        # check screen ind
-        self.screen_ind = args.screen
+        self._resolution = None  #TODO: command line option for resolution
 
         # set the additional info
-        self.info = args.info
+        self._info = args.info  #?????????
 
         # set whether to log csv
-        self.csv = args.csv
+        self._csv = args.csv
 
-    def reserve_data_filename(self, title, ext=None):
+    def reserve_data_filename(self, title, ext=None, use_timestamp=False):
         """
         Construct a unique filename for a data file in the log directory.  The
         filename will incorporate the specified 'title' string and it will have
@@ -259,372 +527,107 @@ class Experiment(Serial):
 
         Returns the new filename.
         """
-        timestamp = time.strftime("%Y%m%d%H%M%S", time.gmtime())
+        if use_timestamp:
+            title = "%s_%s" % (title, time.strftime("%Y%m%d%H%M%S",
+                                                    time.gmtime()))
         with self._reserved_data_filenames_lock:
-            self._reserved_data_filenames |= set(os.listdir(self.subj_dir))
+            self._reserved_data_filenames |= set(os.listdir(self._subj_dir))
             for distinguisher in xrange(256):
                 if ext is None:
-                    filename = "%s_%s_%d" % (title, timestamp, distinguisher)
+                    filename = "%s_%d" % (title, distinguisher)
                 else:
-                    filename = "%s_%s_%s.%s" % (title, timestamp,
-                                                distinguisher, ext)
+                    filename = "%s_%d.%s" % (title, distinguisher, ext)
                 if filename not in self._reserved_data_filenames:
                     self._reserved_data_filenames.add(filename)
-                    return filename
+                    return os.path.join(self._subj_dir, filename)
             else:
                 raise RuntimeError(
                     "Too many data files with the same title, extension, and timestamp!")
 
-    def run(self):
-        """
-        Run the experiment.
-        """
-        # create the window
-        if self.fullscreen:
-            self.window = ExpWindow(self, fullscreen=True, 
-                                    caption=self.name, 
-                                    vsync=self.pyglet_vsync,
-                                    screen=self.screen)
-        else:
-            self.window = ExpWindow(self, *(self.resolution),
-                                    fullscreen=self.fullscreen, 
-                                    caption=self.name, 
-                                    vsync=self.pyglet_vsync,
-                                    screen=self.screen)
-            
-        # set the clear color
-        self.window.set_clear_color(self._background_color)
+    def setup_state_logger(self, state_class_name, field_names):
+        field_names = tuple(field_names)
+        if state_class_name in self._state_loggers:
+            if field_names == self._state_loggers[state_class_name][2]:
+                return
+            raise ValueError("'field_names' changed for state class %r!" %
+                             state_class_name)
+        title = "state_" + state_class_name
+        filename = self.reserve_data_filename(title, "smlog") 
+        logger = LogWriter(filename, field_names)
+        self._state_loggers[state_class_name] = filename, logger, field_names
 
-        # set the mouse as desired
-        #self.window.set_exclusive_mouse()
-        self.window.set_mouse_visible(False)
+    def close_state_loggers(self, to_csv):
+        for filename, logger, field_names in self._state_loggers.itervalues():
+            logger.close()
+            if to_csv:
+                csv_filename = (os.path.splitext(filename)[0] + ".csv")
+                log2csv(filename, csv_filename)
+        self._state_loggers = {}
 
-        # some gl stuff (must look up to remember why we want them)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    def write_to_state_log(self, state_class_name, record):
+        self._state_loggers[state_class_name][1].write_record(record)
 
-        # get flip interval
-        self.flip_interval = self._calc_flip_interval()
-        print "Monitor Flip Interval is %f (%f Hz)"%(self.flip_interval,1./self.flip_interval)
+    @property
+    def screen(self):
+        return self._app.screen
 
-        # first clear and do a flip
-        #glClear(GL_COLOR_BUFFER_BIT)
-        self.window.on_draw(force=True)
-        self.blocking_flip()
+    def run(self, trace=False):
+        self._current_state = None
+        if trace:
+            self._root_state.tron()
+        self._root_state.begin_log()
+        try:
+            # start the first state (that's the root state)
+            self._root_state.enter(clock.now() + 1.0)
 
-        # start the first state (that's this experiment)
-        self.enter()
-
-        # process events until done
-        self._last_time = now()
-        while not self.done and not self.window.has_exit:
-            # record the time range
-            self._new_time = now()
-            time_err = (self._new_time - self._last_time)/2.
-            self.event_time = event_time(self._last_time+time_err,
-                                         time_err)
-
-            # process the events that occurred in that range
-            self.window.dispatch_events()
-
-            # handle all scheduled callbacks
-            dt = clock.tick(poll=True)
-
-            # put in sleeps if necessary
-            if dt < .0001:
-                # do a usleep for 1/4 of a ms (might need to tweak)
-                self.clock.sleep(250)
-
-            # save the time
-            self._last_time = self._new_time
-
-        # write out csv logs if desired
-        if self.csv:
-            self.state_log_stream.flush()
-            yaml2csv(self.state_log, os.path.splitext(self.state_log)[0]+'.csv')
-            self.exp_log_stream.flush()
-            yaml2csv(self.exp_log, os.path.splitext(self.exp_log)[0]+'.csv')
-
-        # close the window and clean up
-        self.window.close()
-        self.window = None
+            # kivy main loop
+            self._app.run()
+        except:
+            if self._current_state is not None:
+                self._current_state.print_traceback()
+            raise
+        self._root_state.end_log(self._csv)
+        self.close_state_loggers(self._csv)
 
 
-    def _calc_flip_interval(self, nflips=55, nignore=5):
-        """
-        Calculate the mean flip interval.
-        """
-        import random
-        diffs = 0.0
-        last_time = 0.0
-        count = 0.0
-        for i in range(nflips):
-            # must draw something so the flip happens
-            #color = (random.uniform(0,1),
-            #         random.uniform(0,1),
-            #         random.uniform(0,1),
-            #         1.0)
-            color = (0,
-                     0,
-                     0,
-                     1.0)
-            self.window.set_clear_color(color)
-            self.window.on_draw(force=True)
-
-            # perform the flip and record the flip interval
-            cur_time = self.blocking_flip()
-            if last_time > 0.0 and i >= nignore:
-                diffs += cur_time['time']-last_time['time']
-                count += 1
-            last_time = cur_time
-
-            # add in sleep of something definitely less than the refresh rate
-            self.clock.sleep(5000)  # 5ms for 200Hz
-
-        # reset the background color
-        self.window.set_clear_color(self._background_color)
-        self.window.on_draw(force=True)
-        self.blocking_flip()
-        
-        # take the mean and return
-        return diffs/count
-        
-    def blocking_flip(self):
-        # only flip if we've drawn
-        if self.window.need_flip:
-            # first the flip
-            self.window.flip()
-
-            if True: #not self.pyglet_vsync:
-                # OpenGL:
-                glDrawBuffer(GL_BACK)
-                # We draw our single pixel with an alpha-value of zero
-                # - so effectively it doesn't change the color buffer
-                # - just the z-buffer if z-writes are enabled...
-                glColor4f(0,0,0,0)
-                glBegin(GL_POINTS)
-                glVertex2i(10,10)
-                glEnd()
-                # This glFinish() will wait until point drawing is
-                # finished, ergo backbuffer was ready for drawing,
-                # ergo buffer swap in sync with start of VBL has
-                # happened.
-                glFinish()
-
-            # return when it happened
-            self.last_flip = event_time(now(),0.0)
-
-            # no need for flip anymore
-            self.window.need_flip = False
-
-        return self.last_flip
-
-
-class Set(State, RunOnEnter):
-    """
-    State to set a experiment variable.
-
-    See Get state for how to access experiment variables.
-    
-    Parameters
-    ----------
-    variable : str
-        Name of variable to save.
-    value : object
-        Value to set the variable. Can be a Reference evaluated at 
-        runtime.
-    eval_var : bool
-        If set to 'True,' the variable will be evaluated at runtime.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the state will be
-        automatically saved in the log files. 
-    
-    Example
-    -------
-    See Get state for example.
-    
-    Log Parameters
-    --------------
-    All parameters above are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters. 
-    """
-    def __init__(self, variable, value, eval_var=True, parent=None, save_log=True):
-
+class Set(AutoFinalizeState):
+    def __init__(self, parent=None, save_log=True, name=None, **kwargs):
         # init the parent class
-        super(Set, self).__init__(interval=0, parent=parent, 
-                                  duration=0,
-                                  save_log=save_log)
-        self.var = variable
-        self.variable = None
-        self.val = value
-        self.value = None
-        self.eval_var = eval_var
+        super(Set, self).__init__(parent=parent,
+                                  save_log=save_log,
+                                  name=name,
+                                  duration=0.0)
+        self._init_values = kwargs
 
-        # append log vars
-        self.log_attrs.extend(['variable','value'])
+        self._log_attrs.extend(['values'])
+
+    def get_log_fields(self):
+        return ['instantiation_filename', 'instantiation_lineno', 'name',
+                'time', 'var_name', 'value']
+
+    def save_log(self):
+        class_name = type(self).__name__
+        for name, value in self._values.iteritems():
+            field_values = {
+                "instantiation_filename": self._instantiation_filename,
+                "instantiation_lineno": self._instantiation_lineno,
+                "name": self._name,
+                "time": self._start_time,
+                "var_name": name,
+                "value": value
+                }
+            self._exp.write_to_state_log(class_name, field_values)
         
-    def _callback(self, dt):
-        # set the exp var
-        if self.eval_var:
-            self.variable = val(self.var)
-        else:
-            self.variable = self.var
-        self.value = val(self.val)
-        if isinstance(self.variable, str):
-            # set the experiment variable
-            self.exp._vars[self.variable] = self.value
-        elif isinstance(self.variable, Ref):
-            # set the ref
-            self.variable.set(self.value)
-        else:
-            raise ValueError('Unrecognized variable type. Must either be string or Ref')
-
-        
-def Get(variable):
-    """Retrieve an experiment variable.
-
-    Parameters
-    ----------
-    variable : str
-        Name of variable to retrieve. Can be a Reference evaluated 
-        at runtime.
-        
-    Example
-    -------
-    with Parallel():
-        txt = Text('Press a key as quickly as you can!')
-        key = KeyPress(base_time=txt['last_flip']['time'])
-    Unshow(txt)
-    Set('good',key['rt']<0.5)
-    with If(Get('good')) as if_state:
-        with if_state.true_state:
-            Show(Text('Good job!'), duration=1.0)
-        with if_state.false_state:
-            Show(Text('Better luck next time.'), duration=1.0)
-            
-    Text will be shown on the screen, instructing the participant to press 
-    a key as quickly as they can. The participant will press a key while 
-    the text is on the screen, then the text will be removed. The 'Set' 
-    state will be used to define a variable for assessing the participant's 
-    reaction time for the key press that just occurred, and the 'Get' state 
-    accesses that new variable. If the participant's reaction time was 
-    faster than 0.5 seconds, the text 'Good job!' will appear on the 
-    screen. If the participant's reaction time was slower than 0.5 seconds, 
-    the text 'Better luck next time.' will appear on the screen.
-    
-    Log Parameters
-    --------------
-    All parameters above are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters. 
-    """
-    gfunc = lambda : Experiment.last_instance()._vars[val(variable)]
-    return Ref(gfunc=gfunc)
+    def _enter(self):
+        for name, value in self._values.iteritems():
+            self._exp.set_var(name, value)
+        clock.schedule(self.leave)
 
 
-class Log(State, RunOnEnter):
-    """
-    State to write values to a custom experiment log.
-    Write data to a YAML log file.
+def Get(name):
+    return Experiment._last_instance().get_var_ref(name)
 
-    Parameters
-    ----------
-    log_dict : dict
-        Key-value pairs to log. Handy for logging trial information.
-    log_file : str, optional
-        Where to log, defaults to exp.yaml in the subject directory.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    **log_items : kwargs
-        Key-value pairs to log.
-        
-    Example
-    --------
-    numbers_list = [1,2,3]
-    with Loop(numbers_list) as trial:
-        num = Text(trial.current)
-        key = KeyPress()
-        Unshow(num)
-        
-    Log(stim = trial.current,
-        response = key['pressed'])
-    
-    Each number in numbers_list will appear on the screen, and will be
-    removed from the screen after the participant presses a key. For each
-    trial in the loop, the number that appeared on the screen as well as
-    the key that the participant pressed will be recorded in the log files.
-    
-    Log Parameters
-    --------------
-    The following information about each state will be stored in addition 
-    to the state-specific parameters:
 
-        duration : 
-            Duration of the state in seconds. If the duration is not set
-            as a parameter of the specific state, it will default to -1 
-            (which means it will be calculated on exit) or 0 (which means
-            the state completes immediately and does not increment the
-            experiment clock).
-        end_time :
-            Unix timestamp for when the state ended.
-        first_call_error
-            Amount of time in seconds between when the state was supposed
-            to start and when it actually started.
-        first_call_time :
-            Unix timestamp for when the state was called.
-        last_call_error :
-            Same as first_call_error, but refers to the most recent time 
-            time the state was called.
-        last_draw :
-            Unix timestamp for when the last draw of a visual stimulus
-            occurred.
-        last_flip :
-            Unix timestamp for when the last flip occurred (i.e., when 
-            the stimulus actually appeared on the screen).
-        last_update :
-            Unix timestamp for the last time the context to be drawn 
-            occurred. (NOTE: Displaying a stimulus entails updating it,
-            drqwing it to the back buffer, then flipping the front and
-            back video buffers to display the stimulus.
-        start_time :
-            Unix timestamp for when the state is supposed to begin.
-        state_time :
-            Same as start_time.
-    """
-    def __init__(self, log_dict=None, log_file=None, parent=None, **log_items):
-
-        # init the parent class
-        super(Log, self).__init__(interval=0, parent=parent, 
-                                  duration=0,
-                                  save_log=False)
-        self.log_file = log_file
-        self.log_items = log_items
-        self.log_dict = log_dict
-
-    def _get_stream(self):
-        if self.log_file is None:
-            stream = self.exp.exp_log_stream
-        else:
-            # make it from the name
-            stream = open(os.path.join(self.exp.subj_dir,self.log_file),'a')
-        return stream
-        
-    def _callback(self, dt):
-        # eval the log_items and write the log
-        keyvals = [(k,val(v)) for k,v in self.log_items.iteritems()]
-        log = dict(keyvals)
-        if self.log_dict:
-            log.update(val(self.log_dict))
-        # log it to the correct file
-        dump([log], self._get_stream())
-        pass
-    
-            
 if __name__ == '__main__':
     # can't run inside this file
     #exp = Experiment(fullscreen=False, pyglet_vsync=False)
