@@ -63,7 +63,6 @@ Let me explain what is happeing here line by line. ``with Loop(listOfNumbers) as
 	Do not try and access or test the value of trial.current. As it is a reference variable, you will not be able to test the value of it outside of a smile state.  
 
 The final version of **randNum1.py**
-------------------------------------
 ::
 	from smile import *
 	import random
@@ -227,7 +226,6 @@ With this line, each iteration of the loop in the experiment will save our a lin
 	Since this is a state machine, you must assign your **KeyPress** calls to differently named variables, for they will both exist during runtime.  Log will only run if it is in the correct ``If()`` state though, so you dont have to worry about that.
 
 The final version of **numMain.py**
------------------------------------
 ::
 	import random
 	from smile import *
