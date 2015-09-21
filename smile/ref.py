@@ -10,8 +10,18 @@
 import random
 import operator
 
+from clock import clock
+
 def pass_thru(obj):
     return obj
+
+class NotAvailable(object):
+    def __repr__(self):
+        return "NotAvailable"
+
+    def __nonzero__(self):
+        return False
+NotAvailable = NotAvailable()
 
 class Ref(object):
     def __init__(self, func, *pargs, **kwargs):
@@ -22,10 +32,18 @@ class Ref(object):
         self.cache_value = None
         self.cache_valid = False
         self.change_callbacks = []
+        self.true_callbacks = []
         for dep in iter_deps((pargs, kwargs)):
             if not dep.use_cache:
                 self.use_cache = False
                 break
+
+    def __repr__(self):
+        return "Ref(%s)" % ", ".join([repr(self.func)] +
+                                     map(repr, self.pargs) +
+                                     ["%s=%r" % (name, value) for
+                                      name, value in
+                                      self.kwargs.iteritems()])
 
     @staticmethod
     def getattr(obj, name):
@@ -47,11 +65,21 @@ class Ref(object):
     def not_(obj):
         return Ref(operator.not_, obj)
 
+    @staticmethod
+    def now():
+        return Ref(clock.now, use_cache=False)
+
     def eval(self):
         if self.cache_valid and len(self.change_callbacks):
             return self.cache_value
 
-        value = val(self.func(*val(self.pargs), **val(self.kwargs)))
+        func = val(self.func)
+        pargs = val(self.pargs)
+        kwargs = val(self.kwargs)
+        if NotAvailable not in (func, pargs, kwargs):
+            value = val(func(*pargs, **kwargs))
+        else:
+            value = NotAvailable
 
         if self.use_cache:
             self.cache_value = value
@@ -75,12 +103,42 @@ class Ref(object):
         if not len(self.change_callbacks):
             self.teardown_dep_callbacks()
 
+    def add_true_callback(self, func, *pargs, **kwargs):
+        if self.eval():
+            func(*pargs, **kwargs)
+        else:
+            if not len(self.true_callbacks):
+                self.add_change_callback(self._check_true)
+            self.true_callbacks.append((func, pargs, kwargs))
+
+    def remove_true_callback(self, func, *pargs, **kwargs):
+        try:
+            self.true_callbacks.remove((func, pargs, kwargs))
+        except ValueError:
+            pass
+        if not len(self.true_callbacks):
+            self.remove_change_callback(self._check_true)
+
+    def _check_true(self):
+        if self.eval():
+            for func, pargs, kwargs in self.true_callbacks:
+                func(*pargs, **kwargs)
+            self.true_callbacks = []
+            self.remove_change_callback(self._check_true)
+
+    def _available(self, dummy):
+        return self.eval() is not NotAvailable
+
+    @property
+    def available(self):
+        return Ref(self._available, self)
+
     def setup_dep_callbacks(self):
-        for dep in iter_deps((self.pargs, self.kwargs)):
+        for dep in iter_deps((self.func, self.pargs, self.kwargs)):
             dep.add_change_callback(self.dep_changed)
 
     def teardown_dep_callbacks(self):
-        for dep in iter_deps((self.pargs, self.kwargs)):
+        for dep in iter_deps((self.func, self.pargs, self.kwargs)):
             dep.remove_change_callback(self.dep_changed)
 
     def dep_changed(self):
@@ -172,6 +230,7 @@ class Ref(object):
         return Ref(operator.rshift, other, self)
     def __abs__(self):
         return Ref(abs, self)
+    #TODO: __len__?
 
 
 def jitter(lower, jitter_mag):
@@ -188,15 +247,40 @@ def val(obj):
     if isinstance(obj, Ref):
         return obj.eval()
     elif isinstance(obj, list):
-        return [val(value) for value in obj]
+        ret = [val(value) for value in obj]
+        if NotAvailable in ret:
+            return NotAvailable
+        else:
+            return ret
     elif isinstance(obj, tuple):
-        return tuple(val(value) for value in obj)
+        ret = tuple(val(value) for value in obj)
+        if NotAvailable in ret:
+            return NotAvailable
+        else:
+            return ret
     elif isinstance(obj, dict):
-        return {val(key) : val(value) for key, value in obj.iteritems()}
+        ret = {val(key) : val(value) for key, value in obj.iteritems()}
+        if NotAvailable in ret or NotAvailable in ret.itervalues():
+            return NotAvailable
+        else:
+            return ret
     elif isinstance(obj, slice):
-        return slice(val(obj.start), val(obj.stop), val(obj.step))
+        ret = slice(val(obj.start), val(obj.stop), val(obj.step))
+        if NotAvailable in (ret.start, ret.stop, ret.step):
+            return NotAvailable
+        else:
+            return ret
     else:
         return obj
+
+def on_available(obj, cb):
+    ref = Ref.object(obj).available
+    ref.add_true_callback(cb)
+    return ref, cb
+
+def cancel_on_available(ident):
+    ref, cb = ident
+    ref.remove_true_callback(cb)
 
 def iter_deps(obj):
     if isinstance(obj, Ref):
@@ -221,8 +305,23 @@ def iter_deps(obj):
 
 
 if __name__ == '__main__':
-
     import math
+
+    def show_r():
+        print "on_available", x, val(r)
+
+    x = [NotAvailable]
+    r = Ref.getitem(x, 0)
+    print val(r.availabe)
+    on_available(r, show_r)
+    x[0] = 6.7
+    r.dep_changed()
+    print val(r.available)
+
+    x = [4.2]
+    r = Ref.getitem(x, 0)
+    on_available(r, show_r)
+
     x = [0.0]
     r = Ref(math.cos, Ref.getitem(x, 0))
     print x[0], val(r)

@@ -19,6 +19,8 @@ from state import (
     Else,
     Loop,
     Wait,
+    When,
+    While,
     Record,
     Log,
     Func,

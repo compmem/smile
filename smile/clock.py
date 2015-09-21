@@ -4,6 +4,9 @@ import kivy.clock
 _get_time = kivy.clock._default_time
 _kivy_clock = kivy.clock.Clock
 
+def event_time(time=None, time_error=0.0):
+    return {'time': time, 'error': time_error}
+
 class _ClockEvent(object):
     def __init__(self, clock, func, event_time, repeat_interval):
         self.clock = clock

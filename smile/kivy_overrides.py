@@ -11,6 +11,7 @@ sys.argv = sys.argv[:1]
 from kivy.config import Config
 Config.set("kivy", "exit_on_escape", 0)
 Config.set("graphics", "maxfps", 0)
+#Config.set("graphics", "fullscreen", "auto")
 #Config.set('graphics', 'show_cursor', 0)
 import kivy
 EXACT_KIVY_VERSIONS = (

@@ -622,9 +622,8 @@ for widget in widgets:
     exec("import %s" % modname)
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
-import kivy.uix.rst
-RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
-
+#import kivy.uix.rst  #TODO: make this work without breaking fullscreen
+#RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
 
 import kivy.uix.video
 class Video(WidgetState.wrap(kivy.uix.video.Video)):
