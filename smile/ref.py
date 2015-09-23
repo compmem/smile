@@ -9,6 +9,7 @@
 
 import random
 import operator
+import weakref
 
 from clock import clock
 
@@ -23,20 +24,47 @@ class NotAvailable(object):
         return False
 NotAvailable = NotAvailable()
 
+def _unhashables_to_id(obj):
+    if isinstance(obj, tuple):
+        return tuple(_unhashables_to_id(value) for value in obj)
+    else:
+        try:
+            hash(obj)
+        except TypeError:
+            return id(obj)
+        return obj
+
 class Ref(object):
+    __memo = weakref.WeakValueDictionary()
+
+    def __new__(cls, func, *pargs, **kwargs):
+        key = _unhashables_to_id((func, pargs, tuple(kwargs.iteritems())))
+        try:
+            return Ref.__memo[key]
+        except KeyError:
+            ref = super(Ref, cls).__new__(cls, func, *pargs, **kwargs)
+            Ref.__memo[key] = ref
+            return ref
+
     def __init__(self, func, *pargs, **kwargs):
+        if len(self.__dict__):
+            return
         self.func = func
         self.pargs = pargs
         self.use_cache = kwargs.pop("use_cache", True)
         self.kwargs = kwargs
         self.cache_value = None
         self.cache_valid = False
-        self.change_callbacks = []
-        self.true_callbacks = []
+        self.change_callbacks = set()
+        self.true_callbacks = set()
         for dep in iter_deps((pargs, kwargs)):
             if not dep.use_cache:
                 self.use_cache = False
                 break
+        #print "REF CREATED: %r" % self#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    #def __del__(self):
+    #    print "REF DELETED: %r" % self#!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def __repr__(self):
         return "Ref(%s)" % ", ".join([repr(self.func)] +
@@ -73,13 +101,18 @@ class Ref(object):
         if self.cache_valid and len(self.change_callbacks):
             return self.cache_value
 
-        func = val(self.func)
-        pargs = val(self.pargs)
-        kwargs = val(self.kwargs)
-        if NotAvailable not in (func, pargs, kwargs):
-            value = val(func(*pargs, **kwargs))
+        if self.func is None:
+            # If func is None, this is a Ref indicating the availability of its
+            # remaining arguments.
+            value = val((self.pargs, self.kwargs)) is not NotAvailable  #TODO: do this with a subclass instead?
         else:
-            value = NotAvailable
+            func = val(self.func)
+            pargs = val(self.pargs)
+            kwargs = val(self.kwargs)
+            if NotAvailable in (func, pargs, kwargs):
+                value = NotAvailable
+            else:
+                value = val(func(*pargs, **kwargs))
 
         if self.use_cache:
             self.cache_value = value
@@ -92,14 +125,11 @@ class Ref(object):
         if not len(self.change_callbacks):
             self.setup_dep_callbacks()
             self.cache_valid = False
-        self.change_callbacks.append((func, pargs, kwargs))
+        self.change_callbacks.add((func, pargs, tuple(kwargs.iteritems())))
 
     def remove_change_callback(self, func, *pargs, **kwargs):
         #print "remove_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
-        try:
-            self.change_callbacks.remove((func, pargs, kwargs))
-        except ValueError:
-            pass
+        self.change_callbacks.discard((func, pargs, tuple(kwargs.iteritems())))
         if not len(self.change_callbacks):
             self.teardown_dep_callbacks()
 
@@ -109,29 +139,19 @@ class Ref(object):
         else:
             if not len(self.true_callbacks):
                 self.add_change_callback(self._check_true)
-            self.true_callbacks.append((func, pargs, kwargs))
+            self.true_callbacks.add((func, pargs, tuple(kwargs.iteritems())))
 
     def remove_true_callback(self, func, *pargs, **kwargs):
-        try:
-            self.true_callbacks.remove((func, pargs, kwargs))
-        except ValueError:
-            pass
+        self.true_callbacks.discard((func, pargs, tuple(kwargs.iteritems())))
         if not len(self.true_callbacks):
             self.remove_change_callback(self._check_true)
 
     def _check_true(self):
         if self.eval():
-            for func, pargs, kwargs in self.true_callbacks:
-                func(*pargs, **kwargs)
-            self.true_callbacks = []
+            for func, pargs, kwargs in list(self.true_callbacks):
+                func(*pargs, **dict(kwargs))
+            self.true_callbacks = set()
             self.remove_change_callback(self._check_true)
-
-    def _available(self, dummy):
-        return self.eval() is not NotAvailable
-
-    @property
-    def available(self):
-        return Ref(self._available, self)
 
     def setup_dep_callbacks(self):
         for dep in iter_deps((self.func, self.pargs, self.kwargs)):
@@ -144,8 +164,8 @@ class Ref(object):
     def dep_changed(self):
         #print "dep_changed %r, %r" % (self, self.change_callbacks)
         self.cache_valid = False
-        for func, pargs, kwargs in self.change_callbacks:
-            func(*pargs, **kwargs)
+        for func, pargs, kwargs in list(self.change_callbacks):
+            func(*pargs, **dict(kwargs))
 
     # delayed operators...
     def __call__(self, *pargs, **kwargs):
@@ -230,7 +250,6 @@ class Ref(object):
         return Ref(operator.rshift, other, self)
     def __abs__(self):
         return Ref(abs, self)
-    #TODO: __len__?
 
 
 def jitter(lower, jitter_mag):
@@ -273,14 +292,14 @@ def val(obj):
     else:
         return obj
 
-def on_available(obj, cb):
-    ref = Ref.object(obj).available
-    ref.add_true_callback(cb)
-    return ref, cb
+def on_available(obj, cb, *pargs, **kwargs):
+    ref = Ref(None, obj)
+    ref.add_true_callback(cb, *pargs, **kwargs)
+    return ref, cb, pargs, kwargs
 
 def cancel_on_available(ident):
-    ref, cb = ident
-    ref.remove_true_callback(cb)
+    ref, cb, pargs, kwargs = ident
+    ref.remove_true_callback(cb, *pargs, **kwargs)
 
 def iter_deps(obj):
     if isinstance(obj, Ref):
@@ -311,16 +330,22 @@ if __name__ == '__main__':
         print "on_available", x, val(r)
 
     x = [NotAvailable]
+    r1 = Ref.getitem(x, 0)
+    r = (r1 + 5.0) / 2.0
+    xxx = on_available([4, 5, {"k": r}], show_r)
+    x[0] = 2.3
+    r1.dep_changed()
+    #...
+
+    x = [NotAvailable]
     r = Ref.getitem(x, 0)
-    print val(r.availabe)
-    on_available(r, show_r)
+    xxx = on_available(r, show_r)
     x[0] = 6.7
     r.dep_changed()
-    print val(r.available)
 
     x = [4.2]
     r = Ref.getitem(x, 0)
-    on_available(r, show_r)
+    xxx = on_available(r, show_r)
 
     x = [0.0]
     r = Ref(math.cos, Ref.getitem(x, 0))

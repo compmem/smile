@@ -29,6 +29,10 @@ class StateConstructionError(RuntimeError):
     pass
 
 
+INACTIVE = 0
+SCHEDULED = 1
+ENTERED = 2
+STARTED = 3
 class State(object):
     def __init__(self, parent=None, duration=None, save_log=True, name=None,
                  blocking=True):
@@ -73,11 +77,11 @@ class State(object):
         self._log_enter_time = NotAvailable
         self._log_leave_time = NotAvailable
 
-        # This flag is set True at enter time and False at finalize time.  It
-        # indicates that it is not safe to enter this instance for a new
-        # execution of the state.  If the instance is active a new clone of the
-        # state can be constructed and that one entered instead.
-        self._active = False
+        #...
+        self._state_phase = INACTIVE
+
+        #...
+        self.__cancel_time = None
 
         #...
         self.__scheduled_enter = None
@@ -170,11 +174,12 @@ class State(object):
                 "Can't figure out where instantiation took place!")
 
     def __repr__(self):
-        return "<%s file=%r, line=%d, name=%r>" % (
+        return "<%s file=%r, line=%d, name=%r, id=%x>" % (
             type(self).__name__,
             self._instantiation_filename,
             self._instantiation_lineno,
-            self._name)
+            self._name,
+            id(self))
 
     def override_instantiation_context(self, depth=0):
         # Get the desired frame from the call stack.
@@ -198,13 +203,13 @@ class State(object):
             setattr(new_clone, attr, copy.deepcopy(getattr(self, attr)))
 
         # Set the clone inactive.
-        new_clone._active = False
+        new_clone._state_phase = INACTIVE
 
         # Set the parent of the clone.
         new_clone._parent = parent
 
         #...
-        new_clone.__scheduled_enter = None
+        new_clone.__scheduled_enter = None#???
 
         return new_clone
 
@@ -265,11 +270,8 @@ class State(object):
                 error = ""
             if type(tm) not in (float, int):
                 return repr(tm)
-            offset = t - tm
-            if offset < 0.0:
-                return "%fs from now%s" % (-offset, error)
-            else:
-                return "%fs ago%s" % (offset, error)
+            offset = tm - self._exp._root_state._start_time
+            return "%fs%s" % (offset, error)
 
         # Print traceback state header.
         print "   %s%s - file: %s, line: %d" % (
@@ -374,7 +376,7 @@ class State(object):
             if item not in self.__log_attrs:
                 self.__log_attrs.append(item)
             self.__dict__[target_name] = value
-        elif value is NotAvailable:
+        elif value is NotAvailable and name not in self.__dict__:
             self.__ref_attrs.add(name)
         #TODO: after state machine construction, replace __setattr__ with alternative that omits this part (for efficiency)?
 
@@ -399,26 +401,38 @@ class State(object):
                 [target_name[1:] for name, target_name in self.__init_attrs] +
                 [name[1:] for name in self.__ref_attrs])
 
-    def schedule(self, start_time, callback):
-        def avail_cb(start_time=start_time, callback=callback):
-            start_time = val(start_time)
-            if start_time is not None:
-                earliest_enter = start_time - 5.0
-                clock.schedule(partial(self.enter, start_time),
-                               event_time=earliest_enter)
-                clock.schedule(callback, event_time=earliest_enter)
-        self._active = True#???
+    def schedule(self, start_time):
+        if self._state_phase is not INACTIVE:
+            raise RuntimeError("State must be INACTIVE before SCHEDULED.")
+        self.__cancel_time = None
         self.__scheduled_enter = on_available(
-            (start_time, [self.__dict__[name] for name, target_name in
-                          self.__init_attrs]), avail_cb)
+            start_time, self._schedule_check, start_time)
+        self._state_phase = SCHEDULED
         if self.__tracing:
-            call_time = clock.now() - self._exp._root_state._start_time
-            self.print_trace_msg("SCHEDULE time=%fs" % call_time)
+            call_time = val(clock.now() - self._exp._root_state._start_time)
+            self.print_trace_msg("SCHEDULE time=%r" % call_time)
+
+    def _schedule_check(self, start_time):
+        start_time = val(start_time)
+        if start_time is None or (self.__cancel_time is not None and
+                                  start_time < self.__cancel_time):
+            self._end_time = None  # cause subsequent state to check schedule
+            self.leave()
+            return
+        if val([self.__dict__[name] for name, target_name in
+                self.__init_attrs]) is NotAvailable:
+            self.__scheduled_enter = on_available(
+                start_time, self._schedule_check, start_time)
+        else:
+            clock.schedule(partial(self.enter, start_time))
 
     def _enter(self):
         pass
 
     def enter(self, start_time):
+        if self._state_phase not in (INACTIVE, SCHEDULED):  #TODO: require SCHEDULED?
+            raise RuntimeError(
+                "State must be INACTIVE or SCHEDULED before ENTERED.")
         self.claim_exceptions()
         self.__original_state.__most_recently_entered_clone = self
 
@@ -438,8 +452,8 @@ class State(object):
         self._start_time = val(start_time)
         self._enter_time = clock.now()
 
-        # say we're active
-        self._active = True
+        #...
+        self._state_phase = ENTERED
 
         if self._parent:
             clock.schedule(partial(self._parent.child_enter_callback, self))
@@ -459,63 +473,64 @@ class State(object):
         self._enter()
 
         if self.__tracing:
-            call_time = self._enter_time - self._exp._root_state._start_time
-            call_duration = clock.now() - self._enter_time
+            call_time = val(self._enter_time - self._exp._root_state._start_time)
+            call_duration = val(clock.now() - self._enter_time)
             start_time = val(self._start_time - self._exp._root_state._start_time)
             self.print_trace_msg(
-                "ENTER time=%fs, duration=%fs, start_time=%fs" %
+                "ENTER time=%r, duration=%r, start_time=%r" %
                 (call_time, call_duration, start_time))
 
-    def _leave(self):
-        pass
+    def start(self):
+        if self._state_phase is STARTED:
+            return
+        self.claim_exceptions()
+        if self._state_phase is not ENTERED:
+            raise RuntimeError("State must be ENTERED before STARTED.")
+        self._state_phase = STARTED
+        if self._parent:
+            clock.schedule(partial(self._parent.child_start_callback, self))
 
     def leave(self):
-        # ignore leave call if not active
-        if not self._active:
-            return
-
+        if self._state_phase is INACTIVE:
+            raise RuntimeError("INACTIVE state cannot leave.")
         self.claim_exceptions()
 
         self._leave_time = clock.now()
 
-        self._active = False
-
-        if self.__save_log:
-            self.save_log()
-
         if self._parent:
             clock.schedule(partial(self._parent.child_leave_callback, self))
 
-        # call custom leave code
-        self._leave()
+        if self._state_phase is STARTED:
+            if self.__save_log:
+                self.save_log()
+
+        self._state_phase = INACTIVE
 
         if self.__tracing:
-            call_time = self._leave_time - self._exp._root_state._start_time
-            call_duration = clock.now() - self._leave_time
-            if self._end_time is None:
-                 self.print_trace_msg(
-                    "LEAVE time=%fs, duration=%fs, perpetual" %
-                    (call_time, call_duration))
-            else:
-                end_time = val(self._end_time - self._exp._root_state._start_time)
-                self.print_trace_msg(
-                    "LEAVE time=%fs, duration=%fs, end_time=%fs" %
-                    (call_time, call_duration, end_time))
+            call_time = val(self._leave_time - self._exp._root_state._start_time)
+            call_duration = val(clock.now() - self._leave_time)
+            end_time = val(self.end_time - self._exp._root_state._start_time)
+            self.print_trace_msg(
+                "LEAVE time=%r, duration=%r, end_time=%r" %
+                (call_time, call_duration, end_time))
 
     def _cancel(self, cancel_time):
         pass
 
     def cancel(self, cancel_time):
-        if self._active:
-            cancel_time = max(cancel_time, self._start_time)
+        if self._state_phase is INACTIVE:
+            raise RuntimeError("Cannot cancel INACTIVE state.")
+        elif self._state_phase is SCHEDULED:
+            self.__cancel_time = cancel_time
+        elif self._state_phase in (ENTERED, STARTED):
             end_time = val(self.end_time)
             if end_time in (None, NotAvailable) or cancel_time < end_time:
                 if end_time is not NotAvailable:
-                    self._end_time = cancel_time
+                    self._end_time = cancel_time#?????????????????????????????????????????????????????????
                 self._cancel(cancel_time)
         else:
-            cancel_on_available(self.__scheduled_enter)
-            self.__scheduled_enter = None
+            raise RuntimeError("Invalid state phase value: %r" %
+                               self._state_phase)
 
     def save_log(self):
         record = {}
@@ -574,6 +589,9 @@ class ParentState(State):
     def child_enter_callback(self, child):
         pass
 
+    def child_start_callback(self, child):
+        pass
+
     def child_leave_callback(self, child):
         pass
 
@@ -602,6 +620,7 @@ class Parallel(ParentState):
                                        name=name,
                                        blocking=blocking)
         self.__my_children = set()
+        self.__on_end_time = None
 
     def print_traceback(self, child=None, t=None):
         super(Parallel, self).print_traceback(child, t)
@@ -617,19 +636,23 @@ class Parallel(ParentState):
         self.__my_children = set()
         if len(self._children):
             for child in self._children:
-                inactive_child = child.clone(self)
-                self.__my_children.add(inactive_child)
+                my_child = child.clone(self)
+                self.__my_children.add(my_child)
                 if child._blocking:
-                    blocking_children.append(inactive_child)
-                clock.schedule(partial(inactive_child.enter, self._start_time))
-            self._end_time = Ref(max, [child._end_time for child in
+                    blocking_children.append(my_child)
+                my_child.schedule(self._start_time)
+            self._end_time = Ref(max, [child.end_time for child in
                                        blocking_children])
-            on_available(self._end_time, self._end_time_callback)
+            self.__on_end_time = on_available(self._end_time,
+                                              self._end_time_callback)
         else:
             self._end_time = self._start_time
 
     def _end_time_callback(self):
-        self.cancel(val(self._end_time))
+        self._cancel(val(self._end_time))
+
+    def child_start_callback(self, child):
+        self.start()
 
     def child_leave_callback(self, child):
         self.__my_children.discard(child)
@@ -637,6 +660,7 @@ class Parallel(ParentState):
             self.leave()
 
     def _cancel(self, cancel_time):
+        cancel_on_available(self.__on_end_time)
         for child in self.__my_children:
             child.cancel(cancel_time)
 
@@ -698,44 +722,61 @@ class SequentialState(ParentState):
                                               save_log=save_log,
                                               name=name,
                                               blocking=blocking)
-        self.__active_children = set()
+        self.__my_children = []
+        self.__state_time = None
+        self.__cancel_time = None
+        self.__child_iterator = None
+        self.__saturated = False
 
     def _enter(self):
         super(SequentialState, self)._enter()
         self.__child_iterator = self._get_child_iterator()
-        self.__current_child = None
         self.__state_time = self._start_time
         self.__cancel_time = None
-        self._schedule_next()
+        self.__my_children = []
+        self.__saturated = False
+        clock.schedule(self._schedule_next)
 
     def _get_child_iterator(self):
         raise NotImplementedError
 
     def _schedule_next(self):
         try:
-            self.__current_child = (
-                self.__child_iterator.next().clone(self))
-            self.__current_child.schedule(self.__state_time, self._schedule_next)
-            self.__state_time = self.__current_child.end_time
+            my_child = (self.__child_iterator.next().clone(self))
+            self.__my_children.append(my_child)
+            my_child.schedule(self.__state_time)
+            if self.__cancel_time is not None:
+                my_child.cancel(self.__cancel_time)
+            self.__state_time = my_child.end_time
         except StopIteration:
             self._end_time = self.__state_time
-            self.__current_child = None
 
     def child_enter_callback(self, child):
         super(SequentialState, self).child_enter_callback(child)
-        self.__active_children.add(child)
-        if self.__cancel_time is not None:
-            clock.schedule(partial(child.cancel, self.__cancel_time))
+        if len(self.__my_children) < 5:
+            self.__saturated = False
+            clock.schedule(self._schedule_next)
+        else:
+            self.__saturated = True
+
+    def child_start_callback(self, child):
+        self.start()
 
     def child_leave_callback(self, child):
-        self.__active_children.discard(child)
-        if self.__current_child is None and not len(self.__active_children):
+        self.__my_children.remove(child)
+        if self.__saturated:
+            clock.schedule(self._schedule_next)
+        if not len(self.__my_children):
             self.leave()
 
     def _cancel(self, cancel_time):
-        for child in self.__active_children:
+        for child in self.__my_children:
             child.cancel(cancel_time)
         self.__cancel_time = cancel_time
+        without_cancel = self.__my_children[-1].end_time
+        self._end_time = Ref.cond(without_cancel == None,
+                                  cancel_time,
+                                  Ref(min, without_cancel, cancel_time))
 
 
 class Serial(SequentialState):
@@ -842,6 +883,9 @@ class If(ParentState):
         clock.schedule(partial(self.__selected_child.enter, self._start_time))
         self._end_time = self.__selected_child.end_time
 
+    def child_start_callback(self, child):
+        self.start()
+
     def child_leave_callbacl(self, child):
         self.leave()
 
@@ -935,6 +979,7 @@ class CallbackState(State):
         pass
 
     def callback(self):
+        self.start()
         self.claim_exceptions()
         self._callback()
 
@@ -953,9 +998,14 @@ class CallbackState(State):
         self.leave()
 
     def _cancel(self, cancel_time):
-        cancel_on_available(self.__on_end_time)
-        clock.unschedule(self.finish)
-        clock.schedule(self.finish, event_time=cancel_time)
+        if self._state_phase is STARTED or cancel_time >= self._start_time:
+            cancel_on_available(self.__on_end_time)
+            clock.unschedule(self.finish)
+            clock.schedule(self.finish, event_time=cancel_time)
+        else:
+            cancel_on_available(self.__on_end_time)
+            clock.unschedule(self.callback)
+            clock.unschedule(self.finish)
 
 
 class Record(CallbackState):
@@ -1041,13 +1091,14 @@ class Log(State):
         record["time"] = self._start_time
         self.__log_writer.write_record(record)
         clock.schedule(self.leave)
+        self.start()
 
 
 class Wait(CallbackState):
     def __init__(self, duration=None, jitter=None, until=None, timeout=None,
                  parent=None, save_log=True, name=None, blocking=True):
         if duration is None:
-            if until is  None:
+            if until is None:
                 raise StateConstructionError(
                     "Wait state cannot have both duration and until.")
         elif jitter is not None:
@@ -1068,7 +1119,6 @@ class Wait(CallbackState):
         self._log_event_time = NotAvailable
 
     def _callback(self):
-        self._event_time = event_time()
         if self.__until is not None:
             self.__until.add_true_callback(self._until_callback)
             if self.__timeout is not None:
@@ -1081,16 +1131,13 @@ class Wait(CallbackState):
         self._end_time = self._event_time["time"]
 
     def _timeout_callback(self):
-        print "Moo!"#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self._event_time = event_time()
-        print self._end_time#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        #import pdb; pdb.set_trace()#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self._end_time = self.__timeout_time
-        print self._end_time#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def _finish(self):
         if self.__until is None:
             self._until_value = None
+            self._event_time = event_time()
         else:
             clock.unschedule(self._timeout_callback)
             self.__until.remove_true_callback(self._until_callback)
@@ -1102,7 +1149,7 @@ def When(condition, body=None, name="WHEN", blocking=True):
         body = Serial(name="WHEN_BODY")
         body.override_instantiation_context()
     with Serial(name=name, blocking=blocking) as s:
-        w = Wait(until=condition)
+        w = Wait(until=condition, name="WHEN_WAIT")
     s.claim_child(body)
     s.override_instantiation_context()
     w.override_instantiation_context()
@@ -1143,6 +1190,7 @@ class ResetClock(State):
     def _enter(self):
         self._end_time = self._new_time
         clock.schedule(self.leave)
+        self.start()
 
 
 class Func(CallbackState):
@@ -1183,8 +1231,9 @@ class Debug(CallbackState):
             ]
         if self._name is not None:
             id_strs.append("name: %s" % self._name)
+        start_time = self._start_time - self._exp._root_state._start_time
         lag = clock.now() - self._start_time
-        print "DEBUG (%s) - lag=%fs" % (", ".join(id_strs), lag)
+        print "DEBUG (%s) - start_time=%fs, lag=%fs" % (", ".join(id_strs), start_time, lag)
         for name, value in self._kwargs.iteritems():
             print "  %s: %r" % (name, value)
 
@@ -1221,8 +1270,8 @@ if __name__ == '__main__':
     Debug(width=exp.screen.width, height=exp.screen.height)
 
     exp.bar = False
-    with Parallel():
-        with Serial():
+    with Parallel(name="aaa"):
+        with Serial(name="bbb"):
             Wait(until=False, timeout=2.0)  # force variable assignment to wait until correct time
             exp.bar = True
             Wait(until=False, timeout=2.0)  # force variable assignment to wait until correct time
@@ -1230,7 +1279,8 @@ if __name__ == '__main__':
             Wait(1.0)
         When(exp.bar, Debug(name="when test"))
         with While(exp.bar):
-            with Loop():
+            #Debug(name="while test")
+            with Loop(name="ccc"):
                 Wait(0.2)
                 Debug(name="while test")
         with Loop(blocking=False):
