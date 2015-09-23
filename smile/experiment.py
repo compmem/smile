@@ -20,7 +20,6 @@ import kivy_overrides
 import kivy
 import kivy.base
 from kivy.config import Config
-#Config.set("graphics", "fullscreen", "auto")
 from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
@@ -42,11 +41,14 @@ import kivy.clock
 _kivy_clock = kivy.clock.Clock
 
 # local imports
-from state import Serial, State
-from ref import val, Ref, NotAvailable
-from clock import clock, event_time
+from state import Serial, AutoFinalizeState
+from ref import val, Ref
+from clock import clock
 from log import LogWriter, log2csv
 from video import normalize_color_spec
+
+def event_time(time, time_error=0.0):
+    return {'time': time, 'error': time_error}
 
 
 class _VideoChange(object):
@@ -143,8 +145,12 @@ class Screen(object):
 
 
 class ExpApp(App):
-    def __init__(self, exp):
+    def __init__(self, exp, fullscreen=None, size=None):
         super(ExpApp, self).__init__()
+        #if size is not None:
+        #    Window.size=size
+        #if fullscreen is not None:
+        #    Window.fullscreen = fullscreen
         self.exp = exp
         self.callbacks = {}
         self.pending_flip_time = None
@@ -421,7 +427,7 @@ class Experiment(object):
         from kivy.core.window import Window
         self._background_color = background_color
         self.set_background_color()
-        self._app = ExpApp(self)
+        self._app = ExpApp(self, fullscreen=fullscreen, size=resolution)#???
 
         # set up instance for access throughout code
         self.__class__._last_instance = weakref.ref(self)
@@ -472,9 +478,7 @@ class Experiment(object):
         if name[0] == "_":
             super(Experiment, self).__setattr__(name, value)
         else:
-            set_ = Set(**{name : value})
-            set_.override_instantiation_context()
-            return set_
+            return Set(**{name : value})
 
     def __dir__(self):
         return super(Experiment, self).__dir__() + self._vars.keys()
@@ -594,7 +598,7 @@ class Experiment(object):
         self.close_state_loggers(self._csv)
 
 
-class Set(State):
+class Set(AutoFinalizeState):
     def __init__(self, parent=None, save_log=True, name=None, **kwargs):
         # init the parent class
         super(Set, self).__init__(parent=parent,
@@ -602,6 +606,8 @@ class Set(State):
                                   name=name,
                                   duration=0.0)
         self._init_values = kwargs
+
+        self._log_attrs.extend(['values'])
 
     def get_log_fields(self):
         return ['instantiation_filename', 'instantiation_lineno', 'name',
@@ -619,7 +625,7 @@ class Set(State):
                 "value": value
                 }
             self._exp.write_to_state_log(class_name, field_values)
-
+        
     def _enter(self):
         for name, value in self._values.iteritems():
             self._exp.set_var(name, value)
