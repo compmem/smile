@@ -349,7 +349,7 @@ class ExpApp(App):
         self._last_time = self._new_time
 
         # exit if experiment done
-        if not self.exp._root_state._state_phase:
+        if not self.exp._root_state._active:
             self.stop()
 
         # give time to other threads
@@ -621,11 +621,9 @@ class Set(State):
             self._exp.write_to_state_log(class_name, field_values)
 
     def _enter(self):
-        print self._values#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         for name, value in self._values.iteritems():
             self._exp.set_var(name, value)
         clock.schedule(self.leave)
-        self.start()
 
 
 def Get(name):
