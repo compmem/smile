@@ -14,7 +14,7 @@ import operator
 
 import kivy_overrides
 from state import State, CallbackState, Parallel, ParentState
-from ref import val, Ref
+from ref import val, Ref, NotAvailable
 from clock import clock
 import kivy.graphics
 import kivy.uix.widget
@@ -98,8 +98,8 @@ class VisualState(State):
                                           name=name,
                                           blocking=blocking)
 
-        self._appear_time = {"time": None, "error": None}
-        self._disappear_time = {"time": None, "error": None}
+        self._appear_time = None
+        self._disappear_time = None
         self._appeared = False
         self._disappeared = False
         self._on_screen = False
@@ -123,8 +123,8 @@ class VisualState(State):
         clock.schedule(self.finalize)
 
     def _enter(self):
-        self._appear_time = {"time": None, "error": None}
-        self._disappear_time = {"time": None, "error": None}
+        self._appear_time = NotAvailable
+        self._disappear_time = NotAvailable
         self._appeared = False
         self._disappeared = False
         self._on_screen = False
@@ -622,8 +622,8 @@ for widget in widgets:
     exec("import %s" % modname)
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
-import kivy.uix.rst
-RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
+#import kivy.uix.rst
+#RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 import kivy.uix.video
@@ -681,7 +681,7 @@ class ButtonPress(CallbackState):
         self._init_base_time = None
 
         self._pressed = ''
-        self._press_time = {"time": None, "error": None}
+        self._press_time = None
         self._correct = False
         self._rt = None
 
@@ -708,10 +708,10 @@ class ButtonPress(CallbackState):
     def _callback(self):
         if self._base_time is None:
             self._base_time = self._start_time
-        self._pressed = ''
-        self._press_time = None
-        self._correct = False
-        self._rt = None
+        self._pressed = NotAvailable
+        self._press_time = NotAvailable
+        self._correct = NotAvailable
+        self._rt = NotAvailable
         self.__pressed_ref.add_change_callback(self.button_callback)
 
     def button_callback(self):
@@ -735,6 +735,14 @@ class ButtonPress(CallbackState):
     def _leave(self):
         self.__pressed_ref.remove_change_callback(self.button_callback)
         super(ButtonPress, self)._leave()
+        if self._pressed is NotAvailable:
+            self._pressed = ''
+        if self._press_time is NotAvailable:
+            self._press_time = None
+        if self._correct is NotAvailable:
+            self._correct = False
+        if self._rt is NotAvailable:
+            self._rt = None
 
     def __enter__(self):
         if self.__parallel is not None:
@@ -757,13 +765,17 @@ class ButtonPress(CallbackState):
 
 if __name__ == '__main__':
     from experiment import Experiment
-    from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial
+    from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial, Debug, Done
     from math import sin, cos
     from contextlib import nested
 
     exp = Experiment(background_color="#330000")
 
     Wait(2.0)
+
+    rect = Rectangle(duration=1.0)
+    Done(rect)
+    Debug(rect_disappear_time=rect.disappear_time)
 
     with Parallel():
         slider = Slider(min=exp.screen.left, max=exp.screen.right, duration=5.0)

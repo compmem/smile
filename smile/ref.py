@@ -10,6 +10,17 @@
 import random
 import operator
 
+class NotAvailable(object):
+    def __repr__(self):
+        return "NotAvailable"
+
+    def __nonzero__(self):
+        return False
+NotAvailable = NotAvailable()
+
+class NotAvailableError(ValueError):
+    pass
+
 def pass_thru(obj):
     return obj
 
@@ -21,11 +32,18 @@ class Ref(object):
         self.kwargs = kwargs
         self.cache_value = None
         self.cache_valid = False
-        self.change_callbacks = []
+        self.change_callbacks = set()
         for dep in iter_deps((pargs, kwargs)):
             if not dep.use_cache:
                 self.use_cache = False
                 break
+
+    def __repr__(self):
+        return "Ref(%s)" % ", ".join([repr(self.func)] +
+                                     map(repr, self.pargs) +
+                                     ["%s=%r" % (name, value) for
+                                      name, value in
+                                      self.kwargs.iteritems()])
 
     @staticmethod
     def getattr(obj, name):
@@ -51,7 +69,7 @@ class Ref(object):
         if self.cache_valid and len(self.change_callbacks):
             return self.cache_value
 
-        value = val(self.func(*val(self.pargs), **val(self.kwargs)))
+        value = val(val(self.func)(*val(self.pargs), **val(self.kwargs)))
 
         if self.use_cache:
             self.cache_value = value
@@ -64,30 +82,27 @@ class Ref(object):
         if not len(self.change_callbacks):
             self.setup_dep_callbacks()
             self.cache_valid = False
-        self.change_callbacks.append((func, pargs, kwargs))
+        self.change_callbacks.add((func, pargs, tuple(kwargs.iteritems())))
 
     def remove_change_callback(self, func, *pargs, **kwargs):
         #print "remove_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
-        try:
-            self.change_callbacks.remove((func, pargs, kwargs))
-        except ValueError:
-            pass
+        self.change_callbacks.discard((func, pargs, tuple(kwargs.iteritems())))
         if not len(self.change_callbacks):
             self.teardown_dep_callbacks()
 
     def setup_dep_callbacks(self):
-        for dep in iter_deps((self.pargs, self.kwargs)):
+        for dep in iter_deps((self.func, self.pargs, self.kwargs)):
             dep.add_change_callback(self.dep_changed)
 
     def teardown_dep_callbacks(self):
-        for dep in iter_deps((self.pargs, self.kwargs)):
+        for dep in iter_deps((self.func, self.pargs, self.kwargs)):
             dep.remove_change_callback(self.dep_changed)
 
     def dep_changed(self):
         #print "dep_changed %r, %r" % (self, self.change_callbacks)
         self.cache_valid = False
-        for func, pargs, kwargs in self.change_callbacks:
-            func(*pargs, **kwargs)
+        for func, pargs, kwargs in list(self.change_callbacks):
+            func(*pargs, **dict(kwargs))
 
     # delayed operators...
     def __call__(self, *pargs, **kwargs):
@@ -185,18 +200,23 @@ def shuffle(iterable):
     return Ref(_shuffle, iterable, use_cache=False)
 
 def val(obj):
-    if isinstance(obj, Ref):
-        return obj.eval()
-    elif isinstance(obj, list):
-        return [val(value) for value in obj]
-    elif isinstance(obj, tuple):
-        return tuple(val(value) for value in obj)
-    elif isinstance(obj, dict):
-        return {val(key) : val(value) for key, value in obj.iteritems()}
-    elif isinstance(obj, slice):
-        return slice(val(obj.start), val(obj.stop), val(obj.step))
-    else:
-        return obj
+    try:
+        if isinstance(obj, Ref):
+            return obj.eval()
+        elif isinstance(obj, list):
+            return [val(value) for value in obj]
+        elif isinstance(obj, tuple):
+            return tuple(val(value) for value in obj)
+        elif isinstance(obj, dict):
+            return {val(key) : val(value) for key, value in obj.iteritems()}
+        elif isinstance(obj, slice):
+            return slice(val(obj.start), val(obj.stop), val(obj.step))
+        elif obj is NotAvailable:
+            raise NotAvailableError("'val' produced NotAvailable result.")
+        else:
+            return obj
+    except NotAvailableError:
+        raise NotAvailableError("val(%r) produced NotAvailable result" % obj)
 
 def iter_deps(obj):
     if isinstance(obj, Ref):

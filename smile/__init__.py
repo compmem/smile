@@ -18,6 +18,7 @@ from state import (
     Elif,
     Else,
     Loop,
+    Done,
     Wait,
     Record,
     Log,

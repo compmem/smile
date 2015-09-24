@@ -16,7 +16,7 @@ import os.path
 
 import kivy_overrides
 import ref
-from ref import Ref, val
+from ref import Ref, val, NotAvailable, NotAvailableError
 from utils import rindex, get_class_name
 from log import LogWriter, log2csv
 from clock import clock
@@ -144,6 +144,14 @@ class State(object):
         # entered.  This is used to seemlessly evaluate Refs to values from the
         # most recently started execution of a state.
         self.__most_recently_entered_clone = self
+
+    def __repr__(self):
+        return "<%s file=%r, line=%d, name=%r, id=%x>" % (
+            type(self).__name__,
+            self._instantiation_filename,
+            self._instantiation_lineno,
+            self._name,
+            id(self))
 
     def set_instantiation_context(self, obj=None):
         # If no object is provide as the source of he context, use self.
@@ -277,7 +285,10 @@ class State(object):
 
         # Print out log attributes...
         for attr_name in self._log_attrs:
-            value = val(getattr(self, attr_name))
+            try:
+                value = val(getattr(self, attr_name))
+            except NotAvailableError:
+                value = NotAvailable
             if attr_name.endswith("_time"):
                 print "     %s: %s" % (attr_name, tstr(value))
             else:
@@ -385,8 +396,8 @@ class State(object):
         self.claim_exceptions()
         self._start_time = start_time
         self._enter_time = clock.now()
-        self._leave_time = None
-        self._finalize_time = None
+        self._leave_time = NotAvailable
+        self._finalize_time = NotAvailable
         self.__original_state.__most_recently_entered_clone = self
 
         # say we're active
@@ -403,7 +414,13 @@ class State(object):
 
         for name, value in self.__dict__.items():
             if name[:6] == "_init_":
-                setattr(self, name[5:], val(value))
+                try:
+                    setattr(self, name[5:], val(value))
+                except NotAvailableError:
+                    raise NotAvailableError(
+                        ("Attempting to use unavailable value (%r) "
+                         "for attribute %r of %r.  Do you need to use a Done "
+                         "state?") % (value, name[6:], self))
 
         if self._duration is None:
             self._end_time = None
@@ -782,7 +799,6 @@ class If(ParentState):
         
     def _enter(self):
         super(If, self)._enter()
-
         self._outcome_index = self._cond.index(True)
         self.__selected_child = (
             self._out_states[self._outcome_index].get_inactive_state(self))
@@ -916,8 +932,7 @@ class Loop(ParentState):
     def _enter(self):
         # get the parent enter
         super(Loop, self)._enter()
-
-        self._outcome = None
+        self._outcome = NotAvailable
         self.__current_child = None
         self.__cancel_time = None
         self.__i_iterator = self.iter_i()
@@ -1014,7 +1029,11 @@ class Record(State):
             ref.remove_change_callback(self.record_change)
 
     def record_change(self):
-        record = val(self.__refs)
+        try:
+            record = val(self.__refs)
+        except NotAvailableError:
+            raise NotAvailableError(
+                "One or more recorded values not available!")
         record["timestamp"] = self._exp._app.event_time
         self.__log_writer.write_record(record)
 
@@ -1075,6 +1094,56 @@ class Log(AutoFinalizeState):
         clock.schedule(self.leave)
 
 
+class _DelayedValueTest(State):
+    def __init__(self, delay, value, parent=None, save_log=True, name=None,
+                 blocking=True):
+        # init the parent class
+        super(_DelayedValueTest, self).__init__(parent=parent, 
+                                                duration=0.0, 
+                                                save_log=save_log,
+                                                name=name,
+                                                blocking=blocking)
+        self._init_delay = delay
+        self._init_value = value
+        self._value_out = None
+
+    def _enter(self):
+        self._value_out = NotAvailable
+        clock.schedule(self._set_value_out,
+                       event_time=self._start_time+self._delay)
+        self.leave()
+
+    def _set_value_out(self):
+        self._value_out = self._value
+        self.finalize()
+
+
+class Done(AutoFinalizeState):
+    def __init__(self, *states, **kwargs):
+        # init the parent class
+        super(Done, self).__init__(parent=kwargs.pop("parent", None), 
+                                   duration=0.0, 
+                                   save_log=kwargs.pop("save_log", True),
+                                   name=kwargs.pop("name", None),
+                                   blocking=kwargs.pop("blocking", True))
+        if len(kwargs):
+            raise ValueError("Invalid keyword arguments for Done: %r" %
+                             kwargs.iterkeys())
+        self.__some_active = Ref(any, [state.active for state in states])
+
+    def _enter(self):
+        self.__some_active.add_change_callback(self._check)
+
+    def _check(self):
+        some_active = self.__some_active.eval()
+        if not some_active:
+            self.__some_active.remove_change_callback(self._check)
+            self.leave()
+
+    def cancel(self):
+        pass
+
+
 class Wait(State):
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
                  save_log=True, name=None, blocking=True):
@@ -1101,7 +1170,11 @@ class Wait(State):
             if self._end_time is not None:
                 clock.schedule(self.finalize, event_time=self._end_time)
         else:
-            self._until_value = self.__until.eval()
+            try:
+                self._until_value = self.__until.eval()
+            except NotAvailableError:
+                raise NotAvailableError("Until value (%r) was unavailable!" %
+                                        self._until)
             if self._until_value:
                 clock.schedule(partial(self.cancel, self._start_time))
             else:
@@ -1117,7 +1190,11 @@ class Wait(State):
             self.__until.remove_change_callback(self.check_until)
 
     def check_until(self):
-        self._until_value = self.__until.eval()
+        try:
+            self._until_value = self.__until.eval()
+        except NotAvailableError:
+            raise NotAvailableError("Until value (%r) was unavailable!" %
+                                    self._until)
         if self._until_value:
             self._event_time = self._exp._app.event_time
             clock.schedule(partial(self.cancel, self._event_time["time"]))
@@ -1235,7 +1312,7 @@ class Func(CallbackState):
         self._init_func = func
         self._init_pargs = pargs
         self._init_kwargs = kwargs
-        self._result = None
+        self._result = NotAvailable
 
         self._log_attrs.extend(['result'])
 
@@ -1296,6 +1373,11 @@ if __name__ == '__main__':
             Func(print_periodic)
 
     Debug(width=exp.screen.width, height=exp.screen.height)
+
+    Wait(1.0)
+    dvt = _DelayedValueTest(1.0, 42)
+    Done(dvt)
+    Debug(dvt_out=dvt.value_out)
 
     exp.bar = False
     with Parallel():

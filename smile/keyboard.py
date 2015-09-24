@@ -10,7 +10,7 @@
 import os.path
 
 from state import CallbackState
-from ref import val
+from ref import val, NotAvailable
 from clock import clock
 from experiment import Experiment
 from log import LogWriter, log2csv
@@ -79,10 +79,10 @@ class KeyPress(KeyState):
     def _enter(self):
         super(KeyPress, self)._enter()
         # reset defaults
-        self._pressed = ''
-        self._press_time = None
-        self._correct = False
-        self._rt = None
+        self._pressed = NotAvailable
+        self._press_time = NotAvailable
+        self._correct = NotAvailable
+        self._rt = NotAvailable
         if self._base_time is None:
             self._base_time = self._start_time
         if self._keys is None:
@@ -104,11 +104,21 @@ class KeyPress(KeyState):
             # calc RT if something pressed
             self._rt = event_time['time'] - self._base_time
 
-            if self._pressed in self._correct_resp:
-                self._correct = True
+            self._correct = self._pressed in self._correct_resp
 
             # let's leave b/c we're all done
             self.cancel(event_time['time'])
+
+    def _leave(self):
+        super(KeyPress, self)._leave()
+        if self._pressed is NotAvailable:
+            self._pressed = ''
+        if self._press_time is NotAvailable:
+            self._press_time = None
+        if self._correct is NotAvailable:
+            self._correct = False
+        if self._rt is NotAvailable:
+            self._rt = None
 
 
 class KeyRecord(KeyState):
