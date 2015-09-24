@@ -39,6 +39,7 @@ from video import (
     Ellipse,
     Image,
     Label,
+    RstDocument,
     Button,
     ButtonPress,
     Video,

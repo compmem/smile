@@ -211,9 +211,6 @@ class WidgetState(VisualState):
 
     @classmethod
     def wrap(cls, widget_class, name=None):
-        if not issubclass(widget_class, kivy.uix.widget.Widget):
-            raise ValueError(
-                "widget_class must be a subclass of kivy.uix.widget.Widget")
         if name is None:
             name = widget_class.__name__
         def __init__(self, *pargs, **kwargs):
@@ -622,8 +619,11 @@ for widget in widgets:
     exec("import %s" % modname)
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
-#import kivy.uix.rst
-#RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+@WidgetState.wrap
+def RstDocument(*pargs, **kwargs):
+    from kivy.uix.rst import RstDocument
+    return RstDocument(*pargs, **kwargs)
 
 
 import kivy.uix.video
@@ -765,7 +765,7 @@ class ButtonPress(CallbackState):
 
 if __name__ == '__main__':
     from experiment import Experiment
-    from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial, Debug, Done
+    from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial, Done
     from math import sin, cos
     from contextlib import nested
 
@@ -773,9 +773,19 @@ if __name__ == '__main__':
 
     Wait(2.0)
 
-    rect = Rectangle(duration=1.0)
-    Done(rect)
-    Debug(rect_disappear_time=rect.disappear_time)
+    text = """
+.. _top:
+
+Hello world
+===========
+
+This is an **emphased text**, some ``interpreted text``.
+And this is a reference to top_::
+
+$ print("Hello world")
+
+    """
+    RstDocument(text=text, duration=5.0, size=exp.screen.size)
 
     with Parallel():
         slider = Slider(min=exp.screen.left, max=exp.screen.right, duration=5.0)
@@ -785,7 +795,7 @@ if __name__ == '__main__':
         rect.animate(center_x=lambda t, initial: slider.value)
 
     ti = TextInput(text="EDIT!", duration=5.0)
-    Wait(until=ti.text)
+    Done(ti)
     Label(text=ti.text, duration=5.0, font_size=50, color="white")
 
     Ellipse(color="white", width=100, height=100)
