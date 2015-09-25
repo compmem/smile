@@ -167,7 +167,7 @@ class VisualState(State):
                 self._end_time = cancel_time
 
 
-class BackgroundColor(VisualState):
+class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never clears?
     layers = []
     def __init__(self, color, duration=None, parent=None, save_log=True,
                  name=None, blocking=True):
@@ -331,9 +331,13 @@ class WidgetState(VisualState):
 
     def construct(self, params):
         self._widget = self.__widget_class(**params)
+        self._set_widget_defaults()
         self.live_change(**params)
         self._widget.bind(**{name : partial(self.property_callback, name) for
                             name in self.__widget_param_names})
+
+    def _set_widget_defaults(self):
+        pass
 
     def show(self):
         if self.__layout is None:
@@ -440,13 +444,15 @@ class WidgetState(VisualState):
         clock.schedule(self.finalize)
 
     def _enter(self):
-        super(WidgetState, self)._enter()
         self.__x_pos_mode = None
         self.__y_pos_mode = None
 
         params = self.eval_init_refs()
         params = self.resolve_params(params)
         self.construct(params)
+
+        # We do this after because self.construct might modify self._end_time.
+        super(WidgetState, self)._enter()
 
     def __enter__(self):
         if self.__parallel is not None:
@@ -597,7 +603,6 @@ for instr in vertex_instructions:
 
 
 widgets = [
-    "Image",
     "Label",
     "Button",
     "Slider",
@@ -628,29 +633,35 @@ def RstDocument(*pargs, **kwargs):
 
 import kivy.uix.video
 class Video(WidgetState.wrap(kivy.uix.video.Video)):
-    def construct(self, params):
-        super(Video, self).construct(params)
-
+    def _set_widget_defaults(self):
         # force video to load immediately so that duration is available...
         _kivy_clock.unschedule(self._widget._do_video_load)
         self._widget._do_video_load()
         self._widget._video.pause()
         while self._widget._video.duration == -1:
             pass  #TODO: make sure we can't get stuck here?
-        
         if self._end_time is None:
             self._end_time = self._start_time + self._widget._video.duration
+
+        # set the size to (0, 0) so we know if it hasn't be changed later
+        self._widget.size = (0, 0)
 
     def show(self):
         if "state" not in self._constructor_param_names:
             self._widget.state = "play"
         self._widget._video._update(0)  # prevent white flash at start
+        if self._widget.width == 0 and self._widget.height == 0:
+            self.live_change(size=self._widget._video.texture.size)
         super(Video, self).show()
 
     def unshow(self):
         super(Video, self).unshow()
         self._widget.state = "stop"
 
+import kivy.uix.image
+class Image(WidgetState.wrap(kivy.uix.image.Image)):
+    def _set_widget_defaults(self):
+        self._widget.size = self._widget.texture_size
 
 def iter_nested_buttons(state):
     if isinstance(state, Button):
@@ -773,6 +784,8 @@ if __name__ == '__main__':
 
     Wait(2.0)
 
+    Image(source="face-smile.png", duration=5.0)
+
     text = """
 .. _top:
 
@@ -831,6 +844,18 @@ $ print("Hello world")
         rect.slide(center=exp.screen.left_bottom, duration=2.0)
         rect.slide(center=exp.screen.center, duration=2.0)
 
+    vid = Video(source="test_video.mp4", right_top=exp.screen.center,
+                allow_stretch=True, keep_ratio=False)
+    with Meanwhile():
+        vid.slide(center_x=exp.screen.width * 0.75,
+                  center_y=exp.screen.center_y,
+                  duration=1.0)
+        vid.animate(center_x=(lambda t, initial: exp.screen.center_x +
+                              cos(t / 3.0) * exp.screen.width * 0.25),
+                    center_y=(lambda t, initial: exp.screen.center_y +
+                              sin(t / 3.0) * exp.screen.width * 0.25),
+                    height=(lambda t, initial: initial + sin(t / 2.0) *
+                            initial * 0.5))
     with Loop(3) as loop:
         Video(source="test_video.mp4", size=exp.screen.size,
               allow_stretch=loop.i%2, duration=5.0)
