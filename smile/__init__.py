@@ -18,6 +18,7 @@ from state import (
     Elif,
     Else,
     Loop,
+    Done,
     Wait,
     Record,
     Log,
@@ -38,6 +39,7 @@ from video import (
     Ellipse,
     Image,
     Label,
+    RstDocument,
     Button,
     ButtonPress,
     Video,
@@ -47,7 +49,9 @@ from video import (
     GridLayout,
     PageLayout,
     ScatterLayout,
-    StackLayout
+    StackLayout,
+    BackgroundColor
     )
 from ref import Ref, val, jitter, shuffle
+from smile.audio import Beep, SoundFile, RecordSoundFile
 #from freekey import FreeKey

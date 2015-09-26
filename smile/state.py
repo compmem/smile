@@ -16,7 +16,7 @@ import os.path
 
 import kivy_overrides
 import ref
-from ref import Ref, val
+from ref import Ref, val, NotAvailable, NotAvailableError
 from utils import rindex, get_class_name
 from log import LogWriter, log2csv
 from clock import clock
@@ -30,7 +30,8 @@ class StateConstructionError(RuntimeError):
 
 
 class State(object):
-    def __init__(self, parent=None, duration=None, save_log=True, name=None):
+    def __init__(self, parent=None, duration=None, save_log=True, name=None,
+                 blocking=True):
         # Weak value dictionary to track Refs issued by this state.  Necessary
         # because those Refs need to be notified when their dependencies
         # change.  This is first so that __setattr__ will work.
@@ -41,6 +42,9 @@ class State(object):
 
         # The custom name for this state.
         self._name = name
+
+        # Whether or not this state blocks in the context of a Parallel parent.
+        self._blocking = blocking
 
         # This is a convenience argument for automatically setting the end time
         # relative to the start time.  If it evaluates to None, it has no
@@ -106,6 +110,14 @@ class State(object):
         else:
             self._parent = parent
 
+        # Raise an error if we are non-blocking, but not the child of a
+        # Parallel...
+        #TODO: check this any time self._blocking is assigned!
+        if not self._blocking and not isinstance(self._parent, Parallel):
+            raise StateConstructionError(
+                "A state which is not a child of a Parallel cannot be "
+                "non-blocking.")
+
         # If this state has a parent, add this state to its parent's children.
         if self._parent:
             self._parent._children.append(self)
@@ -133,28 +145,25 @@ class State(object):
         # most recently started execution of a state.
         self.__most_recently_entered_clone = self
 
+    def __repr__(self):
+        return "<%s file=%r, line=%d, name=%r, id=%x>" % (
+            type(self).__name__,
+            self._instantiation_filename,
+            self._instantiation_lineno,
+            self._name,
+            id(self))
+
     def set_instantiation_context(self, obj=None):
         # If no object is provide as the source of he context, use self.
         if obj is None:
             obj = self
 
-        # Build a dict mapping source filenames to lists of line numbers within
-        # the corresponding file which are part of any __init__ method of obj
-        # any of obj's (recursive) base classes...
-        base_inits = {}
-        for base in inspect.getmro(type(obj)):
-            if base is not object and hasattr(base, "__init__"):
-                init = base.__init__
-                filename = inspect.getsourcefile(init)
-                lines, start_lineno = inspect.getsourcelines(init)
-                base_inits.setdefault(filename, []).extend(
-                    range(start_lineno, start_lineno + len(lines)))
-
-        # Find the highest frame on the call stack whose source filename / line
-        # number is NOT represented in base_inits...
+        # Find the highest frame on the call stack whose function is not an
+        # "__init__" for a parent class
+        mro = inspect.getmro(type(obj))
         for (frame, filename, lineno,
-             function, code_context, index) in inspect.stack()[1:]:
-            if filename in base_inits and lineno in base_inits[filename]:
+             fname, fcode, index) in inspect.stack()[1:]:
+            if fname == "__init__" and type(frame.f_locals["self"]) in mro:
                 continue
 
             # Record the filename and line number found.  This will be the
@@ -276,7 +285,10 @@ class State(object):
 
         # Print out log attributes...
         for attr_name in self._log_attrs:
-            value = val(getattr(self, attr_name))
+            try:
+                value = val(getattr(self, attr_name))
+            except NotAvailableError:
+                value = NotAvailable
             if attr_name.endswith("_time"):
                 print "     %s: %s" % (attr_name, tstr(value))
             else:
@@ -319,6 +331,9 @@ class State(object):
         # Return the named attribute from the current clone.
         return getattr(self.current_clone, name)
 
+    def attribute_update_state(self, name, value):
+        raise NotImplementedError
+
     def __getattr__(self, name):
         internal_name = "_" + name
         if hasattr(self, internal_name):
@@ -338,14 +353,21 @@ class State(object):
             return super(State, self).__getattribute__(name)
 
     def __setattr__(self, name, value):
+        # If this isn't an internal value (with a leading underscore), create
+        # an attribute update state or raise an error...
+        if name[0] != "_":
+            try:
+                self.__original_state.attribute_update_state(name, value)
+                return
+            except NotImplementedError:
+                raise AttributeError("State does not support attribute setting!")
+
         # First, set the sttribute value as normal.
         super(State, self).__setattr__(name, value)
 
-        # If this isn't an internal value (with a leading underscore) or if
-        # this state is not the current clone of the original state, no further
-        # action is taken...
-        if name[0] != "_" or self.current_clone is not self:
-            #TODO: error if trying to assign to Ref attribute
+        # If this state is not the current clone of the original state, no
+        # further action is taken...
+        if self.current_clone is not self:
             return
 
         # If the name has the prefix "_init_" create a corresponding internal
@@ -374,8 +396,8 @@ class State(object):
         self.claim_exceptions()
         self._start_time = start_time
         self._enter_time = clock.now()
-        self._leave_time = None
-        self._finalize_time = None
+        self._leave_time = NotAvailable
+        self._finalize_time = NotAvailable
         self.__original_state.__most_recently_entered_clone = self
 
         # say we're active
@@ -392,7 +414,13 @@ class State(object):
 
         for name, value in self.__dict__.items():
             if name[:6] == "_init_":
-                setattr(self, name[5:], val(value))
+                try:
+                    setattr(self, name[5:], val(value))
+                except NotAvailableError:
+                    raise NotAvailableError(
+                        ("Attempting to use unavailable value (%r) "
+                         "for attribute %r of %r.  Do you need to use a Done "
+                         "state?") % (value, name[6:], self))
 
         if self._duration is None:
             self._end_time = None
@@ -474,6 +502,12 @@ class State(object):
                                  (call_time, call_duration))
 
 
+class AutoFinalizeState(State):
+    def leave(self):
+        super(AutoFinalizeState, self).leave()
+        clock.schedule(self.finalize)
+
+
 class ParentState(State):
     """
     Base state for parents that can hold children states. 
@@ -498,11 +532,12 @@ class ParentState(State):
 
     """
     def __init__(self, children=None, parent=None, duration=None,
-                 save_log=True, name=None):
+                 save_log=True, name=None, blocking=True):
         super(ParentState, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
-                                          name=name)
+                                          name=name,
+                                          blocking=blocking)
         # process children
         if children is None:
             children = []
@@ -570,13 +605,13 @@ class ParentState(State):
 
 
 class Parallel(ParentState):
-    def __init__(self, children=None, parent=None, save_log=True, name=None):
+    def __init__(self, children=None, parent=None, save_log=True, name=None,
+                 blocking=True):
         super(Parallel, self).__init__(children=children,
                                        parent=parent,
                                        save_log=save_log,
-                                       name=name)
-        self._children_blocking = []
-
+                                       name=name,
+                                       blocking=blocking)
         self.__my_children = []
         self.__blocking_children = []
         self.__remaining = set()
@@ -584,31 +619,21 @@ class Parallel(ParentState):
 
     def print_traceback(self, child=None, t=None):
         super(Parallel, self).print_traceback(child, t)
-        self._normalize_children_blocking()
         if child is not None:
-            if self._children_blocking[self._children.index(child)]:
+            if child._blocking:
                 print "     Blocking child..."
             else:
                 print "     Non-blocking child..."
 
-    def _normalize_children_blocking(self):
-        for _n in range(len(self._children_blocking), len(self._children)):
-            self._children_blocking.append(True)
-
-    def set_child_blocking(self, n, blocking):
-        self._normalize_children_blocking()
-        self._children_blocking[n] = blocking
-
     def _enter(self):
         super(Parallel, self)._enter()
-        self._normalize_children_blocking()
         self.__blocking_children = []
         self.__my_children = []
         if len(self._children):
-            for child, blocking in zip(self._children, self._children_blocking):
+            for child in self._children:
                 inactive_child = child.get_inactive_state(self)
                 self.__my_children.append(inactive_child)
-                if blocking:
+                if child._blocking:
                     self.__blocking_children.append(inactive_child)
                 clock.schedule(partial(inactive_child.enter, self._start_time))
             self.__remaining = set(self.__my_children)
@@ -643,7 +668,7 @@ class Parallel(ParentState):
 
 
 @contextmanager
-def _ParallelWithPrevious(name=None, parallel_name=None):
+def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
     # get the exp reference
     from experiment import Experiment
     try:
@@ -667,7 +692,8 @@ def _ParallelWithPrevious(name=None, parallel_name=None):
             parallel_parent = parent._parent
 
     # build the new Parallel state
-    with Parallel(name=parallel_name, parent=parallel_parent) as p:
+    with Parallel(name=parallel_name, parent=parallel_parent,
+                  blocking=blocking) as p:
         p.override_instantiation_context(3)
         p.claim_child(prev_state)
         with Serial(name=name) as s:
@@ -676,16 +702,18 @@ def _ParallelWithPrevious(name=None, parallel_name=None):
 
 
 @contextmanager
-def Meanwhile(name=None):
-    with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE") as p:
+def Meanwhile(name=None, blocking=True):
+    with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE",
+                               blocking=blocking) as p:
         yield p
-    p.set_child_blocking(1, False)
+    p._children[1]._blocking = False
 
 @contextmanager
-def UntilDone(name=None):
-    with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE") as p:
+def UntilDone(name=None, blocking=True):
+    with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE",
+                               blocking=blocking) as p:
         yield p
-    p.set_child_blocking(0, False)
+    p._children[0]._blocking = False
 
 
 class Serial(ParentState):
@@ -736,13 +764,100 @@ class Serial(ParentState):
             clock.schedule(partial(self.__current_child.cancel, cancel_time))
             self.__cancel_time = cancel_time
 
+
+class Subroutine(object):
+    def __init__(self, func):
+        self._func = func
+        self.__doc__ = func.__doc__
+
+    def __call__(self, *pargs, **kwargs):
+        with SubroutineState(subroutine=self._func.__name__,
+                             parent=kwargs.pop("parent", None),
+                             save_log=kwargs.pop("save_log", True),
+                             name=kwargs.pop("name", None),
+                             blocking=kwargs.pop("blocking", True)) as state:
+            self._func(state, *pargs, **kwargs)
+        state.override_instantiation_context()
+        return state
+
+
+class SubroutineState(Serial):
+    def __init__(self, subroutine, parent=None, save_log=True, name=None,
+                 blocking=True):
+        super(SubroutineState, self).__init__(parent=parent,
+                                              save_log=save_log,
+                                              name=name,
+                                              blocking=blocking)
+        self._subroutine = subroutine
+        self._vars = {}
+        self.__issued_refs = weakref.WeakValueDictionary()
+        
+        self._log_attrs.extend(['subroutine'])
+
+        self.__reserved_names = set(
+            self.__dict__.keys() +
+            [name[1:] for name in self.__dict__.keys() if name[0] == "_"])
+
+    def get_var_ref(self, name):
+        try:
+            return self.__issued_refs[name]
+        except KeyError:
+            ref = Ref.getitem(self._vars, name)
+            self.__issued_refs[name] = ref
+            return ref
+
+    def set_var(self, name, value):
+        self._vars[name] = value
+        try:
+            ref = self.__issued_refs[name]
+        except KeyError:
+            return
+        ref.dep_changed()
+
+    def __getattr__(self, name):
+        if ("_SubroutineState__reserved_names" not in self.__dict__ or
+            name in self.__reserved_names):
+            return super(SubroutineState, self).__getattr__(name)
+        else:
+            return self.get_var_ref(name)
+
+    def __setattr__(self, name, value):
+        if (name[0] == "_" or
+            "_SubroutineState__reserved_names" not in self.__dict__ or
+            name in self.__reserved_names):
+            super(SubroutineState, self).__setattr__(name, value)
+        else:
+            return SubroutineSet(self, name, value)
+
+    def __dir__(self):
+        return super(SubroutineState, self).__dir__() + self._vars.keys()
+
+
+class SubroutineSet(AutoFinalizeState):
+    def __init__(self, subroutine, var_name, value, parent=None, save_log=True, name=None):
+        super(SubroutineSet, self).__init__(parent=parent,
+                                            save_log=save_log,
+                                            name=name,
+                                            duration=0.0)
+        self.__subroutine = subroutine
+        self._subroutine = subroutine._name
+        self._init_var_name = var_name
+        self._init_value = value
+
+        self._log_attrs.extend(['subroutine', 'var_name', 'value'])
+        
+    def _enter(self):
+        self.__subroutine._vars[self._var_name] = self._value
+        clock.schedule(self.leave)
+
     
 class If(ParentState):
     def __init__(self, conditional, true_state=None, false_state=None, 
-                 parent=None, save_log=True, name=None):
+                 parent=None, save_log=True, name=None, blocking=True):
 
         # init the parent class
-        super(If, self).__init__(parent=parent, save_log=save_log, name=name)
+        super(If, self).__init__(parent=parent, save_log=save_log, name=name,
+                                 blocking=blocking)
 
         # save a list of conds to be evaluated (last one always True, acts as the Else)
         self._init_cond = [conditional, True]
@@ -776,7 +891,6 @@ class If(ParentState):
         
     def _enter(self):
         super(If, self)._enter()
-
         self._outcome_index = self._cond.index(True)
         self.__selected_child = (
             self._out_states[self._outcome_index].get_inactive_state(self))
@@ -802,9 +916,11 @@ class Elif(Serial):
     """State to attach an elif to and If state.
 
     """
-    def __init__(self, conditional, parent=None, save_log=True, name=None):
+    def __init__(self, conditional, parent=None, save_log=True, name=None,
+                 blocking=True):
         # init the parent class
-        super(Elif, self).__init__(parent=parent, save_log=save_log, name=name)
+        super(Elif, self).__init__(parent=parent, save_log=save_log, name=name,
+                                   blocking=blocking)
 
         # we now know our parent, so ensure the previous child is
         # either and If or Elif state
@@ -863,8 +979,9 @@ def Else(name="ELSE BODY"):
 
 class Loop(ParentState):
     def __init__(self, iterable=None, shuffle=False, conditional=True,
-                 parent=None, save_log=True, name=None):
-        super(Loop, self).__init__(parent=parent, save_log=save_log, name=name)
+                 parent=None, save_log=True, name=None, blocking=True):
+        super(Loop, self).__init__(parent=parent, save_log=save_log, name=name,
+                                   blocking=blocking)
 
         if shuffle:
             self._init_iterable = ref.shuffle(iterable)
@@ -874,6 +991,7 @@ class Loop(ParentState):
         self._outcome = True
 
         self._i = None
+        self._current = None
 
         self.__body_state = Serial(parent=self, name="LOOP BODY")
         self.__body_state._instantiation_filename = self._instantiation_filename
@@ -881,18 +999,7 @@ class Loop(ParentState):
         self.__current_child = None
         self.__cancel_time = None
 
-        self._log_attrs.extend(['outcome', 'i'])
-
-    def __current(self):
-        loop = self.current_clone
-        if loop._iterable is None or isinstance(loop._iterable, int):
-            return loop._i
-        else:
-            return loop._iterable[loop._i]
-
-    @property
-    def current(self):
-        return Ref(self.__current)
+        self._log_attrs.extend(['outcome', 'i', 'current'])
 
     def iter_i(self):
         self._outcome = val(self._cond)
@@ -917,8 +1024,7 @@ class Loop(ParentState):
     def _enter(self):
         # get the parent enter
         super(Loop, self)._enter()
-
-        self._outcome = None
+        self._outcome = NotAvailable
         self.__current_child = None
         self.__cancel_time = None
         self.__i_iterator = self.iter_i()
@@ -927,6 +1033,10 @@ class Loop(ParentState):
     def start_next_iteration(self, next_time):
         try:
             self._i = self.__i_iterator.next()
+            if self._iterable is None or isinstance(self._iterable, int):
+                self._current = self._i
+            else:
+                self._current = self._iterable[self._i]
         except StopIteration:
             self._end_time = next_time
             clock.schedule(self.leave)
@@ -964,11 +1074,13 @@ class Loop(ParentState):
 
 
 class Record(State):
-    def __init__(self, duration=None, parent=None, name=None, **kwargs):
+    def __init__(self, duration=None, parent=None, name=None, blocking=True,
+                 **kwargs):
         super(Record, self).__init__(parent=parent, 
                                      duration=duration, 
                                      save_log=False,
-                                     name=name)
+                                     name=name,
+                                     blocking=blocking)
 
         self.__refs = kwargs
 
@@ -1009,7 +1121,11 @@ class Record(State):
             ref.remove_change_callback(self.record_change)
 
     def record_change(self):
-        record = val(self.__refs)
+        try:
+            record = val(self.__refs)
+        except NotAvailableError:
+            raise NotAvailableError(
+                "One or more recorded values not available!")
         record["timestamp"] = self._exp._app.event_time
         self.__log_writer.write_record(record)
 
@@ -1025,12 +1141,6 @@ class Record(State):
                 clock.unschedule(self.finalize)
                 clock.schedule(self.finalize, event_time=cancel_time)
                 self._end_time = cancel_time
-
-
-class AutoFinalizeState(State):
-    def leave(self):
-        super(AutoFinalizeState, self).leave()
-        clock.schedule(self.finalize)
 
 
 class Log(AutoFinalizeState):
@@ -1070,9 +1180,59 @@ class Log(AutoFinalizeState):
         clock.schedule(self.leave)
 
 
+class _DelayedValueTest(State):
+    def __init__(self, delay, value, parent=None, save_log=True, name=None,
+                 blocking=True):
+        # init the parent class
+        super(_DelayedValueTest, self).__init__(parent=parent, 
+                                                duration=0.0, 
+                                                save_log=save_log,
+                                                name=name,
+                                                blocking=blocking)
+        self._init_delay = delay
+        self._init_value = value
+        self._value_out = None
+
+    def _enter(self):
+        self._value_out = NotAvailable
+        clock.schedule(self._set_value_out,
+                       event_time=self._start_time+self._delay)
+        self.leave()
+
+    def _set_value_out(self):
+        self._value_out = self._value
+        self.finalize()
+
+
+class Done(AutoFinalizeState):
+    def __init__(self, *states, **kwargs):
+        # init the parent class
+        super(Done, self).__init__(parent=kwargs.pop("parent", None), 
+                                   duration=0.0, 
+                                   save_log=kwargs.pop("save_log", True),
+                                   name=kwargs.pop("name", None),
+                                   blocking=kwargs.pop("blocking", True))
+        if len(kwargs):
+            raise ValueError("Invalid keyword arguments for Done: %r" %
+                             kwargs.iterkeys())
+        self.__some_active = Ref(any, [state.active for state in states])
+
+    def _enter(self):
+        self.__some_active.add_change_callback(self._check)
+
+    def _check(self):
+        some_active = self.__some_active.eval()
+        if not some_active:
+            self.__some_active.remove_change_callback(self._check)
+            self.leave()
+
+    def cancel(self):
+        pass
+
+
 class Wait(State):
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
-                 save_log=True, name=None):
+                 save_log=True, name=None, blocking=True):
         if duration is not None and jitter is not None:
             duration = ref.jitter(duration, jitter)
 
@@ -1080,7 +1240,8 @@ class Wait(State):
         super(Wait, self).__init__(parent=parent, 
                                    duration=duration, 
                                    save_log=save_log,
-                                   name=name)
+                                   name=name,
+                                   blocking=blocking)
 
         self.__until = until  #TODO: make sure until is Ref or None
         self._until_value = None
@@ -1095,7 +1256,11 @@ class Wait(State):
             if self._end_time is not None:
                 clock.schedule(self.finalize, event_time=self._end_time)
         else:
-            self._until_value = self.__until.eval()
+            try:
+                self._until_value = self.__until.eval()
+            except NotAvailableError:
+                raise NotAvailableError("Until value (%r) was unavailable!" %
+                                        self._until)
             if self._until_value:
                 clock.schedule(partial(self.cancel, self._start_time))
             else:
@@ -1111,7 +1276,11 @@ class Wait(State):
             self.__until.remove_change_callback(self.check_until)
 
     def check_until(self):
-        self._until_value = self.__until.eval()
+        try:
+            self._until_value = self.__until.eval()
+        except NotAvailableError:
+            raise NotAvailableError("Until value (%r) was unavailable!" %
+                                    self._until)
         if self._until_value:
             self._event_time = self._exp._app.event_time
             clock.schedule(partial(self.cancel, self._event_time["time"]))
@@ -1135,27 +1304,58 @@ class Wait(State):
                     self._end_time = cancel_time
 
 
+def When(condition, body=None, name="WHEN", blocking=True):
+    if body is None:
+        body = Serial(name="WHEN_BODY")
+        body.override_instantiation_context()
+    with Serial(name=name, blocking=blocking) as s:
+        Wait(until=condition)
+    s.claim_child(body)
+    s.override_instantiation_context()
+    return body
+
+
+def While(condition, body=None, name="WHILE", blocking=True):
+    if body is None:
+        body = Serial(name="WHILE_BODY")
+        body.override_instantiation_context()
+    with Serial(name=name, blocking=blocking) as s:
+        Wait(until=condition, name="WAIT_TO_START")
+        with Parallel(name=name) as p:
+            Wait(until=Ref.not_(condition), name="WAIT_TO_STOP")
+    p.claim_child(body)
+    body._blocking = False
+    p.override_instantiation_context()
+    s.override_instantiation_context()
+    return body
+
+
 class ResetClock(AutoFinalizeState):
-    def __init__(self, new_time=None, parent=None, save_log=True, name=None):
+    def __init__(self, new_time=None, parent=None, save_log=True, name=None,
+                 blocking=True):
         # init the parent class
         super(ResetClock, self).__init__(parent=parent,
                                          save_log=save_log,
-                                         name=name)
+                                         name=name,
+                                         blocking=blocking)
         if new_time is None:
-             self._init_new_time = Ref(clock.now, use_cache=False)
+            #TODO: define "now" in ref.py
+            #TODO: use maximum of now and start time?
+            self._init_new_time = Ref(clock.now, use_cache=False)
         else:
-             self._init_new_time = new_time
+            self._init_new_time = new_time
 
     def _enter(self):
-        self._end_time = max(self._new_time, self._start_time)
+        self._end_time = self._new_time
         clock.schedule(self.leave)
 
 
 class CallbackState(AutoFinalizeState):
     def __init__(self, repeat_interval=None, duration=0.0, parent=None,
-                 save_log=True, name=None):
+                 save_log=True, name=None, blocking=True):
         super(CallbackState, self).__init__(duration=duration, parent=parent,
-                                            save_log=save_log, name=name)
+                                            save_log=save_log, name=name,
+                                            blocking=blocking)
         self._init_repeat_interval = repeat_interval
 
     def _enter(self):
@@ -1191,13 +1391,14 @@ class Func(CallbackState):
             repeat_interval=kwargs.pop("repeat_interval", None),
             duration=kwargs.pop("duration", 0.0),
             save_log=kwargs.pop("save_log", True),
-            name=kwargs.pop("name", None))
+            name=kwargs.pop("name", None),
+            blocking=kwargs.pop("blocking", True))
 
         # set up the state
         self._init_func = func
         self._init_pargs = pargs
         self._init_kwargs = kwargs
-        self._result = None
+        self._result = NotAvailable
 
         self._log_attrs.extend(['result'])
 
@@ -1248,6 +1449,14 @@ if __name__ == '__main__':
     def print_periodic():
         print "PERIODIC!"
 
+    @Subroutine
+    def DoTheThing(self, a, b, c=7, d="ssdfsd"):
+        PrintTraceback(name="inside DoTheThing")
+        self.foo = c * 2
+        Wait(1.0)
+        Debug(a=a, b=b, c=c, d=d, foo=self.foo,
+              screen_size=self.exp.screen.size, name="inside DoTheThing")
+
     exp = Experiment()
 
     #with UntilDone():
@@ -1258,6 +1467,36 @@ if __name__ == '__main__':
             Func(print_periodic)
 
     Debug(width=exp.screen.width, height=exp.screen.height)
+
+    exp.for_the_thing = 3
+    dtt = DoTheThing(3, 4)
+    Debug(foo=dtt.foo, name="outside DoTheThing")
+    dtt = DoTheThing(3, 4, d="bbbbbbb", c=exp.for_the_thing)
+    Debug(foo=dtt.foo, name="outside DoTheThing")
+
+    Wait(1.0)
+    dvt = _DelayedValueTest(1.0, 42)
+    Done(dvt)
+    Debug(dvt_out=dvt.value_out)
+
+    exp.bar = False
+    with Parallel():
+        with Serial():
+            Wait(2.0)
+            Func(lambda: None)  # force variable assignment to wait until correct time
+            exp.bar = True
+            Wait(2.0)
+            Func(lambda: None)  # force variable assignment to wait until correct time
+            exp.bar = False
+            Wait(1.0)
+        When(exp.bar, Debug(name="when test"))
+        with While(exp.bar):
+            with Loop():
+                Wait(0.2)
+                Debug(name="while test")
+        with Loop(blocking=False):
+            Wait(0.5)
+            Debug(name="non-blocking test")
 
     exp.foo=1
     Record(foo=Get('foo'))

@@ -10,7 +10,7 @@
 import operator
 
 from state import CallbackState, Record
-from ref import Ref, val
+from ref import Ref, val, NotAvailable
 from clock import clock
 from experiment import Experiment
 
@@ -48,11 +48,12 @@ def MouseRecord(widget=None, name="MouseRecord"):
 class MousePress(CallbackState):
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
                  widget=None, duration=None, parent=None, save_log=True,
-                 name=None):
+                 name=None, blocking=True):
         super(MousePress, self).__init__(parent=parent, 
                                          duration=duration,
                                          save_log=save_log,
-                                         name=name)
+                                         name=name,
+                                         blocking=blocking)
         self._init_buttons = buttons
         self._init_correct_resp = correct_resp
         self._init_base_time = base_time
@@ -83,11 +84,11 @@ class MousePress(CallbackState):
             self._correct_resp = []
         elif type(self.correct_resp) not in (list, tuple):
             self._correct_resp = [self._correct_resp]
-        self._pressed = ''
-        self._press_time = None
-        self._correct = False
-        self._rt = None
-        self._pos = (None, None)
+        self._pressed = NotAvailable
+        self._press_time = NotAvailable
+        self._correct = NotAvailable
+        self._rt = NotAvailable
+        self._pos = NotAvailable
 
     def _callback(self):
         self.__button_ref.add_change_callback(self.button_callback)
@@ -117,6 +118,16 @@ class MousePress(CallbackState):
     def _leave(self):
         self.__button_ref.remove_change_callback(self.button_callback)
         super(MousePress, self)._leave()
+        if self._pressed is NotAvailable:
+            self._pressed = ''
+        if self._press_time is NotAvailable:
+            self._press_time = None
+        if self._correct is NotAvailable:
+            self._correct = False
+        if self._rt is NotAvailable:
+            self._rt = None
+        if self._pos is NotAvailable:
+            self._pos = (None, None)
 
 
 if __name__ == '__main__':

@@ -47,7 +47,7 @@ from clock import clock
 from log import LogWriter, log2csv
 from video import normalize_color_spec
 
-def event_time(time, time_error=0.0):
+def event_time(time, time_error=0.0):  #TODO: make this a class!
     return {'time': time, 'error': time_error}
 
 
@@ -252,10 +252,14 @@ class ExpApp(App):
 
     def _on_motion(self, window, etype, me):
         if etype == "begin":
-            self.mouse_button = me.button
+            try:
+                self.mouse_button = me.button
+            except AttributeError:
+                self.mouse_button = None
             self.mouse_button_ref.dep_changed()
             self.current_touch = me
-            self._trigger_callback("MOTION", pos=me.pos, button=me.button,
+            self._trigger_callback("MOTION", pos=me.pos,
+                                   button=self.mouse_button,
                                    newly_pressed=True,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
@@ -264,7 +268,8 @@ class ExpApp(App):
             self.mouse_pos = tuple(int(round(x)) for x in  me.pos)
             self.mouse_pos_ref.dep_changed()
             self.current_touch = me
-            self._trigger_callback("MOTION", pos=me.pos, button=me.button,
+            self._trigger_callback("MOTION", pos=me.pos,
+                                   button=self.mouse_button,
                                    newly_pressed=False,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
@@ -465,7 +470,7 @@ class Experiment(object):
 
     def __getattr__(self, name):
         if name[0] == "_":
-            super(Experiment, self).__getattribute__(name)
+            return super(Experiment, self).__getattribute__(name)  # Does this actually happen?
         else:
             return self.get_var_ref(name)
 
@@ -474,6 +479,9 @@ class Experiment(object):
             super(Experiment, self).__setattr__(name, value)
         else:
             return Set(**{name : value})
+
+    def __dir__(self):
+        return super(Experiment, self).__dir__() + self._vars.keys()
 
     def _process_args(self):
         # set up the arg parser
