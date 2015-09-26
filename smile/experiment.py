@@ -47,7 +47,7 @@ from clock import clock
 from log import LogWriter, log2csv
 from video import normalize_color_spec
 
-def event_time(time, time_error=0.0):
+def event_time(time, time_error=0.0):  #TODO: make this a class!
     return {'time': time, 'error': time_error}
 
 
@@ -470,7 +470,7 @@ class Experiment(object):
 
     def __getattr__(self, name):
         if name[0] == "_":
-            super(Experiment, self).__getattribute__(name)
+            return super(Experiment, self).__getattribute__(name)  # Does this actually happen?
         else:
             return self.get_var_ref(name)
 

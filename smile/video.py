@@ -658,10 +658,12 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         super(Video, self).unshow()
         self._widget.state = "stop"
 
+
 import kivy.uix.image
 class Image(WidgetState.wrap(kivy.uix.image.Image)):
     def _set_widget_defaults(self):
         self._widget.size = self._widget.texture_size
+
 
 def iter_nested_buttons(state):
     if isinstance(state, Button):
@@ -670,7 +672,6 @@ def iter_nested_buttons(state):
         for child in state._children:
             for button in iter_nested_buttons(child):
                 yield button
-
 
 class ButtonPress(CallbackState):
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
@@ -776,7 +777,7 @@ class ButtonPress(CallbackState):
 
 if __name__ == '__main__':
     from experiment import Experiment
-    from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial, Done
+    from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial, Done, Debug
     from math import sin, cos
     from contextlib import nested
 
@@ -800,16 +801,18 @@ $ print("Hello world")
     """
     RstDocument(text=text, duration=5.0, size=exp.screen.size)
 
-    with Parallel():
-        slider = Slider(min=exp.screen.left, max=exp.screen.right, duration=5.0)
+    with ButtonPress():
+        button = Button(text="Click to continue", size=(exp.screen.width / 4,
+                                                        exp.screen.height / 8))
+        slider = Slider(min=exp.screen.left, max=exp.screen.right,
+                        top=button.bottom, blocking=False)
         rect = Rectangle(color="purple", width=50, height=50,
-                         center_top=exp.screen.left_top, duration=5.0)
-    with Meanwhile():
-        rect.animate(center_x=lambda t, initial: slider.value)
-
-    ti = TextInput(text="EDIT!", duration=5.0)
-    Done(ti)
-    Label(text=ti.text, duration=5.0, font_size=50, color="white")
+                         center_top=exp.screen.left_top, blocking=False)
+        rect.animate(center_x=lambda t, initial: slider.value, blocking=False)
+        ti = TextInput(text="EDIT!", top=slider.bottom, blocking=False)
+    label = Label(text=ti.text, duration=5.0, font_size=50, color="white")
+    Done(label)
+    Debug(label_disappear_time=label.disappear_time)
 
     Ellipse(color="white", width=100, height=100)
     with UntilDone():

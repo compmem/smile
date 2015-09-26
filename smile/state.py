@@ -502,6 +502,12 @@ class State(object):
                                  (call_time, call_duration))
 
 
+class AutoFinalizeState(State):
+    def leave(self):
+        super(AutoFinalizeState, self).leave()
+        clock.schedule(self.finalize)
+
+
 class ParentState(State):
     """
     Base state for parents that can hold children states. 
@@ -757,6 +763,92 @@ class Serial(ParentState):
         if self._active:
             clock.schedule(partial(self.__current_child.cancel, cancel_time))
             self.__cancel_time = cancel_time
+
+
+class Subroutine(object):
+    def __init__(self, func):
+        self._func = func
+        self.__doc__ = func.__doc__
+
+    def __call__(self, *pargs, **kwargs):
+        with SubroutineState(subroutine=self._func.__name__,
+                             parent=kwargs.pop("parent", None),
+                             save_log=kwargs.pop("save_log", True),
+                             name=kwargs.pop("name", None),
+                             blocking=kwargs.pop("blocking", True)) as state:
+            self._func(state, *pargs, **kwargs)
+        state.override_instantiation_context()
+        return state
+
+
+class SubroutineState(Serial):
+    def __init__(self, subroutine, parent=None, save_log=True, name=None,
+                 blocking=True):
+        super(SubroutineState, self).__init__(parent=parent,
+                                              save_log=save_log,
+                                              name=name,
+                                              blocking=blocking)
+        self._subroutine = subroutine
+        self._vars = {}
+        self.__issued_refs = weakref.WeakValueDictionary()
+        
+        self._log_attrs.extend(['subroutine'])
+
+        self.__reserved_names = set(
+            self.__dict__.keys() +
+            [name[1:] for name in self.__dict__.keys() if name[0] == "_"])
+
+    def get_var_ref(self, name):
+        try:
+            return self.__issued_refs[name]
+        except KeyError:
+            ref = Ref.getitem(self._vars, name)
+            self.__issued_refs[name] = ref
+            return ref
+
+    def set_var(self, name, value):
+        self._vars[name] = value
+        try:
+            ref = self.__issued_refs[name]
+        except KeyError:
+            return
+        ref.dep_changed()
+
+    def __getattr__(self, name):
+        if ("_SubroutineState__reserved_names" not in self.__dict__ or
+            name in self.__reserved_names):
+            return super(SubroutineState, self).__getattr__(name)
+        else:
+            return self.get_var_ref(name)
+
+    def __setattr__(self, name, value):
+        if (name[0] == "_" or
+            "_SubroutineState__reserved_names" not in self.__dict__ or
+            name in self.__reserved_names):
+            super(SubroutineState, self).__setattr__(name, value)
+        else:
+            return SubroutineSet(self, name, value)
+
+    def __dir__(self):
+        return super(SubroutineState, self).__dir__() + self._vars.keys()
+
+
+class SubroutineSet(AutoFinalizeState):
+    def __init__(self, subroutine, var_name, value, parent=None, save_log=True, name=None):
+        super(SubroutineSet, self).__init__(parent=parent,
+                                            save_log=save_log,
+                                            name=name,
+                                            duration=0.0)
+        self.__subroutine = subroutine
+        self._subroutine = subroutine._name
+        self._init_var_name = var_name
+        self._init_value = value
+
+        self._log_attrs.extend(['subroutine', 'var_name', 'value'])
+        
+    def _enter(self):
+        self.__subroutine._vars[self._var_name] = self._value
+        clock.schedule(self.leave)
 
     
 class If(ParentState):
@@ -1049,12 +1141,6 @@ class Record(State):
                 clock.unschedule(self.finalize)
                 clock.schedule(self.finalize, event_time=cancel_time)
                 self._end_time = cancel_time
-
-
-class AutoFinalizeState(State):
-    def leave(self):
-        super(AutoFinalizeState, self).leave()
-        clock.schedule(self.finalize)
 
 
 class Log(AutoFinalizeState):
@@ -1363,6 +1449,14 @@ if __name__ == '__main__':
     def print_periodic():
         print "PERIODIC!"
 
+    @Subroutine
+    def DoTheThing(self, a, b, c=7, d="ssdfsd"):
+        PrintTraceback(name="inside DoTheThing")
+        self.foo = c * 2
+        Wait(1.0)
+        Debug(a=a, b=b, c=c, d=d, foo=self.foo,
+              screen_size=self.exp.screen.size, name="inside DoTheThing")
+
     exp = Experiment()
 
     #with UntilDone():
@@ -1373,6 +1467,12 @@ if __name__ == '__main__':
             Func(print_periodic)
 
     Debug(width=exp.screen.width, height=exp.screen.height)
+
+    exp.for_the_thing = 3
+    dtt = DoTheThing(3, 4)
+    Debug(foo=dtt.foo, name="outside DoTheThing")
+    dtt = DoTheThing(3, 4, d="bbbbbbb", c=exp.for_the_thing)
+    Debug(foo=dtt.foo, name="outside DoTheThing")
 
     Wait(1.0)
     dvt = _DelayedValueTest(1.0, 42)
