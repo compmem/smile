@@ -864,7 +864,7 @@ class SubroutineSet(AutoFinalizeState):
         self._log_attrs.extend(['subroutine_state', 'var_name', 'value'])
         
     def _enter(self):
-        self.__subroutine._vars[self._var_name] = self._value
+        self.__subroutine.set_var(self._var_name, self._value)
         clock.schedule(self.leave)
 
     
@@ -1268,6 +1268,7 @@ class Wait(State):
 
     def _enter(self):
         self._event_time = {"time": None, "error": None}
+        self._until_value = None
         if self.__until is None:
             clock.schedule(self.leave, event_time=self._start_time)
             if self._end_time is not None:
@@ -1282,6 +1283,7 @@ class Wait(State):
     def _leave(self):
         if self.__until is not None:
             self.__until.remove_change_callback(self.check_until)
+            clock.unschedule(self.schedule_check_until)
 
     def schedule_check_until(self):
         try:
@@ -1318,8 +1320,6 @@ class Wait(State):
                     clock.unschedule(self.finalize)
                     clock.schedule(self.leave, event_time=cancel_time)
                     clock.schedule(self.finalize, event_time=cancel_time)
-                    self.__until.remove_change_callback(self.check_until)
-                    clock.unschedule(self.schedule_check_until)
                     self._end_time = cancel_time
 
 
