@@ -1273,31 +1273,31 @@ class Wait(State):
             if self._end_time is not None:
                 clock.schedule(self.finalize, event_time=self._end_time)
         else:
-            try:
-                self._until_value = self.__until.eval()
-            except NotAvailableError:
-                raise NotAvailableError("Until value (%r) was unavailable!" %
-                                        self.__until)
-            if self._until_value:
-                clock.schedule(partial(self.cancel, self._start_time))
-            else:
-                clock.schedule(partial(self.__until.add_change_callback,
-                                       self.check_until),
-                               event_time=self._start_time)
-                if self._end_time is not None:
-                    clock.schedule(self.leave, event_time=self._end_time)
-                    clock.schedule(self.finalize, event_time=self._end_time)
+            clock.schedule(self.schedule_check_until,
+                           event_time=self._start_time)
+            if self._end_time is not None:
+                clock.schedule(self.leave, event_time=self._end_time)
+                clock.schedule(self.finalize, event_time=self._end_time)
 
     def _leave(self):
         if self.__until is not None:
             self.__until.remove_change_callback(self.check_until)
 
+    def schedule_check_until(self):
+        try:
+            self._until_value = self.__until.eval()
+        except NotAvailableError:
+            self._until_value = NotAvailable
+        if self._until_value:
+            clock.schedule(partial(self.cancel, self._start_time))
+        else:
+            self.__until.add_change_callback(self.check_until)
+
     def check_until(self):
         try:
             self._until_value = self.__until.eval()
         except NotAvailableError:
-            raise NotAvailableError("Until value (%r) was unavailable!" %
-                                    self._until)
+            self._until_value = NotAvailable
         if self._until_value:
             self._event_time = self._exp._app.event_time
             clock.schedule(partial(self.cancel, self._event_time["time"]))
@@ -1318,6 +1318,8 @@ class Wait(State):
                     clock.unschedule(self.finalize)
                     clock.schedule(self.leave, event_time=cancel_time)
                     clock.schedule(self.finalize, event_time=cancel_time)
+                    self.__until.remove_change_callback(self.check_until)
+                    clock.unschedule(self.schedule_check_until)
                     self._end_time = cancel_time
 
 
