@@ -8,7 +8,6 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import sys
-from pyglet import clock
 try:
     import parallel
     have_parallel = True
@@ -18,27 +17,31 @@ except ImportError:
     have_parallel = False
 
 
-from state import State
-from ref import Ref, val
-from experiment import now,event_time
+from state import Wait, CallbackState
+from clock import clock
+from experiment import event_time
+from ref import NotAvailable
 
 
-class Pulse(State):
+class Pulse(CallbackState):
     """
     State that will send a sync pulse out the parallel port.
     
     Parameters
     ----------
-    code : int
-    duration : {0.0, float}
+    code : {0, 255, int},str
+        Value specifying the trigger byte. Can be int or str.
+    width : {0.0, float}
         Time in seconds that the pulse is on. Default is 0.010 s.
-    port : {0, 255, int}
-        Value specifying the trigger byte.
+    port : 
+        Port where to send the code
     parent : {None, ``ParentState``}
         Parent state to attach to. Will search for experiment if None.
     save_log : bool
         If set to 'True,' details about the state will be
         automatically saved in the log files. 
+    name : str
+        Name of the state for debugging and tracking
         
     Example
     --------
@@ -50,69 +53,85 @@ class Pulse(State):
     ---------------
     All parameters above and below are available to be accessed and 
     manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
+    recorded in the state-specific log. Refer to State class
     docstring for addtional logged parameters. 
-        pulse_time :
+        code_num : 
+            Number derived from the code.
+        pulse_on :
             Time at which the pulse began.
-        pulse_end_time :
+        pulse_off :
             Time at which the pulse ended.
     """
-    def __init__(self, code=15, duration=0.010, port=0,
-                 parent=None, save_log=True):
+    def __init__(self, code=15, width=0.010, port=0,
+                 parent=None, save_log=True, name=None):
         # init the parent class
-        super(Pulse, self).__init__(interval=0, parent=parent, 
+        super(Pulse, self).__init__(parent=parent, 
                                     duration=0, 
-                                    save_log=save_log)
-        # save the info
-        self.pulse_code = code
-        self.pulse_duration = duration
-        self.pulse_port = port
+                                    save_log=save_log,
+                                    name=name)
+        # handle the values that could require initialization
+        self._init_code = code
+        self._init_width = width
+        self._init_port = port
 
-        self.pulse_time = None
-        self.pulse_end_time = None
+        self._pulse_on = NotAvailable
+        self._pulse_off = NotAvailable
 
         # append log vars
-        self.log_attrs.extend(['pulse_code', 'pulse_duration', 'pulse_port',
-                               'pulse_time', 'pulse_end_time'])
+        self.log_attrs.extend(['code', 'code_num', 'width', 'port',
+                               'pulse_on', 'pulse_off'])
 
-    def _callback(self, dt):        
+    def _enter(self):
+        # process the parent enter
+        super(Pulse, self)._enter()
+        
         # Convert code if necessary
-        code = val(self.pulse_code)
-        if type(code)==str:
-            if code[0]=="S":
+        if type(self._code)==str:
+            if self._code[0]=="S":
                 # Use first 4 bits
-                ncode = int(code[1:])
+                ncode = int(self._code[1:])
                 if ncode < 0 or ncode > 16: ncode = 15
-            elif code[0]=="R":
+            elif self._code[0]=="R":
                 # Use last 4 bits
-                ncode = int(code[1:])
+                ncode = int(self._code[1:])
                 if ncode < 0 or ncode > 16: ncode = 15
                 ncode = ncode >> 4
             else:
                 # Convert to an integer
-                ncode = int(code)
+                ncode = int(self._code)
         else:
             ncode = int(code)
+        self._code_num = ncode
+
+    def _callback(self):
 
         # send the code
         if have_parallel:
-            # Create a parallel port object (locks it exclusively)
-            self._pport = parallel.Parallel(port=self.pulse_port)
-
             # send the port code and time it
-            start_time = now()
-            self._pport.setData(ncode)
-            end_time = now()
+            try:
+                # Create a parallel port object (locks it exclusively)
+                self._pport = parallel.Parallel(port=self._port)
 
+                start_time = now()
+                self._pport.setData(self._code_num)
+                end_time = now()
+            except: # eventually figure out which errors to catch
+                sys.stderr.write("\nWARNING: The parallel module could not send pulses,\n" + 
+                                 "\tso no sync pulsing will be generated.\n\n")
+                have_parallel = False
+                self._pport = None
+                return
+                
             # set the pulse time
             time_err = (end_time - start_time)/2.
-            self.pulse_time = event_time(start_time+time_err,
-                                         time_err)
+            self._pulse_on = event_time(start_time+time_err,
+                                        time_err)
 
             # schedule the off time
-            clock.schedule_once(self._pulse_off_callback, val(self.pulse_duration))
+            clock.schedule(self._pulse_off_callback,
+                           event_time=self._pulse_on['time']+self._width)
 
-    def _pulse_off_callback(self, dt):
+    def _pulse_off_callback(self):
         # turn off the code
         start_time = now()
         self._pport.setData(0)
@@ -123,8 +142,34 @@ class Pulse(State):
 
         # set the pulse time
         time_err = (end_time - start_time)/2.
-        self.pulse_end_time = event_time(start_time+time_err,
-                                         time_err)
+        self._pulse_off = event_time(start_time+time_err,
+                                     time_err)
 
 
 
+if __name__ == '__main__':
+    from experiment import Experiment, Set, Get
+    from state import Meanwhile, Wait, Loop, Log, Debug
+    
+    # set up default experiment
+    exp = Experiment()
+
+    # test running pulses whilst the rest of the experiment is going
+    with Meanwhile():
+        with Loop():
+            pulse = Pulse(code='S1')
+            Wait(duration=1.0, jitter=1.0)
+            Log(name='pulse',
+                pulse_on=pulse.pulse_on,
+                pulse_code=pulse.code,
+                pulse_off=pulse.pulse_off)
+
+    # First wait for a bit and send some pulses
+    Wait(10)
+
+    # print something
+    Debug(width=exp.screen.width, height=exp.screen.height)
+
+    # run the exp
+    exp.run(trace=False)
+    

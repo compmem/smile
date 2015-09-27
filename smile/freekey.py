@@ -126,12 +126,13 @@ def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
                 self.fk_num_resp += 1
 
                 # append the response to the list
-                self.responses += [Ref.object(dict)(response=self.fk_cur_resp,
-                                                    response_num=self.fk_num_resp,
-                                                    first_key_time=self.fk_first_key_time,
-                                                    first_key_rt=self.fk_first_key_rt,
-                                                    enter_key_time=kp.press_time,
-                                                    enter_key_rt=kp.rt)]
+                self.responses += [Ref(dict,
+                                       response=self.fk_cur_resp,
+                                       response_num=self.fk_num_resp,
+                                       first_key_time=self.fk_first_key_time,
+                                       first_key_rt=self.fk_first_key_rt,
+                                       enter_key_time=kp.press_time,
+                                       enter_key_rt=kp.rt)]
 
                 # set starting text back and reset text
                 self.fk_cur_resp = ''
@@ -166,14 +167,15 @@ def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
             self.fk_num_resp += 1
 
             # append the response to the list, but with no Enter key time
-            self.responses += [Ref.object(dict)(response=self.fk_cur_resp,
-                                                response_num=self.fk_num_resp,
-                                                first_key_time=self.fk_first_key_time,
-                                                first_key_rt=self.fk_first_key_rt,
-                                                enter_key_time=None,
-                                                enter_key_rt=None)]
+            self.responses += [Ref(dict,
+                                   response=self.fk_cur_resp,
+                                   response_num=self.fk_num_resp,
+                                   first_key_time=self.fk_first_key_time,
+                                   first_key_rt=self.fk_first_key_rt,
+                                   enter_key_time=None,
+                                   enter_key_rt=None)]
 
-
+            
 if __name__ == '__main__':
 
     from experiment import Experiment
