@@ -9,6 +9,7 @@
 
 from contextlib import contextmanager
 from functools import partial
+from types import GeneratorType
 import copy
 import inspect
 import weakref
@@ -30,6 +31,8 @@ class StateConstructionError(RuntimeError):
 
 
 class State(object):
+    """
+    """
     def __init__(self, parent=None, duration=None, save_log=True, name=None,
                  blocking=True):
         # Weak value dictionary to track Refs issued by this state.  Necessary
@@ -776,9 +779,22 @@ class Subroutine(object):
                              save_log=kwargs.pop("save_log", True),
                              name=kwargs.pop("name", None),
                              blocking=kwargs.pop("blocking", True)) as state:
-            self._func(state, *pargs, **kwargs)
+            retval = self._func(state, *pargs, **kwargs)
+            if retval is None:
+                result = state
+            elif isinstance(retval, GeneratorType):
+                @contextmanager
+                def context():
+                    with state:
+                        with contextmanager(lambda : retval)():
+                            yield state
+                result = context()
+            else:
+                raise ValueError(
+                    "Invalid return value from Subroutine function: %r" %
+                    retval)
         state.override_instantiation_context()
-        return state
+        return result
 
 
 class SubroutineState(Serial):
@@ -834,17 +850,18 @@ class SubroutineState(Serial):
 
 
 class SubroutineSet(AutoFinalizeState):
-    def __init__(self, subroutine, var_name, value, parent=None, save_log=True, name=None):
+    def __init__(self, subroutine, var_name, value, parent=None, save_log=True,
+                 name=None):
         super(SubroutineSet, self).__init__(parent=parent,
                                             save_log=save_log,
                                             name=name,
                                             duration=0.0)
         self.__subroutine = subroutine
-        self._subroutine = subroutine._name
+        self._subroutine_state = subroutine._name
         self._init_var_name = var_name
         self._init_value = value
 
-        self._log_attrs.extend(['subroutine', 'var_name', 'value'])
+        self._log_attrs.extend(['subroutine_state', 'var_name', 'value'])
         
     def _enter(self):
         self.__subroutine._vars[self._var_name] = self._value
@@ -1260,7 +1277,7 @@ class Wait(State):
                 self._until_value = self.__until.eval()
             except NotAvailableError:
                 raise NotAvailableError("Until value (%r) was unavailable!" %
-                                        self._until)
+                                        self.__until)
             if self._until_value:
                 clock.schedule(partial(self.cancel, self._start_time))
             else:
@@ -1457,6 +1474,15 @@ if __name__ == '__main__':
         Debug(a=a, b=b, c=c, d=d, foo=self.foo,
               screen_size=self.exp.screen.size, name="inside DoTheThing")
 
+    @Subroutine
+    def DoTheOtherThing(self):
+        Debug(name="before the yield")
+        with Serial():
+            yield
+        with Meanwhile():
+            PrintTraceback(name="during the yield")
+        Debug(name="after the yield")
+
     exp = Experiment()
 
     #with UntilDone():
@@ -1469,10 +1495,15 @@ if __name__ == '__main__':
     Debug(width=exp.screen.width, height=exp.screen.height)
 
     exp.for_the_thing = 3
-    dtt = DoTheThing(3, 4)
+    dtt = DoTheThing(3, 4, name="first")
     Debug(foo=dtt.foo, name="outside DoTheThing")
     dtt = DoTheThing(3, 4, d="bbbbbbb", c=exp.for_the_thing)
     Debug(foo=dtt.foo, name="outside DoTheThing")
+
+    with DoTheOtherThing():
+        PrintTraceback(name="top of body")
+        Wait(2.0)
+        PrintTraceback(name="bottom of body")
 
     Wait(1.0)
     dvt = _DelayedValueTest(1.0, 42)

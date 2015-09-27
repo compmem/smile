@@ -435,14 +435,6 @@ class WidgetState(VisualState):
         anim.override_instantiation_context()
         return anim
 
-    def set_appear_time(self, appear_time):
-        self._appear_time = appear_time
-        clock.schedule(self.leave)
-
-    def set_disappear_time(self, disappear_time):
-        self._disappear_time = disappear_time
-        clock.schedule(self.finalize)
-
     def _enter(self):
         self.__x_pos_mode = None
         self.__y_pos_mode = None

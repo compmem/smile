@@ -633,7 +633,7 @@ class Set(AutoFinalizeState):
 
 
 def Get(name):
-    return Experiment._last_instance().get_var_ref(name)
+    return Experiment._last_instance().get_var_ref(name)  #TODO: get rid of this!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 if __name__ == '__main__':
