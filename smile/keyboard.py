@@ -163,7 +163,7 @@ class KeyRecord(KeyState):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment, Get, Set
+    from experiment import Experiment
     from state import Wait, Debug, Loop, UntilDone, Log, Meanwhile
 
     exp = Experiment()
@@ -175,11 +175,11 @@ if __name__ == '__main__':
                 (Key("SHIFT") & Key("Q") & Key("R"))))
     Debug(name='Key Press Test')
 
-    Set(last_pressed='')
-    with Loop(conditional=(Get('last_pressed')!='K')):
+    exp.last_pressed = ''
+    with Loop(conditional=(exp.last_pressed!='K')):
         kp = KeyPress(keys=['J','K'], correct_resp='K')
         Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
-        Set(last_pressed=kp.pressed)
+        exp.last_pressed = kp.pressed
         Log(pressed=kp.pressed, rt=kp.rt)
 
     KeyRecord()

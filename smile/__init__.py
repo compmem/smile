@@ -8,12 +8,13 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # SMILE components
-from experiment import Experiment, Set, Get
+from experiment import Experiment
 from state import (
     Parallel,
     Meanwhile,
     UntilDone,
     Serial,
+    Subroutine,
     If,
     Elif,
     Else,
