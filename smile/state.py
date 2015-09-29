@@ -1628,7 +1628,7 @@ if __name__ == '__main__':
     from experiment import Experiment
 
     def print_actual_duration(target):
-        print target._end_time - target._start_time
+        print val(target.end_time - target.start_time)
 
     def print_periodic():
         print "PERIODIC!"
