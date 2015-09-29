@@ -132,7 +132,7 @@ class MousePress(CallbackState):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment, Get, Set
+    from experiment import Experiment
     from state import Wait, Debug, Loop, Meanwhile, Record, Log
 
     def print_dt(state, *args):
@@ -146,11 +146,11 @@ if __name__ == '__main__':
     
     Debug(name='Mouse Press Test')
 
-    Set(last_pressed='')
-    with Loop(conditional=(Get('last_pressed')!='RIGHT')):
+    exp.last_pressed = ''
+    with Loop(conditional=(exp.last_pressed!='RIGHT')):
         kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')
         Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
-        Set(last_pressed=kp.pressed)
+        exp.last_pressed = kp.pressed
         Log(pressed=kp.pressed, rt=kp.rt)
     
     kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')

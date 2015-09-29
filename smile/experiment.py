@@ -632,10 +632,6 @@ class Set(AutoFinalizeState):
         clock.schedule(self.leave)
 
 
-def Get(name):
-    return Experiment._last_instance().get_var_ref(name)  #TODO: get rid of this!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 if __name__ == '__main__':
     # can't run inside this file
     #exp = Experiment(fullscreen=False, pyglet_vsync=False)

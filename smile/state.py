@@ -31,7 +31,7 @@ class StateConstructionError(RuntimeError):
 
 
 class State(object):
-    """
+    """Base State object for the hierarchical state machine.
     """
     def __init__(self, parent=None, duration=None, save_log=True, name=None,
                  blocking=True):
@@ -149,6 +149,10 @@ class State(object):
         self.__most_recently_entered_clone = self
 
     def __repr__(self):
+        """String representation.
+        """
+        # Include the class name, the instantiation filename and line number,
+        # the custome name, and the object ID (in hex)...
         return "<%s file=%r, line=%d, name=%r, id=%x>" % (
             type(self).__name__,
             self._instantiation_filename,
@@ -157,7 +161,10 @@ class State(object):
             id(self))
 
     def set_instantiation_context(self, obj=None):
-        # If no object is provide as the source of he context, use self.
+        """Set this state's instantiation filename and line number to be the
+        place where the supplied object was instantiated.
+        """
+        # If no object is provide as the source of the context, use self.
         if obj is None:
             obj = self
 
@@ -180,6 +187,9 @@ class State(object):
                 "Can't figure out where instantiation took place!")
 
     def override_instantiation_context(self, depth=0):
+        """Set this state's instantiation filename and line number to be the
+        place where the calling function was called.
+        """
         # Get the desired frame from the call stack.
         (frame,
          filename,
@@ -193,6 +203,8 @@ class State(object):
         self._instantiation_lineno = lineno
 
     def clone(self, parent):
+        """Return an inactive copy of this state with the specific parent.
+        """
         # Make a shallow copy of self.
         new_clone = copy.copy(self)
 
@@ -208,22 +220,24 @@ class State(object):
 
         return new_clone
 
-    def get_inactive_state(self, parent):
-        if self._active or self._parent is not parent:
-            # If the state is active or has the wrong parent, return a clone.
-            return self.clone(parent)
-        else:
-            # Otherwise, return the state as is.
-            return self
-
     def tron(self, depth=0):
+        """Active trace output.
+        """
+        # set the tracing flag
         self.__tracing = True
+
+        # set the tracing depth (indentation level)
         self.__depth = depth
 
     def troff(self):
+        """Deactivate trace output.
+        """
+        # clear the tracing flag
         self.__tracing = False
 
     def print_trace_msg(self, msg):
+        """Print a one line message as part of trace output.
+        """
         # Create list of strings to identify this state (which will appear
         # comma-separated).  Name is included only if name is not None...
         id_strs = [
@@ -242,6 +256,8 @@ class State(object):
             )
 
     def print_traceback(self, child=None, t=None):
+        """Print a SMILE traceback on the console.
+        """
         # Use the current time, if none is provided.
         if t is None:
             t = clock.now()
@@ -274,7 +290,7 @@ class State(object):
             if type(tm) not in (float, int):
                 return repr(tm)
             offset = t - tm
-            if offset < 0.0:
+            if offset < 0.0:  #TODO: display time relative to experiment start
                 return "%fs from now%s" % (-offset, error)
             else:
                 return "%fs ago%s" % (offset, error)
@@ -297,15 +313,22 @@ class State(object):
             else:
                 print "     %s: %r" % (attr_name, value)
 
-    def claim_exceptions(self):
+    def claim_exceptions(self):  #TODO: make this a context manager instead?
+        """Until another state 'claims exceptions', any uncaught exception will
+        be attributed to this state in the SMILE traceback.
+        """
         if self._exp is not None:
             # Set self as "current_state" in associated Experiment.
             self._exp._current_state = self
 
     def get_log_fields(self):
+        """Get the field names for the state log.
+        """
         return self._log_attrs
 
     def begin_log(self):
+        """Prepare the per-class state logs.
+        """
         if self.__save_log:
             # Use the state logger facily of the associated Experiment so that
             # only one state log is produced for the state class (rather than
@@ -313,11 +336,15 @@ class State(object):
             self._exp.setup_state_logger(type(self).__name__, self.get_log_fields())
 
     def end_log(self, to_csv=False):
+        """Close the per-class state logs.
+        """
         # The associated Experiment cleans up its own state loggers.
         pass
 
     @property
     def current_clone(self):
+        """The most recently entered clone of this state.
+        """
         # This will be called in the process of setting up
         # self,__original_state and self._most_recently_entered_clone, so it
         # has to work without those...
@@ -331,10 +358,15 @@ class State(object):
             return self
 
     def get_current_attribute_value(self, name):
+        """Get the value of an attribute from the most recently entered clone
+        of this state.
+        """
         # Return the named attribute from the current clone.
         return getattr(self.current_clone, name)
 
     def attribute_update_state(self, name, value):
+        """Produce a state that updates an attribute of this state.
+        """
         raise NotImplementedError
 
     def __getattr__(self, name):
@@ -389,18 +421,34 @@ class State(object):
         ref.dep_changed()
 
     def __dir__(self):
+        # get the default dir()
         lst = super(State, self).__dir__()
+
+        # return that plus the log attribute names
         return lst + self._log_attrs
 
     def _enter(self):
+        """Custom method to call at enter time.  Optionally overridden in
+        subclasses.
+        """
         pass
 
     def enter(self, start_time):
+        """Activate the state with a specified start time.
+        """
         self.claim_exceptions()
+
+        # set the start time
         self._start_time = start_time
+
+        # record the end time
         self._enter_time = clock.now()
+
+        # the leave and finalize times start out as NotAvailable
         self._leave_time = NotAvailable
         self._finalize_time = NotAvailable
+
+        # set self as the most recently entered clone of the original
         self.__original_state.__most_recently_entered_clone = self
 
         # say we're active
@@ -408,6 +456,7 @@ class State(object):
         self._following_may_run = False
 
         if self._parent:
+            # if we have a parent, notify parent that we entered
             clock.schedule(partial(self._parent.child_enter_callback, self))
 
         # if we don't have the exp reference, get it now
@@ -415,6 +464,7 @@ class State(object):
             from experiment import Experiment
             self._exp = Experiment._last_instance()
 
+        # evaluate the '_init_' Refs...
         for name, value in self.__dict__.items():
             if name[:6] == "_init_":
                 try:
@@ -425,6 +475,7 @@ class State(object):
                          "for attribute %r of %r.  Do you need to use a Done "
                          "state?") % (value, name[6:], self))
 
+        # apply the duration, if supplied...
         if self._duration is None:
             self._end_time = None
         else:
@@ -434,6 +485,7 @@ class State(object):
         self._enter()
 
         if self.__tracing:
+            # print trace line, if tracing...
             call_time = self._enter_time - self._exp._root_state._start_time
             call_duration = clock.now() - self._enter_time
             start_time = self._start_time - self._exp._root_state._start_time
@@ -442,11 +494,13 @@ class State(object):
                 (call_time, call_duration, start_time))
 
     def _leave(self):
+        """Custom method to call at leave time.  Optionally overridden in
+        subclasses.
+        """
         pass
 
     def leave(self):
-        """
-        Gets the end time of the state (logs current time)
+        """Allow subsequent states to enter.
         """
         # ignore leave call if not active
         if self._following_may_run or not self._active:
@@ -454,16 +508,21 @@ class State(object):
 
         self.claim_exceptions()
 
+        # record leave time
         self._leave_time = clock.now()
 
+        # set following_may_run flag
         self._following_may_run = True
+
         if self._parent:
+            # notify parent that we are leaving
             clock.schedule(partial(self._parent.child_leave_callback, self))
 
         # call custom leave code
         self._leave()
 
         if self.__tracing:
+            # print trace line if tracing...
             call_time = self._leave_time - self._exp._root_state._start_time
             call_duration = clock.now() - self._leave_time
             if self._end_time is None:
@@ -477,6 +536,8 @@ class State(object):
                     (call_time, call_duration, end_time))
 
     def cancel(self, cancel_time):
+        """Force the state to end (possibly prematurely) at a specified time.
+        """
         if self._active and not self._following_may_run:
             clock.schedule(self.leave, event_time=cancel_time)
             #QUESTION: Should this do anything in the base class at all?
@@ -484,11 +545,16 @@ class State(object):
                 self._end_time = cancel_time
 
     def save_log(self):
+        """Write a record to the state log for the current execution of the
+        state.
+        """
         self._exp.write_to_state_log(
             type(self).__name__,
             {name : getattr(self, "_" + name) for name in self._log_attrs})
 
     def finalize(self):  #TODO: call a _finalize method?
+        """Deactive the state and perform any state logging.
+        """
         if not self._active:
             return
 
@@ -506,33 +572,16 @@ class State(object):
 
 
 class AutoFinalizeState(State):
+    """Base class for states that automatically finalize immediately after
+    leaving.
+    """
     def leave(self):
         super(AutoFinalizeState, self).leave()
         clock.schedule(self.finalize)
 
 
 class ParentState(State):
-    """
-    Base state for parents that can hold children states. 
-
-    Only parent states can contain other states.
-
-    Implicit hierarchies can be generated using the `with` syntax.
-    
-    Parameters
-    ----------
-    children: object
-    	Children States (objects) contained within the Parent State
-    parent: object
-    	Parent state object
-    duration: float
-    	Duration of the parent state. An interval of 0 means enter the state once, 
-    	-1 means every frame.
-    	Defaults to -1
-    save_log: bool
-        If set to 'True,' details about the parent state will be automatically saved 
-        in the log files.
-
+    """Base state for parents that can hold child states.
     """
     def __init__(self, children=None, parent=None, duration=None,
                  save_log=True, name=None, blocking=True):
@@ -551,39 +600,56 @@ class ParentState(State):
         self.__unfinalized_children = set()
 
     def tron(self, depth=0):
+        """Activate trace output for this state and all its children.
+        """
         super(ParentState, self).tron(depth)
         child_depth = depth + 1
         for child in self._children:
             child.tron(child_depth)
 
     def troff(self):
+        """Deactivate trace output for this state and all its children.
+        """
         super(ParentState, self).troff()
         for child in self._children:
             child.troff()
 
     def begin_log(self):
+        """Prepare per-class state logs for this state and all its children.
+        """
         super(ParentState, self).begin_log()
         for child in self._children:
             child.begin_log()
 
     def end_log(self, to_csv=False):
+        """Close per-class state logs for this state and all its children.
+        """
         super(ParentState, self).end_log(to_csv)
         for child in self._children:
             child.end_log(to_csv)
 
     def claim_child(self, child):
+        """Add a state to this state's list of children, removing it from any
+        prior parent.
+        """
         if not child._parent is None:
             child._parent._children.remove(child)
         child._parent = self
         self._children.append(child)
 
     def child_enter_callback(self, child):
+        """Notify this state that one of its children has entered.
+        """
         self.__unfinalized_children.add(child)
 
     def child_leave_callback(self, child):
+        """Notify this state that one of its children has left.
+        """
         pass
 
     def child_finalize_callback(self, child):
+        """Notify this state that one of its children has finalized.
+        """
         self.__unfinalized_children.discard(child)
         if self._following_may_run and not len(self.__unfinalized_children):
             self.finalize()
@@ -608,6 +674,8 @@ class ParentState(State):
 
 
 class Parallel(ParentState):
+    """Parent state that runs its children in parallel.
+    """
     def __init__(self, children=None, parent=None, save_log=True, name=None,
                  blocking=True):
         super(Parallel, self).__init__(children=children,
@@ -621,6 +689,9 @@ class Parallel(ParentState):
         self.__blocking_remaining = set()
 
     def print_traceback(self, child=None, t=None):
+        """Print SMILE traceback and add a line indicating whether the traced
+        child of this Parellel is blocking or non-blocking.
+        """
         super(Parallel, self).print_traceback(child, t)
         if child is not None:
             if child._blocking:
@@ -634,7 +705,7 @@ class Parallel(ParentState):
         self.__my_children = []
         if len(self._children):
             for child in self._children:
-                inactive_child = child.get_inactive_state(self)
+                inactive_child = child.clone(self)
                 self.__my_children.append(inactive_child)
                 if child._blocking:
                     self.__blocking_children.append(inactive_child)
@@ -663,6 +734,8 @@ class Parallel(ParentState):
                 child.cancel(cancel_time)
 
     def _set_end_time(self):
+        """Determine the end time of this Parallel based on its children.
+        """
         end_times = [c._end_time for c in self.__blocking_children]
         if any([et is None for et in end_times]):
             self._end_time = None
@@ -672,6 +745,9 @@ class Parallel(ParentState):
 
 @contextmanager
 def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
+    """States added in this context will be added to a Serial which is in
+    Parallel with the state preceding this call.
+    """
     # get the exp reference
     from experiment import Experiment
     try:
@@ -706,6 +782,11 @@ def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
 
 @contextmanager
 def Meanwhile(name=None, blocking=True):
+    """States created in this context will run in serial during the execution
+    of the previous state, but will be cancelled when the previous state ends.
+    If there is no previous state in the current parent, this will apply to the
+    parent in lieu of the previous state.
+    """
     with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE",
                                blocking=blocking) as p:
         yield p
@@ -713,6 +794,11 @@ def Meanwhile(name=None, blocking=True):
 
 @contextmanager
 def UntilDone(name=None, blocking=True):
+    """States created in this context will run in serial during the execution
+    of the previous state, and the previous state will be cancelled when the
+    states in the context end.  If there is no previous state, this will apply
+    to the parent in lieu of the previous state.
+    """
     with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE",
                                blocking=blocking) as p:
         yield p
@@ -721,10 +807,6 @@ def UntilDone(name=None, blocking=True):
 
 class Serial(ParentState):
     """Parent state that runs its children in serial.
-
-    A Serial Parent State is done when the last state in the chain is
-    finished.
-    
     """
     def _enter(self):
         super(Serial, self)._enter()
@@ -733,7 +815,7 @@ class Serial(ParentState):
         self.__cancel_time = None
         try:
             self.__current_child = (
-                self.__child_iterator.next().get_inactive_state(self))
+                self.__child_iterator.next().clone(self))
             clock.schedule(partial(self.__current_child.enter, self._start_time))
         except StopIteration:
             self._end_time = self._start_time
@@ -756,7 +838,7 @@ class Serial(ParentState):
         else:
             try:
                 self.__current_child = (
-                    self.__child_iterator.next().get_inactive_state(self))
+                    self.__child_iterator.next().clone(self))
                 clock.schedule(partial(self.__current_child.enter, next_time))
             except StopIteration:
                 self._end_time = next_time
@@ -769,11 +851,16 @@ class Serial(ParentState):
 
 
 class Subroutine(object):
+    """A decorator for functions that build reusable, encapsulated portions of
+    state machine.
+    """
     def __init__(self, func):
         self._func = func
         self.__doc__ = func.__doc__
 
     def __call__(self, *pargs, **kwargs):
+        """Return a SubroutineState for this Subroutine.
+        """
         with SubroutineState(subroutine=self._func.__name__,
                              parent=kwargs.pop("parent", None),
                              save_log=kwargs.pop("save_log", True),
@@ -798,6 +885,8 @@ class Subroutine(object):
 
 
 class SubroutineState(Serial):
+    """Serial-like state at the top-level of a deployment of a Subroutine.
+    """
     def __init__(self, subroutine, parent=None, save_log=True, name=None,
                  blocking=True):
         super(SubroutineState, self).__init__(parent=parent,
@@ -814,16 +903,29 @@ class SubroutineState(Serial):
             self.__dict__.keys() +
             [name[1:] for name in self.__dict__.keys() if name[0] == "_"])
 
+    def _enter(self):
+        self._vars = {}
+        super(SubroutineState, self)._enter()
+
     def get_var_ref(self, name):
+        """Return a Ref for a user variable of this SubroutineState.
+        """
         try:
             return self.__issued_refs[name]
         except KeyError:
-            ref = Ref.getitem(self._vars, name)
+            ref = Ref(self.get_var, name)
             self.__issued_refs[name] = ref
             return ref
 
+    def get_var(self, name):
+        """Get a user variable of this SubroutineState.
+        """
+        return self.current_clone._vars[name]
+
     def set_var(self, name, value):
-        self._vars[name] = value
+        """Set a user variable of this SubroutineState.
+        """
+        self.current_clone._vars[name] = value
         try:
             ref = self.__issued_refs[name]
         except KeyError:
@@ -831,7 +933,8 @@ class SubroutineState(Serial):
         ref.dep_changed()
 
     def __getattr__(self, name):
-        if ("_SubroutineState__reserved_names" not in self.__dict__ or
+        if (name.startswith("__") or
+            "_SubroutineState__reserved_names" not in self.__dict__ or
             name in self.__reserved_names):
             return super(SubroutineState, self).__getattr__(name)
         else:
@@ -843,13 +946,17 @@ class SubroutineState(Serial):
             name in self.__reserved_names):
             super(SubroutineState, self).__setattr__(name, value)
         else:
-            return SubroutineSet(self, name, value)
+            state = SubroutineSet(self, name, value)
+            state.override_instantiation_context()
+            return state
 
     def __dir__(self):
         return super(SubroutineState, self).__dir__() + self._vars.keys()
 
 
 class SubroutineSet(AutoFinalizeState):
+    """State that sets a user attribute value on a SubroutineState.
+    """
     def __init__(self, subroutine, var_name, value, parent=None, save_log=True,
                  name=None):
         super(SubroutineSet, self).__init__(parent=parent,
@@ -869,6 +976,9 @@ class SubroutineSet(AutoFinalizeState):
 
     
 class If(ParentState):
+    """Parent state to implement conditional branching. If state is used in
+    lieu of a traditional Python if statement.
+    """
     def __init__(self, conditional, true_state=None, false_state=None, 
                  parent=None, save_log=True, name=None, blocking=True):
 
@@ -910,7 +1020,7 @@ class If(ParentState):
         super(If, self)._enter()
         self._outcome_index = self._cond.index(True)
         self.__selected_child = (
-            self._out_states[self._outcome_index].get_inactive_state(self))
+            self._out_states[self._outcome_index].clone(self))
         clock.schedule(partial(self.__selected_child.enter, self._start_time))
 
     def child_leave_callback(self, child):
@@ -931,7 +1041,6 @@ class If(ParentState):
 
 class Elif(Serial):
     """State to attach an elif to and If state.
-
     """
     def __init__(self, conditional, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -962,8 +1071,7 @@ class Elif(Serial):
 
         
 def Else(name="ELSE BODY"):
-    """State to attach to the else of an If state.
-
+    """Return the else clause of the preceding If state.
     """
     # get the exp reference
     from experiment import Experiment
@@ -995,6 +1103,8 @@ def Else(name="ELSE BODY"):
 
 
 class Loop(ParentState):
+    """State that implements a loop.
+    """
     def __init__(self, iterable=None, shuffle=False, conditional=True,
                  parent=None, save_log=True, name=None, blocking=True):
         super(Loop, self).__init__(parent=parent, save_log=save_log, name=name,
@@ -1019,6 +1129,9 @@ class Loop(ParentState):
         self._log_attrs.extend(['outcome', 'i', 'current'])
 
     def iter_i(self):
+        """Generate successive values of i for this loop, setting 'outcome'
+        value as appropriate.
+        """
         self._outcome = val(self._cond)
         if self._iterable is None:
             i = 0
@@ -1048,6 +1161,8 @@ class Loop(ParentState):
         self.start_next_iteration(self._start_time)
 
     def start_next_iteration(self, next_time):
+        """Start the next iteration of the loop and set 'current'.
+        """
         try:
             self._i = self.__i_iterator.next()
             if self._iterable is None or isinstance(self._iterable, int):
@@ -1058,7 +1173,7 @@ class Loop(ParentState):
             self._end_time = next_time
             clock.schedule(self.leave)
             return
-        self.__current_child = self.__body_state.get_inactive_state(self)
+        self.__current_child = self.__body_state.clone(self)
         clock.schedule(partial(self.__current_child.enter, next_time))
 
     def child_enter_callback(self, child):
@@ -1091,6 +1206,8 @@ class Loop(ParentState):
 
 
 class Record(State):
+    """State to record all changes in a specified set of Ref values.
+    """
     def __init__(self, duration=None, parent=None, name=None, blocking=True,
                  **kwargs):
         super(Record, self).__init__(parent=parent, 
@@ -1102,6 +1219,8 @@ class Record(State):
         self.__refs = kwargs
 
     def begin_log(self):
+        """Set up per-class AND per-instance logs.
+        """
         super(Record, self).begin_log()
         title = "record_%s_%d_%s" % (
             os.path.splitext(
@@ -1113,6 +1232,8 @@ class Record(State):
                                       self.__refs.keys() + ["timestamp"])
 
     def end_log(self, to_csv=False):
+        """Close logs.
+        """
         super(Record, self).end_log(to_csv)
         if self.__log_writer is not None:
             self.__log_writer.close()
@@ -1138,6 +1259,8 @@ class Record(State):
             ref.remove_change_callback(self.record_change)
 
     def record_change(self):
+        """Record a change in the track Refs.
+        """
         try:
             record = val(self.__refs)
         except NotAvailableError:
@@ -1161,6 +1284,8 @@ class Record(State):
 
 
 class Log(AutoFinalizeState):
+    """State to write values to a custom experiment log.
+    """
     def __init__(self, parent=None, name=None, **kwargs):
         # init the parent class
         super(Log, self).__init__(parent=parent,
@@ -1170,6 +1295,8 @@ class Log(AutoFinalizeState):
         self._init_log_items = kwargs
 
     def begin_log(self):
+        """Set up per-class AND per-instance logs.
+        """
         super(Log, self).begin_log()
         title = "log_%s_%d_%s" % (
             os.path.splitext(
@@ -1181,6 +1308,8 @@ class Log(AutoFinalizeState):
                                       ["time"] + self._init_log_items.keys())
 
     def end_log(self, to_csv=False):
+        """Close logs.
+        """
         super(Log, self).end_log(to_csv)
         if self.__log_writer is not None:
             self.__log_writer.close()
@@ -1198,6 +1327,8 @@ class Log(AutoFinalizeState):
 
 
 class _DelayedValueTest(State):
+    """Internal class for testing the Done state.
+    """
     def __init__(self, delay, value, parent=None, save_log=True, name=None,
                  blocking=True):
         # init the parent class
@@ -1222,6 +1353,9 @@ class _DelayedValueTest(State):
 
 
 class Done(AutoFinalizeState):
+    """A state that guarantees finalization of specified other states before
+    subsequent states can enter.
+    """
     def __init__(self, *states, **kwargs):
         # init the parent class
         super(Done, self).__init__(parent=kwargs.pop("parent", None), 
@@ -1238,6 +1372,8 @@ class Done(AutoFinalizeState):
         self.__some_active.add_change_callback(self._check)
 
     def _check(self):
+        """Check to see if all the tracked states are inactive.
+        """
         some_active = self.__some_active.eval()
         if not some_active:
             self.__some_active.remove_change_callback(self._check)
@@ -1248,6 +1384,9 @@ class Done(AutoFinalizeState):
 
 
 class Wait(State):
+    """State that waits for a certain duration or until a certain Ref value
+    becomes True.
+    """
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
                  save_log=True, name=None, blocking=True):
         if duration is not None and jitter is not None:
@@ -1286,6 +1425,8 @@ class Wait(State):
             clock.unschedule(self.schedule_check_until)
 
     def schedule_check_until(self):
+        """Setup until condition.
+        """
         try:
             self._until_value = self.__until.eval()
         except NotAvailableError:
@@ -1296,6 +1437,8 @@ class Wait(State):
             self.__until.add_change_callback(self.check_until)
 
     def check_until(self):
+        """Callback to process a change to the until value.
+        """
         try:
             self._until_value = self.__until.eval()
         except NotAvailableError:
@@ -1324,6 +1467,9 @@ class Wait(State):
 
 
 def When(condition, body=None, name="WHEN", blocking=True):
+    """Construct states to wait until a Ref value becomes True and then start
+    another state.
+    """
     if body is None:
         body = Serial(name="WHEN_BODY")
         body.override_instantiation_context()
@@ -1335,6 +1481,9 @@ def When(condition, body=None, name="WHEN", blocking=True):
 
 
 def While(condition, body=None, name="WHILE", blocking=True):
+    """Construct states to wait until a Ref value becomes True and then start
+    another state.  Then cancel that state when the Ref value becomes False.
+    """
     if body is None:
         body = Serial(name="WHILE_BODY")
         body.override_instantiation_context()
@@ -1350,6 +1499,8 @@ def While(condition, body=None, name="WHILE", blocking=True):
 
 
 class ResetClock(AutoFinalizeState):
+    """State to arbitrarily set the start time of the subsequent state.
+    """
     def __init__(self, new_time=None, parent=None, save_log=True, name=None,
                  blocking=True):
         # init the parent class
@@ -1370,6 +1521,9 @@ class ResetClock(AutoFinalizeState):
 
 
 class CallbackState(AutoFinalizeState):
+    """Base state that calls a callback method starting at the states start
+    time.
+    """
     def __init__(self, repeat_interval=None, duration=0.0, parent=None,
                  save_log=True, name=None, blocking=True):
         super(CallbackState, self).__init__(duration=duration, parent=parent,
@@ -1387,9 +1541,14 @@ class CallbackState(AutoFinalizeState):
         clock.unschedule(self.callback)
 
     def _callback(self):
+        """Custom method that gets called at start time.  To be overridden by
+        subclasses.
+        """
         pass
 
     def callback(self):
+        """Call the custom callback method.
+        """
         self.claim_exceptions()
         self._callback()
 
@@ -1403,6 +1562,8 @@ class CallbackState(AutoFinalizeState):
 
 
 class Func(CallbackState):
+    """State that calls an arbitrary python function.
+    """
     def __init__(self, func, *pargs, **kwargs):
         # init the parent class
         super(Func, self).__init__(
@@ -1426,6 +1587,8 @@ class Func(CallbackState):
 
 
 class Debug(CallbackState):
+    """State that prints out information on the console for debugging purposes.
+    """
     def __init__(self, parent=None, save_log=False, name=None, **kwargs):
         # init the parent class
         super(Debug, self).__init__(parent=parent,
@@ -1449,6 +1612,8 @@ class Debug(CallbackState):
 
 
 class PrintTraceback(CallbackState):
+    """State that prints a SMILE traceback on the console.
+    """
     def __init__(self, parent=None, save_log=False, name=None):
         # init the parent class
         super(PrintTraceback, self).__init__(parent=parent,
@@ -1460,10 +1625,10 @@ class PrintTraceback(CallbackState):
 
 
 if __name__ == '__main__':
-    from experiment import Experiment, Set, Get
+    from experiment import Experiment
 
     def print_actual_duration(target):
-        print target._end_time - target._start_time
+        print val(target.end_time - target.start_time)
 
     def print_periodic():
         print "PERIODIC!"
@@ -1532,16 +1697,16 @@ if __name__ == '__main__':
             Debug(name="non-blocking test")
 
     exp.foo=1
-    Record(foo=Get('foo'))
+    Record(foo=exp.foo)
     with UntilDone():
         Debug(name="FOO!")
         Wait(1.0)
         Debug(name="FOO!")
-        Set(foo=2)
+        exp.foo = 2
         Debug(name="FOO!")
         Wait(1.0)
         Debug(name="FOO!")
-        Set(foo=3)
+        exp.foo = 3
         Debug(name="FOO!")
         Wait(1.0)
         Debug(name="FOO!")
@@ -1551,11 +1716,11 @@ if __name__ == '__main__':
             Debug(name="FOO!")
             Wait(1.0)
             Debug(name="FOO!")
-            Set(foo=4)
+            exp.foo = 4
             Debug(name="FOO!")
             Wait(1.0)
             Debug(name="FOO!")
-            Set(foo=5)
+            exp.foo = 5
             Debug(name="FOO!")
             Wait(1.0)
             Debug(name="FOO!")
@@ -1576,15 +1741,16 @@ if __name__ == '__main__':
 
     # with implied parents
     block = [{'val': i} for i in range(3)]
-    Set(not_done=True)
-    with Loop(conditional=Get('not_done')) as outer:
+    exp.not_done = True
+    with Loop(conditional=exp.not_done) as outer:
         Debug(i=outer.i)
         with Loop(block, shuffle=True) as trial:
             Debug(current_val=trial.current['val'])
             Wait(1.0)
             If(trial.current['val']==block[-1],
                Wait(2.0))
-        If(outer.i>=3,Set(not_done=False))
+        with If(outer.i >= 3):
+            exp.not_done = False
         
     block = range(3)
     with Loop(block) as trial:

@@ -343,7 +343,7 @@ class WidgetState(VisualState):
         if self.__layout is None:
             self.__parent_widget = self._exp._app.wid
         else:
-            self.__parent_widget = self.__layout._widget
+            self.__parent_widget = self.__layout.current_clone._widget
         self.__parent_widget.add_widget(self._widget, index=self._index)
 
     def unshow(self):
