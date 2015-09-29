@@ -113,6 +113,9 @@ class State(object):
         else:
             self._parent = parent
 
+        # Callbacks to call when the state finalizes.
+        self.__finalize_callbacks = []
+
         # Raise an error if we are non-blocking, but not the child of a
         # Parallel...
         #TODO: check this any time self._blocking is assigned!
@@ -438,6 +441,9 @@ class State(object):
         """
         self.claim_exceptions()
 
+        # Clear finalize callbacks
+        self.__finalize_callbacks = []
+
         # set the start time
         self._start_time = start_time
 
@@ -492,6 +498,9 @@ class State(object):
             self.print_trace_msg(
                 "ENTER time=%fs, duration=%fs, start_time=%fs" %
                 (call_time, call_duration, start_time))
+
+    def _add_finalize_callback(self, func, *pargs, **kwargs):
+        self.__finalize_callbacks.append((func, pargs, kwargs))
 
     def _leave(self):
         """Custom method to call at leave time.  Optionally overridden in
@@ -564,6 +573,9 @@ class State(object):
             self.save_log()
         if self._parent:
             clock.schedule(partial(self._parent.child_finalize_callback, self))
+        for func, pargs, kwargs in self.__finalize_callbacks:
+            clock.schedule(partial(func, *pargs, **kwargs))
+        self.__finalize_callbacks = []
         if self.__tracing:
             call_time = self._finalize_time - self._exp._root_state._start_time
             call_duration = clock.now() - self._finalize_time
@@ -1286,12 +1298,13 @@ class Record(State):
 class Log(AutoFinalizeState):
     """State to write values to a custom experiment log.
     """
-    def __init__(self, parent=None, name=None, **kwargs):
+    def __init__(self, log_dict=None, parent=None, name=None, **kwargs):
         # init the parent class
         super(Log, self).__init__(parent=parent,
                                   name=name,
                                   duration=0.0,
                                   save_log=False)
+        self._init_log_dict = log_dict
         self._init_log_items = kwargs
 
     def begin_log(self):
@@ -1304,8 +1317,12 @@ class Log(AutoFinalizeState):
             self._instantiation_lineno,
             self._name)
         self.__log_filename = self._exp.reserve_data_filename(title, "smlog")
-        self.__log_writer = LogWriter(self.__log_filename,
-                                      ["time"] + self._init_log_items.keys())
+        fields = ["time"] + self._init_log_items.keys()
+        if isinstance(self._init_log_dict, dict):
+            fields.extend(self._init_log_dict.iterkeys())
+        elif type(self._init_log_dict) in (tuple, list):
+            fields.extend(self._init_log_dict[0].iterkeys())
+        self.__log_writer = LogWriter(self.__log_filename, fields)
 
     def end_log(self, to_csv=False):
         """Close logs.
@@ -1322,7 +1339,20 @@ class Log(AutoFinalizeState):
     def _enter(self):
         record = self._log_items.copy()
         record["time"] = self._start_time
-        self.__log_writer.write_record(record)
+        if self._log_dict is None:
+            self.__log_writer.write_record(record)
+        elif isinstance(self._log_dict, dict):
+            record.update(self._log_dict)
+            self.__log_writer.write_record(record)
+        elif type(self._log_dict) in (tuple, list):
+            for dict_ in self._log_dict:
+                if not isinstance(dict_, dict):
+                    raise ValueError(
+                        "log_dict list/tuple must contain only dicts.")
+                record.update(dict_)
+                self.__log_writer.write_record(record)
+        else:
+            raise ValueError("Invalid log_dict value: %r" % self._log_dict)
         clock.schedule(self.leave)
 
 
@@ -1366,10 +1396,16 @@ class Done(AutoFinalizeState):
         if len(kwargs):
             raise ValueError("Invalid keyword arguments for Done: %r" %
                              kwargs.iterkeys())
-        self.__some_active = Ref(any, [state.active for state in states])
+        self.__states = states
 
     def _enter(self):
+        clones = [state.current_clone for state in self.__states]
+        self.__some_active = Ref(lambda : any(state._active for
+                                              state in clones))
+        for state in clones:
+            state._add_finalize_callback(self.__some_active.dep_changed)
         self.__some_active.add_change_callback(self._check)
+        clock.schedule(self._check)
 
     def _check(self):
         """Check to see if all the tracked states are inactive.
@@ -1660,6 +1696,12 @@ if __name__ == '__main__':
             Func(print_periodic)
 
     Debug(width=exp.screen.width, height=exp.screen.height)
+
+    with Loop(5) as loop:
+        Log(a=1, b=2, c=loop.i, name="aaa")
+    Log({"q": loop.i, "w": loop.i}, x=4, y=2, z=1, name="bbb")
+    Log([{"q": loop.i, "w": n} for n in xrange(5)], x=4, y=2, z=1, name="ccc")
+    #Log("sdfsd")  # This should cause an error
 
     exp.for_the_thing = 3
     dtt = DoTheThing(3, 4, name="first")

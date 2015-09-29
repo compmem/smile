@@ -89,6 +89,32 @@ def normalize_color_spec(spec):
                                  spec)
 
 
+class Screenshot(CallbackState):
+    def __init__(self, filename=None, parent=None, save_log=True, name=None,
+                 blocking=True):
+        super(Screenshot, self).__init__(parent=parent,
+                                         save_log=save_log,
+                                         name=name,
+                                         blocking=blocking)
+        self._init_filename = filename
+        self._event_time = None
+
+        self._log_attrs.extend(["filename", "event_time"])
+
+    def _enter(self):
+        super(Screenshot, self)._enter()
+        if self._filename is None:
+            self._filename = self._exp.reserve_data_filename(
+                "screenshot_%s" % self._name, "png", use_timestamp=True)
+        self._event_time = NotAvailable
+
+    def _callback(self):
+        before = clock.now()
+        self._exp._app.screenshot(self._filename)
+        after = clock.now()
+        self._event_time = {"time": before, "error": after - before}
+
+
 class VisualState(State):
     def __init__(self, duration=None, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -828,6 +854,7 @@ $ print("Hello world")
         rect.center = exp.screen.right_bottom
         Wait(1.0)
         rect.center = exp.screen.left_top
+        Screenshot()
         Wait(1.0)
         rect.center = exp.screen.left_bottom
         Wait(1.0)
@@ -845,6 +872,7 @@ $ print("Hello world")
         vid.slide(center_x=exp.screen.width * 0.75,
                   center_y=exp.screen.center_y,
                   duration=1.0)
+        Screenshot("my_screenshot.png")
         vid.animate(center_x=(lambda t, initial: exp.screen.center_x +
                               cos(t / 3.0) * exp.screen.width * 0.25),
                     center_y=(lambda t, initial: exp.screen.center_y +
@@ -854,6 +882,7 @@ $ print("Hello world")
     with Loop(3) as loop:
         Video(source="test_video.mp4", size=exp.screen.size,
               allow_stretch=loop.i%2, duration=5.0)
+        Screenshot(name="foo")
 
     with ButtonPress():
         Button(text="Click to continue", size=(exp.screen.width / 4,
