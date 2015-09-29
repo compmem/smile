@@ -113,6 +113,9 @@ class State(object):
         else:
             self._parent = parent
 
+        # Callbacks to call when the state finalizes.
+        self.__finalize_callbacks = []
+
         # Raise an error if we are non-blocking, but not the child of a
         # Parallel...
         #TODO: check this any time self._blocking is assigned!
@@ -438,6 +441,9 @@ class State(object):
         """
         self.claim_exceptions()
 
+        # Clear finalize callbacks
+        self.__finalize_callbacks = []
+
         # set the start time
         self._start_time = start_time
 
@@ -492,6 +498,9 @@ class State(object):
             self.print_trace_msg(
                 "ENTER time=%fs, duration=%fs, start_time=%fs" %
                 (call_time, call_duration, start_time))
+
+    def _add_finalize_callback(self, func, *pargs, **kwargs):
+        self.__finalize_callbacks.append((func, pargs, kwargs))
 
     def _leave(self):
         """Custom method to call at leave time.  Optionally overridden in
@@ -564,6 +573,9 @@ class State(object):
             self.save_log()
         if self._parent:
             clock.schedule(partial(self._parent.child_finalize_callback, self))
+        for func, pargs, kwargs in self.__finalize_callbacks:
+            clock.schedule(partial(func, *pargs, **kwargs))
+        self.__finalize_callbacks = []
         if self.__tracing:
             call_time = self._finalize_time - self._exp._root_state._start_time
             call_duration = clock.now() - self._finalize_time
@@ -1384,10 +1396,16 @@ class Done(AutoFinalizeState):
         if len(kwargs):
             raise ValueError("Invalid keyword arguments for Done: %r" %
                              kwargs.iterkeys())
-        self.__some_active = Ref(any, [state.active for state in states])
+        self.__states = states
 
     def _enter(self):
+        clones = [state.current_clone for state in self.__states]
+        self.__some_active = Ref(lambda : any(state._active for
+                                              state in clones))
+        for state in clones:
+            state._add_finalize_callback(self.__some_active.dep_changed)
         self.__some_active.add_change_callback(self._check)
+        clock.schedule(self._check)
 
     def _check(self):
         """Check to see if all the tracked states are inactive.
