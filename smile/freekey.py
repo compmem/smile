@@ -100,16 +100,10 @@ def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
             # use the label's appear time
             self.base_time = lbl.appear_time['time']
 
+        # reset timing to the desired base_time
         ResetClock(self.base_time)
 
-        # use base time to determine end time
-        #self.fk_end_time = self.base_time + max_duration
-
         # collect responses for the desired max_duration or max_resp
-        #cond = ((Ref(clock.now, use_cache=False)<self.fk_end_time) &
-        #        (self.fk_num_resp < max_resp))
-        #cond = (self.fk_num_resp < max_resp)
-        #with Loop(conditional=cond):
         with Loop():
             # accept a key response, time is based on label's ontime
             kp = KeyPress(keys=asciiplus, base_time=self.base_time)
