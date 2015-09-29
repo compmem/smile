@@ -1286,12 +1286,13 @@ class Record(State):
 class Log(AutoFinalizeState):
     """State to write values to a custom experiment log.
     """
-    def __init__(self, parent=None, name=None, **kwargs):
+    def __init__(self, log_dict=None, parent=None, name=None, **kwargs):
         # init the parent class
         super(Log, self).__init__(parent=parent,
                                   name=name,
                                   duration=0.0,
                                   save_log=False)
+        self._init_log_dict = log_dict
         self._init_log_items = kwargs
 
     def begin_log(self):
@@ -1304,8 +1305,12 @@ class Log(AutoFinalizeState):
             self._instantiation_lineno,
             self._name)
         self.__log_filename = self._exp.reserve_data_filename(title, "smlog")
-        self.__log_writer = LogWriter(self.__log_filename,
-                                      ["time"] + self._init_log_items.keys())
+        fields = ["time"] + self._init_log_items.keys()
+        if isinstance(self._init_log_dict, dict):
+            fields.extend(self._init_log_dict.iterkeys())
+        elif type(self._init_log_dict) in (tuple, list):
+            fields.extend(self._init_log_dict[0].iterkeys())
+        self.__log_writer = LogWriter(self.__log_filename, fields)
 
     def end_log(self, to_csv=False):
         """Close logs.
@@ -1322,7 +1327,20 @@ class Log(AutoFinalizeState):
     def _enter(self):
         record = self._log_items.copy()
         record["time"] = self._start_time
-        self.__log_writer.write_record(record)
+        if self._log_dict is None:
+            self.__log_writer.write_record(record)
+        elif isinstance(self._log_dict, dict):
+            record.update(self._log_dict)
+            self.__log_writer.write_record(record)
+        elif type(self._log_dict) in (tuple, list):
+            for dict_ in self._log_dict:
+                if not isinstance(dict_, dict):
+                    raise ValueError(
+                        "log_dict list/tuple must contain only dicts.")
+                record.update(dict_)
+                self.__log_writer.write_record(record)
+        else:
+            raise ValueError("Invalid log_dict value: %r" % self._log_dict)
         clock.schedule(self.leave)
 
 
@@ -1660,6 +1678,12 @@ if __name__ == '__main__':
             Func(print_periodic)
 
     Debug(width=exp.screen.width, height=exp.screen.height)
+
+    with Loop(5) as loop:
+        Log(a=1, b=2, c=loop.i, name="aaa")
+    Log({"q": loop.i, "w": loop.i}, x=4, y=2, z=1, name="bbb")
+    Log([{"q": loop.i, "w": n} for n in xrange(5)], x=4, y=2, z=1, name="ccc")
+    #Log("sdfsd")  # This should cause an error
 
     exp.for_the_thing = 3
     dtt = DoTheThing(3, 4, name="first")

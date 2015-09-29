@@ -411,6 +411,9 @@ class ExpApp(App):
             except ValueError:
                 pass
 
+    def screenshot(self, filename=None):
+        Window.screenshot(filename)
+
 
 class Experiment(object):
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
