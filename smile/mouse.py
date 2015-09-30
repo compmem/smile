@@ -17,8 +17,8 @@ from experiment import Experiment
 
 def MouseWithin(widget):
     pos = Experiment._last_instance()._app.mouse_pos_ref
-    return (pos[0] >= widget.x & pos[1] >= widget.y &
-            pos[0] <= widget.right & pos[1] <= widget.top)
+    return ((pos[0] >= widget.x) & (pos[1] >= widget.y) &
+            (pos[0] <= widget.right) & (pos[1] <= widget.top))
 
 
 def MousePos(widget=None):

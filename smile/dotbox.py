@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     db3 = DotBox(color='green',backcolor='purple', size=(400,400))
     with UntilDone():
-        db3.slide(num_dots=100, duration=2.0)
+        db3.slide(num_dots=50, duration=3.0)
 
     Wait(2.0)
     exp.run(trace=False)
