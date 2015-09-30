@@ -592,7 +592,7 @@ class Experiment(object):
             raise ValueError("'field_names' changed for state class %r!" %
                              state_class_name)
         title = "state_" + state_class_name
-        filename = self.reserve_data_filename(title, "smlog") 
+        filename = self.reserve_data_filename(title, "slog") 
         logger = LogWriter(filename, field_names)
         self._state_loggers[state_class_name] = filename, logger, field_names
 
@@ -610,6 +610,14 @@ class Experiment(object):
     @property
     def screen(self):
         return self._app.screen
+
+    @property
+    def subject(self):
+        return self._subj
+
+    @property
+    def subject_dir(self):
+        return self._subj_dir
 
     def run(self, trace=False):
         self._current_state = None

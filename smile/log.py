@@ -13,7 +13,7 @@ import gzip
 import csv
 
 class LogWriter(object):
-    """Write to a compressed smile log (smlog)."""
+    """Write to a compressed smile log (slog)."""
     def __init__(self, filename, field_names):
         self._field_names = field_names
         self._file = gzip.open(filename, "wb")
@@ -29,7 +29,7 @@ class LogWriter(object):
 
 
 class LogReader(object):
-    """Read from a compressed smile log (smlog)"""
+    """Read from a compressed smile log (slog)"""
     def __init__(self, filename):
         self._file = gzip.open(filename, "rb")
 
@@ -79,7 +79,7 @@ def _unwrap(d, prefix='', depth=0):
 
 
 def log2csv(log_filename, csv_filename):
-    """Convert a smlog to a CSV."""
+    """Convert a slog to a CSV."""
     colnames = []
     reader = LogReader(log_filename)
     for record in reader:
