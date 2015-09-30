@@ -676,13 +676,15 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         if self._end_time is None:
             self._end_time = self._start_time + self._widget._video.duration
 
-        # set the size to (0, 0) so we know if it hasn't be changed later
+        # set the size to (0, 0) so we know if it has been changed later
         self._widget.size = (0, 0)
 
     def show(self):
         if "state" not in self._constructor_param_names:
             self._widget.state = "play"
         self._widget._video._update(0)  # prevent white flash at start
+        #while self._widget._video.texture is None:
+        #    print '.',
         if self._widget.width == 0 and self._widget.height == 0:
             self.live_change(size=self._widget._video.texture.size)
         super(Video, self).show()

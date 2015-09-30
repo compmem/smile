@@ -24,7 +24,7 @@ from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 from kivy.logger import Logger
-from kivy.base import EventLoop
+from kivy.base import EventLoop # this is actually our event loop
 # Window imported later because kivy graphics configs must come first...
 Window = None
 from kivy.graphics.opengl import (
@@ -47,11 +47,14 @@ from clock import clock
 from log import LogWriter, log2csv
 from video import normalize_color_spec
 
+FLIP_TIME_MARGIN = .002 # increase this if we're missing flips
+
 def event_time(time, time_error=0.0):  #TODO: make this a class!
     return {'time': time, 'error': time_error}
 
 
 class _VideoChange(object):
+    """Container for a change to the graphics tree."""
     def __init__(self, update_cb, flip_time, flip_time_cb):
         self.update_cb = update_cb
         self.flip_time = flip_time
@@ -61,6 +64,7 @@ class _VideoChange(object):
 
 
 class Screen(object):
+    """Provides references to screen properties."""
     def __init__(self, app):
         self.__app = app
 
@@ -145,6 +149,9 @@ class Screen(object):
 
 
 class ExpApp(App):
+    """Kivy app associated with the experiment.
+
+    Not instantiated by the end user."""
     def __init__(self, exp, fullscreen=None, size=None):
         super(ExpApp, self).__init__()
         #if size is not None:
@@ -182,6 +189,7 @@ class ExpApp(App):
                                       func != event_func]
 
     def _trigger_callback(self, event_name, *pargs, **kwargs):
+        # call the callbacks associated with an event name
         try:
             callbacks = self.callbacks[event_name]
         except KeyError:
@@ -190,6 +198,7 @@ class ExpApp(App):
             func(*pargs, **kwargs)
 
     def build(self):
+        # base layout uses positional placement
         self.wid = FloatLayout()
         Window._system_keyboard.bind(on_key_down=self._on_key_down,
                                      on_key_up=self._on_key_up)
@@ -197,11 +206,16 @@ class ExpApp(App):
                     mouse_pos=self._on_mouse_pos,
                     on_resize=self._on_resize)
         self.current_touch = None
-        
+
+        # set starting times
         self._last_time = clock.now()
         self._last_kivy_tick = clock.now()
+        
+        # use our idle callback (defined below)
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
-        print 1.0 / self.calc_flip_interval()  #...
+
+        # report the flip interval now that we have a window
+        print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()  #...
         return self.wid
 
     def _on_resize(self, *pargs):
@@ -289,10 +303,15 @@ class ExpApp(App):
         time_err = (self._new_time - self._last_time) / 2.0
         self.event_time = event_time(self._last_time + time_err, time_err)
 
+        # call any of our scheduled events that are ready
         clock.tick()
 
-        ready_for_video = (self._new_time - self.last_flip["time"] >=
-                           self.flip_interval)
+        # see if we're ready for video
+        ready_for_video = ((self._new_time - self.last_flip["time"]) >=
+                           (self.flip_interval - FLIP_TIME_MARGIN))
+
+        # see if the kivy clock needs a tick
+        # throttled by flip interval
         ready_for_kivy_tick = ready_for_video and (self._new_time -
                                                    self._last_kivy_tick >=
                                                    self.flip_interval)
@@ -393,6 +412,7 @@ class ExpApp(App):
         return self.flip_interval
 
     def schedule_video(self, update_cb, flip_time=None, flip_time_cb=None):
+        # TODO: Remove None options where possible
         if flip_time is None:
             flip_time = self.last_flip["time"] + self.flip_interval
         new_video = _VideoChange(update_cb, flip_time, flip_time_cb)
@@ -420,22 +440,33 @@ class Experiment(object):
                  name="Smile"):
         global Window
         self._process_args()
+
+        # handle fullscreen and resolution before Window is imported
         self._fullscreen = self._fullscreen or fullscreen
         self._resolution = self._resolution or resolution
+
+        # set necessary config values prior to importing Window
         if self._fullscreen:
             Config.set("graphics", "fullscreen", self._fullscreen)
         if self._resolution:
             Config.set("graphics", "width", self._resolution[0])
             Config.set("graphics", "height", self._resolution[1])
+
+        # free to import Window and apply those config values
         from kivy.core.window import Window
+
+        # process background color
         self._background_color = background_color
         self.set_background_color()
+
+        # make custom experiment app instance
         self._app = ExpApp(self, fullscreen=fullscreen, size=resolution)#???
 
         # set up instance for access throughout code
         self.__class__._last_instance = weakref.ref(self)
 
         # set up initial root state and parent stack
+        # interacts with Meanwhile and UntilDone at top of experiment
         Serial(name="EXPERIMENT BODY", parent=self)
         self._root_state.set_instantiation_context(self)
         self._parents = [self._root_state]
