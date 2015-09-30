@@ -48,14 +48,28 @@ color_name_table = {
     }
 def normalize_color_spec(spec):
     if isinstance(spec, tuple) or isinstance(spec, list):
+        if len(spec) == 2:
+            name, alpha = spec
+            if not isinstance(name, str):
+                raise ValueError(
+                    "If color spec is 2-tuple, first element must be str.")
+            if type(alpha) not in (int, float):
+                raise ValueError(
+                    "If color spec is 2-tuple, second element must be "
+                    "int or float.")
+            try:
+                return color_name_table[name.upper()][:3] + (alpha,)
+            except KeyError:
+                raise ValueError("Color spec string not valid.  Got: %r" %
+                                 spec)
         if len(spec) == 3:
             return tuple(spec) + (1.0,)
         elif len(spec) == 4:
             return tuple(spec)
         else:
             raise ValueError(
-                "Color spec tuple / list must have length 3 or 4.  Got: %r" %
-                spec)
+                "Color spec tuple / list must have length 2, 3, or 4.  "
+                "Got: %r" % spec)
     elif isinstance(spec, str):
         if spec[0] == '#':
             if len(spec) == 7:
@@ -427,14 +441,14 @@ class WidgetState(VisualState):
                 setattr(self._widget, name, value)
 
     def animate(self, duration=None, parent=None, save_log=True, name=None,
-                **anim_params):
+                blocking=True, **anim_params):
         anim = Animate(self, duration=duration, parent=parent, name=name,
-                       save_log=save_log, **anim_params)
+                       save_log=save_log, blocking=blocking, **anim_params)
         anim.override_instantiation_context()
         return anim
 
     def slide(self, duration=None, speed=None, accel=None, parent=None,
-              save_log=True, name=None, **params):
+              save_log=True, name=None, blocking=True, **params):
         def interp(a, b, w):
             if isinstance(a, dict):
                 return {name : interp(a[name], b[name], w) for
@@ -457,7 +471,8 @@ class WidgetState(VisualState):
         else:
             raise ValueError("Invalid combination of parameters.")  #...
         anim = self.animate(duration=duration, parent=parent,
-                            save_log=save_log, name=name, **anim_params)
+                            save_log=save_log, name=name, blocking=blocking,
+                            **anim_params)
         anim.override_instantiation_context()
         return anim
 
@@ -974,8 +989,8 @@ $ print("Hello world")
         with UntilDone():
             rect.slide(color="pink", x=0, y=0,
                        width=100, height=100, duration=5.0)
-            ellipse.slide(color=(0.0, 0.0, 1.0, 0.0), duration=5.0)
-            rect.slide(color=(1.0, 1.0, 1.0, 0.0), duration=5.0)
+            ellipse.slide(color=("orange", 0.0), duration=5.0)
+            rect.slide(color=("pink", 0.0), duration=5.0)
     img = Image(source="face-smile.png", size=(10, 10), allow_stretch=True,
                 keep_ratio=False, mipmap=True)
     with UntilDone():
