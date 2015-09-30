@@ -613,6 +613,14 @@ class Experiment(object):
     def screen(self):
         return self._app.screen
 
+    @property
+    def subject(self):
+        return self._subj
+
+    @property
+    def subject_dir(self):
+        return self._subj_dir
+
     def run(self, trace=False):
         self._current_state = None
         if trace:
