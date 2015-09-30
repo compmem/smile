@@ -30,6 +30,7 @@ from state import (
 from keyboard import Key, KeyPress, KeyRecord
 from mouse import MouseWithin, MousePos, MouseButton, MouseRecord, MousePress
 from video import (
+    Screenshot,
     Bezier,
     Mesh,
     Point,
