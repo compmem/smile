@@ -648,6 +648,7 @@ widgets = [
     "Slider",
     "TextInput",
     "ToggleButton",
+    "ProgressBar",
     
     #...
     "AnchorLayout",
@@ -826,6 +827,10 @@ if __name__ == '__main__':
     exp = Experiment(background_color="#330000")
 
     Wait(2.0)
+
+    pb = ProgressBar(max=100)
+    with UntilDone():
+        pb.slide(value=100, duration=2.0)
 
     Image(source="face-smile.png", duration=5.0)
 
