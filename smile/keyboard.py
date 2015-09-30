@@ -134,7 +134,7 @@ class KeyRecord(KeyState):
                 os.path.basename(self._instantiation_filename))[0],
             self._instantiation_lineno,
             self._name)
-        self.__log_filename = self._exp.reserve_data_filename(title, "smlog")
+        self.__log_filename = self._exp.reserve_data_filename(title, "slog")
         self.__log_writer = LogWriter(self.__log_filename,
                                       ["timestamp", "key", "state"])
 

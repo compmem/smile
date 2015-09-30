@@ -1281,7 +1281,7 @@ class Record(State):
                 os.path.basename(self._instantiation_filename))[0],
             self._instantiation_lineno,
             self._name)
-        self.__log_filename = self._exp.reserve_data_filename(title, "smlog")
+        self.__log_filename = self._exp.reserve_data_filename(title, "slog")
         self.__log_writer = LogWriter(self.__log_filename,
                                       self.__refs.keys() + ["timestamp"])
 
@@ -1366,7 +1366,7 @@ class Log(AutoFinalizeState):
                 os.path.basename(self._instantiation_filename))[0],
             self._instantiation_lineno,
             self._name)
-        self.__log_filename = self._exp.reserve_data_filename(title, "smlog")
+        self.__log_filename = self._exp.reserve_data_filename(title, "slog")
         fields = ["time"] + self._init_log_items.keys()
         if isinstance(self._init_log_dict, dict):
             # extend the dict from the kwargs
