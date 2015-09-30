@@ -108,12 +108,14 @@ class State(object):
         elif parent is self._exp:
             # If the associated experment is passed in as the parent, set this
             # state as the associated experiment's root state.
+            # Needed to handle the Meanwhile and UntilDone at top of experiment
             self._parent = None
             self._exp._root_state = self
         else:
             self._parent = parent
 
         # Callbacks to call when the state finalizes.
+        # Required for cleanup for Done states.
         self.__finalize_callbacks = []
 
         # Raise an error if we are non-blocking, but not the child of a
@@ -439,9 +441,11 @@ class State(object):
     def enter(self, start_time):
         """Activate the state with a specified start time.
         """
+        # set trace
         self.claim_exceptions()
 
         # Clear finalize callbacks
+        # We want a new list specific to this clone
         self.__finalize_callbacks = []
 
         # set the start time
@@ -567,6 +571,8 @@ class State(object):
         if not self._active:
             return
 
+        self.claim_exceptions()
+
         self._finalize_time = clock.now()
         self._active = False
         if self.__save_log:
@@ -608,7 +614,8 @@ class ParentState(State):
         self._children = []
         for c in children:
             self.claim_child(c)
-        
+
+        # keep track of children that enter from this parent
         self.__unfinalized_children = set()
 
     def tron(self, depth=0):
@@ -664,6 +671,8 @@ class ParentState(State):
         """
         self.__unfinalized_children.discard(child)
         if self._following_may_run and not len(self.__unfinalized_children):
+            # we have no more unfinalized children,
+            # so this parent can finalize
             self.finalize()
 
     def _enter(self):
@@ -713,15 +722,20 @@ class Parallel(ParentState):
 
     def _enter(self):
         super(Parallel, self)._enter()
+        # empty the children lists on enter
         self.__blocking_children = []
         self.__my_children = []
         if len(self._children):
+            # process each child and make clones
             for child in self._children:
+                # clone the child
                 inactive_child = child.clone(self)
                 self.__my_children.append(inactive_child)
+                # if it's blocking append to the blocking children
                 if child._blocking:
                     self.__blocking_children.append(inactive_child)
                 clock.schedule(partial(inactive_child.enter, self._start_time))
+            # set of all non-run cloned children
             self.__remaining = set(self.__my_children)
             self.__blocking_remaining = set(self.__blocking_children)
         else:
@@ -729,29 +743,39 @@ class Parallel(ParentState):
             clock.schedule(self.leave)
 
     def child_leave_callback(self, child):
+        # called when any child leaves
         super(Parallel, self).child_leave_callback(child)
+
+        # remove the child from remaining
         self.__remaining.discard(child)
         if len(self.__blocking_remaining):
             self.__blocking_remaining.discard(child)
             if not len(self.__blocking_remaining):
+                # there are still blocking
                 self._set_end_time()
                 if self._end_time is not None:
+                    # we have an end time, so cancel
                     self.cancel(self._end_time)
         if not len(self.__remaining):
+            # there are no more children to finish, so leave
             self.leave()
 
     def cancel(self, cancel_time):
         if self._active:
+            # cancel all children
             for child in self.__my_children:
                 child.cancel(cancel_time)
 
     def _set_end_time(self):
         """Determine the end time of this Parallel based on its children.
         """
+        # check all end times for each blocking child
         end_times = [c._end_time for c in self.__blocking_children]
         if any([et is None for et in end_times]):
+            # if any are None, then no end time
             self._end_time = None
         else:
+            # otherwise, set to max end time
             self._end_time = max(end_times)
 
 
@@ -802,6 +826,7 @@ def Meanwhile(name=None, blocking=True):
     with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE",
                                blocking=blocking) as p:
         yield p
+    # set the new serial as non-blocking
     p._children[1]._blocking = False
 
 @contextmanager
@@ -814,6 +839,7 @@ def UntilDone(name=None, blocking=True):
     with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE",
                                blocking=blocking) as p:
         yield p
+    # set the previous state as non-blocking
     p._children[0]._blocking = False
 
 
@@ -826,39 +852,55 @@ class Serial(ParentState):
         self.__current_child = None
         self.__cancel_time = None
         try:
+            # clone the children as they come, so just clone the first
             self.__current_child = (
                 self.__child_iterator.next().clone(self))
+            # schedule the child based on the current start time
             clock.schedule(partial(self.__current_child.enter, self._start_time))
         except StopIteration:
+            # if there are no children, we're done and can leave
             self._end_time = self._start_time
             clock.schedule(self.leave)
 
     def child_enter_callback(self, child):
+        # if we've been canceled, tell the specified child it should
+        # end by our cancel time
         super(Serial, self).child_enter_callback(child)
         if self.__cancel_time is not None:
             clock.schedule(partial(child.cancel, self.__cancel_time))
 
     def child_leave_callback(self, child):
+        # gets called anytime a child leaves
         super(Serial, self).child_leave_callback(child)
+        # get the time for the next state based on the end_time of the
+        # current child
         next_time = self.__current_child._end_time
         if next_time is None:
+            # no need to schedule the next b/c there is no end time
+            # for the previous state, so we can leave
             self.leave()
         elif (self.__cancel_time is not None and
             next_time >= self.__cancel_time):
+            # if there is a cancel time and the next is going to be after
+            # the cancel, then just use the cancel time
             self._end_time = self.__cancel_time
             self.leave()
         else:
             try:
+                # clone the next child and schedule it
                 self.__current_child = (
                     self.__child_iterator.next().clone(self))
                 clock.schedule(partial(self.__current_child.enter, next_time))
             except StopIteration:
+                # there are no more children, so set our end time and leave
                 self._end_time = next_time
                 clock.schedule(self.leave)
 
     def cancel(self, cancel_time):
         if self._active:
+            # we've been told to cancel, so cancel the current child
             clock.schedule(partial(self.__current_child.cancel, cancel_time))
+            # set the cancel time to ensure future children are canceled
             self.__cancel_time = cancel_time
 
 
@@ -1261,18 +1303,25 @@ class Record(State):
             clock.schedule(self.finalize, event_time=self._end_time)
 
     def _leave(self):
+        # leaves at start time, and starts recording changes for each ref
         for name, ref in self.__refs.iteritems():
+            # get current value
             self.record_change()
+
+            # start changing anytime it changes
             ref.add_change_callback(self.record_change)
 
     def finalize(self):
+        # we're done
         super(Record, self).finalize()
+        # stop tracking changes for each ref
         for name, ref in self.__refs.iteritems():
             ref.remove_change_callback(self.record_change)
 
     def record_change(self):
         """Record a change in the track Refs.
         """
+        # if anything changed, write everything
         try:
             record = val(self.__refs)
         except NotAvailableError:
@@ -1282,6 +1331,7 @@ class Record(State):
         self.__log_writer.write_record(record)
 
     def cancel(self, cancel_time):
+        # deal with canceling if we're active
         if self._active:
             if cancel_time < self._start_time:
                 clock.unschedule(self.leave)
@@ -1319,8 +1369,10 @@ class Log(AutoFinalizeState):
         self.__log_filename = self._exp.reserve_data_filename(title, "smlog")
         fields = ["time"] + self._init_log_items.keys()
         if isinstance(self._init_log_dict, dict):
+            # extend the dict from the kwargs
             fields.extend(self._init_log_dict.iterkeys())
         elif type(self._init_log_dict) in (tuple, list):
+            # handle list of dicts (writing row for each list item)
             fields.extend(self._init_log_dict[0].iterkeys())
         self.__log_writer = LogWriter(self.__log_filename, fields)
 
@@ -1545,8 +1597,6 @@ class ResetClock(AutoFinalizeState):
                                          name=name,
                                          blocking=blocking)
         if new_time is None:
-            #TODO: define "now" in ref.py
-            #TODO: use maximum of now and start time?
             self._init_new_time = Ref(clock.now, use_cache=False)
         else:
             self._init_new_time = new_time
@@ -1610,7 +1660,7 @@ class Func(CallbackState):
             name=kwargs.pop("name", None),
             blocking=kwargs.pop("blocking", True))
 
-        # set up the state
+        # set up the state (these will get processed at enter)
         self._init_func = func
         self._init_pargs = pargs
         self._init_kwargs = kwargs
