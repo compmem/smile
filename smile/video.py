@@ -666,10 +666,8 @@ for widget in widgets:
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
 
-@WidgetState.wrap
-def RstDocument(*pargs, **kwargs):
-    from kivy.uix.rst import RstDocument
-    return RstDocument(*pargs, **kwargs)
+import kivy.uix.rst
+RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
 
 
 import kivy.uix.video
