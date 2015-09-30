@@ -13,6 +13,7 @@ import gzip
 import csv
 
 class LogWriter(object):
+    """Write to a compressed smile log (smlog)."""
     def __init__(self, filename, field_names):
         self._field_names = field_names
         self._file = gzip.open(filename, "wb")
@@ -28,8 +29,11 @@ class LogWriter(object):
 
 
 class LogReader(object):
+    """Read from a compressed smile log (smlog)"""
     def __init__(self, filename):
         self._file = gzip.open(filename, "rb")
+
+        # read until one pickle is done
         self._unpickler = cPickle.Unpickler(self._file)
         self._field_names = tuple(self._unpickler.load())
 
@@ -75,6 +79,7 @@ def _unwrap(d, prefix='', depth=0):
 
 
 def log2csv(log_filename, csv_filename):
+    """Convert a smlog to a CSV."""
     colnames = []
     reader = LogReader(log_filename)
     for record in reader:
@@ -89,11 +94,3 @@ def log2csv(log_filename, csv_filename):
         for record in LogReader(log_filename):
             dw.writerow(dict(_unwrap(record.items())))
 
-    #with open(csv_filename, 'wb') as fout:
-    #    reader = LogReader(log_filename)
-    #    dw = csv.DictWriter(fout, fieldnames=reader.field_names)
-    #    dw.writeheader()
-    #    for record in reader:
-    #        dw.writerow(record)
-
-#...
