@@ -299,6 +299,7 @@ class WidgetState(VisualState):
                                  (name, self))
 
     def get_current_param(self, name):
+        # important that this is pulling from the current clone
         return getattr(self.current_clone._widget, name)
 
     def __getattr__(self, name):
@@ -323,6 +324,7 @@ class WidgetState(VisualState):
             return ref
 
     def property_callback(self, name, *pargs):
+        # ensure we update dependencies if necessary
         try:
             ref = self.__issued_refs[name]
         except KeyError:
@@ -362,7 +364,8 @@ class WidgetState(VisualState):
             return value
 
     def resolve_params(self, params):
-        # remove kivy's default size hints...
+        # remove kivy's default size hints
+        # if a user didn't specify them
         if "size_hint" not in params:
             params.setdefault("size_hint_x", None)
             params.setdefault("size_hint_y", None)
@@ -370,6 +373,7 @@ class WidgetState(VisualState):
         return params
 
     def construct(self, params):
+        # construct the widget, set params, and bind them
         self._widget = self.__widget_class(**params)
         self._set_widget_defaults()
         self.live_change(**params)
@@ -380,6 +384,7 @@ class WidgetState(VisualState):
         pass
 
     def show(self):
+        # add the widget to the correct parent to handle drawing
         if self.__layout is None:
             self.__parent_widget = self._exp._app.wid
         else:
@@ -387,10 +392,12 @@ class WidgetState(VisualState):
         self.__parent_widget.add_widget(self._widget, index=self._index)
 
     def unshow(self):
+        # remove the widget from the parent
         self.__parent_widget.remove_widget(self._widget)
         self.__parent_widget = None
 
     def live_change(self, **params):
+        # handle setting any property of a widget
         xy_pos_props = {"pos": "min", "center": "mid"}
         x_pos_props = {"x": "min", "center_x": "mid", "right": "max"}
         y_pos_props = {"y": "min", "center_y": "mid", "top": "max"}
