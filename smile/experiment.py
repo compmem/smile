@@ -25,8 +25,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.base import EventLoop # this is actually our event loop
-# Window imported later because kivy graphics configs must come first...
-Window = None
+from kivy.core.window import Window
 from kivy.graphics.opengl import (
     glEnableVertexAttribArray,
     glVertexAttribPointer,
@@ -152,12 +151,8 @@ class ExpApp(App):
     """Kivy app associated with the experiment.
 
     Not instantiated by the end user."""
-    def __init__(self, exp, fullscreen=None, size=None):
+    def __init__(self, exp):
         super(ExpApp, self).__init__()
-        #if size is not None:
-        #    Window.size=size
-        #if fullscreen is not None:
-        #    Window.fullscreen = fullscreen
         self.exp = exp
         self.callbacks = {}
         self.pending_flip_time = None
@@ -438,29 +433,26 @@ class ExpApp(App):
 class Experiment(object):
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
-        global Window
+        #global Window
         self._process_args()
 
         # handle fullscreen and resolution before Window is imported
-        self._fullscreen = self._fullscreen or fullscreen
+        if fullscreen is not None:
+            self._fullscreen = fullscreen
         self._resolution = self._resolution or resolution
 
-        # set necessary config values prior to importing Window
-        if self._fullscreen:
-            Config.set("graphics", "fullscreen", self._fullscreen)
-        if self._resolution:
-            Config.set("graphics", "width", self._resolution[0])
-            Config.set("graphics", "height", self._resolution[1])
-
-        # free to import Window and apply those config values
-        from kivy.core.window import Window
+        # set fullscreen and resolution
+        if self._fullscreen is not None:
+            Window.fullscreen = self._fullscreen
+        if self._resolution is not None:
+            Window.system_size = self._resolution
 
         # process background color
         self._background_color = background_color
         self.set_background_color()
 
         # make custom experiment app instance
-        self._app = ExpApp(self, fullscreen=fullscreen, size=resolution)#???
+        self._app = ExpApp(self)
 
         # set up instance for access throughout code
         self.__class__._last_instance = weakref.ref(self)
@@ -524,8 +516,10 @@ class Experiment(object):
                             help="unique subject id",
                             default='test000')
         parser.add_argument("-f", "--fullscreen",
-                            help="toggle fullscreen",
+                            help="disable fullscreen",
                             action='store_true')
+        parser.add_argument("-r", "--resolution",
+                            help="screen / window resolution (e.g. '600x800')")
         parser.add_argument("-i", "--info",
                             help="additional run info",
                             default='')
@@ -544,11 +538,15 @@ class Experiment(object):
 
         # check for fullscreen
         if args.fullscreen:
-            self._fullscreen = "auto"
+            self._fullscreen = False
         else:
             self._fullscreen = None
 
-        self._resolution = None  #TODO: command line option for resolution
+        if args.resolution:
+            x, y = map(int, args.resolution.split("x"))
+            self._resolution = x, y
+        else:
+            self._resolution = None
 
         # set the additional info
         self._info = args.info  #?????????
