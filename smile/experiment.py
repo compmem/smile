@@ -14,7 +14,6 @@ import weakref
 import argparse
 import time
 import threading
-from functools import partial
 
 # kivy imports
 import kivy_overrides
@@ -375,7 +374,7 @@ class ExpApp(App):
                 self.stop()
         else:
              # enter the root state if it is not entered yet
-            clock.schedule(partial(self.exp._root_state.enter, self._new_time + 0.25))
+            self.exp._root_state.enter(self._new_time + 0.25)
             self._entered_root_state = True
 
         # save the time
