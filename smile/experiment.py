@@ -373,7 +373,7 @@ class ExpApp(App):
             if not self.exp._root_state._active:
                 # exit if experiment done
                 self.stop()
-        else:
+        elif kivy_needs_draw:
              # enter the root state if it is not entered yet
             clock.schedule(partial(self.exp._root_state.enter, self._new_time + 0.25))
             self._entered_root_state = True
