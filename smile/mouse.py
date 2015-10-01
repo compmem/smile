@@ -68,6 +68,7 @@ class MouseCursor(VisualState):
             self._init_offset = offset
 
         self.__instruction = None
+        self.__color_instruction = kivy.graphics.Color(1.0, 1.0, 1.0, 1.0)
         self.__pos_ref = self._exp._app.mouse_pos_ref
 
         self._log_attrs.extend(["filename", "offset"])
@@ -85,14 +86,14 @@ class MouseCursor(VisualState):
         MouseCursor.stack.append(self)
 
     def _add_to_canvas(self):
+        Window.canvas.after.add(self.__color_instruction)
         Window.canvas.after.add(self.__instruction)
-        #self._exp._app.wid.canvas.after.add(self.__instruction)
         self.__pos_ref.add_change_callback(self._update_position)
         self._update_position()
 
     def _remove_from_canvas(self):
+        Window.canvas.after.remove(self.__color_instruction)
         Window.canvas.after.remove(self.__instruction)
-        #self._exp._app.wid.canvas.after.remove(self.__instruction)
         self.__pos_ref.remove_change_callback(self._update_position)
 
     def _update_position(self):
