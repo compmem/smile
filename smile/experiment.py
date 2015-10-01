@@ -205,6 +205,9 @@ class ExpApp(App):
         # set starting times
         self._last_time = clock.now()
         self._last_kivy_tick = clock.now()
+
+        # clear the entered_root_state flag
+        self._entered_root_state = False
         
         # use our idle callback (defined below)
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
@@ -365,12 +368,17 @@ class ExpApp(App):
                     self.last_flip = event_time(clock.now(), 0.0)
                 self.pending_flip_time = None
 
+        if self._entered_root_state:
+            if not self.exp._root_state._active:
+                # exit if experiment done
+                self.stop()
+        else:
+             # enter the root state if it is not entered yet
+            self.exp._root_state.enter(self._new_time + 0.25)
+            self._entered_root_state = True
+
         # save the time
         self._last_time = self._new_time
-
-        # exit if experiment done
-        if not self.exp._root_state._active:
-            self.stop()
 
         # give time to other threads
         clock.usleep(250)
@@ -625,9 +633,6 @@ class Experiment(object):
             self._root_state.tron()
         self._root_state.begin_log()
         try:
-            # start the first state (that's the root state)
-            self._root_state.enter(clock.now() + 1.0)
-
             # kivy main loop
             self._app.run()
         except:
