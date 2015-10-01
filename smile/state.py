@@ -843,12 +843,20 @@ def UntilDone(name=None, blocking=True):
     p._children[0]._blocking = False
 
 
-class Serial(ParentState):
-    """Parent state that runs its children in serial.
+class SequentialState(ParentState):
+    """Base state for parents that run a sequence of child states back to back.
     """
+    def __init__(self, children=None, parent=None, save_log=True, name=None,
+                 blocking=True):
+        super(SequentialState, self).__init__(children=children,
+                                              parent=parent,
+                                              save_log=save_log,
+                                              name=name,
+                                              blocking=blocking)
+
     def _enter(self):
-        super(Serial, self)._enter()
-        self.__child_iterator = iter(self._children)
+        super(SequentialState, self)._enter()
+        self.__child_iterator = self._get_child_iterator()
         self.__current_child = None
         self.__cancel_time = None
         try:
@@ -862,16 +870,19 @@ class Serial(ParentState):
             self._end_time = self._start_time
             clock.schedule(self.leave)
 
+    def _get_child_iterator(self):
+        raise NotImplementedError
+
     def child_enter_callback(self, child):
         # if we've been canceled, tell the specified child it should
         # end by our cancel time
-        super(Serial, self).child_enter_callback(child)
+        super(SequentialState, self).child_enter_callback(child)
         if self.__cancel_time is not None:
             clock.schedule(partial(child.cancel, self.__cancel_time))
 
     def child_leave_callback(self, child):
         # gets called anytime a child leaves
-        super(Serial, self).child_leave_callback(child)
+        super(SequentialState, self).child_leave_callback(child)
         # get the time for the next state based on the end_time of the
         # current child
         next_time = self.__current_child._end_time
@@ -902,6 +913,13 @@ class Serial(ParentState):
             clock.schedule(partial(self.__current_child.cancel, cancel_time))
             # set the cancel time to ensure future children are canceled
             self.__cancel_time = cancel_time
+
+
+class Serial(SequentialState):
+    """Parent state that runs its children in serial.
+    """
+    def _get_child_iterator(self):
+        return iter(self._children)
 
 
 class Subroutine(object):
@@ -1028,8 +1046,8 @@ class SubroutineSet(AutoFinalizeState):
         self.__subroutine.set_var(self._var_name, self._value)
         clock.schedule(self.leave)
 
-    
-class If(ParentState):
+
+class If(SequentialState):
     """Parent state to implement conditional branching. If state is used in
     lieu of a traditional Python if statement.
     """
@@ -1069,28 +1087,16 @@ class If(ParentState):
 
         # append outcome to log
         self._log_attrs.append('outcome_index')
-        
-    def _enter(self):
-        super(If, self)._enter()
-        self._outcome_index = self._cond.index(True)
-        self.__selected_child = (
-            self._out_states[self._outcome_index].clone(self))
-        clock.schedule(partial(self.__selected_child.enter, self._start_time))
 
-    def child_leave_callback(self, child):
-        super(If, self).child_leave_callback(child)
-        self._end_time = child._end_time
-        self.leave()
+    def _get_child_iterator(self):
+        self._outcome_index = self._cond.index(True)
+        yield self._out_states[self._outcome_index]
 
     def __enter__(self):
         # push self.__true_state as current parent
         if not self._exp is None:
             self._exp._parents.append(self.__true_state)
         return self
-
-    def cancel(self, cancel_time):
-        if self._active:
-            self.__selected_child.cancel(cancel_time)
 
 
 class Elif(Serial):
@@ -1156,7 +1162,7 @@ def Else(name="ELSE BODY"):
     return false_state
 
 
-class Loop(ParentState):
+class Loop(SequentialState):
     """State that implements a loop.
     """
     def __init__(self, iterable=None, shuffle=False, conditional=True,
@@ -1205,52 +1211,15 @@ class Loop(ParentState):
             for i in xrange(count):
                 yield i
 
-    def _enter(self):
-        # get the parent enter
-        super(Loop, self)._enter()
+    def _get_child_iterator(self):
         self._outcome = NotAvailable
-        self.__current_child = None
-        self.__cancel_time = None
-        self.__i_iterator = self.iter_i()
-        self.start_next_iteration(self._start_time)
-
-    def start_next_iteration(self, next_time):
-        """Start the next iteration of the loop and set 'current'.
-        """
-        try:
-            self._i = self.__i_iterator.next()
+        for i in self.iter_i():
+            self._i = i
             if self._iterable is None or isinstance(self._iterable, int):
-                self._current = self._i
+                self._current = i
             else:
-                self._current = self._iterable[self._i]
-        except StopIteration:
-            self._end_time = next_time
-            clock.schedule(self.leave)
-            return
-        self.__current_child = self.__body_state.clone(self)
-        clock.schedule(partial(self.__current_child.enter, next_time))
-
-    def child_enter_callback(self, child):
-        super(Loop, self).child_enter_callback(child)
-        if self.__cancel_time is not None:
-            child.cancel(self.__cancel_time)
-
-    def child_leave_callback(self, child):
-        super(Loop, self).child_leave_callback(child)
-        next_time = self.__current_child._end_time
-        if next_time is None:
-            self.leave()
-        elif (self.__cancel_time is not None and
-              next_time >= self.__cancel_time):
-            self._end_time = self.__cancel_time
-            self.leave()
-        else:
-            self.start_next_iteration(next_time)
-
-    def cancel(self, cancel_time):
-        if self._active:
-            self.__current_child.cancel(cancel_time)
-            self.__cancel_time = cancel_time
+                self._current = self._iterable[i]
+            yield self.__body_state
 
     def __enter__(self):
         # push self.__body_state as current parent
