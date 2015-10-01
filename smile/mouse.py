@@ -8,6 +8,7 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import operator
+import os
 
 import kivy_overrides
 from kivy.core.window import Window
@@ -61,12 +62,14 @@ class MouseCursor(VisualState):
                                           name=name,
                                           blocking=blocking)
         if filename is None:
-            self._init_filename = "crosshairs.png"  #TODO: this must always look in the smile source directory!
+            self._init_filename = os.path.join(os.path.dirname(__file__),
+                                               "crosshairs.png")
             self._init_offset = (50, 50)
         else:
             self._init_filename = filename
             self._init_offset = offset
 
+        self.__texture = None
         self.__instruction = None
         self.__color_instruction = kivy.graphics.Color(1.0, 1.0, 1.0, 1.0)
         self.__pos_ref = self._exp._app.mouse_pos_ref
@@ -80,8 +83,10 @@ class MouseCursor(VisualState):
                                                      size=texture.size)
 
     def show(self):
-        if len(MouseCursor.stack):
-            MouseCursor.stack.pop()._remove_from_canvas()
+        try:
+            MouseCursor.stack[-1]._remove_from_canvas()
+        except IndexError:
+            pass
         self._add_to_canvas()
         MouseCursor.stack.append(self)
 
@@ -214,6 +219,9 @@ if __name__ == '__main__':
         with Parallel():
             MouseRecord()
             MouseCursor()
+
+    Wait(2.0)
+    MouseCursor("face-smile.png", (125, 125), duration=5.0)
 
     Debug(name='Mouse Press Test')
 
