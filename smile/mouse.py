@@ -9,10 +9,16 @@
 
 import operator
 
+import kivy_overrides
+from kivy.core.window import Window
+import kivy.graphics
+from kivy.core.image import Image
+
 from state import CallbackState, Record
 from ref import Ref, val, NotAvailable
 from clock import clock
 from experiment import Experiment
+from video import VisualState
 
 
 def MouseWithin(widget):
@@ -43,6 +49,68 @@ def MouseRecord(widget=None, name="MouseRecord"):
     rec = Record(pos=MousePos(widget), button=MouseButton(widget), name=name)
     rec.override_instantiation_context()
     return rec
+
+
+class MouseCursor(VisualState):
+    stack = []
+    def __init__(self, filename=None, offset=None, duration=None, parent=None,
+                 save_log=True, name=None, blocking=True):
+        super(MouseCursor, self).__init__(parent=parent, 
+                                          duration=duration,
+                                          save_log=save_log,
+                                          name=name,
+                                          blocking=blocking)
+        if filename is None:
+            self._init_filename = "crosshairs.png"  #TODO: this must always look in the smile source directory!
+            self._init_offset = (50, 50)
+        else:
+            self._init_filename = filename
+            self._init_offset = offset
+
+        self.__instruction = None
+        self.__pos_ref = self._exp._app.mouse_pos_ref
+
+        self._log_attrs.extend(["filename", "offset"])
+
+    def _enter(self):
+        super(MouseCursor, self)._enter()
+        texture = Image(self._filename).texture
+        self.__instruction = kivy.graphics.Rectangle(texture=texture,
+                                                     size=texture.size)
+
+    def show(self):
+        if len(MouseCursor.stack):
+            MouseCursor.stack.pop()._remove_from_canvas()
+        self._add_to_canvas()
+        MouseCursor.stack.append(self)
+
+    def _add_to_canvas(self):
+        Window.canvas.after.add(self.__instruction)
+        #self._exp._app.wid.canvas.after.add(self.__instruction)
+        self.__pos_ref.add_change_callback(self._update_position)
+        self._update_position()
+
+    def _remove_from_canvas(self):
+        Window.canvas.after.remove(self.__instruction)
+        #self._exp._app.wid.canvas.after.remove(self.__instruction)
+        self.__pos_ref.remove_change_callback(self._update_position)
+
+    def _update_position(self):
+        pos = val(self.__pos_ref)
+        if None not in pos:
+            self.__instruction.pos = [mp - os for (mp, os) in
+                                      zip(pos, self._offset)]
+
+    def unshow(self):
+        if MouseCursor.stack[-1] is self:
+            self._remove_from_canvas()
+            MouseCursor.stack.pop()
+            try:
+                MouseCursor.stack[-1]._add_to_canvas()
+            except IndexError:
+                pass
+        else:
+            MouseCursor.stack.remove(self)
 
 
 class MousePress(CallbackState):
@@ -133,7 +201,7 @@ class MousePress(CallbackState):
 if __name__ == '__main__':
 
     from experiment import Experiment
-    from state import Wait, Debug, Loop, Meanwhile, Record, Log
+    from state import Wait, Debug, Loop, Meanwhile, Record, Log, Parallel
 
     def print_dt(state, *args):
         print args
@@ -142,8 +210,10 @@ if __name__ == '__main__':
 
     with Meanwhile():
         #Record(pos=MousePos(), button=MouseButton())
-        MouseRecord()
-    
+        with Parallel():
+            MouseRecord()
+            MouseCursor()
+
     Debug(name='Mouse Press Test')
 
     exp.last_pressed = ''

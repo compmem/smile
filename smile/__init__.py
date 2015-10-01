@@ -28,7 +28,13 @@ from state import (
     Debug,
     PrintTraceback)
 from keyboard import Key, KeyPress, KeyRecord
-from mouse import MouseWithin, MousePos, MouseButton, MouseRecord, MousePress
+from mouse import (
+    MouseWithin,
+    MousePos,
+    MouseButton,
+    MouseCursor,
+    MouseRecord,
+    MousePress)
 from video import (
     Screenshot,
     Bezier,
@@ -52,8 +58,7 @@ from video import (
     PageLayout,
     ScatterLayout,
     StackLayout,
-    BackgroundColor
-    )
+    BackgroundColor)
 from dotbox import DotBox
 from ref import Ref, val, jitter, shuffle
 #from smile.audio import Beep, SoundFile, RecordSoundFile

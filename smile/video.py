@@ -819,6 +819,7 @@ class ButtonPress(CallbackState):
 if __name__ == '__main__':
     from experiment import Experiment
     from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial, Done, Debug
+    from mouse import MouseCursor
     from math import sin, cos
     from contextlib import nested
 
@@ -855,6 +856,7 @@ $ print("Hello world")
                          center_top=exp.screen.left_top, blocking=False)
         rect.animate(center_x=lambda t, initial: slider.value, blocking=False)
         ti = TextInput(text="EDIT!", top=slider.bottom, blocking=False)
+        MouseCursor()
     label = Label(text=ti.text, duration=5.0, font_size=50, color="white")
     Done(label)
     Debug(label_disappear_time=label.disappear_time)
@@ -914,6 +916,7 @@ $ print("Hello world")
     with ButtonPress():
         Button(text="Click to continue", size=(exp.screen.width / 4,
                                                exp.screen.height / 4))
+        MouseCursor()
     with Meanwhile():
         Triangle(points=[0, 0, 500, 500, 0, 500],
                  color=(1.0, 1.0, 0.0, 0.5))
