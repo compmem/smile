@@ -162,6 +162,22 @@ class VisualState(State):
         self._disappeared = True
         clock.schedule(self.finalize)
 
+    def _schedule_start(self):
+        self.__appear_video = self._exp._app.schedule_video(
+            self.appear, self._start_time, self.set_appear_time)
+
+    def _unschedule_start(self):
+        if self.__appear_video is not None:
+            self._exp._app.cancel_video(self.__appear_video)
+
+    def _schedule_end(self):
+        self.__disappear_video = self._exp._app.schedule_video(
+            self.disappear, self._end_time, self.set_disappear_time)
+
+    def _unschedule_end(self):
+        if self.__disappear_video is not None:
+            self._exp._app.cancel_video(self.__disappear_video)
+
     def _enter(self):
         self._appear_time = NotAvailable
         self._disappear_time = NotAvailable
@@ -171,12 +187,6 @@ class VisualState(State):
         self.__appear_video = None
         self.__disappear_video = None
 
-        self.__appear_video = self._exp._app.schedule_video(
-            self.appear, self._start_time, self.set_appear_time)
-        if self._end_time is not None:
-            self.__disappear_video = self._exp._app.schedule_video(
-                self.disappear, self._end_time, self.set_disappear_time)
-
     def show(self):
         pass
 
@@ -185,26 +195,15 @@ class VisualState(State):
 
     def appear(self):
         self.claim_exceptions()
+        self._started = True
         self.__appear_video = None
         self.show()
 
     def disappear(self):
         self.claim_exceptions()
+        self._ended = True
         self.__disappear_video = None
         self.unshow()
-
-    def cancel(self, cancel_time):
-        if self._active:
-            clock.schedule(self.leave)
-            cancel_time = max(cancel_time, self._start_time)
-            if self._end_time is not None:
-                cancel_time = min(cancel_time, self._end_time)
-            if self._end_time is None or cancel_time < self._end_time:
-                if self.__disappear_video is not None:
-                    self._exp._app.cancel_video(self.__disappear_video)
-                self.__disappear_video = self._exp._app.schedule_video(
-                    self.disappear, cancel_time, self.set_disappear_time)
-                self._end_time = cancel_time
 
 
 class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never clears?
@@ -550,16 +549,23 @@ class Animate(State):
         self.__anim_params = anim_params
         self.__initial_params = None
 
-    def _enter(self):
-        self.__initial_params = None
-        self.__target_clone = self.__target.current_clone
+    def _schedule_start(self):
         first_update_time = self._start_time + self._exp._app.flip_interval
         clock.schedule(self.update, event_time=first_update_time,
                        repeat_interval=self._exp._app.flip_interval)
         clock.schedule(self.leave)
 
+    def _unschedule_start(self):
+        clock.unschedule(self.update)
+        clock.unschedule(self.leave)
+
+    def _enter(self):
+        self.__initial_params = None
+        self.__target_clone = self.__target.current_clone
+
     def update(self):
         self.claim_exceptions()
+        self._started = True
         now = clock.now()
         if self.__initial_params is None:
             self.__initial_params = {
@@ -576,11 +582,6 @@ class Animate(State):
         self.__target_clone.live_change(
             **self.__target_clone.transform_params(
                 self.__target_clone.apply_aliases(params)))
-
-    def cancel(self, cancel_time):
-        if self._active and (self._end_time is None or
-                            cancel_time < self._end_time):
-            self._end_time = cancel_time
 
 
 def vertex_instruction_widget(instr_cls, name=None):
@@ -883,7 +884,7 @@ $ print("Hello world")
         rect.center = exp.screen.right_bottom
         Wait(1.0)
         rect.center = exp.screen.left_top
-        Screenshot()
+        #Screenshot()
         Wait(1.0)
         rect.center = exp.screen.left_bottom
         Wait(1.0)
@@ -901,7 +902,7 @@ $ print("Hello world")
         vid.slide(center_x=exp.screen.width * 0.75,
                   center_y=exp.screen.center_y,
                   duration=1.0)
-        Screenshot("my_screenshot.png")
+        #Screenshot("my_screenshot.png")
         vid.animate(center_x=(lambda t, initial: exp.screen.center_x +
                               cos(t / 3.0) * exp.screen.width * 0.25),
                     center_y=(lambda t, initial: exp.screen.center_y +
@@ -911,7 +912,7 @@ $ print("Hello world")
     with Loop(3) as loop:
         Video(source="test_video.mp4", size=exp.screen.size,
               allow_stretch=loop.i%2, duration=5.0)
-        Screenshot(name="foo")
+        #Screenshot(name="foo")
 
     with ButtonPress():
         Button(text="Click to continue", size=(exp.screen.width / 4,

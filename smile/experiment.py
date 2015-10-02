@@ -670,6 +670,8 @@ class Set(AutoFinalizeState):
         for name, value in self._values.iteritems():
             self._exp.set_var(name, value)
         clock.schedule(self.leave)
+        self._started = True
+        self._ended = True
 
 
 if __name__ == '__main__':
