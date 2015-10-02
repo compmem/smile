@@ -60,6 +60,12 @@ class State(object):
         self._start_time = None
         self._end_time = None
 
+        # Stared and ended flags for the state.  These indicate whether the
+        # user-facing effect of the state has begun and ended, respectively.
+        # This is used to determine what should be done for cancellation.
+        self._started = False
+        self._ended = False
+
         # Record of enter time, leave time, and finalize time at and after the
         # most recent enter.
         self._enter_time = None
@@ -432,6 +438,18 @@ class State(object):
         # return that plus the log attribute names
         return lst + self._log_attrs
 
+    def _schedule_start(self):
+        pass
+
+    def _unschedule_start(self):
+        pass
+
+    def _schedule_end(self):
+        pass
+
+    def _unschedule_end(self):
+        pass
+
     def _enter(self):
         """Custom method to call at enter time.  Optionally overridden in
         subclasses.
@@ -453,6 +471,10 @@ class State(object):
 
         # record the end time
         self._enter_time = clock.now()
+
+        # Clear the started and ended flags
+        self._started = False
+        self._ended = False
 
         # the leave and finalize times start out as NotAvailable
         self._leave_time = NotAvailable
@@ -493,6 +515,13 @@ class State(object):
 
         # custom enter code
         self._enter()
+
+        # schedule start
+        self._schedule_start()
+
+        # schedule end, if end time available
+        if self._end_time is not None:
+            self._schedule_end()
 
         if self.__tracing:
             # print trace line, if tracing...
@@ -551,11 +580,26 @@ class State(object):
     def cancel(self, cancel_time):
         """Force the state to end (possibly prematurely) at a specified time.
         """
-        if self._active and not self._following_may_run:
-            clock.schedule(self.leave, event_time=cancel_time)
-            #QUESTION: Should this do anything in the base class at all?
-            if self._end_time is None or cancel_time < self._end_time:
-                self._end_time = cancel_time
+        if not self._active:
+            return
+        if not self._started and cancel_time < self._start_time:
+            self._unschedule_start()
+            if self._end_time is not None:
+                self._unschedule_end()
+            self._start_time = cancel_time
+            self._end_time = cancel_time
+            clock.schedule(self.leave)
+            clock.schedule(self.finalize)
+        elif not self._ended and self._end_time is None:
+            self._end_time = cancel_time
+            self._schedule_end()
+        elif not self._ended and cancel_time < self._end_time:
+            self._unschedule_end()
+            self._end_time = cancel_time
+            self._schedule_end()
+        elif self._ended and cancel_time < self._end_time:
+            # Oops!  We already ended.  Just revise the end time.
+            self._end_time = cancel_time
 
     def save_log(self):
         """Write a record to the state log for the current execution of the
@@ -618,6 +662,9 @@ class ParentState(State):
         # keep track of children that enter from this parent
         self.__unfinalized_children = set()
 
+        # cancel time (None if not cancelled)
+        self._cancel_time = None
+
     def tron(self, depth=0):
         """Activate trace output for this state and all its children.
         """
@@ -660,6 +707,8 @@ class ParentState(State):
         """Notify this state that one of its children has entered.
         """
         self.__unfinalized_children.add(child)
+        if self._cancel_time is not None:
+            child.cancel(self._cancel_time)
 
     def child_leave_callback(self, child):
         """Notify this state that one of its children has left.
@@ -677,6 +726,7 @@ class ParentState(State):
 
     def _enter(self):
         self.__unfinalized_children = set()
+        self.__cancel_time = None
 
     def _leave(self):
         if not len(self._children) or not len(self.__unfinalized_children):
@@ -692,6 +742,15 @@ class ParentState(State):
         # pop self off
         if not self._exp is None:
             state = self._exp._parents.pop()
+
+    def cancel(self, cancel_time):
+        if not self._active:
+            return
+        for child in self.__unfinalized_children:
+            child.cancel(cancel_time)
+        if self._end_time is None or cancel_time < self._end_time:
+            self._end_time = cancel_time
+        self._cancel_time = cancel_time
 
 
 class Parallel(ParentState):
@@ -759,12 +818,6 @@ class Parallel(ParentState):
         if not len(self.__remaining):
             # there are no more children to finish, so leave
             self.leave()
-
-    def cancel(self, cancel_time):
-        if self._active:
-            # cancel all children
-            for child in self.__my_children:
-                child.cancel(cancel_time)
 
     def _set_end_time(self):
         """Determine the end time of this Parallel based on its children.
@@ -858,7 +911,6 @@ class SequentialState(ParentState):
         super(SequentialState, self)._enter()
         self.__child_iterator = self._get_child_iterator()
         self.__current_child = None
-        self.__cancel_time = None
         try:
             # clone the children as they come, so just clone the first
             self.__current_child = (
@@ -873,13 +925,6 @@ class SequentialState(ParentState):
     def _get_child_iterator(self):
         raise NotImplementedError
 
-    def child_enter_callback(self, child):
-        # if we've been canceled, tell the specified child it should
-        # end by our cancel time
-        super(SequentialState, self).child_enter_callback(child)
-        if self.__cancel_time is not None:
-            clock.schedule(partial(child.cancel, self.__cancel_time))
-
     def child_leave_callback(self, child):
         # gets called anytime a child leaves
         super(SequentialState, self).child_leave_callback(child)
@@ -890,11 +935,11 @@ class SequentialState(ParentState):
             # no need to schedule the next b/c there is no end time
             # for the previous state, so we can leave
             self.leave()
-        elif (self.__cancel_time is not None and
-            next_time >= self.__cancel_time):
+        elif (self._cancel_time is not None and
+            next_time >= self._cancel_time):
             # if there is a cancel time and the next is going to be after
             # the cancel, then just use the cancel time
-            self._end_time = self.__cancel_time
+            self._end_time = self._cancel_time
             self.leave()
         else:
             try:
@@ -906,13 +951,6 @@ class SequentialState(ParentState):
                 # there are no more children, so set our end time and leave
                 self._end_time = next_time
                 clock.schedule(self.leave)
-
-    def cancel(self, cancel_time):
-        if self._active:
-            # we've been told to cancel, so cancel the current child
-            clock.schedule(partial(self.__current_child.cancel, cancel_time))
-            # set the cancel time to ensure future children are canceled
-            self.__cancel_time = cancel_time
 
 
 class Serial(SequentialState):
@@ -1266,13 +1304,23 @@ class Record(State):
                                 ".csv")
                 log2csv(self.__log_filename, csv_filename)
 
-    def _enter(self):
+    def _schedule_start(self):
         clock.schedule(self.leave, event_time=self._start_time)
-        if self._end_time is not None:
-            clock.schedule(self.finalize, event_time=self._end_time)
+
+    def _schedule_end(self):
+        clock.schedule(self.finalize, event_time=self._end_time)
+
+    def _unschedule_start(self):
+        clock.unschedule(self.leave)
+
+    def _unschedule_end(self):
+        clock.unschedule(self.finalize)
 
     def _leave(self):
-        # leaves at start time, and starts recording changes for each ref
+        # starts at leave time
+        self._started = True
+
+        # starts recording changes for each ref
         for name, ref in self.__refs.iteritems():
             # get current value
             self.record_change()
@@ -1281,6 +1329,9 @@ class Record(State):
             ref.add_change_callback(self.record_change)
 
     def finalize(self):
+        # ends at finalize time
+        self._ended = True
+
         # we're done
         super(Record, self).finalize()
         # stop tracking changes for each ref
@@ -1298,20 +1349,6 @@ class Record(State):
                 "One or more recorded values not available!")
         record["timestamp"] = self._exp._app.event_time
         self.__log_writer.write_record(record)
-
-    def cancel(self, cancel_time):
-        # deal with canceling if we're active
-        if self._active:
-            if cancel_time < self._start_time:
-                clock.unschedule(self.leave)
-                clock.schedule(self.leave)
-                clock.unschedule(self.finalize)
-                clock.schedule(self.finalize)
-                self._end_time = self._start_time
-            elif self._end_time is None or cancel_time < self._end_time:
-                clock.unschedule(self.finalize)
-                clock.schedule(self.finalize, event_time=cancel_time)
-                self._end_time = cancel_time
 
 
 class Log(AutoFinalizeState):
@@ -1374,6 +1411,8 @@ class Log(AutoFinalizeState):
                 self.__log_writer.write_record(record)
         else:
             raise ValueError("Invalid log_dict value: %r" % self._log_dict)
+        self._started = True
+        self._ended = True
         clock.schedule(self.leave)
 
 
@@ -1427,6 +1466,8 @@ class Done(AutoFinalizeState):
             state._add_finalize_callback(self.__some_active.dep_changed)
         self.__some_active.add_change_callback(self._check)
         clock.schedule(self._check)
+        self._started = True
+        self._ended = True
 
     def _check(self):
         """Check to see if all the tracked states are inactive.
@@ -1435,9 +1476,6 @@ class Done(AutoFinalizeState):
         if not some_active:
             self.__some_active.remove_change_callback(self._check)
             self.leave()
-
-    def cancel(self):
-        pass
 
 
 class Wait(State):
@@ -1462,28 +1500,48 @@ class Wait(State):
 
         self._log_attrs.extend(['until_value', 'event_time'])
 
-    def _enter(self):
-        self._event_time = {"time": None, "error": None}
-        self._until_value = None
+    def _schedule_start(self):
         if self.__until is None:
             clock.schedule(self.leave, event_time=self._start_time)
-            if self._end_time is not None:
-                clock.schedule(self.finalize, event_time=self._end_time)
         else:
             clock.schedule(self.schedule_check_until,
                            event_time=self._start_time)
-            if self._end_time is not None:
-                clock.schedule(self.leave, event_time=self._end_time)
-                clock.schedule(self.finalize, event_time=self._end_time)
+
+    def _unschedule_start(self):
+        if self.__until is None:
+            clock.unschedule(self.leave)
+        else:
+            clock.unschedule(self.schedule_check_until)
+
+    def _schedule_end(self):
+        if self.__until is not None:
+            clock.schedule(self.leave, event_time=self._end_time)
+        clock.schedule(self._finish, event_time=self._end_time)
+
+    def _unschedule_end(self):
+        if self.__until is not None:
+            clock.unschedule(self.leave)
+        clock.unschedule(self._finish)
+
+    def _enter(self):
+        self._event_time = {"time": None, "error": None}
+        self._until_value = None
 
     def _leave(self):
-        if self.__until is not None:
+        if self.__until is None:
+            self._started = True
+        else:
             self.__until.remove_change_callback(self.check_until)
             clock.unschedule(self.schedule_check_until)
+
+    def _finish(self):
+        self._ended = True
+        self.finalize()
 
     def schedule_check_until(self):
         """Setup until condition.
         """
+        self._started = True
         try:
             self._until_value = self.__until.eval()
         except NotAvailableError:
@@ -1503,24 +1561,6 @@ class Wait(State):
         if self._until_value:
             self._event_time = self._exp._app.event_time
             clock.schedule(partial(self.cancel, self._event_time["time"]))
-
-    def cancel(self, cancel_time):
-        if self._active:
-            cancel_time = max(cancel_time, self._start_time)
-            if self._end_time is not None:
-                cancel_time = min(cancel_time, self._end_time)
-            if self.__until is None:
-                if self._end_time is None or cancel_time < self._end_time:
-                    clock.unschedule(self.finalize)
-                    clock.schedule(self.finalize, event_time=cancel_time)
-                    self._end_time = cancel_time
-            else:
-                if self._end_time is None or cancel_time < self._end_time:
-                    clock.unschedule(self.leave)
-                    clock.unschedule(self.finalize)
-                    clock.schedule(self.leave, event_time=cancel_time)
-                    clock.schedule(self.finalize, event_time=cancel_time)
-                    self._end_time = cancel_time
 
 
 def When(condition, body=None, name="WHEN", blocking=True):
@@ -1572,6 +1612,8 @@ class ResetClock(AutoFinalizeState):
 
     def _enter(self):
         self._end_time = self._new_time
+        self._started = True
+        self._ended = True
         clock.schedule(self.leave)
 
 
@@ -1586,14 +1628,22 @@ class CallbackState(AutoFinalizeState):
                                             blocking=blocking)
         self._init_repeat_interval = repeat_interval
 
-    def _enter(self):
+    def _schedule_start(self):
         clock.schedule(self.callback, event_time=self._start_time,
                        repeat_interval=self._repeat_interval)
-        if self._end_time is not None:
-            clock.schedule(self.leave, event_time=self._end_time)
+
+    def _schedule_end(self):
+        clock.schedule(self.leave, event_time=self._end_time)
+
+    def _unschedule_start(self):
+        clock.unschedule(self.callback)
+
+    def _unschedule_end(self):
+        clock.schedule(self.leave)
 
     def _leave(self):
         clock.unschedule(self.callback)
+        self._ended = True
 
     def _callback(self):
         """Custom method that gets called at start time.  To be overridden by
@@ -1605,15 +1655,8 @@ class CallbackState(AutoFinalizeState):
         """Call the custom callback method.
         """
         self.claim_exceptions()
+        self._start = True
         self._callback()
-
-    def cancel(self, cancel_time):
-        if self._active:
-            cancel_time = max(cancel_time, self._start_time)
-            if self._end_time is None or cancel_time < self._end_time:
-                clock.unschedule(self.leave)
-                clock.schedule(self.leave, event_time=cancel_time)
-                self._end_time = cancel_time
 
 
 class Func(CallbackState):
