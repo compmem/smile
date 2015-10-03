@@ -30,9 +30,21 @@ class StateConstructionError(RuntimeError):
     pass
 
 
+class Executor(object):
+    __getattr__ = object.__getattribute__
+
+
+class StateClass(type):
+    def __init__(cls, name, bases, dct):
+        super(StateClass, cls).__init__(name, bases, dct)
+        if Executor not in bases:
+            cls._Executor = type(name, (Executor, cls), {})
+
+
 class State(object):
     """Base State object for the hierarchical state machine.
     """
+    __metaclass__ = StateClass
     def __init__(self, parent=None, duration=None, save_log=True, name=None,
                  blocking=True):
         # Weak value dictionary to track Refs issued by this state.  Necessary
@@ -213,7 +225,16 @@ class State(object):
         self._instantiation_filename = filename
         self._instantiation_lineno = lineno
 
-    def clone(self, parent):
+    def _get_executor(self, parent):  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        cls = type(self)._Executor
+        ex = cls.__new__(cls)
+        ex.__dict__.update(self.__dict__)
+        for attr in self._deepcopy_attrs:
+            ex.__dict__[attr] = copy.deepcopy(self.__dict__[attr])
+        ex._parent = parent
+        return ex
+
+    def clone(self, parent):#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         """Return an inactive copy of this state with the specific parent.
         """
         # Make a shallow copy of self.
@@ -230,6 +251,8 @@ class State(object):
         new_clone._parent = parent
 
         return new_clone
+
+    #_get_executor = clone#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def tron(self, depth=0):
         """Active trace output.
@@ -316,7 +339,7 @@ class State(object):
         # Print out log attributes...
         for attr_name in self._log_attrs:
             try:
-                value = val(getattr(self, attr_name))
+                value = val(getattr(self, "_" + attr_name))
             except NotAvailableError:
                 value = NotAvailable
             if attr_name.endswith("_time"):
@@ -421,7 +444,7 @@ class State(object):
         # time it will be set to that val of the "_init_" value (resolving any
         # Refs)...
         if name[:6] == "_init_":
-            setattr(self, name[5:], None)
+            setattr(self, name[5:], None)#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         # If we've issued a Ref for this attribute, notify the Ref that its
         # dependencies have changed.
@@ -525,9 +548,10 @@ class State(object):
 
         if self.__tracing:
             # print trace line, if tracing...
-            call_time = self._enter_time - self._exp._root_state._start_time
+            call_time = self._enter_time - self._exp._root_executor._start_time
             call_duration = clock.now() - self._enter_time
-            start_time = self._start_time - self._exp._root_state._start_time
+            start_time = (self._start_time -
+                          self._exp._root_executor._start_time)
             self.print_trace_msg(
                 "ENTER time=%fs, duration=%fs, start_time=%fs" %
                 (call_time, call_duration, start_time))
@@ -565,14 +589,15 @@ class State(object):
 
         if self.__tracing:
             # print trace line if tracing...
-            call_time = self._leave_time - self._exp._root_state._start_time
+            call_time = self._leave_time - self._exp._root_executor._start_time
             call_duration = clock.now() - self._leave_time
             if self._end_time is None:
                  self.print_trace_msg(
                     "LEAVE time=%fs, duration=%fs, perpetual" %
                     (call_time, call_duration))
             else:
-                end_time = self._end_time - self._exp._root_state._start_time
+                end_time = (self._end_time -
+                            self._exp._root_executor._start_time)
                 self.print_trace_msg(
                     "LEAVE time=%fs, duration=%fs, end_time=%fs" %
                     (call_time, call_duration, end_time))
@@ -627,7 +652,8 @@ class State(object):
             clock.schedule(partial(func, *pargs, **kwargs))
         self.__finalize_callbacks = []
         if self.__tracing:
-            call_time = self._finalize_time - self._exp._root_state._start_time
+            call_time = (self._finalize_time -
+                         self._exp._root_executor._start_time)
             call_duration = clock.now() - self._finalize_time
             self.print_trace_msg("FINALIZE time=%fs, duration=%fs" %
                                  (call_time, call_duration))
@@ -788,7 +814,7 @@ class Parallel(ParentState):
             # process each child and make clones
             for child in self._children:
                 # clone the child
-                inactive_child = child.clone(self)
+                inactive_child = child._get_executor(self)
                 self.__my_children.append(inactive_child)
                 # if it's blocking append to the blocking children
                 if child._blocking:
@@ -914,7 +940,7 @@ class SequentialState(ParentState):
         try:
             # clone the children as they come, so just clone the first
             self.__current_child = (
-                self.__child_iterator.next().clone(self))
+                self.__child_iterator.next()._get_executor(self))
             # schedule the child based on the current start time
             clock.schedule(partial(self.__current_child.enter, self._start_time))
         except StopIteration:
@@ -936,7 +962,7 @@ class SequentialState(ParentState):
             # for the previous state, so we can leave
             self.leave()
         elif (self._cancel_time is not None and
-            next_time >= self._cancel_time):
+              next_time >= self._cancel_time):
             # if there is a cancel time and the next is going to be after
             # the cancel, then just use the cancel time
             self._end_time = self._cancel_time
@@ -945,7 +971,7 @@ class SequentialState(ParentState):
             try:
                 # clone the next child and schedule it
                 self.__current_child = (
-                    self.__child_iterator.next().clone(self))
+                    self.__child_iterator.next()._get_executor(self))
                 clock.schedule(partial(self.__current_child.enter, next_time))
             except StopIteration:
                 # there are no more children, so set our end time and leave
