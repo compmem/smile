@@ -30,9 +30,103 @@ class StateConstructionError(RuntimeError):
     pass
 
 
+class StateBuilder(object):
+    """A Mixin class that gives States Ref-based attribute access for state
+    machine construction.
+    """
+    def _clone(self, parent):
+        """Return an inactive copy of this state builder as an instance of its
+        state class with the specified parent.
+        """
+        # Make a shallow copy of self.
+        state_class = type(self)._state_class
+        new_clone = state_class.__new__(state_class, use_state_class=True)
+        new_clone.__dict__.update(self.__dict__)
+
+        # Replace certain attributes with deep copies of themselves.
+        for attr in self._deepcopy_attrs:
+            setattr(new_clone, attr, copy.deepcopy(getattr(self, attr)))
+
+        # Set the clone inactive.
+        new_clone._active = False
+
+        # Set the parent of the clone.
+        new_clone._parent = parent
+
+        return new_clone
+
+    def __getattr__(self, name):
+        try:
+            return self.get_attribute_ref(name)
+        except NameError:
+            return super(StateBuilder, self).__getattribute__(name)
+
+    def __setattr__(self, name, value):
+        # If this isn't an internal value (with a leading underscore), create
+        # an attribute update state or raise an error...
+        if name[0] != "_":
+            try:
+                self.attribute_update_state(name, value)
+                return
+            except NotImplementedError:
+                raise AttributeError("State does not support attribute setting!")
+
+        # First, set the sttribute value as normal.
+        super(StateBuilder, self).__setattr__(name, value)
+
+        # If this state is not the current clone of the original state, no
+        # further action is taken...
+        if self.current_clone is not self:
+            return
+
+        # If the name has the prefix "_init_" create a corresponding internal
+        # attribute without that prefix.  Set it to None for now.  At enter
+        # time it will be set to that val of the "_init_" value (resolving any
+        # Refs)...
+        if name[:6] == "_init_":
+            target_name = name[5:]
+            self._refs_for_init_attrs[target_name] = value
+            setattr(self, target_name, None)
+
+    def __dir__(self):
+        # get the default dir()
+        lst = super(StateBuilder, self).__dir__()
+
+        # return that plus the log attribute names
+        return lst + self._log_attrs
+
+class StateClass(type):
+    """A metaclass for States which creates a StateBuilder class for each State
+    class.
+    """
+    def __init__(cls, name, bases, dict_):
+        super(StateClass, cls).__init__(name, bases, dict_)
+        if StateBuilder not in bases:
+            cls._builder_class = type(cls.__name__ + "Builder",
+                                      (StateBuilder, cls),
+                                      {"_state_class": cls})
+
+
 class State(object):
     """Base State object for the hierarchical state machine.
     """
+
+    # Apply the StateClass metaclass
+    __metaclass__ = StateClass
+
+    def __new__(cls, *pargs, **kwargs):
+        # Pull out the use_state_class argument
+        use_state_class = kwargs.pop("use_state_class", False)
+
+        if use_state_class or issubclass(cls, StateBuilder):
+            # If this is already a StateBuilder or if we got the
+            # use_state_class flag, create the object as normal.
+            return super(State, cls).__new__(cls, *pargs, **kwargs)
+        else:
+            # Otherwise, instantiate with the StateBuilder mixin instead.
+            return cls._builder_class.__new__(cls._builder_class,
+                                              *pargs, **kwargs)
+
     def __init__(self, parent=None, duration=None, save_log=True, name=None,
                  blocking=True):
         # Weak value dictionary to track Refs issued by this state.  Necessary
@@ -48,6 +142,9 @@ class State(object):
 
         # Whether or not this state blocks in the context of a Parallel parent.
         self._blocking = blocking
+
+        # Dict of initial Ref values to evaluate at enter time
+        self._refs_for_init_attrs = {}
 
         # This is a convenience argument for automatically setting the end time
         # relative to the start time.  If it evaluates to None, it has no
@@ -171,6 +268,24 @@ class State(object):
             self._name,
             id(self))
 
+    def __setattr__(self, name, value):
+        # First, set the sttribute value as normal.
+        super(State, self).__setattr__(name, value)
+
+        # If this state is not the current clone of the original state, or the
+        # attribute is not named with a leading underscore, not further action
+        # is taken...
+        if name[0] != "_" or self.current_clone is not self:
+            return
+
+        # If we've issued a Ref for this attribute, notify the Ref that its
+        # dependencies have changed.
+        try:
+            ref = self.__issued_refs[name[1:]]
+        except KeyError:
+            return
+        ref.dep_changed()
+
     def set_instantiation_context(self, obj=None):
         """Set this state's instantiation filename and line number to be the
         place where the supplied object was instantiated.
@@ -213,23 +328,21 @@ class State(object):
         self._instantiation_filename = filename
         self._instantiation_lineno = lineno
 
-    def clone(self, parent):
-        """Return an inactive copy of this state with the specific parent.
+    def begin_log(self):
+        """Prepare the per-class state logs.
         """
-        # Make a shallow copy of self.
-        new_clone = copy.copy(self)
+        if self.__save_log:
+            # Use the state logger facily of the associated Experiment so that
+            # only one state log is produced for the state class (rather than
+            # one per instance).
+            self._exp.setup_state_logger(type(self)._state_class.__name__,
+                                         self.get_log_fields())
 
-        # Replace certain attributes with deep copies of themselves.
-        for attr in self._deepcopy_attrs:
-            setattr(new_clone, attr, copy.deepcopy(getattr(self, attr)))
-
-        # Set the clone inactive.
-        new_clone._active = False
-
-        # Set the parent of the clone.
-        new_clone._parent = parent
-
-        return new_clone
+    def end_log(self, to_csv=False):
+        """Close the per-class state logs.
+        """
+        # The associated Experiment cleans up its own state loggers.
+        pass
 
     def tron(self, depth=0):
         """Active trace output.
@@ -316,7 +429,7 @@ class State(object):
         # Print out log attributes...
         for attr_name in self._log_attrs:
             try:
-                value = val(getattr(self, attr_name))
+                value = val(getattr(self, "_" + attr_name))
             except NotAvailableError:
                 value = NotAvailable
             if attr_name.endswith("_time"):
@@ -337,21 +450,6 @@ class State(object):
         """
         return self._log_attrs
 
-    def begin_log(self):
-        """Prepare the per-class state logs.
-        """
-        if self.__save_log:
-            # Use the state logger facily of the associated Experiment so that
-            # only one state log is produced for the state class (rather than
-            # one per instance).
-            self._exp.setup_state_logger(type(self).__name__, self.get_log_fields())
-
-    def end_log(self, to_csv=False):
-        """Close the per-class state logs.
-        """
-        # The associated Experiment cleans up its own state loggers.
-        pass
-
     @property
     def current_clone(self):
         """The most recently entered clone of this state.
@@ -362,7 +460,8 @@ class State(object):
         if ("_State__original_state" in self.__dict__ and
             "_State__most_recently_entered_clone" in self.__dict__):
             # Return the most recently entered clone of the original state.
-            return self.__original_state.__most_recently_entered_clone
+            return self.__original_state.__dict__[
+                "_State__most_recently_entered_clone"]
         else:
             # If those attributes are not set up yet, assume self is the
             # current clone, since no clones could have been created yet.
@@ -375,68 +474,23 @@ class State(object):
         # Return the named attribute from the current clone.
         return getattr(self.current_clone, name)
 
+    def get_attribute_ref(self, name):
+        internal_name = "_" + name
+        if internal_name not in self.__dict__:
+            raise NameError
+        try:
+            # If we already issued such a Ref, return that preexisting Ref.
+            return self.__issued_refs[name]
+        except KeyError:
+            # Otherwise, create the Ref, store it, and return it.
+            ref = Ref(self.get_current_attribute_value, "_" + name)
+            self.__issued_refs[name] = ref
+            return ref
+
     def attribute_update_state(self, name, value):
         """Produce a state that updates an attribute of this state.
         """
         raise NotImplementedError
-
-    def __getattr__(self, name):
-        internal_name = "_" + name
-        if hasattr(self, internal_name):
-            # If we have an internal attribute by this name, produce a Ref that
-            # evaluates to the attribute's current value.
-            try:
-                # If we already issued such a Ref, return that preexisting Ref.
-                return self.__issued_refs[name]
-            except KeyError:
-                # Otherwise, create the Ref, store it, and return it.
-                ref = Ref(self.get_current_attribute_value, internal_name)
-                self.__issued_refs[name] = ref
-                return ref
-        else:
-            # If we don't have an internal attribute by this name, try normal
-            # attribute retrieval method.
-            return super(State, self).__getattribute__(name)
-
-    def __setattr__(self, name, value):
-        # If this isn't an internal value (with a leading underscore), create
-        # an attribute update state or raise an error...
-        if name[0] != "_":
-            try:
-                self.__original_state.attribute_update_state(name, value)
-                return
-            except NotImplementedError:
-                raise AttributeError("State does not support attribute setting!")
-
-        # First, set the sttribute value as normal.
-        super(State, self).__setattr__(name, value)
-
-        # If this state is not the current clone of the original state, no
-        # further action is taken...
-        if self.current_clone is not self:
-            return
-
-        # If the name has the prefix "_init_" create a corresponding internal
-        # attribute without that prefix.  Set it to None for now.  At enter
-        # time it will be set to that val of the "_init_" value (resolving any
-        # Refs)...
-        if name[:6] == "_init_":
-            setattr(self, name[5:], None)
-
-        # If we've issued a Ref for this attribute, notify the Ref that its
-        # dependencies have changed.
-        try:
-            ref = self.__issued_refs[name[1:]]
-        except KeyError:
-            return
-        ref.dep_changed()
-
-    def __dir__(self):
-        # get the default dir()
-        lst = super(State, self).__dir__()
-
-        # return that plus the log attribute names
-        return lst + self._log_attrs
 
     def _schedule_start(self):
         pass
@@ -481,7 +535,8 @@ class State(object):
         self._finalize_time = NotAvailable
 
         # set self as the most recently entered clone of the original
-        self.__original_state.__most_recently_entered_clone = self
+        self.__original_state.__dict__[
+            "_State__most_recently_entered_clone"] = self
 
         # say we're active
         self._active = True
@@ -497,15 +552,14 @@ class State(object):
             self._exp = Experiment._last_instance()
 
         # evaluate the '_init_' Refs...
-        for name, value in self.__dict__.items():
-            if name[:6] == "_init_":
-                try:
-                    setattr(self, name[5:], val(value))
-                except NotAvailableError:
-                    raise NotAvailableError(
-                        ("Attempting to use unavailable value (%r) "
-                         "for attribute %r of %r.  Do you need to use a Done "
-                         "state?") % (value, name[6:], self))
+        for name, value in self._refs_for_init_attrs.iteritems():
+            try:
+                setattr(self, name, val(value))
+            except NotAvailableError:
+                raise NotAvailableError(
+                    ("Attempting to use unavailable value (%r) "
+                     "for attribute %r of %r.  Do you need to use a Done "
+                     "state?") % (value, name, self))
 
         # apply the duration, if supplied...
         if self._duration is None:
@@ -525,9 +579,10 @@ class State(object):
 
         if self.__tracing:
             # print trace line, if tracing...
-            call_time = self._enter_time - self._exp._root_state._start_time
+            call_time = self._enter_time - self._exp._root_executor._start_time
             call_duration = clock.now() - self._enter_time
-            start_time = self._start_time - self._exp._root_state._start_time
+            start_time = (self._start_time -
+                          self._exp._root_executor._start_time)
             self.print_trace_msg(
                 "ENTER time=%fs, duration=%fs, start_time=%fs" %
                 (call_time, call_duration, start_time))
@@ -565,14 +620,15 @@ class State(object):
 
         if self.__tracing:
             # print trace line if tracing...
-            call_time = self._leave_time - self._exp._root_state._start_time
+            call_time = self._leave_time - self._exp._root_executor._start_time
             call_duration = clock.now() - self._leave_time
             if self._end_time is None:
                  self.print_trace_msg(
                     "LEAVE time=%fs, duration=%fs, perpetual" %
                     (call_time, call_duration))
             else:
-                end_time = self._end_time - self._exp._root_state._start_time
+                end_time = (self._end_time -
+                            self._exp._root_executor._start_time)
                 self.print_trace_msg(
                     "LEAVE time=%fs, duration=%fs, end_time=%fs" %
                     (call_time, call_duration, end_time))
@@ -627,7 +683,8 @@ class State(object):
             clock.schedule(partial(func, *pargs, **kwargs))
         self.__finalize_callbacks = []
         if self.__tracing:
-            call_time = self._finalize_time - self._exp._root_state._start_time
+            call_time = (self._finalize_time -
+                         self._exp._root_executor._start_time)
             call_duration = clock.now() - self._finalize_time
             self.print_trace_msg("FINALIZE time=%fs, duration=%fs" %
                                  (call_time, call_duration))
@@ -788,7 +845,7 @@ class Parallel(ParentState):
             # process each child and make clones
             for child in self._children:
                 # clone the child
-                inactive_child = child.clone(self)
+                inactive_child = child._clone(self)
                 self.__my_children.append(inactive_child)
                 # if it's blocking append to the blocking children
                 if child._blocking:
@@ -914,7 +971,7 @@ class SequentialState(ParentState):
         try:
             # clone the children as they come, so just clone the first
             self.__current_child = (
-                self.__child_iterator.next().clone(self))
+                self.__child_iterator.next()._clone(self))
             # schedule the child based on the current start time
             clock.schedule(partial(self.__current_child.enter, self._start_time))
         except StopIteration:
@@ -936,7 +993,7 @@ class SequentialState(ParentState):
             # for the previous state, so we can leave
             self.leave()
         elif (self._cancel_time is not None and
-            next_time >= self._cancel_time):
+              next_time >= self._cancel_time):
             # if there is a cancel time and the next is going to be after
             # the cancel, then just use the cancel time
             self._end_time = self._cancel_time
@@ -945,7 +1002,7 @@ class SequentialState(ParentState):
             try:
                 # clone the next child and schedule it
                 self.__current_child = (
-                    self.__child_iterator.next().clone(self))
+                    self.__child_iterator.next()._clone(self))
                 clock.schedule(partial(self.__current_child.enter, next_time))
             except StopIteration:
                 # there are no more children, so set our end time and leave
@@ -1009,23 +1066,27 @@ class SubroutineState(Serial):
         
         self._log_attrs.extend(['subroutine'])
 
-        self.__reserved_names = set(
-            self.__dict__.keys() +
-            [name[1:] for name in self.__dict__.keys() if name[0] == "_"])
-
     def _enter(self):
         self._vars = {}
         super(SubroutineState, self)._enter()
 
-    def get_var_ref(self, name):
+    def get_attribute_ref(self, name):
         """Return a Ref for a user variable of this SubroutineState.
         """
         try:
-            return self.__issued_refs[name]
-        except KeyError:
-            ref = Ref(self.get_var, name)
-            self.__issued_refs[name] = ref
-            return ref
+            return super(SubroutineState, self).get_attribute_ref(name)
+        except NameError:
+            try:
+                return self.__issued_refs[name]
+            except KeyError:
+                ref = Ref(self.get_var, name)
+                self.__issued_refs[name] = ref
+                return ref
+
+    def attribute_update_state(self, name, value):
+        state = SubroutineSet(self, name, value)
+        state.override_instantiation_context()
+        return state
 
     def get_var(self, name):
         """Get a user variable of this SubroutineState.
@@ -1041,24 +1102,6 @@ class SubroutineState(Serial):
         except KeyError:
             return
         ref.dep_changed()
-
-    def __getattr__(self, name):
-        if (name.startswith("__") or
-            "_SubroutineState__reserved_names" not in self.__dict__ or
-            name in self.__reserved_names):
-            return super(SubroutineState, self).__getattr__(name)
-        else:
-            return self.get_var_ref(name)
-
-    def __setattr__(self, name, value):
-        if (name[0] == "_" or
-            "_SubroutineState__reserved_names" not in self.__dict__ or
-            name in self.__reserved_names):
-            super(SubroutineState, self).__setattr__(name, value)
-        else:
-            state = SubroutineSet(self, name, value)
-            state.override_instantiation_context()
-            return state
 
     def __dir__(self):
         return super(SubroutineState, self).__dir__() + self._vars.keys()

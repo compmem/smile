@@ -290,6 +290,27 @@ class WidgetState(VisualState):
 
         self.__parallel = None
 
+    def get_attribute_ref(self, name):
+        try:
+            return self.__issued_refs[name]
+        except KeyError:
+            try:
+                props = WidgetState.property_aliases[name]
+            except KeyError:
+                if name in self.__widget_param_names:
+                    props = name
+                else:
+                    return super(WidgetState, self).get_attribute_ref(name)
+            if isinstance(props, str):
+                ref = Ref(self.get_current_param, props)
+            elif isinstance(props, tuple):
+                ref = tuple(Ref(self.get_current_param, prop) for
+                            prop in props)
+            else:
+                raise RuntimeError("Bad value for 'props': %r" % props)
+            self.__issued_refs[name] = ref
+            return ref
+
     def attribute_update_state(self, name, value):
         if name in self.__widget_param_names:
             return UpdateWidget(self, **{name : value})
@@ -300,27 +321,6 @@ class WidgetState(VisualState):
     def get_current_param(self, name):
         # important that this is pulling from the current clone
         return getattr(self.current_clone._widget, name)
-
-    def __getattr__(self, name):
-        try:
-            return self.__issued_refs[name]
-        except KeyError:
-            try:
-                props = WidgetState.property_aliases[name]
-            except KeyError:
-                if name in self.__widget_param_names:
-                    props = name
-                else:
-                    return super(WidgetState, self).__getattr__(name)
-            if isinstance(props, str):
-                ref = Ref(self.get_current_param, props)
-            elif isinstance(props, tuple):
-                ref = tuple(Ref(self.get_current_param, prop) for
-                            prop in props)
-            else:
-                raise RuntimeError("Bad value for 'props': %r" % props)
-            self.__issued_refs[name] = ref
-            return ref
 
     def property_callback(self, name, *pargs):
         # ensure we update dependencies if necessary
@@ -569,7 +569,7 @@ class Animate(State):
         now = clock.now()
         if self.__initial_params is None:
             self.__initial_params = {
-                name : getattr(self.__target_clone, name).eval() for
+                name : self.__target_clone.get_attribute_ref(name).eval() for
                 name in self.__anim_params.iterkeys()}
         if self._end_time is not None and now >= self._end_time:
             clock.unschedule(self.update)

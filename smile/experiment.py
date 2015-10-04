@@ -369,7 +369,7 @@ class ExpApp(App):
         self._last_time = self._new_time
 
         # exit if experiment done
-        if not self.exp._root_state._active:
+        if not self.exp._root_executor._active:
             self.stop()
 
         # give time to other threads
@@ -624,9 +624,10 @@ class Experiment(object):
         if trace:
             self._root_state.tron()
         self._root_state.begin_log()
+        self._root_executor = self._root_state._clone(None)
         try:
             # start the first state (that's the root state)
-            self._root_state.enter(clock.now() + 1.0)
+            self._root_executor.enter(clock.now() + 1.0)
 
             # kivy main loop
             self._app.run()
