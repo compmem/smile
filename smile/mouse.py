@@ -156,7 +156,7 @@ class MousePress(CallbackState):
             self._buttons = [self._buttons]
         if self._correct_resp is None:
             self._correct_resp = []
-        elif type(self.correct_resp) not in (list, tuple):
+        elif type(self._correct_resp) not in (list, tuple):
             self._correct_resp = [self._correct_resp]
         self._pressed = NotAvailable
         self._press_time = NotAvailable

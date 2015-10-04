@@ -621,10 +621,10 @@ class Experiment(object):
 
     def run(self, trace=False):
         self._current_state = None
-        self._root_executor = self._root_state._get_executor(None)
         if trace:
-            self._root_executor.tron()
-        self._root_executor.begin_log()
+            self._root_state.tron()
+        self._root_state.begin_log()
+        self._root_executor = self._root_state._clone(None)
         try:
             # start the first state (that's the root state)
             self._root_executor.enter(clock.now() + 1.0)
@@ -635,7 +635,7 @@ class Experiment(object):
             if self._current_state is not None:
                 self._current_state.print_traceback()
             raise
-        self._root_executor.end_log(self._csv)
+        self._root_state.end_log(self._csv)
         self.close_state_loggers(self._csv)
 
 
