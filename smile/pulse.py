@@ -115,6 +115,8 @@ class Pulse(State):
         clock.unschedule(self._callback)
         
     def _callback(self):
+        # we've started
+        self._started = True
 
         # send the code
         if have_parallel:
