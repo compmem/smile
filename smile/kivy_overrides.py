@@ -30,25 +30,42 @@ parser.add_argument("-c", "--csv",
 # do the parsing
 args = parser.parse_args(sys_argv)
 
+from kivy.utils import platform
+
 # set kivy config values
 from kivy.config import Config
 Config.set("kivy", "exit_on_escape", 0)
-Config.set("kivy", "desktop", 1) # eventually detect OS
+if platform in ('win', 'linux', 'macosx'):
+    Config.set("kivy", "desktop", 1)
+else:
+    Config.set("kivy", "desktop", 0)
+
+# prevent throttling
 Config.set("graphics", "maxfps", 0)
+
+# preload fullscreen
 if args.fullscreen:
     # disable fullscreen
     Config.set("graphics", "fullscreen", False)
 else:
     Config.set("graphics", "fullscreen", "auto")
 
+# handle resolution
 if args.resolution:
     width, height = map(int, args.resolution.split("x"))
     Config.set("graphics", "width", width)
     Config.set("graphics", "height", height)
-    
+
+# prevent right-click multitouch with mouse
 Config.set("input", "mouse", "mouse,disable_multitouch")
+
+# hide the cursor (currently doesn't work in 1.9.0, but fixed in 1.9.1)
 Config.set('graphics', 'show_cursor', 0)
+
+# we don't want to be able to resize
 Config.set('graphics', 'resizable', 0)
+
+# handle supported kivy versions
 import kivy
 EXACT_KIVY_VERSIONS = (
     "1.8.0",
@@ -56,6 +73,8 @@ EXACT_KIVY_VERSIONS = (
 if kivy.__version__ not in EXACT_KIVY_VERSIONS:
     raise ImportError("kivy version must be one of %r, got %r" %
                       (EXACT_KIVY_VERSIONS, kivy.__version__))
+
+# provide custom event loop
 import kivy.base
 class SmileEventLoop(kivy.base.EventLoopBase):
     def __init__(self):

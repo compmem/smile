@@ -38,6 +38,8 @@ from kivy.graphics.opengl import (
 import kivy.clock
 _kivy_clock = kivy.clock.Clock
 
+from kivy.utils import platform
+
 # local imports
 from state import Serial, AutoFinalizeState
 from ref import val, Ref
@@ -165,6 +167,7 @@ class ExpApp(App):
         self.width_ref = Ref.getattr(Window, "width")
         self.height_ref = Ref.getattr(Window, "height")
         self.__screen = Screen(self)
+        self.flip_interval = 1/60. # default to 60 Hz
 
     @property
     def screen(self):
@@ -209,23 +212,31 @@ class ExpApp(App):
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
 
         # get start of event loop
-        #EventLoop.bind(on_start=self._on_start)
+        EventLoop.bind(on_start=self._on_start)
 
         # report the flip interval now that we have a window
-        print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()  #...
         return self.wid
 
-    #def _on_start(self, *pargs):
-    #    #print "on_start"
-    #    self.exp._root_state.enter(clock.now() + 1.0)
+    def _on_start(self, *pargs):
+        #print "on_start"
+        #self.exp._root_state.enter(clock.now() + 1.0)
+        # hack to wait until fullscreen on OSX
+        if not (platform in ('macosx',) and Window.fullscreen):
+            print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()  #...
+            self.exp._root_executor.enter(clock.now() + 0.25)
+        else:
+            # still need one blocking flip
+            self.blocking_flip()            
         
     def _on_resize(self, *pargs):
         self.width_ref.dep_changed()
         self.height_ref.dep_changed()
+        if platform in ('macosx',) and Window.fullscreen and \
+           not self.exp._root_executor._enter_time and \
+           not self.exp._root_executor._active:
+            print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()  #...
+            self.exp._root_executor.enter(clock.now() + 0.25)        
         #print "resize"
-        #if not self.exp._root_state._enter_time and not self.exp._root_state._active:
-        #    print "entering"
-        #    self.exp._root_state.enter(clock.now() + .25)
 
 
     def is_key_down(self, name):
@@ -381,7 +392,9 @@ class ExpApp(App):
 
         # exit if experiment done
         if not self.exp._root_executor._active:
-            self.stop()
+            if self.exp._root_executor._enter_time:
+                # stop if we're not active, but we have an enter time
+                self.stop()
 
         # give time to other threads
         clock.usleep(250)
@@ -613,6 +626,10 @@ class Experiment(object):
     def subject_dir(self):
         return self._subj_dir
 
+    @property
+    def info(self):
+        return self._info
+
     def run(self, trace=False):
         self._current_state = None
         if trace:
@@ -621,7 +638,7 @@ class Experiment(object):
         self._root_executor = self._root_state._clone(None)
         try:
             # start the first state (that's the root state)
-            self._root_executor.enter(clock.now() + 1.0)
+            #self._root_executor.enter(clock.now() + 1.0)
 
             # kivy main loop
             self._app.run()

@@ -18,7 +18,7 @@ import os.path
 import kivy_overrides
 import ref
 from ref import Ref, val, NotAvailable, NotAvailableError
-from utils import rindex, get_class_name
+#from utils import rindex, get_class_name
 from log import LogWriter, log2csv
 from clock import clock
 
