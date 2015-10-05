@@ -11,7 +11,6 @@
 import sys
 import os
 import weakref
-import argparse
 import time
 import threading
 
@@ -522,26 +521,9 @@ class Experiment(object):
         return super(Experiment, self).__dir__() + self._vars.keys()
 
     def _process_args(self):
-        # set up the arg parser
-        parser = argparse.ArgumentParser(description='Run a SMILE experiment.')
-        parser.add_argument("-s", "--subject",
-                            help="unique subject id",
-                            default='test000')
-        parser.add_argument("-f", "--fullscreen",
-                            help="disable fullscreen",
-                            action='store_true')
-        parser.add_argument("-r", "--resolution",
-                            help="screen / window resolution (e.g. '600x800')")
-        parser.add_argument("-i", "--info",
-                            help="additional run info",
-                            default='')
-        parser.add_argument("-c", "--csv",
-                            help="perform automatic conversion of SMILE logs to csv",
-                            action='store_true')
-
-        # do the parsing
-        args = parser.parse_args(kivy_overrides.sys_argv)
-
+        # get args from kivy_overrides
+        args = kivy_overrides.args
+        
         # set up the subject and subj dir
         self._subj = args.subject
         self._subj_dir = os.path.join('data', self._subj)
