@@ -17,22 +17,23 @@ except ImportError:
     have_parallel = False
 
 
-from state import Wait, CallbackState
+from state import Wait, State
 from clock import clock
 from experiment import event_time
 from ref import NotAvailable
 
 
-class Pulse(CallbackState):
+class Pulse(State):
     """
-    State that will send a sync pulse out the parallel port.
+    Send a sync pulse out the parallel port.
     
     Parameters
     ----------
     code : {0, 255, int},str
         Value specifying the trigger byte. Can be int or str.
-    width : {0.0, float}
+    width : {0.010, float}
         Time in seconds that the pulse is on. Default is 0.010 s.
+        If the width is 0.0, the code is set and kept.
     port : 
         Port where to send the code
     parent : {None, ``ParentState``}
@@ -84,7 +85,11 @@ class Pulse(CallbackState):
     def _enter(self):
         # process the parent enter
         super(Pulse, self)._enter()
-        
+
+        # pulse times are not avail
+        self._pulse_on = NotAvailable
+        self._pulse_off = NotAvailable
+
         # Convert code if necessary
         if type(self._code)==str:
             if self._code[0]=="S":
@@ -103,6 +108,12 @@ class Pulse(CallbackState):
             ncode = int(code)
         self._code_num = ncode
 
+    def _schedule_start(self):
+        clock.schedule(self._callback, event_time=self._start_time)
+
+    def _unschedule_start(self):
+        clock.unschedule(self._callback)
+        
     def _callback(self):
 
         # send the code
@@ -120,6 +131,11 @@ class Pulse(CallbackState):
                                  "\tso no sync pulsing will be generated.\n\n")
                 have_parallel = False
                 self._pport = None
+                self._pulse_on = None
+                self._pulse_off = None
+                self._ended = True
+                clock.schedule(self.leave)
+                clock.schedule(self.finalize)
                 return
                 
             # set the pulse time
@@ -127,9 +143,33 @@ class Pulse(CallbackState):
             self._pulse_on = event_time(start_time+time_err,
                                         time_err)
 
+            # schedule leaving (as soon as this method is done)
+            clock.schedule(self.leave)
+
             # schedule the off time
-            clock.schedule(self._pulse_off_callback,
-                           event_time=self._pulse_on['time']+self._width)
+            if self._width > 0.0:
+                # we're gonna turn off ourselves
+                clock.schedule(self._pulse_off_callback,
+                               event_time=self._pulse_on['time']+self._width)
+            else:
+                # we're gonna leave it
+                self._pulse_off = None
+
+                # clean up/ close the port
+                self._pport = None
+                
+                # so we can finalize now, too
+                clock.schedule(self.finalize)
+                self._ended = True
+
+        else:
+            # we can leave and finalize now
+            self._pulse_on = None
+            self._pulse_off = None
+            self._ended = True
+            clock.schedule(self.leave)
+            clock.schedule(self.finalize)
+            
 
     def _pulse_off_callback(self):
         # turn off the code
@@ -144,6 +184,11 @@ class Pulse(CallbackState):
         time_err = (end_time - start_time)/2.
         self._pulse_off = event_time(start_time+time_err,
                                      time_err)
+
+        # let's schedule finalizing
+        self._ended = True
+        clock.schedule(self.finalize)
+
 
 
 

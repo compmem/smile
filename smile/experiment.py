@@ -209,13 +209,25 @@ class ExpApp(App):
         # use our idle callback (defined below)
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
 
+        # get start of event loop
+        #EventLoop.bind(on_start=self._on_start)
+
         # report the flip interval now that we have a window
         print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()  #...
         return self.wid
 
+    #def _on_start(self, *pargs):
+    #    #print "on_start"
+    #    self.exp._root_state.enter(clock.now() + 1.0)
+        
     def _on_resize(self, *pargs):
         self.width_ref.dep_changed()
         self.height_ref.dep_changed()
+        #print "resize"
+        #if not self.exp._root_state._enter_time and not self.exp._root_state._active:
+        #    print "entering"
+        #    self.exp._root_state.enter(clock.now() + .25)
+
 
     def is_key_down(self, name):
         return name.upper() in self.keys_down
@@ -435,7 +447,7 @@ class Experiment(object):
                  name="Smile"):
         #global Window
         self._process_args()
-
+        
         # handle fullscreen and resolution before Window is imported
         if fullscreen is not None:
             self._fullscreen = fullscreen

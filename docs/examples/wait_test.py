@@ -17,7 +17,7 @@ exp = Experiment()
 Wait(1.0)
 
 # Wait for a bunch of different times
-times = [.001,.002,.005,.010,.020,.050,.1,.2,.5,1,2,5.]
+times = [.001,.002,.005,.010,.020,.050] #,.1,.2,.5,1,2,5.]
 times_copy = times[:]
 times_copy.reverse()
 times.extend(times_copy)
@@ -33,4 +33,5 @@ with Loop(times) as time:
 Wait(1.0)
 
 if __name__ == '__main__':
-    exp.run()
+    import cProfile
+    cProfile.run('exp.run()','waitstats')

@@ -10,10 +10,13 @@ sys.argv = sys.argv[:1]
 
 from kivy.config import Config
 Config.set("kivy", "exit_on_escape", 0)
+Config.set("kivy", "desktop", 1)
 Config.set("graphics", "maxfps", 0)
 Config.set("graphics", "fullscreen", "auto")
+#Config.set("graphics", "fullscreen", True)
 Config.set("input", "mouse", "mouse,disable_multitouch")
 Config.set('graphics', 'show_cursor', 0)
+Config.set('graphics', 'resizable', 0)
 import kivy
 EXACT_KIVY_VERSIONS = (
     "1.8.0",
