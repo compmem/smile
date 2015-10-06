@@ -55,9 +55,10 @@ Let me explain what is happeing here line by line. ``with Loop(words) as trial:`
 The final version of **randWord1.py**
 ::
 	from smile import *
-
-	words = ['plank','dear','thopter','initial','pull','complicated','assertain','biggest']
-	words.shuffle()	
+    import random
+	
+    words = ['plank','dear','thopter','initial','pull','complicated','assertain','biggest']
+	random.shuffle(words)	
 
 	#Needed Parameters of the Experiment
 	interStimulusDuration=1
@@ -192,3 +193,24 @@ The final version of **randWord2.py**
 
 
 Now you are ready to get Smiling!
+
+
+Special Examples
+=============================
+
+This section is designed to help you figure out how to use some of the more advnaced 
+
+
+ButtonPress
+-----------------------------
+::
+    from smile import *
+    
+    exp = Experiment()
+    
+    #From here you can see setup for a ButtonPress state.
+    with ButtonPress() as bp:
+        Button(name='Left', text='left', left = exp.screen.left, bottom=exp.screen.bottom)
+        Button(name='Left', text='right', right = exp.screen.right, bottom=exp.screen.bottom)
+        
+    
