@@ -7,17 +7,22 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
+
+__version__ = '0.9.9'
+
 # SMILE components
-from experiment import Experiment, Set, Get
+from experiment import Experiment
 from state import (
     Parallel,
     Meanwhile,
     UntilDone,
     Serial,
+    Subroutine,
     If,
     Elif,
     Else,
     Loop,
+    Done,
     Wait,
     Record,
     Log,
@@ -26,8 +31,15 @@ from state import (
     Debug,
     PrintTraceback)
 from keyboard import Key, KeyPress, KeyRecord
-from mouse import MouseWithin, MousePos, MouseButton, MouseRecord, MousePress
+from mouse import (
+    MouseWithin,
+    MousePos,
+    MouseButton,
+    MouseCursor,
+    MouseRecord,
+    MousePress)
 from video import (
+    Screenshot,
     Bezier,
     Mesh,
     Point,
@@ -38,6 +50,7 @@ from video import (
     Ellipse,
     Image,
     Label,
+    RstDocument,
     Button,
     ButtonPress,
     Video,
@@ -47,7 +60,23 @@ from video import (
     GridLayout,
     PageLayout,
     ScatterLayout,
-    StackLayout
-    )
+    StackLayout,
+    BackgroundColor)
+from dotbox import DotBox
 from ref import Ref, val, jitter, shuffle
-#from freekey import FreeKey
+#from smile.audio import Beep, SoundFile, RecordSoundFile
+from freekey import FreeKey
+
+
+def is_version(ver):
+    if ver == __version__:
+        return True
+    else:
+        return False
+        
+
+class version_error(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr('The version required is different from the version selected')
