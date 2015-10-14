@@ -1326,11 +1326,13 @@ class Record(State):
         """Set up per-class AND per-instance logs.
         """
         super(Record, self).begin_log()
-        title = "record_%s_%d_%s" % (
-            os.path.splitext(
-                os.path.basename(self._instantiation_filename))[0],
-            self._instantiation_lineno,
-            self._name)
+        if self._name is None:
+            title = "record_%s_%d" % (
+                os.path.splitext(
+                    os.path.basename(self._instantiation_filename))[0],
+                self._instantiation_lineno)
+        else:
+            title = "record_%s" % self._name
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
         self.__log_writer = LogWriter(self.__log_filename,
                                       self.__refs.keys() + ["timestamp"])
@@ -1410,11 +1412,13 @@ class Log(AutoFinalizeState):
         """Set up per-class AND per-instance logs.
         """
         super(Log, self).begin_log()
-        title = "log_%s_%d_%s" % (
-            os.path.splitext(
-                os.path.basename(self._instantiation_filename))[0],
-            self._instantiation_lineno,
-            self._name)
+        if self._name is None:
+            title = "log_%s_%d" % (
+                os.path.splitext(
+                    os.path.basename(self._instantiation_filename))[0],
+                self._instantiation_lineno)
+        else:
+            title = "log_%s" % self._name
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
         fields = ["time"] + self._init_log_items.keys()
         if isinstance(self._init_log_dict, dict):
@@ -1844,7 +1848,7 @@ if __name__ == '__main__':
             Debug(name="non-blocking test")
 
     exp.foo=1
-    Record(foo=exp.foo)
+    Record(foo=exp.foo)#, name="rectest")
     with UntilDone():
         Debug(name="FOO!")
         Wait(1.0)
