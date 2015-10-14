@@ -446,15 +446,16 @@ class WidgetState(VisualState):
             if name in pos_props:
                 setattr(self._widget, name, value)
 
-    def animate(self, duration=None, parent=None, save_log=True, name=None,
-                blocking=True, **anim_params):
-        anim = Animate(self, duration=duration, parent=parent, name=name,
-                       save_log=save_log, blocking=blocking, **anim_params)
+    def animate(self, interval=None, duration=None, parent=None, save_log=True,
+                name=None, blocking=True, **anim_params):
+        anim = Animate(self, interval=interval, duration=duration,
+                       parent=parent, name=name, save_log=save_log,
+                       blocking=blocking, **anim_params)
         anim.override_instantiation_context()
         return anim
 
-    def slide(self, duration=None, speed=None, accel=None, parent=None,
-              save_log=True, name=None, blocking=True, **params):
+    def slide(self, interval=None, duration=None, speed=None, accel=None,
+              parent=None, save_log=True, name=None, blocking=True, **params):
         def interp(a, b, w):
             if isinstance(a, dict):
                 return {name : interp(a[name], b[name], w) for
@@ -476,9 +477,9 @@ class WidgetState(VisualState):
         #TODO: fancier interpolation modes!!!
         else:
             raise ValueError("Invalid combination of parameters.")  #...
-        anim = self.animate(duration=duration, parent=parent,
-                            save_log=save_log, name=name, blocking=blocking,
-                            **anim_params)
+        anim = self.animate(interval=interval, duration=duration,
+                            parent=parent, save_log=save_log, name=name,
+                            blocking=blocking, **anim_params)
         anim.override_instantiation_context()
         return anim
 
@@ -540,19 +541,20 @@ class UpdateWidget(CallbackState):
 
 class Animate(State):
     #TODO: log updates!
-    def __init__(self, target, duration=None, parent=None, save_log=True,
-                 name=None, blocking=True, **anim_params):
+    def __init__(self, target, interval=None, duration=None, parent=None,
+                 save_log=True, name=None, blocking=True, **anim_params):
         super(Animate, self).__init__(duration=duration, parent=parent,
                                       save_log=save_log, name=name,
                                       blocking=blocking)
         self.__target = target  #TODO: make sure target is a WidgetState
         self.__anim_params = anim_params
         self.__initial_params = None
+        self._init_interval = interval
 
     def _schedule_start(self):
-        first_update_time = self._start_time + self._exp._app.flip_interval
+        first_update_time = self._start_time + self._interval
         clock.schedule(self.update, event_time=first_update_time,
-                       repeat_interval=self._exp._app.flip_interval)
+                       repeat_interval=self._interval)
         clock.schedule(self.leave)
 
     def _unschedule_start(self):
@@ -562,6 +564,8 @@ class Animate(State):
     def _enter(self):
         self.__initial_params = None
         self.__target_clone = self.__target.current_clone
+        if self._interval is None:
+            self._interval = self._exp._app.flip_interval
 
     def update(self):
         self.claim_exceptions()
@@ -901,14 +905,14 @@ $ print("Hello world")
     with Meanwhile():
         vid.slide(center_x=exp.screen.width * 0.75,
                   center_y=exp.screen.center_y,
-                  duration=1.0)
+                  duration=1.0)#, interval=0.5)
         #Screenshot("my_screenshot.png")
         vid.animate(center_x=(lambda t, initial: exp.screen.center_x +
                               cos(t / 3.0) * exp.screen.width * 0.25),
                     center_y=(lambda t, initial: exp.screen.center_y +
                               sin(t / 3.0) * exp.screen.width * 0.25),
                     height=(lambda t, initial: initial + sin(t / 2.0) *
-                            initial * 0.5))
+                            initial * 0.5))#, interval=0.5)
     with Loop(3) as loop:
         Video(source="test_video.mp4", size=exp.screen.size,
               allow_stretch=loop.i%2, duration=5.0)

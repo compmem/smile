@@ -528,7 +528,7 @@ class Experiment(object):
         if name[0] == "_":
             super(Experiment, self).__setattr__(name, value)
         else:
-            return Set(**{name : value})
+            return Set(name, value)
 
     def __dir__(self):
         return super(Experiment, self).__dir__() + self._vars.keys()
@@ -651,36 +651,19 @@ class Experiment(object):
 
 
 class Set(AutoFinalizeState):
-    def __init__(self, parent=None, save_log=True, name=None, **kwargs):
+    def __init__(self, var_name, value, parent=None, save_log=True, name=None):
         # init the parent class
         super(Set, self).__init__(parent=parent,
                                   save_log=save_log,
                                   name=name,
                                   duration=0.0)
-        self._init_values = kwargs
+        self._init_var_name = var_name
+        self._init_value = value
 
-        self._log_attrs.extend(['values'])
-
-    def get_log_fields(self):
-        return ['instantiation_filename', 'instantiation_lineno', 'name',
-                'time', 'var_name', 'value']
-
-    def save_log(self):
-        class_name = type(self).__name__
-        for name, value in self._values.iteritems():
-            field_values = {
-                "instantiation_filename": self._instantiation_filename,
-                "instantiation_lineno": self._instantiation_lineno,
-                "name": self._name,
-                "time": self._start_time,
-                "var_name": name,
-                "value": value
-                }
-            self._exp.write_to_state_log(class_name, field_values)
+        self._log_attrs.extend(['var_name', 'value'])
         
     def _enter(self):
-        for name, value in self._values.iteritems():
-            self._exp.set_var(name, value)
+        self._exp.set_var(self._var_name, self._value)
         clock.schedule(self.leave)
         self._started = True
         self._ended = True
