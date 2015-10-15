@@ -217,6 +217,7 @@ class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never 
                                               name=name,
                                               blocking=blocking)
         self._init_color = color
+        self._log_attrs.extend(['color'])
 
     def show(self):
         BackgroundColor.layers.append(self)
@@ -688,6 +689,10 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         if self._end_time is None:
             self._end_time = self._start_time + self._widget._video.duration
 
+        # override the update interval (eventually make this a setting)
+        _kivy_clock.unschedule(self._widget._video._update)
+        _kivy_clock.schedule_interval(self._widget._video._update, 1/60.)
+        
         # set the size to (0, 0) so we know if it has been changed later
         self._widget.size = (0, 0)
 
