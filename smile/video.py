@@ -764,8 +764,6 @@ class ButtonPress(CallbackState):
                          mouse_button is not None],
             [(button._name, MouseButton(button)) for button in
              self.__buttons])
-        #from mouse import MouseButton
-        #self.__pressed_ref = MouseButton(self.__buttons[0])
         super(ButtonPress, self)._enter()
 
     def _callback(self):
