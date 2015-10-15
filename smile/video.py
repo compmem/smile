@@ -16,6 +16,7 @@ import kivy_overrides
 from state import State, CallbackState, Parallel, ParentState
 from ref import val, Ref, NotAvailable
 from clock import clock
+
 import kivy.graphics
 import kivy.uix.widget
 from kivy.properties import ObjectProperty, ListProperty
@@ -755,12 +756,14 @@ class ButtonPress(CallbackState):
         self._button_names = [button._name for button in self.__buttons]
         if self._correct_resp is None:
             self._correct_resp = []
-        elif type(self.correct_resp) not in (list, tuple):
+        elif type(self._correct_resp) not in (list, tuple):
             self._correct_resp = [self._correct_resp]
+        from mouse import MouseButton
         self.__pressed_ref = Ref(
-            lambda lst: [name for name, down in lst if down],
-            [(button.name, button.state == "down") for
-             button in self.__buttons])
+            lambda lst: [name for name, mouse_button in lst if
+                         mouse_button is not None],
+            [(button._name, MouseButton(button)) for button in
+             self.__buttons])
         super(ButtonPress, self)._enter()
 
     def _callback(self):
