@@ -84,7 +84,8 @@ class Ref(object):
 
     @staticmethod
     def cond(cond, true_val, false_val):
-        return Ref(lambda : (true_val if cond else false_val))
+        return Ref(lambda cnd, tv, fv: (tv if cnd else fv),
+                   cond, true_val, false_val)
 
     @staticmethod
     def not_(obj):
