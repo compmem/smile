@@ -105,7 +105,7 @@ class Pulse(State):
                 # Convert to an integer
                 ncode = int(self._code)
         else:
-            ncode = int(code)
+            ncode = int(self._code)
         self._code_num = ncode
 
     def _schedule_start(self):
