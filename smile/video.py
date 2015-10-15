@@ -780,7 +780,6 @@ class ButtonPress(CallbackState):
     def button_callback(self):
         self.claim_exceptions()
         pressed_list = self.__pressed_ref.eval()
-        #print pressed_list#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if not len(pressed_list):
             return
         button = pressed_list[0]
