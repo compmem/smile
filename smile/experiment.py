@@ -214,7 +214,11 @@ class ExpApp(App):
         # get start of event loop
         EventLoop.bind(on_start=self._on_start)
 
-        # report the flip interval now that we have a window
+        # do a quick (non-blocking) flip
+        # see if two prevents the flicker on some machines
+        EventLoop.window.dispatch('on_flip')
+        EventLoop.window.dispatch('on_flip')
+        
         return self.wid
 
     def _on_start(self, *pargs):
@@ -226,7 +230,7 @@ class ExpApp(App):
             self.exp._root_executor.enter(clock.now() + 0.25)
         else:
             # still need one blocking flip
-            self.blocking_flip()            
+            self.blocking_flip()
         
     def _on_resize(self, *pargs):
         self.width_ref.dep_changed()
@@ -235,9 +239,11 @@ class ExpApp(App):
            not self.exp._root_executor._enter_time and \
            not self.exp._root_executor._active:
             print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()  #...
-            self.exp._root_executor.enter(clock.now() + 0.25)        
-        #print "resize"
+            self.exp._root_executor.enter(clock.now() + 0.25)
 
+        # we need a redraw here
+        EventLoop.window.dispatch('on_flip')            
+        #print "resize"
 
     def is_key_down(self, name):
         return name.upper() in self.keys_down
