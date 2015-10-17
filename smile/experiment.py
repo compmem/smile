@@ -217,7 +217,7 @@ class ExpApp(App):
         # do a quick (non-blocking) flip
         # see if two prevents the flicker on some machines
         EventLoop.window.dispatch('on_flip')
-        EventLoop.window.dispatch('on_flip')
+        #EventLoop.window.dispatch('on_flip')
         
         return self.wid
 
