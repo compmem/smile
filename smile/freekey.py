@@ -24,7 +24,7 @@ asciiplus += ['%d'%i for i in range(10)]
 def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
     """
     Perform free recall typed responses.
-    
+
     Parameters
     ----------
     lbl : Label state
@@ -42,27 +42,27 @@ def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
     base_time : float
         Manually set a time reference for the start of the state. This
         will be used to calculate reaction times.
-        
+
     Example
     --------
     FreeKey(Label('???????'), max_duration=15.0)
     The message '??????' will appear on the screen,
-    and participants will be given 15 seconds to enter a response, 
+    and participants will be given 15 seconds to enter a response,
     replacing that text. They can enter as many responses as possible
     in the 15 second time period.
-    
+
     Log Parameters
     ---------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
     recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters. 
+    docstring for additional logged parameters.
 
     responses : list
         List of typed responses, each with the following information:
         first_key_time, first_key_rt, enter_key_time, enter_key_rt,
         response, response_num.
-        The time is the actual time, the rt is the time since the 
+        The time is the actual time, the rt is the time since the
         base_time.
     """
     # I'd like the lbl to be up until the below is done. How?
@@ -169,7 +169,7 @@ def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
                                    enter_key_time=None,
                                    enter_key_rt=None)]
 
-            
+
 if __name__ == '__main__':
 
     from experiment import Experiment
@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
     fk = FreeKey(Label(text='XXXXXX',font_size=40), max_resp=1)
     Debug(responses=fk.responses)
-    
+
     Label(text='Done', font_size=32, duration=2.0)
 
     fk2 = FreeKey(Label(text='??????',font_size=30))
