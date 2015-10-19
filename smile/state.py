@@ -66,7 +66,8 @@ class StateBuilder(object):
         # an attribute update state or raise an error...
         if name[0] != "_":
             try:
-                self.attribute_update_state(name, value)
+                state = self.attribute_update_state(name, value)
+                state.override_instantiation_context()
                 return
             except NotImplementedError:
                 raise AttributeError("State does not support attribute setting!")
@@ -1085,7 +1086,6 @@ class SubroutineState(Serial):
 
     def attribute_update_state(self, name, value):
         state = SubroutineSet(self, name, value)
-        state.override_instantiation_context()
         return state
 
     def get_var(self, name):
