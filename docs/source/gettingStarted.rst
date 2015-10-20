@@ -11,11 +11,13 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   startHere
+   install
+   runningsmile
    tutorial
-   smile
    android
-
+   smile
+   
+   
 
 
 Indices and tables

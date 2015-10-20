@@ -11,3 +11,25 @@ build-arch*
 dist
 MANIFEST
 
+docs/source/smile/audio.py
+
+docs/source/smile/crosshairs.png
+docs/source/smile/crosshairs.svg
+docs/source/smile/test_video.mp4
+docs/source/smile/face-smile.png
+docs/source/smile/test_sound.wav
+docs/source/smile/clock.py
+docs/source/smile/dag.py
+docs/source/smile/dotbox.py
+docs/source/smile/experiment.py
+docs/source/smile/freekey.py
+docs/source/smile/keyboard.py
+docs/source/smile/kivy_overrides.py
+docs/source/smile/mouse.py
+docs/source/smile/log.py
+docs/source/smile/pulse.py
+docs/source/smile/state.py
+docs/source/smile/ref.py
+docs/source/smile/utils.py
+docs/source/smile/video.py
+docs/source/smile/__init__.py
