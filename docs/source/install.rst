@@ -25,6 +25,12 @@ The first thing to look at is what O.S. you are running.  On all 3 major systems
 .. warning::
 
     Smile Requires Kivy 1.8 or 1.9 to work properly.  
+    
+.. warning::
+    
+    If you are installing on Mac, please download and install Continume Anaconda first.
+    It allows for you to have an easy to use package manager for python and it comes 
+    with a code editor. 
 
 Next we shall download and install smile.
 
@@ -74,7 +80,7 @@ If you are running on Mac and you setup the kivy command line option
 
 For those of you who installed on Mac, you should have added kivy.app to your applications folder and ran the makesysmlinks program that added a kivy command to your terminal. Since the Mac version of Kivy uses the default python distribution on your machine, all you have to do is run *setup.py* in python and it will install smile to your machine. Then, all you have to do to run any smile experiment on mac is use the `kivy` command followed by the pathname of the experiment and whatever options you want to add.
 
-Extract smile from the zip, and in your terminal navigate to the folder containing setup.py. Run the following line in your terminal.
+Navigate to the extracted smile download folder in your terminal, or if you are using **Anaconda** you should use the *Anaconda Termial*, and run the following command.
 
 ::
 
@@ -91,17 +97,12 @@ For the different command line options, refer to `Running Smile<runningsmile.htm
 If you are running Linux and installed Kivy via apt-get or pip
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-If you installed Kivy via apt-get or pip then you are able to just install smile via the pip command. 
+If you installed Kivy via *aptitude* then you are able to just install smile via the pip command. Navigate to the smile download folder and run the following line in your command prompt. 
 
 ::
 
-    $pip install python-smile
+    $pip install .
     
-Or, you can run *setup.py* from the a downloaded smile folder. Extracat the currect version of smile from the zip'ed folder, navigate to the folder containing setup.py and run the following line in the terminal.
-
-::
-
-    $python setup.py install
     
 Then to run a smile experiment, navigate to where your smile experiment is saved and run the next line, where **experiment_name.py** is replaced with what you called your experiment.
 
@@ -117,6 +118,25 @@ Verification Step
 Please verify now that you have installed kivy and smile correctly by running *video.py* in the */smile/* folder inside your smile download folder. 
 
 If the program finishes without error, then you have installed correctly! Congrats! Move onto the `Smile Tutorial<tutorial.html>`_ to teach you smiling basics.
+
+Installing PYO for smile.sound
+------------------------------
+
+If you would like to use smile's sound functionallity you need to download PYO onto your machine. 
+
+On Windows and Mac, just follow the following link and download the version for your OS
+
+On Linux, run the following line to install pyo to your machine. 
+
+::
+
+    sudo aptitude install python-pyo
+
+With PYO installed you are able to call **Beep** and **SoundFile** in your experiments.
+
+.. note:
+    
+    You must import smile.sound by hand at the top of your experiment. You cannot `from smile import *` to get *smile.sound*.
 
 Troubleshooting
 ---------------

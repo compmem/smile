@@ -84,28 +84,29 @@ The final step for our basic smile tutorial is to add user input and logging.  L
 This tutorial will also teach you how to compare **trial.current** comparisons. Create a directory called *WordRemember* and create a file within the directory called *randWord2.py*. First, we will bring over the word list from the previous file.  We are going to change it a little bit to make sure that the experiment will be able to tell what key is the correct key for each trial.  
 ::
     ...
+    key_list = ['J','K']
     words = ['plank','dear','thopter','initial','pull','complicated','assertain','biggest']
     temp = []
     for i in range(len(words)):
         condition = len(words[i])%2
-        temp.append({'stimulus':words[i], 'condition':condition})
+        temp.append({'stimulus':words[i], 'condition':key_list[condition]})
     words = temp
     random.shuffle(words)	
     ...
 
-Our list of words is now a list of dictionaries, where ``words[x]['stimulus']`` will give us the word and ``words[x]['condtion']`` will give us weather the words has an even or an odd length. Like in the last example, the next thing we must do is initialize all of our experiment parameters.
+Our list of words is now a list of dictionaries, where ``words[x]['stimulus']`` will give us the word and ``words[x]['condtion']`` will give us weather the words has an even or an odd length. Like in the last example, the next thing we must do is initialize all of our experiment parameters. **key_list** is what keys our participant will be pressing later. 
 ::
     ...
     #Needed Parameters of the Experiment
     interStimulusDuration=1
     maxResponseTime=4
-    key_dic = ['J','K']
+    
 
     #We are ready to start building the Epxeriment!
     exp = Experiment()
     ...
 
-We changed the line ``stimulusDuration=2`` into ``maxResponseTime=4`` and we added a line, ``keys= = ['J','K']``, about the keys that our participant will be pressing.  Next we are going to setup up our basic loop. 
+We changed the line ``stimulusDuration=2`` into ``maxResponseTime=4``. Next we are going to setup up our basic loop. 
 
 The first thing we need to add to this loop is the ``UntilDone():`` state. An **UntilDone** state is a state that will run its children in **Serial** until the state above it has finished. Let me give you an example before we edit the loop.
 :: 
@@ -135,7 +136,8 @@ This displays the current trial's number until you press a key then waits the in
     with Loop(words) as trial:
         Label(text=trial.current['stimulus'])
         with UntilDone():
-            kp = KeyPress(keys=key_dic, duration=maxResponseTime, correct_keys=Ref.getitem(key_dic,trial.current['conditionn']))
+            kp = KeyPress(keys=key_list, duration=maxResponseTime, 
+                          correct_resp=trial.current['condition'])
         Wait(interStimulusDuration)
 
     exp.run()
@@ -155,7 +157,8 @@ With this line, each iteration of the loop in the experiment will save our a lin
     with Loop(words) as trial:
         Label(text=trial.current['stimulus'])
         with UntilDone():
-            kp = KeyPress(keys=key_dic, duration=maxResponseTime, correct_keys=Ref.getitem(key_dic,trial.current['conditionn']))
+            kp = KeyPress(keys=key_dic, duration=maxResponseTime, 
+                          correct_resp=trial.current['condition'])
         Wait(interStimulusDuration)
         Log(name='Loop',
             correct=kp.correct,
@@ -185,7 +188,8 @@ The final version of **randWord2.py**
     with Loop(words) as trial:
         Label(text=trial.current['stimulus'])
         with UntilDone():
-            kp = KeyPress(keys=key_dic, duration=maxResponseTime, correct_resp=Ref.getitem(key_dic,trial.current['condition']))
+            kp = KeyPress(keys=key_dic, duration=maxResponseTime, 
+                          correct_resp=trial.current['condition'])
         Wait(interStimulusDuration)
         Log(name='Loop',
             correct=kp.correct,
@@ -226,7 +230,12 @@ The cool thing about **Subroutines** is that you can access any of the variables
     ...
     
     @Subroutine
-    def ListPresent(self, listOfWords=[], interStimDur=.5, onStimDur=1, fixation=True, fixDur=1, interOrientDur=.2):
+    def ListPresent(self, 
+                    listOfWords=[], 
+                    interStimDur=.5, 
+                    onStimDur=1, 
+                    fixDur=1, 
+                    interOrientDur=.2):
         self.timing = []
     
     ...
@@ -235,7 +244,12 @@ The only variable we will need for testing later is an element to hold all of ou
 ::
     ...
     @Subroutine
-    def ListPresent(self, listOfWords=[], interStimDur=.5, onStimDur=1, fixDur=1, interOrientDur=.2):
+    def ListPresent(self, 
+                    listOfWords=[], 
+                    interStimDur=.5, 
+                    onStimDur=1, 
+                    fixDur=1, 
+                    interOrientDur=.2):
         self.timing = []
         with Loop(listOfThings) as trial:
             fix = Label(text='+' duration=fixDur)
@@ -256,7 +270,10 @@ Below is the finished **mainListPresent.py**
     from listpresent import ListPresent
     import random
     
-    WORDS_TO_DISPLAY = ['The', 'Boredom', 'Is', 'The', 'Reason', 'I', 'started', 'Swimming', 'It\'s', 'Also', 'The', 'Reason', 'I','Started', 'Sinking','Questions','Dodge','Dip','Around','Breath','Hold']	
+    WORDS_TO_DISPLAY = ['The', 'Boredom', 'Is', 'The', 'Reason', 'I', 
+                        'started', 'Swimming', 'It\'s', 'Also', 'The', 
+                        'Reason', 'I','Started', 'Sinking','Questions',
+                        'Dodge','Dip','Around','Breath','Hold']	
     INTER_STIM_DUR = .5
     STIM_DUR = 1
     INTER_ORIENT_DUR = .2
@@ -264,7 +281,8 @@ Below is the finished **mainListPresent.py**
     random.shuffle(WORDS_TO_DISPLAY)
     exp = Experiment()
     
-    lp = ListPresent(listOfWords=WORDS_TO_DISPLAY, interStimDur=INTER_STIM_DUR, onStimDur=STIM_DUR, fixDur=ORIENT_DUR, interOrientDur=INTER_ORIENT_DUR)
+    lp = ListPresent(listOfWords=WORDS_TO_DISPLAY, interStimDur=INTER_STIM_DUR, 
+                     onStimDur=STIM_DUR, fixDur=ORIENT_DUR, interOrientDur=INTER_ORIENT_DUR)
     Log(name='LISTPRESENTLOG',
         timing=lp.timing)
     exp.run()
@@ -275,7 +293,12 @@ Below is the finished **listpresent.py**
     from smile import *
     from smile.state import Subroutine
     @Subroutine
-    def ListPresent(self, listOfWords=[], interStimDur=.5, onStimDur=1, fixDur=1, interOrientDur=.2):
+    def ListPresent(self, 
+                    listOfWords=[], 
+                    interStimDur=.5, 
+                    onStimDur=1, 
+                    fixDur=1, 
+                    interOrientDur=.2):
         self.timing = []
         with Loop(listOfWords) as trial:
             fix = Label(text='+', duration=fixDur)
