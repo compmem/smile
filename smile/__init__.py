@@ -7,6 +7,9 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
+
+__version__ = '0.9.9'
+
 # SMILE components
 from experiment import Experiment
 from state import (
@@ -63,3 +66,17 @@ from dotbox import DotBox
 from ref import Ref, val, jitter, shuffle
 #from smile.audio import Beep, SoundFile, RecordSoundFile
 from freekey import FreeKey
+
+
+def is_version(ver):
+    if ver == __version__:
+        return True
+    else:
+        return False
+
+        
+class version_error(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr('The version required is different from the version selected')        
