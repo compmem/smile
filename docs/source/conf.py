@@ -45,7 +45,7 @@ source_suffix = '.rst'
 #source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'gettingStarted'
+master_doc = 'getting_started'
 
 # General information about the project.
 project = u'Smile'
@@ -307,7 +307,7 @@ texinfo_documents = [
 
 
 pdf_documents = [
-('gettingStarted', u'smileDocs', u'Smile Documentation', u'Brandon Jacques'),
+('getting_started', u'smileDocs', u'Smile Documentation', u'Brandon Jacques'),
 ]
 
 
