@@ -8,17 +8,24 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import operator
+import os
+
+import kivy_overrides
+from kivy.core.window import Window
+import kivy.graphics
+from kivy.core.image import Image
 
 from state import CallbackState, Record
-from ref import Ref, val
+from ref import Ref, val, NotAvailable
 from clock import clock
 from experiment import Experiment
+from video import VisualState
 
 
 def MouseWithin(widget):
     pos = Experiment._last_instance()._app.mouse_pos_ref
-    return (pos[0] >= widget.x & pos[1] >= widget.y &
-            pos[0] <= widget.right & pos[1] <= widget.top)
+    return ((pos[0] >= widget.x) & (pos[1] >= widget.y) &
+            (pos[0] <= widget.right) & (pos[1] <= widget.top))
 
 
 def MousePos(widget=None):
@@ -45,14 +52,82 @@ def MouseRecord(widget=None, name="MouseRecord"):
     return rec
 
 
+class MouseCursor(VisualState):
+    stack = []
+    def __init__(self, filename=None, offset=None, duration=None, parent=None,
+                 save_log=True, name=None, blocking=True):
+        super(MouseCursor, self).__init__(parent=parent, 
+                                          duration=duration,
+                                          save_log=save_log,
+                                          name=name,
+                                          blocking=blocking)
+        if filename is None:
+            self._init_filename = os.path.join(os.path.dirname(__file__),
+                                               "crosshairs.png")
+            self._init_offset = (50, 50)
+        else:
+            self._init_filename = filename
+            self._init_offset = offset
+
+        self.__texture = None
+        self.__instruction = None
+        self.__color_instruction = kivy.graphics.Color(1.0, 1.0, 1.0, 1.0)
+        self.__pos_ref = self._exp._app.mouse_pos_ref
+
+        self._log_attrs.extend(["filename", "offset"])
+
+    def _enter(self):
+        super(MouseCursor, self)._enter()
+        texture = Image(self._filename).texture
+        self.__instruction = kivy.graphics.Rectangle(texture=texture,
+                                                     size=texture.size)
+
+    def show(self):
+        try:
+            MouseCursor.stack[-1]._remove_from_canvas()
+        except IndexError:
+            pass
+        self._add_to_canvas()
+        MouseCursor.stack.append(self)
+
+    def _add_to_canvas(self):
+        Window.canvas.after.add(self.__color_instruction)
+        Window.canvas.after.add(self.__instruction)
+        self.__pos_ref.add_change_callback(self._update_position)
+        self._update_position()
+
+    def _remove_from_canvas(self):
+        Window.canvas.after.remove(self.__color_instruction)
+        Window.canvas.after.remove(self.__instruction)
+        self.__pos_ref.remove_change_callback(self._update_position)
+
+    def _update_position(self):
+        pos = val(self.__pos_ref)
+        if None not in pos:
+            self.__instruction.pos = [mp - os for (mp, os) in
+                                      zip(pos, self._offset)]
+
+    def unshow(self):
+        if MouseCursor.stack[-1] is self:
+            self._remove_from_canvas()
+            MouseCursor.stack.pop()
+            try:
+                MouseCursor.stack[-1]._add_to_canvas()
+            except IndexError:
+                pass
+        else:
+            MouseCursor.stack.remove(self)
+
+
 class MousePress(CallbackState):
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
                  widget=None, duration=None, parent=None, save_log=True,
-                 name=None):
+                 name=None, blocking=True):
         super(MousePress, self).__init__(parent=parent, 
                                          duration=duration,
                                          save_log=save_log,
-                                         name=name)
+                                         name=name,
+                                         blocking=blocking)
         self._init_buttons = buttons
         self._init_correct_resp = correct_resp
         self._init_base_time = base_time
@@ -81,13 +156,13 @@ class MousePress(CallbackState):
             self._buttons = [self._buttons]
         if self._correct_resp is None:
             self._correct_resp = []
-        elif type(self.correct_resp) not in (list, tuple):
+        elif type(self._correct_resp) not in (list, tuple):
             self._correct_resp = [self._correct_resp]
-        self._pressed = ''
-        self._press_time = None
-        self._correct = False
-        self._rt = None
-        self._pos = (None, None)
+        self._pressed = NotAvailable
+        self._press_time = NotAvailable
+        self._correct = NotAvailable
+        self._rt = NotAvailable
+        self._pos = NotAvailable
 
     def _callback(self):
         self.__button_ref.add_change_callback(self.button_callback)
@@ -117,12 +192,22 @@ class MousePress(CallbackState):
     def _leave(self):
         self.__button_ref.remove_change_callback(self.button_callback)
         super(MousePress, self)._leave()
+        if self._pressed is NotAvailable:
+            self._pressed = ''
+        if self._press_time is NotAvailable:
+            self._press_time = None
+        if self._correct is NotAvailable:
+            self._correct = False
+        if self._rt is NotAvailable:
+            self._rt = None
+        if self._pos is NotAvailable:
+            self._pos = (None, None)
 
 
 if __name__ == '__main__':
 
-    from experiment import Experiment, Get, Set
-    from state import Wait, Debug, Loop, Meanwhile, Record, Log
+    from experiment import Experiment
+    from state import Wait, Debug, Loop, Meanwhile, Record, Log, Parallel
 
     def print_dt(state, *args):
         print args
@@ -131,15 +216,20 @@ if __name__ == '__main__':
 
     with Meanwhile():
         #Record(pos=MousePos(), button=MouseButton())
-        MouseRecord()
-    
+        with Parallel():
+            MouseRecord()
+            MouseCursor()
+
+    Wait(2.0)
+    MouseCursor("face-smile.png", (125, 125), duration=5.0)
+
     Debug(name='Mouse Press Test')
 
-    Set(last_pressed='')
-    with Loop(conditional=(Get('last_pressed')!='RIGHT')):
+    exp.last_pressed = ''
+    with Loop(conditional=(exp.last_pressed!='RIGHT')):
         kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')
         Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
-        Set(last_pressed=kp.pressed)
+        exp.last_pressed = kp.pressed
         Log(pressed=kp.pressed, rt=kp.rt)
     
     kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')

@@ -11,7 +11,6 @@
 import sys
 import os
 import weakref
-import argparse
 import time
 import threading
 
@@ -24,9 +23,8 @@ from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 from kivy.logger import Logger
-from kivy.base import EventLoop
-# Window imported later because kivy graphics configs must come first...
-Window = None
+from kivy.base import EventLoop # this is actually our event loop
+from kivy.core.window import Window
 from kivy.graphics.opengl import (
     glEnableVertexAttribArray,
     glVertexAttribPointer,
@@ -40,6 +38,8 @@ from kivy.graphics.opengl import (
 import kivy.clock
 _kivy_clock = kivy.clock.Clock
 
+from kivy.utils import platform
+
 # local imports
 from state import Serial, AutoFinalizeState
 from ref import val, Ref
@@ -47,11 +47,14 @@ from clock import clock
 from log import LogWriter, log2csv
 from video import normalize_color_spec
 
-def event_time(time, time_error=0.0):
+FLIP_TIME_MARGIN = .002 # increase this if we're missing flips
+
+def event_time(time, time_error=0.0):  #TODO: make this a class!
     return {'time': time, 'error': time_error}
 
 
 class _VideoChange(object):
+    """Container for a change to the graphics tree."""
     def __init__(self, update_cb, flip_time, flip_time_cb):
         self.update_cb = update_cb
         self.flip_time = flip_time
@@ -61,6 +64,7 @@ class _VideoChange(object):
 
 
 class Screen(object):
+    """Provides references to screen properties."""
     def __init__(self, app):
         self.__app = app
 
@@ -145,12 +149,11 @@ class Screen(object):
 
 
 class ExpApp(App):
-    def __init__(self, exp, fullscreen=None, size=None):
+    """Kivy app associated with the experiment.
+
+    Not instantiated by the end user."""
+    def __init__(self, exp):
         super(ExpApp, self).__init__()
-        #if size is not None:
-        #    Window.size=size
-        #if fullscreen is not None:
-        #    Window.fullscreen = fullscreen
         self.exp = exp
         self.callbacks = {}
         self.pending_flip_time = None
@@ -164,6 +167,7 @@ class ExpApp(App):
         self.width_ref = Ref.getattr(Window, "width")
         self.height_ref = Ref.getattr(Window, "height")
         self.__screen = Screen(self)
+        self.flip_interval = 1/60. # default to 60 Hz
 
     @property
     def screen(self):
@@ -182,6 +186,7 @@ class ExpApp(App):
                                       func != event_func]
 
     def _trigger_callback(self, event_name, *pargs, **kwargs):
+        # call the callbacks associated with an event name
         try:
             callbacks = self.callbacks[event_name]
         except KeyError:
@@ -190,6 +195,7 @@ class ExpApp(App):
             func(*pargs, **kwargs)
 
     def build(self):
+        # base layout uses positional placement
         self.wid = FloatLayout()
         Window._system_keyboard.bind(on_key_down=self._on_key_down,
                                      on_key_up=self._on_key_up)
@@ -197,16 +203,47 @@ class ExpApp(App):
                     mouse_pos=self._on_mouse_pos,
                     on_resize=self._on_resize)
         self.current_touch = None
-        
+
+        # set starting times
         self._last_time = clock.now()
         self._last_kivy_tick = clock.now()
+        
+        # use our idle callback (defined below)
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
-        print 1.0 / self.calc_flip_interval()  #...
+
+        # get start of event loop
+        EventLoop.bind(on_start=self._on_start)
+
+        # do a quick (non-blocking) flip
+        # see if two prevents the flicker on some machines
+        EventLoop.window.dispatch('on_flip')
+        EventLoop.window.dispatch('on_flip')
+        
         return self.wid
 
+    def _on_start(self, *pargs):
+        #print "on_start"
+        #self.exp._root_state.enter(clock.now() + 1.0)
+        # hack to wait until fullscreen on OSX
+        if not (platform in ('macosx',) and Window.fullscreen):
+            print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()  #...
+            self.exp._root_executor.enter(clock.now() + 0.25)
+        else:
+            # still need one blocking flip
+            self.blocking_flip()
+        
     def _on_resize(self, *pargs):
         self.width_ref.dep_changed()
         self.height_ref.dep_changed()
+        if platform in ('macosx',) and Window.fullscreen and \
+           not self.exp._root_executor._enter_time and \
+           not self.exp._root_executor._active:
+            print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()  #...
+            self.exp._root_executor.enter(clock.now() + 0.25)
+
+        # we need a redraw here
+        EventLoop.window.dispatch('on_flip')            
+        #print "resize"
 
     def is_key_down(self, name):
         return name.upper() in self.keys_down
@@ -252,10 +289,14 @@ class ExpApp(App):
 
     def _on_motion(self, window, etype, me):
         if etype == "begin":
-            self.mouse_button = me.button
+            try:
+                self.mouse_button = me.button
+            except AttributeError:
+                self.mouse_button = None
             self.mouse_button_ref.dep_changed()
             self.current_touch = me
-            self._trigger_callback("MOTION", pos=me.pos, button=me.button,
+            self._trigger_callback("MOTION", pos=me.pos,
+                                   button=self.mouse_button,
                                    newly_pressed=True,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
@@ -264,7 +305,8 @@ class ExpApp(App):
             self.mouse_pos = tuple(int(round(x)) for x in  me.pos)
             self.mouse_pos_ref.dep_changed()
             self.current_touch = me
-            self._trigger_callback("MOTION", pos=me.pos, button=me.button,
+            self._trigger_callback("MOTION", pos=me.pos,
+                                   button=self.mouse_button,
                                    newly_pressed=False,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
@@ -284,10 +326,15 @@ class ExpApp(App):
         time_err = (self._new_time - self._last_time) / 2.0
         self.event_time = event_time(self._last_time + time_err, time_err)
 
+        # call any of our scheduled events that are ready
         clock.tick()
 
-        ready_for_video = (self._new_time - self.last_flip["time"] >=
-                           self.flip_interval)
+        # see if we're ready for video
+        ready_for_video = ((self._new_time - self.last_flip["time"]) >=
+                           (self.flip_interval - FLIP_TIME_MARGIN))
+
+        # see if the kivy clock needs a tick
+        # throttled by flip interval
         ready_for_kivy_tick = ready_for_video and (self._new_time -
                                                    self._last_kivy_tick >=
                                                    self.flip_interval)
@@ -350,8 +397,10 @@ class ExpApp(App):
         self._last_time = self._new_time
 
         # exit if experiment done
-        if not self.exp._root_state._active:
-            self.stop()
+        if not self.exp._root_executor._active:
+            if self.exp._root_executor._enter_time:
+                # stop if we're not active, but we have an enter time
+                self.stop()
 
         # give time to other threads
         clock.usleep(250)
@@ -388,6 +437,7 @@ class ExpApp(App):
         return self.flip_interval
 
     def schedule_video(self, update_cb, flip_time=None, flip_time_cb=None):
+        # TODO: Remove None options where possible
         if flip_time is None:
             flip_time = self.last_flip["time"] + self.flip_interval
         new_video = _VideoChange(update_cb, flip_time, flip_time_cb)
@@ -406,28 +456,39 @@ class ExpApp(App):
             except ValueError:
                 pass
 
+    def screenshot(self, filename=None):
+        Window.screenshot(filename)
+
 
 class Experiment(object):
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
-        global Window
+        #global Window
         self._process_args()
-        self._fullscreen = self._fullscreen or fullscreen
+        
+        # handle fullscreen and resolution before Window is imported
+        if fullscreen is not None:
+            self._fullscreen = fullscreen
         self._resolution = self._resolution or resolution
-        if self._fullscreen:
-            Config.set("graphics", "fullscreen", self._fullscreen)
-        if self._resolution:
-            Config.set("graphics", "width", self._resolution[0])
-            Config.set("graphics", "height", self._resolution[1])
-        from kivy.core.window import Window
+
+        # set fullscreen and resolution
+        if self._fullscreen is not None:
+            Window.fullscreen = self._fullscreen
+        if self._resolution is not None:
+            Window.system_size = self._resolution
+
+        # process background color
         self._background_color = background_color
         self.set_background_color()
-        self._app = ExpApp(self, fullscreen=fullscreen, size=resolution)#???
+
+        # make custom experiment app instance
+        self._app = ExpApp(self)
 
         # set up instance for access throughout code
         self.__class__._last_instance = weakref.ref(self)
 
         # set up initial root state and parent stack
+        # interacts with Meanwhile and UntilDone at top of experiment
         Serial(name="EXPERIMENT BODY", parent=self)
         self._root_state.set_instantiation_context(self)
         self._parents = [self._root_state]
@@ -465,7 +526,7 @@ class Experiment(object):
 
     def __getattr__(self, name):
         if name[0] == "_":
-            super(Experiment, self).__getattribute__(name)
+            return super(Experiment, self).__getattribute__(name)  # Does this actually happen?
         else:
             return self.get_var_ref(name)
 
@@ -473,27 +534,15 @@ class Experiment(object):
         if name[0] == "_":
             super(Experiment, self).__setattr__(name, value)
         else:
-            return Set(**{name : value})
+            return Set(name, value)
+
+    def __dir__(self):
+        return super(Experiment, self).__dir__() + self._vars.keys()
 
     def _process_args(self):
-        # set up the arg parser
-        parser = argparse.ArgumentParser(description='Run a SMILE experiment.')
-        parser.add_argument("-s", "--subject",
-                            help="unique subject id",
-                            default='test000')
-        parser.add_argument("-f", "--fullscreen",
-                            help="toggle fullscreen",
-                            action='store_true')
-        parser.add_argument("-i", "--info",
-                            help="additional run info",
-                            default='')
-        parser.add_argument("-c", "--csv",
-                            help="perform automatic conversion of SMILE logs to csv",
-                            action='store_true')
-
-        # do the parsing
-        args = parser.parse_args(kivy_overrides.sys_argv)
-
+        # get args from kivy_overrides
+        args = kivy_overrides.args
+        
         # set up the subject and subj dir
         self._subj = args.subject
         self._subj_dir = os.path.join('data', self._subj)
@@ -502,11 +551,15 @@ class Experiment(object):
 
         # check for fullscreen
         if args.fullscreen:
-            self._fullscreen = "auto"
+            self._fullscreen = False
         else:
             self._fullscreen = None
 
-        self._resolution = None  #TODO: command line option for resolution
+        if args.resolution:
+            x, y = map(int, args.resolution.split("x"))
+            self._resolution = x, y
+        else:
+            self._resolution = None
 
         # set the additional info
         self._info = args.info  #?????????
@@ -552,7 +605,7 @@ class Experiment(object):
             raise ValueError("'field_names' changed for state class %r!" %
                              state_class_name)
         title = "state_" + state_class_name
-        filename = self.reserve_data_filename(title, "smlog") 
+        filename = self.reserve_data_filename(title, "slog") 
         logger = LogWriter(filename, field_names)
         self._state_loggers[state_class_name] = filename, logger, field_names
 
@@ -571,14 +624,27 @@ class Experiment(object):
     def screen(self):
         return self._app.screen
 
+    @property
+    def subject(self):
+        return self._subj
+
+    @property
+    def subject_dir(self):
+        return self._subj_dir
+
+    @property
+    def info(self):
+        return self._info
+
     def run(self, trace=False):
         self._current_state = None
         if trace:
             self._root_state.tron()
         self._root_state.begin_log()
+        self._root_executor = self._root_state._clone(None)
         try:
             # start the first state (that's the root state)
-            self._root_state.enter(clock.now() + 1.0)
+            #self._root_executor.enter(clock.now() + 1.0)
 
             # kivy main loop
             self._app.run()
@@ -591,41 +657,22 @@ class Experiment(object):
 
 
 class Set(AutoFinalizeState):
-    def __init__(self, parent=None, save_log=True, name=None, **kwargs):
+    def __init__(self, var_name, value, parent=None, save_log=True, name=None):
         # init the parent class
         super(Set, self).__init__(parent=parent,
                                   save_log=save_log,
                                   name=name,
                                   duration=0.0)
-        self._init_values = kwargs
+        self._init_var_name = var_name
+        self._init_value = value
 
-        self._log_attrs.extend(['values'])
-
-    def get_log_fields(self):
-        return ['instantiation_filename', 'instantiation_lineno', 'name',
-                'time', 'var_name', 'value']
-
-    def save_log(self):
-        class_name = type(self).__name__
-        for name, value in self._values.iteritems():
-            field_values = {
-                "instantiation_filename": self._instantiation_filename,
-                "instantiation_lineno": self._instantiation_lineno,
-                "name": self._name,
-                "time": self._start_time,
-                "var_name": name,
-                "value": value
-                }
-            self._exp.write_to_state_log(class_name, field_values)
+        self._log_attrs.extend(['var_name', 'value'])
         
     def _enter(self):
-        for name, value in self._values.iteritems():
-            self._exp.set_var(name, value)
+        self._exp.set_var(self._var_name, self._value)
         clock.schedule(self.leave)
-
-
-def Get(name):
-    return Experiment._last_instance().get_var_ref(name)
+        self._started = True
+        self._ended = True
 
 
 if __name__ == '__main__':

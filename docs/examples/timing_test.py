@@ -12,7 +12,7 @@ from smile import *
 import random
 
 # create an experiment
-exp = Experiment(screen_ind=0, pyglet_vsync=False)
+exp = Experiment(background_color='black')
 
 # set the dur and isi for each trial
 trials = [{'dur':d,'isi':i} 
@@ -28,40 +28,31 @@ trials_copy = trials[:]
 trials_copy.reverse()
 trials.extend(trials_copy)
 
-# set initially to black
-BackColor(color=(0,0,0,1.0))
-
 Wait(1.0)
 with Loop(trials) as trial:
     # wait the isi
     reset = Wait(trial.current['isi'])
 
     # turn it on
-    onstim = BackColor(color=(1,1,1,1.0))
-    
-    # reset clock to ensure flip-level timing
-    ResetClock(onstim['last_flip']['time']-exp['flip_interval']/4.)
+    bg = BackgroundColor(color=(1,1,1,1.0))
+    with UntilDone():
+        Wait(until=bg.on_screen)
 
-    # wait the dur
-    Wait(trial.current['dur'])
+        # reset clock to ensure flip-level timing
+        #ResetClock(bg.appear_time['time']-exp.flip_interval/4.)
+        ResetClock(bg.appear_time['time']-.004)
 
-    # turn if off
-    offstim = BackColor(color=(0,0,0,1.0))
+        # wait the dur
+        Wait(trial.current['dur'])
 
     # log the on and off times
-    Log(reset=reset['start_time'],
-        on=onstim['last_flip'],
-        on_start=onstim['start_time'],
-        on_draw=onstim['last_draw'],
-        on_update=onstim['last_update'],
-        off=offstim['last_flip'],
-        off_start=offstim['start_time'],
-        off_draw=offstim['last_draw'],
-        off_update=offstim['last_update'],
+    Done(bg)
+    Log(on=bg.appear_time,
+        off=bg.disappear_time,
         dur=trial.current['dur'],
         isi=trial.current['isi'])
 
-Wait(1.0, stay_active=True)
+Wait(1.0)
 
 if __name__ == '__main__':
     exp.run()

@@ -10,22 +10,65 @@
 import random
 import operator
 
+class NotAvailable(object):
+    """Special value for indicating a variable is not available yet.
+
+    We raise an error whenever you try to log or evaluate a
+    NotAvailable value. It is the responsibility of each state to set
+    every variable to some available value at or before finalize.
+
+    """
+    def __repr__(self):
+        return "NotAvailable"
+
+    def __nonzero__(self):
+        return False
+
+# make a single instance used everywhere
+NotAvailable = NotAvailable()
+
+class NotAvailableError(ValueError):
+    pass
+
 def pass_thru(obj):
+    """Returns its only argument."""
     return obj
 
 class Ref(object):
+    """Delayed function call.
+
+    Takes in a function and arguments and you can evaluate that call later. Ref supports most pythonic operations that simply return new Ref instances that evaluate recursively.
+
+    """
     def __init__(self, func, *pargs, **kwargs):
+        # store the arguments
         self.func = func
         self.pargs = pargs
         self.use_cache = kwargs.pop("use_cache", True)
         self.kwargs = kwargs
+
+        # initialize cached values
         self.cache_value = None
         self.cache_valid = False
-        self.change_callbacks = []
+
+        # init callbacks for changes
+        # ***Must be a set to support proper boolean comparisons***
+        self.change_callbacks = set()
+
+        # recursively find Refs this Ref depends on
         for dep in iter_deps((pargs, kwargs)):
+            # see if dep doesn't use cache
             if not dep.use_cache:
+                # override our cache state
                 self.use_cache = False
                 break
+
+    def __repr__(self):
+        return "Ref(%s)" % ", ".join([repr(self.func)] +
+                                     map(repr, self.pargs) +
+                                     ["%s=%r" % (name, value) for
+                                      name, value in
+                                      self.kwargs.iteritems()])
 
     @staticmethod
     def getattr(obj, name):
@@ -41,14 +84,27 @@ class Ref(object):
 
     @staticmethod
     def cond(cond, true_val, false_val):
-        return Ref(lambda : (true_val if cond else false_val))
+        return Ref(lambda cnd, tv, fv: (tv if cnd else fv),
+                   cond, true_val, false_val)
+
+    @staticmethod
+    def not_(obj):
+        return Ref(operator.not_, obj)
 
     def eval(self):
+        """Recursively evaluate the reference.
+
+        .. note::
+          Internal use only!!!"""
+        # only return a cached value if it's valid
+        # and we do have change callbacks
         if self.cache_valid and len(self.change_callbacks):
             return self.cache_value
 
-        value = val(self.func(*val(self.pargs), **val(self.kwargs)))
+        # evaluate all possible Refs
+        value = val(val(self.func)(*val(self.pargs), **val(self.kwargs)))
 
+        # save the cache if wanted
         if self.use_cache:
             self.cache_value = value
             self.cache_valid = True
@@ -56,34 +112,40 @@ class Ref(object):
         return value
 
     def add_change_callback(self, func, *pargs, **kwargs):
+        """Add callback that's called when this value changes.
+        """
         #print "add_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
+        # if this is the first callback
         if not len(self.change_callbacks):
+            # set up dependency callbacks
             self.setup_dep_callbacks()
             self.cache_valid = False
-        self.change_callbacks.append((func, pargs, kwargs))
+        # the tuple is needed because this is a set
+        self.change_callbacks.add((func, pargs, tuple(kwargs.iteritems())))
 
     def remove_change_callback(self, func, *pargs, **kwargs):
         #print "remove_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
-        try:
-            self.change_callbacks.remove((func, pargs, kwargs))
-        except ValueError:
-            pass
+        self.change_callbacks.discard((func, pargs, tuple(kwargs.iteritems())))
+        # clean up if there are no more callbacks
         if not len(self.change_callbacks):
             self.teardown_dep_callbacks()
 
     def setup_dep_callbacks(self):
-        for dep in iter_deps((self.pargs, self.kwargs)):
+        for dep in iter_deps((self.func, self.pargs, self.kwargs)):
             dep.add_change_callback(self.dep_changed)
 
     def teardown_dep_callbacks(self):
-        for dep in iter_deps((self.pargs, self.kwargs)):
+        # explicitly remove all change callbacks
+        for dep in iter_deps((self.func, self.pargs, self.kwargs)):
             dep.remove_change_callback(self.dep_changed)
 
     def dep_changed(self):
         #print "dep_changed %r, %r" % (self, self.change_callbacks)
+        # cache is not valid
         self.cache_valid = False
-        for func, pargs, kwargs in self.change_callbacks:
-            func(*pargs, **kwargs)
+        # iter through each change callback and call them
+        for func, pargs, kwargs in list(self.change_callbacks):
+            func(*pargs, **dict(kwargs))
 
     # delayed operators...
     def __call__(self, *pargs, **kwargs):
@@ -181,20 +243,27 @@ def shuffle(iterable):
     return Ref(_shuffle, iterable, use_cache=False)
 
 def val(obj):
-    if isinstance(obj, Ref):
-        return obj.eval()
-    elif isinstance(obj, list):
-        return [val(value) for value in obj]
-    elif isinstance(obj, tuple):
-        return tuple(val(value) for value in obj)
-    elif isinstance(obj, dict):
-        return {val(key) : val(value) for key, value in obj.iteritems()}
-    elif isinstance(obj, slice):
-        return slice(val(obj.start), val(obj.stop), val(obj.step))
-    else:
-        return obj
+    try:
+        # handle all types of Refs
+        if isinstance(obj, Ref):
+            return obj.eval()
+        elif isinstance(obj, list):
+            return [val(value) for value in obj]
+        elif isinstance(obj, tuple):
+            return tuple(val(value) for value in obj)
+        elif isinstance(obj, dict):
+            return {val(key) : val(value) for key, value in obj.iteritems()}
+        elif isinstance(obj, slice):
+            return slice(val(obj.start), val(obj.stop), val(obj.step))
+        elif obj is NotAvailable:
+            raise NotAvailableError("'val' produced NotAvailable result.")
+        else:
+            return obj
+    except NotAvailableError:
+        raise NotAvailableError("val(%r) produced NotAvailable result" % obj)
 
 def iter_deps(obj):
+    """Generator to find all Ref dependencies of an object."""
     if isinstance(obj, Ref):
         yield obj
     elif isinstance(obj, list) or isinstance(obj, tuple):
