@@ -13,7 +13,16 @@ import gzip
 import csv
 
 class LogWriter(object):
-    """Write to a compressed smile log (slog)."""
+    """*LogWriter* is what we use to write data to a .slog file. The *Log* state 
+    relies heavily on this object.  
+    
+    Parameters
+    ----------
+    filename : string
+        The filename that you would like to write to. Must end in .slog. 
+    field_names : list 
+        A list of strings that contains the fields you wish to write. 
+    """
     def __init__(self, filename, field_names):
         self._field_names = field_names
         self._file = gzip.open(filename, "wb")
@@ -21,15 +30,33 @@ class LogWriter(object):
         self._pickler.dump(field_names)
 
     def write_record(self, data):
+        """Call this funciton to write a single row to the .slog file.
+        
+        Parameters
+        ----------
+        data : list 
+            This is a list of dictionaries where the keys are the field names that you
+            are writing out to the .slog file. 
+        
+        """
         record = [data[field_name] for field_name in self._field_names]
         self._pickler.dump(record)
 
     def close(self):
+        """Run this funciton once you are done writing to the .slog        
+        """
         self._file.close()
 
 
 class LogReader(object):
-    """Read from a compressed smile log (slog)"""
+    """Read from a compressed smile log (slog)
+    
+    Parameters
+    ----------
+    filename : string
+        The name of the .slog that you wish to read from.
+        
+    """
     def __init__(self, filename):
         self._file = gzip.open(filename, "rb")
 
@@ -42,6 +69,8 @@ class LogReader(object):
         return self._field_names
 
     def read_record(self):
+        """Returns a dicitionary with the field names as keys.
+        """
         try:
             return dict(zip(self._field_names, self._unpickler.load()))
         except EOFError:

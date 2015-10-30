@@ -64,7 +64,46 @@ class _VideoChange(object):
 
 
 class Screen(object):
-    """Provides references to screen properties."""
+    """Provides references to screen properties.
+    Properties
+    ----------
+    width : integer
+    height : integer
+    size : tuple
+        (self.width, self.height)
+    left : integer 
+        The left most horizontal value. self.left = 0
+    right : integer 
+        self.right = width
+    top : integer
+        self.top = height
+    bottom : integer
+        The bottom most vertical point on the screen. self.bottom = 0 
+    x : integer
+        self.left
+    y : integer
+        self.bottom
+    pos : tuple
+        self.pos = (x, y)    
+    center_x : integer
+        self.center_x = width//2
+    center_y : integer
+        self.center_y = height//2
+    center : tuple
+        self.center = (self.center_x, self.center_y)
+    right_center : tuple
+        self.right_center = (self.right, self.center_y)
+    right_top : tuple
+        self.right_top = (self.right, self.top)
+    right_bottom : tuple
+        self.right_bottom = (self.right, self.bottom)
+    left_center : tuple
+        self.left_center = (self.left, self.center_y)
+    left_top : tuple
+        self.left_top = (self.left, self.top)
+    left_bottom : tuple
+        self.left_bottom = (self.left, self.bottom)
+    """
     def __init__(self, app):
         self.__app = app
 
@@ -461,6 +500,59 @@ class ExpApp(App):
 
 
 class Experiment(object):
+    """An *Experiment* is the object that needs to be defined when you are ready to start 
+    building your smile experiment. This is also the class that you save all of your 
+    experimental runtime variables into. Experiment also gives you access to things 
+    like screen size, resolution, and framerate during experimental runtime.
+    
+    When you have all of your smile code written, the last line you need to add to your 
+    experiment is `exp.run()`. This will run all of the smile code that was written between 
+    `exp=Experiment()` and `exp.run()`.  Once all of the SMILE code is finished, the .py will
+    continue passed `exp.run()` and run any code you might want to run after an experiment. 
+    
+    Parameters
+    ----------
+    fullscreen : boolean (default = True)
+        Set to False if you would like to not run in fullscreen. 
+    resolution : tuple
+        A tuple of integers that define the size of the experiment window.
+    background_color : string (default = 'BLACK')
+        If given a string color name, see colors in video.py, the background of the 
+        window will be set to that color
+        
+    Properties
+    ----------
+    screen : Screen
+        Used to gain access to the size, shape, and location of variables like **center_x**, 
+        **height**, and **size** on the screen. 
+    subject : string
+        The subject number/name given in the command line via `-s name` or set during 
+        pre-experimental runtime.
+    subject_dir : string
+        string to where to save this subject's data. By default, it will be "data\subject_name"
+    info : list
+        The info for the arguments you pass into the Experiment at initialization. 
+    
+    Example
+    -------
+    You always want to call `exp = Experiment()` before you type your SMILE code. However, you do not
+    want to put this line at the top of your .py. Another thing you need to use your newly created 
+    *Experiment* variable is to **set** and **get** variables during experimental runtime. You are 
+    able to add and set new attributes to your *Experiment* variable that will not be evaluated until
+    experimental runtime.  
+    
+    ::
+        
+        exp = Experiment()
+        exp.SavedVariable = 10
+        with Loop(10) as trial:
+            exp.SavedVariable += trial.i 
+        Label(text = exp.SavedVariable, duration = 3)
+        exp.run()
+    
+    This example will set SavedVariable to 10, add the numbers 0 through 9 to it, and then end
+    the experiment.  At the end, exp.SavedVariable will be equal to 55. 
+    """
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
         #global Window
