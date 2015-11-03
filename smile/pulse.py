@@ -29,7 +29,7 @@ class Pulse(State):
     
     Parameters
     ----------
-    code : {0, 255, int},str
+    code : {0, 255, integer}, string
         Value specifying the trigger byte. Can be int or str.
     width : {0.010, float}
         Time in seconds that the pulse is on. Default is 0.010 s.
@@ -38,30 +38,36 @@ class Pulse(State):
         Port where to send the code
     parent : {None, ``ParentState``}
         Parent state to attach to. Will search for experiment if None.
-    save_log : bool
+    save_log : boolean
         If set to 'True,' details about the state will be
         automatically saved in the log files. 
-    name : str
+    name : string
         Name of the state for debugging and tracking
         
-    Example
-    --------
-    Pulse(code=1)
-    A sync pulse will be sent and will register 'S1' as the code
-    on both the presentation machine and the EEG apparatus.
-    
-    Log Parameters
+    Logged Attributes
     ---------------
     All parameters above and below are available to be accessed and 
     manipulated within the experiment code, and will be automatically 
     recorded in the state-specific log. Refer to State class
     docstring for addtional logged parameters. 
-        code_num : 
-            Number derived from the code.
-        pulse_on :
-            Time at which the pulse began.
-        pulse_off :
-            Time at which the pulse ended.
+
+    code_num : 
+        Number derived from the code.
+    pulse_on :
+        Time at which the pulse began.
+    pulse_off :
+        Time at which the pulse ended.
+    
+    Example
+    --------
+    
+    ::
+        
+        Pulse(code=1)
+    
+    A sync pulse will be sent and will register 'S1' as the code
+    on both the presentation machine and the EEG apparatus.
+    
     """
     def __init__(self, code=15, width=0.010, port=0,
                  parent=None, save_log=True, name=None):
