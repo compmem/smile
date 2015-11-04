@@ -943,7 +943,9 @@ class ParentState(State):
 
 
 class Parallel(ParentState):
-    """A *ParentState* that runs all of its children in parallel. This state's duration 
+    """A State used to run other States simultaneously.
+    
+    A *ParentState* that runs all of its children in parallel. This state's duration 
     is equal to the longest duration of its children. That means this state will not end
     until all of its children are finished running.
     
@@ -1112,7 +1114,9 @@ def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
 
 @contextmanager
 def Meanwhile(name=None, blocking=True):
-    """States created in this context will run in serial during the execution
+    """A context State used to run its children until a previous state is finished. 
+    
+    States created in this context will run in serial during the execution
     of the previous state, but will be cancelled when the previous state ends.
     If there is no previous state in the current parent, this will apply to the
     parent in lieu of the previous state.
@@ -1124,7 +1128,7 @@ def Meanwhile(name=None, blocking=True):
         
         Wait(3)
         with Meanwhile():
-            Label(text = 'On the screen for 3 seconds, because of the Wait Duration')
+            Label(text='On the screen for 3 seconds, because of the Wait Duration')
     
     This Example will display the *Label* for as long as the state previous to the `Meanwhile()` 
     is running. In this case, the duration of the *Meanwhile* is the same as the duration of 
@@ -1138,7 +1142,9 @@ def Meanwhile(name=None, blocking=True):
 
 @contextmanager
 def UntilDone(name=None, blocking=True):
-    """States created in this context will run in serial during the execution
+    """A context state used to run a previous state till its children are finished.
+    
+    States created in this context will run in serial during the execution
     of the previous state, and the previous state will be cancelled when the
     states in the context end.  If there is no previous state, this will apply
     to the parent in lieu of the previous state.
@@ -1222,8 +1228,11 @@ class SequentialState(ParentState):
 
 
 class Serial(SequentialState):
-    """*ParentState* that runs its children in serial, which means one after 
-    the other.
+    """*ParentState* that runs its children in serial, which means one after the other.
+    
+    This is a state used to section off states to be run in serial.  Usually, it is only used while using 
+    another state, like *Parallel* or *UntilDone*, but *Experiment* puts all states in a long *Serial* state
+    by default.  
     
     Parameters
     ----------
@@ -1270,7 +1279,9 @@ class Serial(SequentialState):
 
 
 class Subroutine(object):
-    """A decorator for functions that build reusable, encapsulated portions of
+    """A Subroutine is a decorator for making resuable bits of statemachine. 
+    
+    A decorator for functions that build reusable, encapsulated portions of
     state machine. You can pass in any number of keywords and keyword arguments
     when defining your own *Subroutine*. The first argument you need to pass into 
     your *Subroutine* when defining it is always **self**.
@@ -1287,8 +1298,8 @@ class Subroutine(object):
                                mult=2):
             self.mult_temp = input
             with Loop(num_loop):
-                Label(text=self.mult_temp, duration = 3)
-                self.mult_temp = self.mult_temp * mult
+                Label(text=self.mult_temp, duration=3)
+                self.mult_temp = self.mult_temp*mult
             
     This will create a *Subroutine* that your experiment can call. The *Subroutine* will 
     then run during experimental runtime just like any other state. The call would 
@@ -1296,7 +1307,7 @@ class Subroutine(object):
     
     ::
     
-        Example_Subroutine(num_loop = 15, input = 200, mult = 7)
+        Example_Subroutine(num_loop=15, input=200, mult=7)
         
     And just like that, the Example_Subroutine is added to the *ParentState's* children. 
     """
@@ -1407,7 +1418,9 @@ class SubroutineSet(AutoFinalizeState):
 
 
 class If(SequentialState):
-    """Parent state to implement conditional branching. *If* state is used in
+    """The way you do branching paths in a state machine.  
+    
+    Parent state to implement conditional branching. *If* state is used in
     lieu of a traditional Python if statement. The SMILE *If* state will 
     create a position linked list of **conditionals** and **states**.  It 
     will then loop through the conditions, and when it finds a conditional
@@ -1473,13 +1486,13 @@ class If(SequentialState):
     ::
     
         with If(trial.current['condition1'] == 0 & trial.current['condition2'] == 2):
-            Label(text = trial.current['stim'], color = trial.current['color1'], duration=3)
+            Label(text=trial.current['stim'], color=trial.current['color1'], duration=3)
         with Elif(trial.current['condition1'] == 1 & trial.current['condition2'] == 0):
-            Label(text = trial.current['stim'], color = trial.current['color2'], duration=3)
+            Label(text=trial.current['stim'], color=trial.current['color2'], duration=3)
         with Elif(trial.current['condition1'] == 1 & trial.current['condition2'] == 0):
-            Label(text = trial.current['stim'], color = trial.current['color3'], duration=3)
+            Label(text=trial.current['stim'], color=trial.current['color3'], duration=3)
         with Else():
-            Label(text = 'No condtionals were true!', color = 'RED', duration=3)
+            Label(text='No condtionals were true!', color='RED', duration=3)
     
     When we call `with Elif():` we are adding to the *If* state's internal list of 
     **conditionals** and **states**. When you call `with Else():` you are adding to
@@ -1566,7 +1579,7 @@ class Elif(Serial):
 
         
 def Else(name="ELSE BODY"):
-    """Return the else clause of the preceding If state. See *If*
+    """Returns the else clause of the preceding If state. See *If*
     """
     # get the exp reference
     from experiment import Experiment
@@ -1598,7 +1611,9 @@ def Else(name="ELSE BODY"):
 
 
 class Loop(SequentialState):
-    """A * Loop* state can be setup to run like the python ** for**, **while**, or
+    """A * Loop* state that is used to do any kind of repeated section of statemachine. 
+    
+    A *Loop* can be setup to run like the python ** for**, **while**, or
     **do while** depending on what parameters you send into it. 
     
     Parameters
@@ -1665,16 +1680,16 @@ class Loop(SequentialState):
     a list of dictionaries and presents the name of a person and their favorite food. 
     ::
     
-        words = [{'name':'bob','food':'pringle'},
-                 {'name':'tom','food':'prune'},
-                 {'name':'paul','food':'potato'},
+        words = [{'name':'bob',    'food':'pringle'},
+                 {'name':'tom',    'food':'prune'},
+                 {'name':'paul',   'food':'potato'},
                  {'name':'chelsea','food':'donut'},
-                 {'name':'dinese','food':'corn'},
-                 {'name':'emily','food':'pizza'}]
+                 {'name':'dinese', 'food':'corn'},
+                 {'name':'emily',  'food':'pizza'}]
         with Loop(words) as trial:
             with Parallel():
-                Label(text = trial.current['name'], duration = 3, center_x = exp.screen.center_x/2)
-                Label(text = trial.current['food'], duration = 3, center_x = exp.screen.center_x*3/2)
+                Label(text=trial.current['name'], duration=3, center_x=exp.screen.center_x/2)
+                Label(text=trial.current['food'], duration=3, center_x=exp.screen.center_x*3/2)
     
     The following is an example on how to loop X number of times. To access what the 
     current iteration number is, you must call `trial.i`.
@@ -1683,7 +1698,7 @@ class Loop(SequentialState):
     
         X = 15
         with Loop(X) as trial:
-            Label(text = trial.i, duration = 1)
+            Label(text=trial.i, duration=1)
     
     The following is an example of a **while** kind of *Loop*. All you have to do is set the conditional. 
     
@@ -1691,7 +1706,7 @@ class Loop(SequentialState):
     
         exp.X = 15
         with Loop(conditional = exp.X < 20):
-            Label(text = exp.X, duration = 3)
+            Label(text=exp.X, duration=3)
             exp.X += 1
     """
     def __init__(self, iterable=None, shuffle=False, conditional=True,
@@ -1758,7 +1773,9 @@ class Loop(SequentialState):
 
 
 class Record(State):
-    """A *Record* state is something you can use to record the changes in a *Reference*
+    """A *Record* records any changes in passed in Refs.
+    
+    A *Record* state is something you can use to record the changes in a *Reference*
     variable.  See **Ref**. If any of the Reference objects changed, it will record 
     all of them to a .slog file. Pass in Reference arguments by using keyword argument.  
     
@@ -1786,16 +1803,16 @@ class Record(State):
     ::
     
         with Parallel():
-            lb = Label(text = 'boba booy', duration = 2)
-            Record(duration = 5, dis_time = lb.disappear_time['time'])
+            lb = Label(text='boba booy', duration=2)
+            Record(duration=5, dis_time=lb.disappear_time['time'])
             
     You can also just do a non-blocking *Record* that checks to see if a variable `exp.X` changes. 
     
     ::
     
         exp.X = 5
-        Record(duration = 5, exp_x_is = exp.X, blocking = False)
-        Label(text = 'When this Label disappears, exp.X will be updated', duration = 3)
+        Record(duration=5, exp_x_is=exp.X, blocking=False)
+        Label(text='When this Label disappears, exp.X will be updated', duration=3)
         exp.X += 1
         
     """
@@ -1884,7 +1901,9 @@ class Record(State):
 
 
 class Log(AutoFinalizeState):
-    """A *Log* state is used to log any number of variables that you want to record
+    """Used to log any variables during experimental runtime. 
+    
+    A *Log* state is used to log any number of variables that you want to record
     to a .slog file.  Where ever it appears in your experiment, it will save out the 
     values of all of the arugments you give it at that point in your experiment.  
     Each call to *Log* will save to a seperate file. If used within a *Loop* state, it 
@@ -1912,25 +1931,24 @@ class Log(AutoFinalizeState):
     
     ::
     
-        words = [{'name':'bob','food':'pringle'},
-                 {'name':'tom','food':'prune'},
-                 {'name':'paul','food':'potato'},
+        words = [{'name':'bob',    'food':'pringle'},
+                 {'name':'tom',    'food':'prune'},
+                 {'name':'paul',   'food':'potato'},
                  {'name':'chelsea','food':'donut'},
-                 {'name':'dinese','food':'corn'},
-                 {'name':'emily','food':'pizza'}]
+                 {'name':'dinese', 'food':'corn'},
+                 {'name':'emily',  'food':'pizza'}]
         with Loop(words) as trial:
             with Parallel():
-                Label(text = trial.current['name'], center_x = exp.screen.center_x/2)
-                Label(text = trial.current['food'], center_x = exp.screen.center_x*3/2)
-                Label(text = 'Press J if the person should like the food,
-                              Press K if the person shouldn't like the food.', 
-                      center_y = exp.screen.center_y/2)
+                Label(text=trial.current['name'], center_x=exp.screen.center_x/2)
+                Label(text=trial.current['food'], center_x=exp.screen.center_x*3/2)
+                Label(text='Press J if the person should like the food,
+                            Press K if the person shouldn't like the food.', 
+                      center_y=exp.screen.center_y/2)
             with UntilDone():
-                kp = KeyPress(keys = ['F', 'J'], duration = 3)
+                kp = KeyPress(keys=['F', 'J'], duration=3)
             Log(trial.current,
-                key_reaction_time = kp.rt
-                key_pressed = kp.pressed
-                )
+                key_reaction_time=kp.rt
+                key_pressed=kp.pressed)
     
     This example will save out 4 columns to a .slog, **log_dict_name**, **log_dict_food**, **key_reaction_time**, and **key_pressed**. 
     """
@@ -2025,7 +2043,9 @@ class _DelayedValueTest(State):
 
 
 class Done(AutoFinalizeState):
-    """A *Done* state will block the experiment from continuing until a Ref value is filled, 
+    """Waits until a state is finished or a ref is evaluated.
+    
+    A *Done* state will block the experiment from continuing until a Ref value is filled, 
     or a state is finalized. This is mainly only used when the timing of something like 
     **appear_time** is needed to be logged.  
     
@@ -2043,15 +2063,15 @@ class Done(AutoFinalizeState):
     
     ::
     
-        lb = Label(text = 'baba booy', duration = 3)
+        lb = Label(text='baba booy', duration=3)
         Done(lb)
-        Log(label_off = lb.disappear_time['time'])
+        Log(label_off=lb.disappear_time['time'])
         
     ::
     
-        lb = Label(text = 'baba booy', duration = 3)
+        lb = Label(text='baba booy', duration=3)
         Done(lb.disappear_time['time'])
-        Log(label_off = lb.disappear_time['time'])
+        Log(label_off=lb.disappear_time['time'])
     
     """
     def __init__(self, *states, **kwargs):
@@ -2087,7 +2107,9 @@ class Done(AutoFinalizeState):
 
 
 class Wait(State):
-    """A *Wait* state will wait for the duration that you give it, only then 
+    """Waits an ammount of seconds during experimental runtime. 
+    
+    A *Wait* state will wait for the duration that you give it, only then 
     will it continue on to the next state. 
 
     Parameters
@@ -2258,6 +2280,26 @@ def While(condition, body=None, name="WHILE", blocking=True):
 
 class ResetClock(AutoFinalizeState):
     """State to arbitrarily set the start time of the subsequent state.
+    
+    This state is used when the timing of stimuli is extremely important to the end user, 
+    to the extreme that they need to know the exact moment when a key was pressed after the 
+    stimuli was on the screen.  When calling the *ResetClock* state, you have to pass in a 
+    **new_time**, and then the next state's start time will be the same as the time that you 
+    reset the clock to.  
+    
+    Parameters
+    ----------
+    new_time : Ref
+        The time you would like the next state's start time to be.  
+    parent : ParentState
+        The state that this state is a child of. 
+    save_log : boolean
+        If True, this state will log all of its important variables out to a 
+        .slog file.
+    name : string
+        The unique name given to this state. 
+        
+        
     """
     def __init__(self, new_time=None, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -2321,7 +2363,9 @@ class CallbackState(AutoFinalizeState):
 
 
 class Func(CallbackState):
-    """A *Func* is a state that calls a function during experimental runtime. The first argument
+    """The way you call and run a function during experimental runtime
+    
+    A *Func* is a state that calls a function during experimental runtime. The first argument
     is always the name of the funciton and the rest of the arguments are the arguments that are 
     sent to the function.  
     
@@ -2385,7 +2429,7 @@ class Func(CallbackState):
             return input
         
         exp.X = 15
-        exp.X = Func(add_num, input = exp.X, additive = 5)
+        exp.X = Func(add_num, input=exp.X, additive=5)
     
     This example will add 5 to `exp.X`. Very simple, but without using the *Func* state, you would be running 
     **add_num** outside of experiment runtime. 
@@ -2414,7 +2458,9 @@ class Func(CallbackState):
 
 
 class Debug(CallbackState):
-    """A *Debug* state will print out the variables and the value of 
+    """Used to send debug messages to the console during experimental runtime. 
+    
+    A *Debug* state will print out the variables and the value of 
     those variables during experiment runtime to the command prompt. 
     
     Parameters
@@ -2435,8 +2481,8 @@ class Debug(CallbackState):
     
     ::
     
-        lb = Label(text = 'baba booy', duration = 3)
-        Debug(dis_time = lb.disappear_time['time'], lab_text = lb.text)
+        lb = Label(text='baba booy', duration=3)
+        Debug(dis_time=lb.disappear_time['time'], lab_text=lb.text)
         
     
     """
