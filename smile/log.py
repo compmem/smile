@@ -13,7 +13,9 @@ import gzip
 import csv
 
 class LogWriter(object):
-    """*LogWriter* is what we use to write data to a .slog file. The *Log* state 
+    """An object that handles the writing of .slog files. 
+    
+    *LogWriter* is what we use to write data to a .slog file. The *Log* state 
     relies heavily on this object.  
     
     Parameters
@@ -49,7 +51,10 @@ class LogWriter(object):
 
 
 class LogReader(object):
-    """Read from a compressed smile log (slog)
+    """An object that handles reading from .slog files. 
+    
+    Passing in a filename, by calling **ReadRecord** you can read on row from the
+    .slog file. 
     
     Parameters
     ----------
@@ -108,7 +113,20 @@ def _unwrap(d, prefix='', depth=0):
 
 
 def log2csv(log_filename, csv_filename):
-    """Convert a slog to a CSV."""
+    """Converts a slog to a CSV.
+    
+    This state is can be used outside of a SMILE experiment, and is an easy way
+    to get your .slog formated file into an easily readable format. This function 
+    is mostly used when you pass **-c** into the command line when running an 
+    experiment. 
+    
+    Parameters
+    ----------
+    log_filename : string
+        The path to the .slog file
+    csv_filename : string
+        The path to the new .csv file this function is about to create.
+    """
     colnames = []
     reader = LogReader(log_filename)
     for record in reader:
