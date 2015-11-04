@@ -12,7 +12,9 @@ Hello World, Lets start Smiling!
 ================================
 
 To start, I'll show you how the simplest *smile* experiment is programmed. Create a directory called *SmileTest* and add a file named *main.py*
+
 ::
+
     from smile import *
 
     exp = Experiment()
