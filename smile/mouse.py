@@ -34,13 +34,13 @@ def MouseWithin(widget):
     
     ::
         
-        rec = Rectangle(height = 10, width = 10, color='RED')
+        rec = Rectangle(height=10, width=10, color='RED')
         with UntilDone():
             with Parallel():
-                MouseCursor(duration = 10)
+                MouseCursor(duration=10)
                 with Serial():
                     Wait(until=MouseWithin(rec))
-                    Label(text = 'You got the cursor into the square within the time limit!', color='GREEN', center_y=exp.screen.center_y/2, duration = 5)
+                    Label(text='You got the cursor into the square within the time limit!', color='GREEN', center_y=exp.screen.center_y/2, duration=5)
     
     This example will draw a rectangle and wait until you put the cursor within the rectangle.  
     Once that happens, a *Label* will appear telling the participant that they did the correct 
