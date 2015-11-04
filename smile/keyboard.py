@@ -61,7 +61,9 @@ class KeyState(CallbackState):
 
 
 class KeyPress(KeyState):
-    """A *KeyPress* state will wait for a duration, if there is one, for a key that
+    """A state that listens for a keypress. 
+    
+    A *KeyPress* state will wait for a duration, if there is one, for a key that
     is within the **keys** list and then tell you if they picked a response that
     was within the **correct_resp** list, and tell you the response time.  
     
@@ -206,7 +208,9 @@ class KeyPress(KeyState):
 
 
 class KeyRecord(KeyState):
-    """A *KeyRecord* state will record any keypress, the keyup's and keydown's, 
+    """A state that records keypresses during a duration.
+    
+    A *KeyRecord* state will record any keypress, the keyup's and keydown's, 
     aswell as any timing associated with them for a duration.  
     
     Parameters
