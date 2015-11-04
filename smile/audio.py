@@ -82,7 +82,9 @@ def default_init_audio_server():
 
 
 class Beep(Wait):
-    """A *Beep* state is just like a *Wait* state, in that it pauses the execusion of the
+    """Produces a *Beep* noise during experimental runtime. 
+    
+    A *Beep* state is just like a *Wait* state, in that it pauses the execusion of the
     experiment, but it also plays a beep sound. You can edit the beep however you like 
     by passing in different parameters.
     
@@ -201,7 +203,9 @@ class Beep(Wait):
 
 
 class SoundFile(Wait):
-    """A *SoundFile* state is used to play out a sound file in different ways during
+    """Plays a sound file during experimental runtime. 
+    
+    A *SoundFile* state is used to play out a sound file in different ways during
     your experiment.  It gives you the option to loop a sound file, or 
     even start at somepoint within the file, instead of at the begining. 
     
@@ -324,7 +328,9 @@ class SoundFile(Wait):
 
 
 class RecordSoundFile(Wait):
-    """A *RecordSoundFile* state will record sound from a mic for a duration and 
+    """Records sound from a mic during experimental runtime. 
+    
+    A *RecordSoundFile* state will record sound from a mic for a duration and 
     save it out to a filename.  
     
     Parameters
