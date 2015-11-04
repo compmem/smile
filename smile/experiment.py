@@ -502,7 +502,9 @@ class ExpApp(App):
 
 
 class Experiment(object):
-    """An *Experiment* is the object that needs to be defined when you are ready to start 
+    """The base for a SMILE statemachine. 
+    
+    An *Experiment* is the object that needs to be defined when you are ready to start 
     building your smile experiment. This is also the class that you save all of your 
     experimental runtime variables into. Experiment also gives you access to things 
     like screen size, resolution, and framerate during experimental runtime.
@@ -549,7 +551,7 @@ class Experiment(object):
         exp.SavedVariable = 10
         with Loop(10) as trial:
             exp.SavedVariable += trial.i 
-        Label(text = exp.SavedVariable, duration = 3)
+        Label(text=exp.SavedVariable, duration=3)
         exp.run()
     
     This example will set SavedVariable to 10, add the numbers 0 through 9 to it, and then end
