@@ -277,7 +277,7 @@ class MousePress(CallbackState):
     rt : float
         The reaction time associated with a mouse press. **press_time** - **base_time**
     pos : tuple
-        A tuple, (x,y), that is the position of the mouse button press. 
+        A tuple, (x, y), that is the position of the mouse button press. 
     """
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
                  widget=None, duration=None, parent=None, save_log=True,
