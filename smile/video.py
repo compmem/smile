@@ -315,7 +315,7 @@ class WidgetState(VisualState):
 
     def attribute_update_state(self, name, value):
         if name in self.__widget_param_names:
-            return UpdateWidget(self, **{name : value})
+            return UpdateWidgetUntimed(self, name, value)
         else:
             raise AttributeError("%r is not a property of this widget (%r)." %
                                  (name, self))
@@ -448,6 +448,17 @@ class WidgetState(VisualState):
             if name in pos_props:
                 setattr(self._widget, name, value)
 
+    def update(self, parent=None, save_log=True, name=None, blocking=True,
+               **kwargs):
+        ud = UpdateWidget(self,
+                          parent=parent,
+                          save_log=save_log,
+                          name=name,
+                          blocking=blocking,
+                          **kwargs)
+        ud.override_instantiation_context()
+        return ud
+
     def animate(self, interval=None, duration=None, parent=None, save_log=True,
                 name=None, blocking=True, **anim_params):
         anim = Animate(self, interval=interval, duration=duration,
@@ -520,8 +531,31 @@ class WidgetState(VisualState):
         return ret
 
 
-class UpdateWidget(CallbackState):
-    #TODO: separate log entry for each value (as in Set)
+class UpdateWidgetUntimed(CallbackState):
+    def __init__(self, target, prop_name, prop_value, parent=None,
+                 save_log=True, name=None, blocking=True):
+        super(UpdateWidgetUntimed, self).__init__(duration=0.0,
+                                                  parent=parent,
+                                                  save_log=save_log,
+                                                  name=name,
+                                                  blocking=blocking)
+        self.__target = target
+        self._widget = target._name
+        self._init_prop_name = prop_name
+        self._init_prop_value = prop_value
+        self._log_attrs.extend(['widget', 'prop_name', 'prop_value'])
+
+    def _enter(self):
+        super(UpdateWidgetUntimed, self)._enter()
+        self.__target_clone = self.__target.current_clone
+
+    def _callback(self):
+        self.__target_clone.live_change(**self.__target_clone.transform_params(
+            self.__target_clone.apply_aliases(
+                {self._prop_name : self._prop_value})))
+
+
+class UpdateWidget(VisualState):
     def __init__(self, target, parent=None, save_log=True, name=None,
                  blocking=True, **kwargs):
         super(UpdateWidget, self).__init__(duration=0.0,
@@ -530,15 +564,33 @@ class UpdateWidget(CallbackState):
                                            name=name,
                                            blocking=blocking)
         self.__target = target
+        self._widget = target._name
         self._init_values = kwargs
-        self._log_attrs.extend(['values'])
+        self._log_attrs.extend(['widget', 'values'])
 
     def _enter(self):
         super(UpdateWidget, self)._enter()
         self.__target_clone = self.__target.current_clone
 
-    def _callback(self):
-        self.__target_clone.live_change(**self._values)
+    def show(self):
+        self.__target_clone.live_change(**self.__target_clone.transform_params(
+            self.__target_clone.apply_aliases(self._values)))
+
+    def get_log_fields(self):
+        return ['instantiation_filename', 'instantiation_lineno', 'name',
+                'time', 'prop_name', 'prop_value']
+
+    def save_log(self):
+        class_name = type(self).__name__
+        for name, value in self._values.iteritems():
+            field_values = {
+                "instantiation_filename": self._instantiation_filename,
+                "instantiation_lineno": self._instantiation_lineno,
+                "name": self._name,
+                "time": self._appear_time,
+                "prop_name": name,
+                "prop_value": value}
+            self._exp.write_to_state_log(class_name, field_values)
 
 
 class Animate(State):
@@ -855,7 +907,7 @@ if __name__ == '__main__':
 Hello world
 ===========
 
-This is an **emphased text**, some ``interpreted text``.
+This is an **emphasized text**, some ``interpreted text``.
 And this is a reference to top_::
 
 $ print("Hello world")
@@ -901,9 +953,11 @@ $ print("Hello world")
         rect.center = exp.screen.left_top
         #Screenshot()
         Wait(1.0)
-        rect.center = exp.screen.left_bottom
+        #rect.center = exp.screen.left_bottom
+        rect.update(center=exp.screen.left_bottom, color="yellow")
         Wait(1.0)
-        rect.center = exp.screen.center
+        #rect.center = exp.screen.center
+        rect.update(center=exp.screen.center, color="purple")
         Wait(1.0)
         rect.slide(center=exp.screen.right_top, duration=2.0)
         rect.slide(center=exp.screen.right_bottom, duration=2.0)
