@@ -18,9 +18,7 @@ Dependencies
 ============
 
 - `python <https://www.python.org/>`_ (version 2.7, not 3)
-- `pyglet <http://www.pyglet.org/>`_ (version 1.1.4, not 1.2)
-- `PyYAML <http://pyyaml.org/>`_
-- `pydot <https://code.google.com/p/pydot/>`_ (optional, for making DAGs)
+- `kivy <http://www.kivy.org/>`_ (version 1.8 or 1.9)
 - `pyo <http://ajaxsoundstudio.com/software/pyo/>`_ (optional, for audio)
 
 

@@ -135,8 +135,7 @@ class KeyRecord(KeyState):
             self._instantiation_lineno,
             self._name)
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
-        self.__log_writer = LogWriter(self.__log_filename,
-                                      ["timestamp", "key", "state"])
+        self.__log_writer = LogWriter(self.__log_filename)
 
     def end_log(self, to_csv=False):
         super(KeyRecord, self).end_log(to_csv)
