@@ -25,9 +25,7 @@ class LogWriter(object):
     field_names : list 
         A list of strings that contains the fields you wish to write. 
     """
-    def __init__(self, filename, field_names):
-        self._field_names = field_names
-    """Write to a compressed smile log (slog)."""
+
     def __init__(self, filename):
         self._file = gzip.open(filename, "wb")
         self._pickler = cPickle.Pickler(self._file, -1)
@@ -42,16 +40,12 @@ class LogWriter(object):
             are writing out to the .slog file. 
         
         """
-        record = [data[field_name] for field_name in self._field_names]
-        self._pickler.dump(record)
         # data must be a dict
         if not isinstance(data, dict):
             raise ValueError("data to log must be a dict instance.")
         self._pickler.dump(data)
 
     def close(self):
-        """Run this funciton once you are done writing to the .slog        
-        """
         self._file.close()
 
 
@@ -121,26 +115,7 @@ def _unwrap(d, prefix=''):
 
     return new_item
 
-def log2csv(log_filename, csv_filename):
-    """Converts a slog to a CSV.
-    
-    This state is can be used outside of a SMILE experiment, and is an easy way
-    to get your .slog formated file into an easily readable format. This function 
-    is mostly used when you pass **-c** into the command line when running an 
-    experiment. 
-    
-    Parameters
-    ----------
-    log_filename : string
-        The path to the .slog file
-    csv_filename : string
-        The path to the new .csv file this function is about to create.
-    """
-    colnames = []
-    reader = LogReader(log_filename)
-    for record in reader:
-        for fieldname, value in _unwrap([(name, record[name]) for name in
-                                          reader.field_names]):
+
 def log2csv(log_filename, csv_filename, **append_columns):
     """Convert a slog to a CSV."""
     # get the set of colnames
