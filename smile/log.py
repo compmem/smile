@@ -13,7 +13,6 @@ import gzip
 import csv
 
 class LogWriter(object):
-<<<<<<< HEAD
     """An object that handles the writing of .slog files. 
     
     *LogWriter* is what we use to write data to a .slog file. The *Log* state 
@@ -28,15 +27,12 @@ class LogWriter(object):
     """
     def __init__(self, filename, field_names):
         self._field_names = field_names
-=======
     """Write to a compressed smile log (slog)."""
     def __init__(self, filename):
->>>>>>> refs/remotes/compmem/kivy
         self._file = gzip.open(filename, "wb")
         self._pickler = cPickle.Pickler(self._file, -1)
 
     def write_record(self, data):
-<<<<<<< HEAD
         """Call this funciton to write a single row to the .slog file.
         
         Parameters
@@ -48,12 +44,10 @@ class LogWriter(object):
         """
         record = [data[field_name] for field_name in self._field_names]
         self._pickler.dump(record)
-=======
         # data must be a dict
         if not isinstance(data, dict):
             raise ValueError("data to log must be a dict instance.")
         self._pickler.dump(data)
->>>>>>> refs/remotes/compmem/kivy
 
     def close(self):
         """Run this funciton once you are done writing to the .slog        
@@ -127,7 +121,6 @@ def _unwrap(d, prefix=''):
 
     return new_item
 
-<<<<<<< HEAD
 def log2csv(log_filename, csv_filename):
     """Converts a slog to a CSV.
     
@@ -148,14 +141,12 @@ def log2csv(log_filename, csv_filename):
     for record in reader:
         for fieldname, value in _unwrap([(name, record[name]) for name in
                                           reader.field_names]):
-=======
 def log2csv(log_filename, csv_filename, **append_columns):
     """Convert a slog to a CSV."""
     # get the set of colnames
     colnames = append_columns.keys()
     for record in LogReader(log_filename):
         for fieldname in _unwrap(record):
->>>>>>> refs/remotes/compmem/kivy
             if fieldname not in colnames:
                 colnames.append(fieldname)
                 
