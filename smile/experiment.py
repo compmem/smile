@@ -258,7 +258,7 @@ class ExpApp(App):
         # do a quick (non-blocking) flip
         # see if two prevents the flicker on some machines
         EventLoop.window.dispatch('on_flip')
-        EventLoop.window.dispatch('on_flip')
+        #EventLoop.window.dispatch('on_flip')
         
         return self.wid
 
@@ -693,20 +693,15 @@ class Experiment(object):
                 raise RuntimeError(
                     "Too many data files with the same title, extension, and timestamp!")
 
-    def setup_state_logger(self, state_class_name, field_names):
-        field_names = tuple(field_names)
-        if state_class_name in self._state_loggers:
-            if field_names == self._state_loggers[state_class_name][2]:
-                return
-            raise ValueError("'field_names' changed for state class %r!" %
-                             state_class_name)
+    def setup_state_logger(self, state_class_name):
         title = "state_" + state_class_name
         filename = self.reserve_data_filename(title, "slog") 
-        logger = LogWriter(filename, field_names)
-        self._state_loggers[state_class_name] = filename, logger, field_names
+        logger = LogWriter(filename)
+        self._state_loggers[state_class_name] = filename, logger
+        return filename
 
     def close_state_loggers(self, to_csv):
-        for filename, logger, field_names in self._state_loggers.itervalues():
+        for filename, logger in self._state_loggers.itervalues():
             logger.close()
             if to_csv:
                 csv_filename = (os.path.splitext(filename)[0] + ".csv")
@@ -736,7 +731,12 @@ class Experiment(object):
         self._current_state = None
         if trace:
             self._root_state.tron()
+
+        # open all the logs
+        # (this will call begin_log for entire state machine)
         self._root_state.begin_log()
+
+        # clone the root state in prep for starting the state machine
         self._root_executor = self._root_state._clone(None)
         try:
             # start the first state (that's the root state)

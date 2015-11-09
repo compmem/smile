@@ -125,6 +125,7 @@ class Pulse(State):
         self._started = True
 
         # send the code
+        global have_parallel
         if have_parallel:
             # send the port code and time it
             try:

@@ -13,6 +13,7 @@ import gzip
 import csv
 
 class LogWriter(object):
+<<<<<<< HEAD
     """An object that handles the writing of .slog files. 
     
     *LogWriter* is what we use to write data to a .slog file. The *Log* state 
@@ -27,11 +28,15 @@ class LogWriter(object):
     """
     def __init__(self, filename, field_names):
         self._field_names = field_names
+=======
+    """Write to a compressed smile log (slog)."""
+    def __init__(self, filename):
+>>>>>>> refs/remotes/compmem/kivy
         self._file = gzip.open(filename, "wb")
         self._pickler = cPickle.Pickler(self._file, -1)
-        self._pickler.dump(field_names)
 
     def write_record(self, data):
+<<<<<<< HEAD
         """Call this funciton to write a single row to the .slog file.
         
         Parameters
@@ -43,6 +48,12 @@ class LogWriter(object):
         """
         record = [data[field_name] for field_name in self._field_names]
         self._pickler.dump(record)
+=======
+        # data must be a dict
+        if not isinstance(data, dict):
+            raise ValueError("data to log must be a dict instance.")
+        self._pickler.dump(data)
+>>>>>>> refs/remotes/compmem/kivy
 
     def close(self):
         """Run this funciton once you are done writing to the .slog        
@@ -65,19 +76,14 @@ class LogReader(object):
     def __init__(self, filename):
         self._file = gzip.open(filename, "rb")
 
-        # read until one pickle is done
+        # set up the unpickler
         self._unpickler = cPickle.Unpickler(self._file)
-        self._field_names = tuple(self._unpickler.load())
-
-    @property
-    def field_names(self):
-        return self._field_names
 
     def read_record(self):
         """Returns a dicitionary with the field names as keys.
         """
         try:
-            return dict(zip(self._field_names, self._unpickler.load()))
+            return self._unpickler.load()
         except EOFError:
             return None
 
@@ -92,26 +98,36 @@ class LogReader(object):
         self.close()
 
 
-def _unwrap(d, prefix='', depth=0):
-    new_item = []
-    to_remove = []
-    for k, v in d:
-    	key = prefix + k
-        if depth > 0:
-            new_item.append((key, v))
-        elif isinstance(v, dict):
-            new_item.extend(_unwrap(v.items(), prefix=key+'_', depth=depth+1))
-        elif type(v) in (tuple, list):
-            new_subitem = []
-            for j, subv in enumerate(v):
-                new_subitem.append((str(j), subv))
-            new_item.extend(_unwrap(new_subitem, prefix=key+'_',
-                                    depth=depth+1))
-        else:
-            new_item.append((key, v))
+def _unwrap(d, prefix=''):
+    """
+    Process the items of a dict and unwrap them to the top level based
+    on the key names.
+    """
+    new_item = {}
+    for k in d:
+        # add prefix
+        key = prefix+k
+
+        # see if dict
+        if isinstance(d[k],dict):
+            new_item.update(_unwrap(d[k],prefix=key+'_'))
+            continue
+
+        # see if tuple/list
+        if isinstance(d[k],(tuple,list)):
+            # turn into indexed dict
+            tdict = {}
+            for j in range(len(d[k])):
+                tdict[str(j)] = d[k][j]
+            new_item.update(_unwrap(tdict,prefix=key+'_'))
+            continue
+
+        # just add it in
+        new_item[key] = d[k]
+
     return new_item
 
-
+<<<<<<< HEAD
 def log2csv(log_filename, csv_filename):
     """Converts a slog to a CSV.
     
@@ -132,12 +148,29 @@ def log2csv(log_filename, csv_filename):
     for record in reader:
         for fieldname, value in _unwrap([(name, record[name]) for name in
                                           reader.field_names]):
+=======
+def log2csv(log_filename, csv_filename, **append_columns):
+    """Convert a slog to a CSV."""
+    # get the set of colnames
+    colnames = append_columns.keys()
+    for record in LogReader(log_filename):
+        for fieldname in _unwrap(record):
+>>>>>>> refs/remotes/compmem/kivy
             if fieldname not in colnames:
                 colnames.append(fieldname)
-                                    
+                
+    # loop again and write out to file
     with open(csv_filename, 'wb') as fout:
+        # open CSV and write header
         dw = csv.DictWriter(fout, fieldnames=list(colnames))
         dw.writeheader()
+
+        # loop over log entries
         for record in LogReader(log_filename):
-            dw.writerow(dict(_unwrap(record.items())))
+            # unwrap dict to top level
+            record = _unwrap(record)
+
+            # append cols after unwraping
+            record.update(append_columns)
+            dw.writerow(record)
 

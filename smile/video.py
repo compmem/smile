@@ -736,9 +736,10 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         _kivy_clock.unschedule(self._widget._do_video_load)
         self._widget._do_video_load()
         self._widget._video.pause()
-        while self._widget._video.duration == -1:
-            pass  #TODO: make sure we can't get stuck here?
         if self._end_time is None:
+            # we need the duration to set the end time
+            while self._widget._video.duration == -1:
+                pass  #TODO: make sure we can't get stuck here?
             self._end_time = self._start_time + self._widget._video.duration
 
         # override the update interval (eventually make this a setting)
@@ -755,6 +756,8 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         #while self._widget._video.texture is None:
         #    print '.',
         if self._widget.width == 0 and self._widget.height == 0:
+            #if self._widget._video.texture is None:
+            #    clock.usleep(100)
             self.live_change(size=self._widget._video.texture.size)
         super(Video, self).show()
 

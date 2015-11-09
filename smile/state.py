@@ -383,8 +383,7 @@ class State(object):
             # Use the state logger facily of the associated Experiment so that
             # only one state log is produced for the state class (rather than
             # one per instance).
-            self._exp.setup_state_logger(type(self)._state_class.__name__,
-                                         self.get_log_fields())
+            self._exp.setup_state_logger(type(self)._state_class.__name__)
 
     def end_log(self, to_csv=False):
         """Close the per-class state logs.
@@ -1721,8 +1720,8 @@ class Loop(SequentialState):
         self._cond = conditional
         self._outcome = True
 
-        self._i = None
-        self._current = None
+        self._i = NotAvailable
+        self._current = NotAvailable
 
         self.__body_state = Serial(parent=self, name="LOOP BODY")
         self.__body_state._instantiation_filename = self._instantiation_filename
@@ -1838,8 +1837,7 @@ class Record(State):
         else:
             title = "record_%s" % self._name
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
-        self.__log_writer = LogWriter(self.__log_filename,
-                                      self.__refs.keys() + ["timestamp"])
+        self.__log_writer = LogWriter(self.__log_filename)
 
     def end_log(self, to_csv=False):
         """Close logs.
@@ -1896,7 +1894,7 @@ class Record(State):
         except NotAvailableError:
             raise NotAvailableError(
                 "One or more recorded values not available!")
-        record["timestamp"] = self._exp._app.event_time
+        record["record_time"] = self._exp._app.event_time
         self.__log_writer.write_record(record)
 
 
@@ -1965,6 +1963,7 @@ class Log(AutoFinalizeState):
         """Set up per-class AND per-instance logs.
         """
         super(Log, self).begin_log()
+        # set the filename, depends on whether name was passed in
         if self._name is None:
             title = "log_%s_%d" % (
                 os.path.splitext(
@@ -1973,14 +1972,7 @@ class Log(AutoFinalizeState):
         else:
             title = "log_%s" % self._name
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
-        fields = ["time"] + self._init_log_items.keys()
-        if isinstance(self._init_log_dict, dict):
-            # extend the dict from the kwargs
-            fields.extend(self._init_log_dict.iterkeys())
-        elif type(self._init_log_dict) in (tuple, list):
-            # handle list of dicts (writing row for each list item)
-            fields.extend(self._init_log_dict[0].iterkeys())
-        self.__log_writer = LogWriter(self.__log_filename, fields)
+        self.__log_writer = LogWriter(self.__log_filename)
 
     def end_log(self, to_csv=False):
         """Close logs.
@@ -1996,7 +1988,7 @@ class Log(AutoFinalizeState):
 
     def _enter(self):
         record = self._log_items.copy()
-        record["time"] = self._start_time
+        record["log_time"] = self._start_time
         if self._log_dict is None:
             self.__log_writer.write_record(record)
         elif isinstance(self._log_dict, dict):
