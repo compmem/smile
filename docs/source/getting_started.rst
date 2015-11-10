@@ -14,6 +14,7 @@ Contents:
    install
    runningsmile
    tutorial
+   accessing_data
    android
    smile
    
