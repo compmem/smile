@@ -132,9 +132,9 @@ class Pulse(State):
                 # Create a parallel port object (locks it exclusively)
                 self._pport = parallel.Parallel(port=self._port)
 
-                start_time = now()
+                start_time = clock.now()
                 self._pport.setData(self._code_num)
-                end_time = now()
+                end_time = clock.now()
             except: # eventually figure out which errors to catch
                 sys.stderr.write("\nWARNING: The parallel module could not send pulses,\n" + 
                                  "\tso no sync pulsing will be generated.\n\n")
@@ -182,9 +182,9 @@ class Pulse(State):
 
     def _pulse_off_callback(self):
         # turn off the code
-        start_time = now()
+        start_time = clock.now()
         self._pport.setData(0)
-        end_time = now()
+        end_time = clock.now()
 
         # clean up / close the port
         self._pport = None
