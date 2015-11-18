@@ -123,27 +123,11 @@ class MouseCursor(VisualState):
     
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
+    All parameters above are available to be accessed and 
     manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
+    recorded in the state-specific log. Refer to VisualState class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        The line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     """
     stack = []
     def __init__(self, filename=None, offset=None, duration=None, parent=None,
@@ -252,22 +236,6 @@ class MousePress(CallbackState):
     recorded in the state-specific log. Refer to State class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     pressed : string
         The name of the button they pressed.
     press_time : float

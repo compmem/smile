@@ -115,25 +115,9 @@ class Beep(Wait):
     -----------------
     All parameters above and below are available to be accessed and 
     manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
+    recorded in the state-specific log. Refer to Wait class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     sound_start_time : float
         The approximate time that the beep started to play.
         
@@ -242,25 +226,9 @@ class SoundFile(Wait):
     -----------------
     All parameters above and below are available to be accessed and 
     manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
+    recorded in the state-specific log. Refer to Wait class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime.  
-    finalize_time : float
-        The time this state calls `finalize()`
     sound_start_time : float
         The time that the sound file started playing approximately. 
     """
@@ -357,27 +325,9 @@ class RecordSoundFile(Wait):
     -----------------
     All parameters above and below are available to be accessed and 
     manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
+    recorded in the state-specific log. Refer to Wait class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated
-    name : string
-        The unique name given to this state
-    start_time : float
-        The time the state was started in experimental runtime
-    end_time : float
-        The time this state ended in experimental runtime
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     rec_start : float
         The time at which the recording started. 
     """

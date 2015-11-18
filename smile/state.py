@@ -137,8 +137,7 @@ class State(object):
     -----------------
     All parameters above and below are available to be accessed and 
     manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
-    docstring for additional logged parameters. 
+    recorded in the state-specific log.
 
     instantiation_filename : string
         The file in which this state is instantiated. 
@@ -796,27 +795,10 @@ class ParentState(State):
     
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
-    docstring for additional logged parameters. 
+    All parameters above manipulated within the experiment code, 
+    and will be automatically recorded in the state-specific log.
+    Refer to State class docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental.
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     """
     def __init__(self, children=None, parent=None, duration=None,
                  save_log=True, name=None, blocking=True):
@@ -971,22 +953,6 @@ class Parallel(ParentState):
     recorded in the state-specific log. Refer to State class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state runs `finalize()`
     """
     def __init__(self, children=None, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -1251,27 +1217,11 @@ class Serial(SequentialState):
     
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
+    All parameters above are available to be accessed and 
     manipulated within the experiment code, and will be automatically 
     recorded in the state-specific log. Refer to State class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of its preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     """
     def _get_child_iterator(self):
         return iter(self._children)
@@ -1458,22 +1408,6 @@ class If(SequentialState):
     recorded in the state-specific log. Refer to State class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        The line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     outcome_index : integer
         The index pointing to which condition evaluated to True. Where 0 is the *If* conditional 
         and n, the max number it could be, means none of the conditionals evaluated to true and
@@ -1646,22 +1580,6 @@ class Loop(SequentialState):
     recorded in the state-specific log. Refer to State class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-       The line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime.  
-    finalize_time : float
-        The time this state calls `finalize()`
     i : integer
         The index of the currect iterable.  If **iterable** was given an integer, then *i* will 
         be the loop number in experimental runtime. 
@@ -2131,24 +2049,6 @@ class Wait(State):
     recorded in the state-specific log. Refer to State class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    name : string
-        The unique name given to this state.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     event_time : dictionary
         Keys are *time* and *error*, where *time* refers to the time of the *Wait* state, and 
         *error* gives you the maximum value that the error could be when setting the *time*. 
@@ -2388,22 +2288,6 @@ class Func(CallbackState):
     recorded in the state-specific log. Refer to State class
     docstring for additional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        The line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     result : Ref
         A reference to the return value of this function, to be evaluted at experimental runtime. 
         

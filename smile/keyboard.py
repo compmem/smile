@@ -103,21 +103,6 @@ class KeyPress(KeyState):
     recorded in the state-specific log. Refer to State class
     docstring for addtional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated
-    start_time : float
-        The time the state was started in experimental runtime
-    end_time : float
-        The time this state ended in experimental runtime
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        The time this state left, calling callbacks, and ending processes in experimental runtime. 
-    finalize_time : float
-        The time this state
     pressed : string
         The name of the key they pressed.
     press_time : float
@@ -235,21 +220,7 @@ class KeyRecord(KeyState):
     recorded in the state-specific log. Refer to State class
     docstring for addtional logged parameters. 
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated
-    start_time : float
-        The time the state was started in experimental runtime
-    end_time : float
-        The time this state ended in experimental runtime
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        The time this state left, calling callbacks, and ending processes in experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
+
     """
     def __init__(self, parent=None, duration=None, name=None, blocking=True):
         super(KeyState, self).__init__(parent=parent, duration=duration,
