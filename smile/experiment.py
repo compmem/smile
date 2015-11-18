@@ -622,7 +622,7 @@ class Experiment(object):
 
     def __getattr__(self, name):
         if name[0] == "_":
-            return super(Experiment, self).__getattribute__(name)  # Does this actually happen?
+            return super(Experiment, self).__getattribute__(name)
         else:
             return self.get_var_ref(name)
 
