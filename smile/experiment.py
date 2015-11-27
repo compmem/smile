@@ -694,10 +694,13 @@ class Experiment(object):
                     "Too many data files with the same title, extension, and timestamp!")
 
     def setup_state_logger(self, state_class_name):
-        title = "state_" + state_class_name
-        filename = self.reserve_data_filename(title, "slog") 
-        logger = LogWriter(filename)
-        self._state_loggers[state_class_name] = filename, logger
+        if state_class_name in self._state_loggers:
+            filename, logger = self._state_loggers[state_class_name]
+        else:
+            title = "state_" + state_class_name
+            filename = self.reserve_data_filename(title, "slog") 
+            logger = LogWriter(filename)
+            self._state_loggers[state_class_name] = filename, logger
         return filename
 
     def close_state_loggers(self, to_csv):
