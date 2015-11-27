@@ -50,6 +50,7 @@ from video import (
     RstDocument,
     Button,
     ButtonPress,
+    Slider,
     Video,
     AnchorLayout,
     BoxLayout,
