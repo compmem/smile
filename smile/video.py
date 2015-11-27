@@ -390,7 +390,11 @@ class WidgetState(VisualState):
             self.__parent_widget = self._exp._app.wid
         else:
             self.__parent_widget = self.__layout.current_clone._widget
-        self.__parent_widget.add_widget(self._widget, index=self._index)
+        try:
+            self.__parent_widget.add_widget(self._widget, index=self._index)
+        except TypeError:
+            # The ScatterLayout does not have an index
+            self.__parent_widget.add_widget(self._widget)
 
     def unshow(self):
         # remove the widget from the parent
@@ -493,7 +497,7 @@ class WidgetState(VisualState):
         anim = self.animate(interval=interval, duration=duration,
                             parent=parent, save_log=save_log, name=name,
                             blocking=blocking, **anim_params)
-        anim.override_instantiation_context()
+        anim.override_instantiation_context()  # PBS: Is this line needed (see animate)?
         return anim
 
     def _enter(self):
