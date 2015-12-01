@@ -2050,8 +2050,9 @@ class Wait(State):
     docstring for additional logged parameters. 
 
     event_time : dictionary
-        Keys are *time* and *error*, where *time* refers to the time of the *Wait* state, and 
-        *error* gives you the maximum value that the error could be when setting the *time*. 
+        Keys are *time* and *error*, where *time* refers to the time the *Wait* state ends when the 
+        until is evaluated as true, and *error* gives you the maximum value that the error could be 
+        when setting the *time*. 
     until_value : Ref
         A reference to the *until*.  This will be evaluated at a later time. Once the state is 
         finalized, the value of the until will be logged here. 
