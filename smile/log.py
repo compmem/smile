@@ -44,6 +44,7 @@ class LogWriter(object):
         if not isinstance(data, dict):
             raise ValueError("data to log must be a dict instance.")
         self._pickler.dump(data)
+        self._pickler.clear_memo()
 
     def close(self):
         self._file.close()
