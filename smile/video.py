@@ -110,22 +110,7 @@ class Screenshot(CallbackState):
     A *Screenshot* state is used to take a screenshot of the screen during your experiment.  
     Best used with an *UntilDone* or *Meanwhile* state, it will capture the screen and save 
     it out to a png file. It will also log the time at which the screenshot was taken. 
-    
-    Parameters 
-    ----------
-    
-    filename : string
-        The filename, without .png, that you want your screenshot to be called.
-    parent : ParentState
-        The parent of this state.  If None, it is set automatically. 
-    save_log : boolean
-        Weather or not to save out *Logged Attributes**.
-    name : string
-        The unique name given to this state. 
-    blocking : boolean
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its Parallel Parent finishes running. Only relevent if within a *Parallel* Parent. 
-    
+
     Logged Attributes
     -----------------
     All parameters above and below are available to be accessed and 
@@ -140,6 +125,22 @@ class Screenshot(CallbackState):
     """
     def __init__(self, filename=None, parent=None, save_log=True, name=None,
                  blocking=True):
+        """     
+            Parameters 
+            ----------
+            
+            filename : string
+                The filename, without .png, that you want your screenshot to be called.
+            parent : ParentState
+                The parent of this state.  If None, it is set automatically. 
+            save_log : boolean
+                Weather or not to save out *Logged Attributes**.
+            name : string
+                The unique name given to this state. 
+            blocking : boolean
+                If True, this state will prevent a *Parallel* state from ending. If False, this state will
+                be canceled if its Parallel Parent finishes running. Only relevent if within a *Parallel* Parent.             
+        """
         super(Screenshot, self).__init__(parent=parent,
                                          save_log=save_log,
                                          name=name,
@@ -170,21 +171,7 @@ class VisualState(State):
         the screen.  All visual stimulus presenting states will be a subclass of this class. 
         Using the *show()* and *unshow()* methods, you can subclass *VisualState* to present 
         to the *Experiment* window.  
-       
-        Parameters
-        ----------
-        duration : float 
-            A float, in seconds, that is the duration of this *VisualState*. 
-        parent : ParentState 
-            The parent of this state. If None, it will be set automatically.
-        save_log : boolean
-            If True, this state will save out all of the Logged Attributes.
-        name : string
-            The unique name to this state.
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If False, this state will
-            be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
-            
+     
         Logged Attributes 
         -----------------
         All parameters above are available to be accessed and 
@@ -204,6 +191,22 @@ class VisualState(State):
         """
     def __init__(self, duration=None, parent=None, save_log=True, name=None,
                  blocking=True):
+        """        
+            Parameters
+            ----------
+            duration : float 
+                A float, in seconds, that is the duration of this *VisualState*. 
+            parent : ParentState 
+                The parent of this state. If None, it will be set automatically.
+            save_log : boolean
+                If True, this state will save out all of the Logged Attributes.
+            name : string
+                The unique name to this state.
+            blocking : boolean (optional, default = True)
+                If True, this state will prevent a *Parallel* state from ending. If False, this state will
+                be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
+           
+        """
         super(VisualState, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
@@ -279,9 +282,33 @@ class VisualState(State):
 
 
 class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never clears?
+    """ Sets the BackgroundColor for a duration.  
+    
+        If you need to change the background color during experimental runtime, you would 
+        use this state. The color can either be set as a string or a touple with RGBA values
+        between 0 and 1. The list of string colors are in smile.video.color_name_table.        
+    """
     layers = []
     def __init__(self, color, duration=None, parent=None, save_log=True,
                  name=None, blocking=True):
+        """ Parameters
+            ----------
+            color : touple or string 
+                Pick either 4 values between 0 and 1 that corrispond to the RGBA values of the 
+                color you would like to select, or you pick the string value, all capitol letters, 
+                that is the color you would like. 
+            duration : float, optional, default = None  
+                The duration you would like this state to last. If None, then this state lasts forever. 
+            parent : ParentState, optional, default = None
+                The parent of this state. If None, it will be set automatically.
+            save_log : boolean, optional, default = True
+                If True, this state will save out all of the Logged Attributes.
+            name : string, optional
+                The unique name to this state.
+            blocking : boolean, optional, default = True
+                If True, this state will prevent a *Parallel* state from ending. If False, this state will
+                be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
+        """
         super(BackgroundColor, self).__init__(parent=parent,
                                               duration=duration,
                                               save_log=save_log,
@@ -313,26 +340,6 @@ class WidgetState(VisualState):
         so that is why *WidgetState* was writen. If you decided to go the route of using a custom 
         kivy widget in SMILE, youll just need to wrap it with *WidgetState* and it should work
         without much issue. 
-        
-        Parameters
-        ----------
-        widget_class : a kivy Widget
-            Pass in a kivy Widget to get it wrapped. 
-        duration : float
-            In seconds, the duration of the VisualState
-        parent : ParentState
-            The parent of this state, if None, it will be set automatically
-        save_log : boolean
-            If True, this state will save out all of the Logged Attributes.
-        name : string
-            The unique name to this state.
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If False, this state will
-            be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
-        index : integer
-            The index of the widget if it exists within the context of another widget.  
-        layout : Layout (kivy class)
-            Used to calculate and assign widget positions
         
         Widget Parameters
         -----------------
@@ -410,6 +417,27 @@ class WidgetState(VisualState):
 
     def __init__(self, widget_class, duration=None, parent=None, save_log=True,
                  name=None, blocking=True, index=0, layout=None, **params):
+        """         
+        Parameters
+        ----------
+        widget_class : a kivy Widget
+            Pass in a kivy Widget to get it wrapped. 
+        duration : float
+            In seconds, the duration of the VisualState
+        parent : ParentState
+            The parent of this state, if None, it will be set automatically
+        save_log : boolean
+            If True, this state will save out all of the Logged Attributes.
+        name : string
+            The unique name to this state.
+        blocking : boolean (optional, default = True)
+            If True, this state will prevent a *Parallel* state from ending. If False, this state will
+            be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
+        index : integer
+            The index of the widget if it exists within the context of another widget.  
+        layout : Layout (kivy class)
+            Used to calculate and assign widget positions
+        """
         super(WidgetState, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
@@ -443,6 +471,8 @@ class WidgetState(VisualState):
         self.__parallel = None
 
     def get_attribute_ref(self, name):
+    """ Returns a reference to the attribute you request. 
+    """
         try:
             return self.__issued_refs[name]
         except KeyError:
@@ -464,6 +494,24 @@ class WidgetState(VisualState):
             return ref
 
     def attribute_update_state(self, name, value):
+        """ Change the value of a widget during experimental runtime. 
+        
+            This function call will create a WidgetUpdateUntimed state with the name and value that is passed 
+            into this call.  If *name* isn't in the __widget_param_names list, aka if it isn't a parameter 
+            of the widget, then this function call will raise an AttributeError. 
+            
+            Parameters
+            ----------
+            name : string
+                The string name of a parameter of this widget.
+            value : varies
+                The new value you would like to set the *name* parameter of this widget to. 
+                
+            Returns
+            -------
+            UpdateWidgetUntimed(self, name, value)
+            
+        """
         if name in self.__widget_param_names:
             return UpdateWidgetUntimed(self, name, value)
         else:
@@ -471,6 +519,8 @@ class WidgetState(VisualState):
                                  (name, self))
 
     def get_current_param(self, name):
+        """ returns a parameter from the current clone. 
+        """
         # important that this is pulling from the current clone
         return getattr(self.current_clone._widget, name)
 
@@ -483,6 +533,8 @@ class WidgetState(VisualState):
         ref.dep_changed()
 
     def eval_init_refs(self):
+        """ Initialize the references given in Experimental Buildtime. 
+        """
         return self.transform_params(self.apply_aliases(
             {name : getattr(self, "_" + name) for
              name in self._constructor_param_names}))
@@ -535,6 +587,8 @@ class WidgetState(VisualState):
         pass
 
     def show(self):
+        """ Adds the widget to the vorrect parent to handle drawing.
+        """
         # add the widget to the correct parent to handle drawing
         if self.__layout is None:
             self.__parent_widget = self._exp._app.wid
@@ -543,11 +597,18 @@ class WidgetState(VisualState):
         self.__parent_widget.add_widget(self._widget, index=self._index)
 
     def unshow(self):
+        """ Remove the widget from the parent. 
+        """
         # remove the widget from the parent
         self.__parent_widget.remove_widget(self._widget)
         self.__parent_widget = None
 
     def live_change(self, **params):
+        """ Handles changing the parameters during experimental runtime.  
+        
+            Passing in either parameters or properties of the widget to be updated, the changes will happen 
+            during experimental runtime. Not to be called, use UpdateWidget state or self.update() instead. 
+        """
         # handle setting any property of a widget
         xy_pos_props = {"pos": "min", "center": "mid"}
         x_pos_props = {"x": "min", "center_x": "mid", "right": "max"}
@@ -600,6 +661,26 @@ class WidgetState(VisualState):
 
     def update(self, parent=None, save_log=True, name=None, blocking=True,
                **kwargs):
+        """ Creates and UpdateWidget state that updates all of the parameters passed in.  
+        
+            Parameters
+            ----------
+            parent : ParentState, optional
+                The parent of this state, if None, it will be set automatically
+            save_log : boolean, optional
+                If True, this state will save out all of the Logged Attributes.
+            name : string , optional
+                The unique name to this state.
+            blocking : boolean, optional, default = True
+                If True, this state will prevent a *Parallel* state from ending. If False, this state will
+                be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
+            kwargs : Keyword = Argument
+                The keywords and values you would like to update this widget with. 
+                
+            Returns
+            -------
+            UpdateWidget(self, parent, save_log, name, blocking, **kwargs)
+        """
         ud = UpdateWidget(self,
                           parent=parent,
                           save_log=save_log,
@@ -611,6 +692,35 @@ class WidgetState(VisualState):
 
     def animate(self, interval=None, duration=None, parent=None, save_log=True,
                 name=None, blocking=True, **anim_params):
+        """ Returns a created animate state with specific animate parameters
+            
+            This function call will create an Animate state during experimental build time and run the animate 
+            at the correct spot during experimental runtime. Animate is used to change a value of a property 
+            of a state over the course of a duration. This state will do all of the calculations of 
+            how much the property needs to change each frame to last the entire duration. You can animate 
+            anything from the height, width, x, and y to the color of a rectangle. 
+            
+            Parameters
+            ----------
+            interval : float
+                A frequency value. If not set, it is None, Animate will update at the same interval as the framerate.  You cannot set 
+                interval to any number faster than the framerate. 
+            duration : float
+                A duration, in seconds, that the Animate state will animate the changes to the target's properties. 
+            parent : ParentState, optional
+                The parent of this state, if None, it will be set automatically
+            save_log : boolean, optional
+                If True, this state will save out all of the Logged Attributes.
+            name : string , optional
+                The unique name to this state.
+            blocking : boolean, optional, default = True
+                If True, this state will prevent a *Parallel* state from ending. If False, this state will
+                be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
+            anim_params : (keyword = argument)
+                These keywords have to be parameters or properties of the kivy widget passed in through this  
+                state that are to be changed over the course of the Animate state.
+            
+        """
         anim = Animate(self, interval=interval, duration=duration,
                        parent=parent, name=name, save_log=save_log,
                        blocking=blocking, **anim_params)
@@ -619,6 +729,10 @@ class WidgetState(VisualState):
 
     def slide(self, interval=None, duration=None, speed=None, accel=None,
               parent=None, save_log=True, name=None, blocking=True, **params):
+        """ Like animate, but you are able to give a duration and the option to give a speed and acceleration.
+            
+            
+        """
         def interp(a, b, w):
             if isinstance(a, dict):
                 return {name : interp(a[name], b[name], w) for
@@ -713,22 +827,6 @@ class UpdateWidget(VisualState):
         property of the Kivy Widget. UpdateWidget will call the *target* VisualState's method called
         *live_change* when the experiment clock calls *show*. 
         
-        Parameters
-        ----------
-        target : VisualState (a wrapped Kivy Widget)
-            The target for the change set in motion by update widget. 
-        parent : ParentState
-            The parent of this state, if None, it will be set automatically
-        save_log : boolean
-            If True, this state will save out all of the Logged Attributes.
-        name : string
-            The unique name to this state.
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If False, this state will
-            be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
-        kwargs : (keyword = argument)
-            These keywords have to be parameters or properties of the kivy widget passed in through *target*.
-        
         Logged Attributes
         -----------------
         All parameters above are available to be accessed and 
@@ -743,6 +841,22 @@ class UpdateWidget(VisualState):
     """
     def __init__(self, target, parent=None, save_log=True, name=None,
                  blocking=True, **kwargs):
+            """ Parameters
+                ----------
+                target : VisualState (a wrapped Kivy Widget)
+                    The target for the change set in motion by update widget. 
+                parent : ParentState
+                    The parent of this state, if None, it will be set automatically
+                save_log : boolean
+                    If True, this state will save out all of the Logged Attributes.
+                name : string
+                    The unique name to this state.
+                blocking : boolean (optional, default = True)
+                    If True, this state will prevent a *Parallel* state from ending. If False, this state will
+                    be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
+                kwargs : (keyword = argument)
+                    These keywords have to be parameters or properties of the kivy widget passed in through *target*.
+            """
         super(UpdateWidget, self).__init__(duration=0.0,
                                            parent=parent,
                                            save_log=save_log,
@@ -786,28 +900,6 @@ class Animate(State):
         state that can do anything from blend one color of a rectangle state into another over 5 seconds, 
         to completely change the height and width of an image over a duration. 
         
-        Parameters
-        ----------
-        target : WidgetState
-            This is the widget that will be changed during the Animate state. 
-        interval : float
-            A frequency value. If not set, it is None, Animate will update at the same interval as the framerate.  You cannot set 
-            interval to any number faster than the framerate. 
-        duration : float
-            A duration, in seconds, that the Animate state will animate the changes to the target's properties. 
-        parent : ParentState
-            The parent of this state, if None, it will be set automatically
-        save_log : boolean
-            If True, this state will save out all of the Logged Attributes.
-        name : string
-            The unique name to this state.
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If False, this state will
-            be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
-        anim_params : (keyword = argument)
-            These keywords have to be parameters or properties of the kivy widget passed in through *target* 
-            that are to be changed over the course of the Animate state.
-        
         Logged Attributes
         -----------------
         All parameters above and below are available to be accessed and 
@@ -820,6 +912,28 @@ class Animate(State):
     #TODO: log updates!
     def __init__(self, target, interval=None, duration=None, parent=None,
                  save_log=True, name=None, blocking=True, **anim_params):
+        """     Parameters
+                ----------
+                target : WidgetState
+                    This is the widget that will be changed during the Animate state. 
+                interval : float
+                    A frequency value. If not set, it is None, Animate will update at the same interval as the framerate.  You cannot set 
+                    interval to any number faster than the framerate. 
+                duration : float
+                    A duration, in seconds, that the Animate state will animate the changes to the target's properties. 
+                parent : ParentState
+                    The parent of this state, if None, it will be set automatically
+                save_log : boolean
+                    If True, this state will save out all of the Logged Attributes.
+                name : string
+                    The unique name to this state.
+                blocking : boolean (optional, default = True)
+                    If True, this state will prevent a *Parallel* state from ending. If False, this state will
+                    be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
+                anim_params : (keyword = argument)
+                    These keywords have to be parameters or properties of the kivy widget passed in through *target* 
+                    that are to be changed over the course of the Animate state.
+        """
         super(Animate, self).__init__(duration=duration, parent=parent,
                                       save_log=save_log, name=name,
                                       blocking=blocking)
@@ -866,6 +980,12 @@ class Animate(State):
 
 
 def vertex_instruction_widget(instr_cls, name=None):
+    """ The widget wrapper to be wrapped by WidgetState for special drawing functions like *Rectangle*.
+        
+        This class was created as a wrapper for all of the vertex kivy instructions.  These these instructions 
+        range from *Rectangle* to *Bezier*. This class sets up the method *redraw* which is needed by thses 
+        instructions.  
+    """
     if name is None:
         name = instr_cls.__name__
     base_attrs = dir(kivy.graphics.instructions.VertexInstruction)
