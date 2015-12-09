@@ -43,6 +43,10 @@ class StateBuilder(object):
         new_clone = state_class.__new__(state_class, use_state_class=True)
         new_clone.__dict__.update(self.__dict__)
 
+        # Delete the __most_recently_entered_clone attribute from the new clone
+        # to avoid a chain of clones resulting in a memory leak.
+        del new_clone.__dict__["_State__most_recently_entered_clone"]
+
         # Replace certain attributes with deep copies of themselves.
         for attr in self._deepcopy_attrs:
             setattr(new_clone, attr, copy.deepcopy(getattr(self, attr)))

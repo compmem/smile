@@ -255,11 +255,6 @@ class ExpApp(App):
         # get start of event loop
         EventLoop.bind(on_start=self._on_start)
 
-        # do a quick (non-blocking) flip
-        # see if two prevents the flicker on some machines
-        EventLoop.window.dispatch('on_flip')
-        #EventLoop.window.dispatch('on_flip')
-        
         return self.wid
 
     def _on_start(self, *pargs):
@@ -267,6 +262,7 @@ class ExpApp(App):
         #self.exp._root_state.enter(clock.now() + 1.0)
         # hack to wait until fullscreen on OSX
         if not (platform in ('macosx',) and Window.fullscreen):
+            self.blocking_flip()
             print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()  #...
             self.exp._root_executor.enter(clock.now() + 0.25)
         else:
@@ -701,10 +697,13 @@ class Experiment(object):
                     "Too many data files with the same title, extension, and timestamp!")
 
     def setup_state_logger(self, state_class_name):
-        title = "state_" + state_class_name
-        filename = self.reserve_data_filename(title, "slog") 
-        logger = LogWriter(filename)
-        self._state_loggers[state_class_name] = filename, logger
+        if state_class_name in self._state_loggers:
+            filename, logger = self._state_loggers[state_class_name]
+        else:
+            title = "state_" + state_class_name
+            filename = self.reserve_data_filename(title, "slog") 
+            logger = LogWriter(filename)
+            self._state_loggers[state_class_name] = filename, logger
         return filename
 
     def close_state_loggers(self, to_csv):
