@@ -255,11 +255,6 @@ class ExpApp(App):
         # get start of event loop
         EventLoop.bind(on_start=self._on_start)
 
-        # do a quick (non-blocking) flip
-        # see if two prevents the flicker on some machines
-        EventLoop.window.dispatch('on_flip')
-        #EventLoop.window.dispatch('on_flip')
-        
         return self.wid
 
     def _on_start(self, *pargs):
@@ -267,6 +262,7 @@ class ExpApp(App):
         #self.exp._root_state.enter(clock.now() + 1.0)
         # hack to wait until fullscreen on OSX
         if not (platform in ('macosx',) and Window.fullscreen):
+            self.blocking_flip()
             print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()  #...
             self.exp._root_executor.enter(clock.now() + 0.25)
         else:
@@ -622,7 +618,7 @@ class Experiment(object):
 
     def __getattr__(self, name):
         if name[0] == "_":
-            return super(Experiment, self).__getattribute__(name)  # Does this actually happen?
+            return super(Experiment, self).__getattribute__(name)
         else:
             return self.get_var_ref(name)
 
@@ -657,8 +653,8 @@ class Experiment(object):
         else:
             self._resolution = None
 
-        # set the additional info
-        self._info = args.info  #?????????
+        # set the additional info from command line (sometimes useful)
+        self._info = args.info
 
         # set whether to log csv
         self._csv = args.csv
@@ -694,10 +690,13 @@ class Experiment(object):
                     "Too many data files with the same title, extension, and timestamp!")
 
     def setup_state_logger(self, state_class_name):
-        title = "state_" + state_class_name
-        filename = self.reserve_data_filename(title, "slog") 
-        logger = LogWriter(filename)
-        self._state_loggers[state_class_name] = filename, logger
+        if state_class_name in self._state_loggers:
+            filename, logger = self._state_loggers[state_class_name]
+        else:
+            title = "state_" + state_class_name
+            filename = self.reserve_data_filename(title, "slog") 
+            logger = LogWriter(filename)
+            self._state_loggers[state_class_name] = filename, logger
         return filename
 
     def close_state_loggers(self, to_csv):

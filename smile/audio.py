@@ -336,10 +336,12 @@ class RecordSoundFile(Wait):
     Parameters
     ----------
     duration : float 
-        The duration you would like to record for. If duration is None, then it 
+        The duration you would like to record. If duration is None, then it 
         will record until canceled. 
-    filename : string
-        the filename you would like to save the recording as. 
+    filename : string (optional)
+        The filename you would like to save the recording (this should have no extension). 
+        It will be auto-generated based on the name of the state and
+        a timestamp if not provided.
     parent : ParentState (optional)
         The state you would like this state to be a child of. If not set, the *Experiment* will
         make it a child of a ParentState or the Experiment automatically.
@@ -375,9 +377,7 @@ class RecordSoundFile(Wait):
         Logged time that this state left, called callbacks, and ended processes in
         experimental runtime. 
     finalize_time : float
-        The time this state calls `finalize()`=
-    filepath : string
-        The path name associated to where we will save this recording file. 
+        The time this state calls `finalize()`
     rec_start : float
         The time at which the recording started. 
     """
@@ -395,7 +395,7 @@ class RecordSoundFile(Wait):
         self.__rec = None
 
         # set the log attrs
-        self.log_attrs.extend(['filename', 'filepath', 'rec_start'])
+        self.log_attrs.extend(['filename', 'rec_start'])
 
     def _enter(self):
         super(RecordSoundFile, self)._enter()
@@ -403,6 +403,9 @@ class RecordSoundFile(Wait):
         if self._filename is None:
             self._filename = self._exp.reserve_data_filename(
                 "audio_%s" % self._name, "wav", use_timestamp=True)
+        else:
+            self._filename = self._exp.reserve_data_filename(
+                self._filename, "wav", use_timestamp=False)
         clock.schedule(self._start_recording, event_time=self._start_time)
         if self._end_time is not None:
             clock.schedule(self._stop_recording, event_time=self._end_time)

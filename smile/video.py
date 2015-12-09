@@ -390,7 +390,11 @@ class WidgetState(VisualState):
             self.__parent_widget = self._exp._app.wid
         else:
             self.__parent_widget = self.__layout.current_clone._widget
-        self.__parent_widget.add_widget(self._widget, index=self._index)
+        try:
+            self.__parent_widget.add_widget(self._widget, index=self._index)
+        except TypeError:
+            # The ScatterLayout does not have an index
+            self.__parent_widget.add_widget(self._widget)
 
     def unshow(self):
         # remove the widget from the parent
@@ -493,7 +497,7 @@ class WidgetState(VisualState):
         anim = self.animate(interval=interval, duration=duration,
                             parent=parent, save_log=save_log, name=name,
                             blocking=blocking, **anim_params)
-        anim.override_instantiation_context()
+        anim.override_instantiation_context()  # PBS: Is this line needed (see animate)?
         return anim
 
     def _enter(self):
@@ -702,7 +706,6 @@ for instr in vertex_instructions:
 
 
 widgets = [
-    "Label",
     "Button",
     "Slider",
     "TextInput",
@@ -738,8 +741,14 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         self._widget._video.pause()
         if self._end_time is None:
             # we need the duration to set the end time
-            while self._widget._video.duration == -1:
-                pass  #TODO: make sure we can't get stuck here?
+            if self._widget._video.duration == -1:
+                # try for half a ms
+                for i in range(5):
+                    if self._widget._video.duration == -1:
+                        break
+                    print 'd',
+                    clock.usleep(100)
+
             self._end_time = self._start_time + self._widget._video.duration
 
         # override the update interval (eventually make this a setting)
@@ -753,11 +762,14 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         if "state" not in self._constructor_param_names:
             self._widget.state = "play"
         self._widget._video._update(0)  # prevent white flash at start
-        #while self._widget._video.texture is None:
-        #    print '.',
         if self._widget.width == 0 and self._widget.height == 0:
-            #if self._widget._video.texture is None:
-            #    clock.usleep(100)
+            if not self._widget._video.texture:
+                # gotta wait for the texture to load (up to .5ms)
+                for i in range(5):
+                    if self._widget._video.texture:
+                        break
+                    print 't',
+                    clock.usleep(100)
             self.live_change(size=self._widget._video.texture.size)
         super(Video, self).show()
 
@@ -771,6 +783,13 @@ class Image(WidgetState.wrap(kivy.uix.image.Image)):
     def _set_widget_defaults(self):
         self._widget.size = self._widget.texture_size
 
+import kivy.uix.label
+class Label(WidgetState.wrap(kivy.uix.label.Label)):
+    def _set_widget_defaults(self):
+        # we need to update the texture now
+        _kivy_clock.unschedule(self._widget.texture_update)        
+        self._widget.texture_update()
+        self._widget.size = self._widget.texture_size
 
 def iter_nested_buttons(state):
     if isinstance(state, Button):
@@ -894,6 +913,8 @@ if __name__ == '__main__':
     exp = Experiment(background_color="#330000")
 
     Wait(2.0)
+
+    Video(source="test_video.mp4", duration=4.0)    
 
     pb = ProgressBar(max=100)
     with UntilDone():
