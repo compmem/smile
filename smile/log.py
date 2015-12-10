@@ -139,5 +139,13 @@ def log2csv(log_filename, csv_filename, **append_columns):
 
             # append cols after unwraping
             record.update(append_columns)
+
+            # handle unicode
+            record = dict((k, v.encode('utf-8')
+                           if isinstance(v, unicode)
+                           else v)
+                          for k, v in record.iteritems())
+
+            # write it out
             dw.writerow(record)
 
