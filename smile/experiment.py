@@ -65,27 +65,27 @@ class _VideoChange(object):
 
 class Screen(object):
     """Provides references to screen properties.
-    
+
     Properties
     ----------
     width : integer
     height : integer
     size : tuple
         (self.width, self.height)
-    left : integer 
+    left : integer
         The left most horizontal value. self.left = 0
-    right : integer 
+    right : integer
         self.right = width
     top : integer
         self.top = height
     bottom : integer
-        The bottom most vertical point on the screen. self.bottom = 0 
+        The bottom most vertical point on the screen. self.bottom = 0
     x : integer
         self.left
     y : integer
         self.bottom
     pos : tuple
-        self.pos = (x, y)    
+        self.pos = (x, y)
     center_x : integer
         self.center_x = width//2
     center_y : integer
@@ -104,7 +104,7 @@ class Screen(object):
         self.left_top = (self.left, self.top)
     left_bottom : tuple
         self.left_bottom = (self.left, self.bottom)
-    
+
     """
     def __init__(self, app):
         self.__app = app
@@ -248,7 +248,7 @@ class ExpApp(App):
         # set starting times
         self._last_time = clock.now()
         self._last_kivy_tick = clock.now()
-        
+
         # use our idle callback (defined below)
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
 
@@ -268,7 +268,7 @@ class ExpApp(App):
         else:
             # still need one blocking flip
             self.blocking_flip()
-        
+
     def _on_resize(self, *pargs):
         self.width_ref.dep_changed()
         self.height_ref.dep_changed()
@@ -279,7 +279,7 @@ class ExpApp(App):
             self.exp._root_executor.enter(clock.now() + 0.25)
 
         # we need a redraw here
-        EventLoop.window.dispatch('on_flip')            
+        EventLoop.window.dispatch('on_flip')
         #print "resize"
 
     def is_key_down(self, name):
@@ -468,7 +468,7 @@ class ExpApp(App):
 
             # add in sleep of something definitely less than the refresh rate
             clock.usleep(5000)  # 5ms for 200Hz
-        
+
         # take the mean and return
         self.flip_interval = diffs / count
         return self.flip_interval
@@ -498,66 +498,72 @@ class ExpApp(App):
 
 
 class Experiment(object):
-    """The base for a SMILE statemachine. 
-    
-    An *Experiment* is the object that needs to be defined when you are ready to start 
-    building your smile experiment. This is also the class that you save all of your 
-    experimental runtime variables into. Experiment also gives you access to things 
-    like screen size, resolution, and framerate during experimental runtime.
-    
-    When you have all of your smile code written, the last line you need to add to your 
-    experiment is `exp.run()`. This will run all of the smile code that was written between 
-    `exp=Experiment()` and `exp.run()`.  Once all of the SMILE code is finished, the .py will
-    continue passed `exp.run()` and run any code you might want to run after an experiment. 
-        
+""" The base for a SMILE statemachine.
+
+    An *Experiment* is the object that needs to be defined when you are ready
+    to start building your smile experiment. This is also the class that you
+    save all of your experimental runtime variables into. Experiment also gives
+    you access to things like screen size, resolution, and framerate during
+    experimental runtime.
+
+    When you have all of your smile code written, the last line you need to add
+    to your experiment is `exp.run()`. This will run all of the smile code that
+    was written between `exp=Experiment()` and `exp.run()`.  Once all of the
+    SMILE code is finished, the .py will continue passed `exp.run()` and run
+    any code you might want to run after an experiment.
+
     Properties
     ----------
     screen : Screen
-        Used to gain access to the size, shape, and location of variables like **center_x**, 
-        **height**, and **size** on the screen. 
+        Used to gain access to the size, shape, and location of variables like
+        **center_x**, **height**, and **size** on the screen.
     subject : string
-        The subject number/name given in the command line via `-s name` or set during 
-        pre-experimental runtime.
+        The subject number/name given in the command line via `-s name` or set
+        during experimental build time.
     subject_dir : string
-        string to where to save this subject's data. By default, it will be "data\subject_name"
+        string to where to save this subject's data. By default, it will be
+        "data\subject_name"
     info : list
-        The info for the arguments you pass into the Experiment at initialization. 
-    
+        The info for the arguments you pass into the Experiment at
+        initialization.
+
     Example
     -------
-    You always want to call `exp = Experiment()` before you type your SMILE code. However, you do not
-    want to put this line at the top of your .py. Another thing you need to use your newly created 
-    *Experiment* variable is to **set** and **get** variables during experimental runtime. You are 
-    able to add and set new attributes to your *Experiment* variable that will not be evaluated until
-    experimental runtime.  
-    
+    You always want to call `exp = Experiment()` before you type your SMILE
+    code. However, you do not want to put this line at the top of your .py.
+    Another thing you need to use your newly created *Experiment* variable is
+    to **set** and **get** variables during experimental runtime. You are able
+    to add and set new attributes to your *Experiment* variable that will not
+    be evaluated until experimental runtime.
+
     ::
-        
+
         exp = Experiment()
         exp.SavedVariable = 10
         with Loop(10) as trial:
-            exp.SavedVariable += trial.i 
+            exp.SavedVariable += trial.i
         Label(text=exp.SavedVariable, duration=3)
         exp.run()
-    
-    This example will set SavedVariable to 10 during experimental runtime, add the numbers 0 through 9 to it, 
-    and then end the experiment.  At the end, exp.SavedVariable will be equal to 55. 
-    """
+
+    This example will set SavedVariable to 10 during experimental runtime, add
+    the numbers 0 through 9 to it, and then end the experiment.  At the end,
+    exp.SavedVariable will be equal to 55.
+"""
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
-        """ Parameters
-            ----------
-            fullscreen : boolean (default = True)
-                Set to False if you would like to not run in fullscreen. 
-            resolution : tuple
-                A tuple of integers that define the size of the experiment window.
-            background_color : string (default = 'BLACK')
-                If given a string color name, see colors in video.py, the background of the 
-                window will be set to that color
-        """
+    """ Parameters
+        ----------
+        fullscreen : boolean (default = True)
+            Set to False if you would like to not run in fullscreen.
+        resolution : tuple
+            A tuple of integers that define the size of the experiment window.
+        background_color : string (default = 'BLACK')
+            If given a string color name, see colors in video.py, the
+            background of the window will be set to that color
+    """
         #global Window
         self._process_args()
-        
+
         # handle fullscreen and resolution before Window is imported
         if fullscreen is not None:
             self._fullscreen = fullscreen
@@ -594,10 +600,10 @@ class Experiment(object):
         self._state_loggers = {}
 
     def set_background_color(self, color=None):
-        """ Sets the background during experimental build time. 
-        
-            To set the background color of an experiment during experimental runtime
-            you should use the state *BackgroundColor*. 
+        """ Sets the background during experimental build time.
+
+            To set the background color of an experiment during experimental
+            runtime you should use the state *BackgroundColor*.
         """
         if color is None:
             if self._background_color is None:
@@ -606,7 +612,7 @@ class Experiment(object):
         Window.clearcolor = normalize_color_spec(color)
 
     def get_var_ref(self, name):
-        """ Returns a reference to any of the variables in this class. 
+        """ Returns a reference to any of the variables in this class.
         """
         try:
             return self.__issued_refs[name]
@@ -641,7 +647,7 @@ class Experiment(object):
     def _process_args(self):
         # get args from kivy_overrides
         args = kivy_overrides.args
-        
+
         # set up the subject and subj dir
         self._subj = args.subject
         self._subj_dir = os.path.join('data', self._subj)
@@ -701,7 +707,7 @@ class Experiment(object):
             filename, logger = self._state_loggers[state_class_name]
         else:
             title = "state_" + state_class_name
-            filename = self.reserve_data_filename(title, "slog") 
+            filename = self.reserve_data_filename(title, "slog")
             logger = LogWriter(filename)
             self._state_loggers[state_class_name] = filename, logger
         return filename
@@ -769,7 +775,7 @@ class Set(AutoFinalizeState):
         self._init_value = value
 
         self._log_attrs.extend(['var_name', 'value'])
-        
+
     def _enter(self):
         self._exp.set_var(self._var_name, self._value)
         clock.schedule(self.leave)
