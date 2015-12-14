@@ -119,7 +119,8 @@ class State(object):
     properly in experimental runtime.  Functions like *enter* and *leave* are
     the staples of a *State*. These functions are called by the *Experiment*
     which then uses our own scheduler to set the start and end times of our
-    *State*.  What follows is all of the information about our base *State* class.
+    *State*.  What follows is all of the information about our base *State*
+    class.
 
     Logged Attributes
     -----------------
@@ -404,8 +405,8 @@ class State(object):
         pass
 
     def tron(self, depth=0):
-        """Active trace output.
-        """
+    """ Active trace output.
+    """
         # set the tracing flag
         self.__tracing = True
 
@@ -721,7 +722,8 @@ class State(object):
         Parameters
         ----------
         cancel_time : float
-            The time you want this state to end, regardless of if it has reached its end time.
+            The time you want this state to end, regardless of if it has
+            reached its end time.
 
 
     """
@@ -956,7 +958,8 @@ class ParentState(State):
         Parameters
         ----------
         cancel_time : float
-            The time you want this state to end, regardless of if it has reached its end time.
+            The time you want this state to end, regardless of if it has
+            reached its end time.
 
 
     """
@@ -1736,10 +1739,11 @@ class Loop(SequentialState):
 
     Example
     -------
-    the command most used with *Loop* is `with Loop(trials) as trial:`. This will loop over
-    the list **trials**.  You are able to access the current iteration of the loop by
-    accessing the attribute `trial.current`. The following is an example that loops over
-    a list of dictionaries and presents the name of a person and their favorite food.
+    the command most used with *Loop* is `with Loop(trials) as trial:`. This
+    will loop over the list **trials**.  You are able to access the current
+    iteration of the loop by accessing the attribute `trial.current`. The
+    following is an example that loops over a list of dictionaries and presents
+    the name of a person and their favorite food.
 
     ::
 
@@ -2355,9 +2359,9 @@ def When(condition, body=None, name="WHEN", blocking=True):
 
 
 def While(condition, body=None, name="WHILE", blocking=True):
-    """Construct states to wait until a Ref value becomes True and then start
+""" Construct states to wait until a Ref value becomes True and then start
     another state.  Then cancel that state when the Ref value becomes False.
-    """
+"""
     if body is None:
         body = Serial(name="WHILE_BODY")
         body.override_instantiation_context()

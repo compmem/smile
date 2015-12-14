@@ -166,7 +166,7 @@ class Beep(Wait):
                                'sound_start_time'])
 
     def _enter(self):
-    """ This state uses *_enter* as an extention to *__init__* that runs when the previous state leaves.
+    """ Runs when the previous state leaves.
     """
         super(Beep, self)._enter()
         default_init_audio_server()

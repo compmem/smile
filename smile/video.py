@@ -681,7 +681,7 @@ class WidgetState(VisualState):
     def update(self, parent=None, save_log=True, name=None, blocking=True,
                **kwargs):
     """
-        Creates and UpdateWidget state that updates all of the parameters passed in.
+        Creates an UpdateWidget state that updates the passed in parameters.
 
         Parameters
         ----------
@@ -1096,19 +1096,19 @@ vertex_instructions = [
 for instr in vertex_instructions:
     exec("%s = WidgetState.wrap(vertex_instruction_widget(kivy.graphics.%s))" %
          (instr, instr))
-widget_docs = {
-    "Button" : {"__doc__": """
-                           """,
-                "__init__" : },
-    "Slider" : {"__doc__": ,
-                "__init__" : },
-    "TextInput" : {"__doc__": ,
-                "__init__" : },
-    "ToggleButton" : {"__doc__": ,
-                "__init__" : },
-    "ProgressBar" : {"__doc__": ,
-                "__init__" : }
-}
+#widget_docs = {
+#    "Button" : {"__doc__": """
+#                           """,
+#                "__init__" : },
+#    "Slider" : {"__doc__": ,
+#                "__init__" : },
+#    "TextInput" : {"__doc__": ,
+#                "__init__" : },
+#    "ToggleButton" : {"__doc__": ,
+#                "__init__" : },
+#    "ProgressBar" : {"__doc__": ,
+#                "__init__" : }
+#}
 
 widgets = [
     "Button",
