@@ -744,9 +744,18 @@ class Experiment(object):
             # kivy main loop
             self._app.run()
         except:
+            # clean up the logs
+            self._root_state.end_log(self._csv)
+            self.close_state_loggers(self._csv)
+
+            # see if we can traceback
             if self._current_state is not None:
                 self._current_state.print_traceback()
+
+            # raise the error
             raise
+
+        # clean up logs if we made it here
         self._root_state.end_log(self._csv)
         self.close_state_loggers(self._csv)
 
