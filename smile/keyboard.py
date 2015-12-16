@@ -61,83 +61,75 @@ class KeyState(CallbackState):
 
 
 class KeyPress(KeyState):
-    """A state that listens for a keypress. 
-    
-    A *KeyPress* state will wait for a duration, if there is one, for a key that
-    is within the **keys** list and then tell you if they picked a response that
-    was within the **correct_resp** list, and tell you the response time.  
-    
+    """A state that listens for a keypress.
+
+    A *KeyPress* state will wait for a duration, if there is one, for a key
+    that is within the **keys** list and then tell you if they picked a
+    response that was within the **correct_resp** list, and tell you the
+    response time.
+
     Parameters
     ----------
     keys : list (optional)
-        A list of valid key names in the form of strings strings. If no list is provided,
-        any key can be pressed to continue passed this state. Refer to *keyboard.key* 
-        for a list of valid key names, they must all be in capitol letters
+        A list of valid key names in the form of strings strings. If no
+        list is provided, any key can be pressed to continue passed this
+        state. Refer to *keyboard.key* for a list of valid key names, they
+        must all be in capitol letters
     correct_resp : list, tuple, string (optional)
-        A list, tuple, or string, containing the names of any keys that would be 
-        concidered a correct response.  
+        A list, tuple, or string, containing the names of any keys that
+        would be concidered a correct response.
     base_time : float (optional)
-        If you need to record the time of the response precicely in relation to the timing 
-        of another state, you put that here. Example: If you would want to know exactly how 
-        long after a *Label* state appears on the screen, you would set **base_time** to 
+        If you need to record the time of the response precicely in
+        relation to the timing of another state, you put that here.
+        Example: If you would want to know exactly how long after a *Label*
+        state appears on the screen, you would set **base_time** to
         lb.appear_time['time']
     duration : float (optional)
-        The duration you would like your experiment to wait for a keypress.  If set to None, 
-        then it will wait until a key from **keys** is pressed, then continue with the 
-        experiment.
+        The duration you would like your experiment to wait for a keypress.
+        If set to None, then it will wait until a key from **keys** is
+        pressed, then continue with the experiment.
     parent : ParentState (optional)
-        The state you would like this state to be a child of. If not set, the *Experiment* will
-        make it a child of a ParentState or the Experiment automatically.
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
     save_log : boolean (default = True, optional)
-        If True, save out a .slog file contianing all of the information for this state. 
+        If True, save out a .slog file contianing all of the information
+        for this state.
     name : string (optional)
         The unique name of this state
     blocking : boolean (optional, default = True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its Parallel Parent finishes running. Only relevent if within a *Parallel* Parent. 
-    
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its Parallel Parent finishes
+        running. Only relevent if within a *Parallel* Parent.
+
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
-    docstring for addtional logged parameters. 
+    docstring for addtional logged parameters.
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated
-    start_time : float
-        The time the state was started in experimental runtime
-    end_time : float
-        The time this state ended in experimental runtime
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        The time this state left, calling callbacks, and ending processes in experimental runtime. 
-    finalize_time : float
-        The time this state
     pressed : string
         The name of the key they pressed.
     press_time : float
         The time in which they pressed a keyboard button
-    correct : boolean  
-        Whether they pressed the **correct_resp** button or not. 
+    correct : boolean
+        Whether they pressed the **correct_resp** button or not.
     rt : float
-        The reaction time associated with a key press. **press_time** - **base_time**
-    
+        The reaction time associated with a key press.
+        **press_time** - **base_time**
+
     Example
     -------
-    
+
     ::
-    
+
         Label(text='These are your instructions, press ENTER to continue')
         with UntilDone():
             kp = KeyPress(keys='ENTER')
-    
-    This will show the instruction *Label* until the ENTER key is pressed. 
-   
+
+    This will show the instruction *Label* until the ENTER key is pressed.
+
     """
     def __init__(self, keys=None, correct_resp=None, base_time=None,
                  duration=None, parent=None, save_log=True, name=None,
@@ -186,7 +178,7 @@ class KeyPress(KeyState):
             # it's all good!, so save it
             self._pressed = sym_str
             self._press_time = event_time
-            
+
             # calc RT if something pressed
             self._rt = event_time['time'] - self._base_time
 
@@ -209,47 +201,34 @@ class KeyPress(KeyState):
 
 class KeyRecord(KeyState):
     """A state that records keypresses during a duration.
-    
-    A *KeyRecord* state will record any keypress, the keyup's and keydown's, 
-    aswell as any timing associated with them for a duration.  
-    
+
+    A *KeyRecord* state will record any keypress, the keyup's and keydown's,
+    aswell as any timing associated with them for a duration.
+
     Parameters
     ----------
     duration : float (optional)
-        The duration you would like your experiment to wait for a keypress.  If set to None, 
-        then it will wait until a key from **keys** is pressed, then continue with the 
-        experiment.
+        The duration you would like your experiment to wait for a keypress.
+        If set to None, then it will wait until a key from **keys** is
+        pressed, then continue with the experiment.
     parent : ParentState (optional)
-        The state you would like this state to be a child of. If not set, the *Experiment* will
-        make it a child of a ParentState or the Experiment automatically.
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
     name : string (optional)
         The unique name of this state
     blocking : boolean (optional, default = True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its Parallel Parent finishes running. Only relevent if within a *Parallel* Parent. 
-    
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its Parallel Parent finishes
+        running. Only relevent if within a *Parallel* Parent.
+
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
-    docstring for addtional logged parameters. 
+    docstring for addtional logged parameters.
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated
-    start_time : float
-        The time the state was started in experimental runtime
-    end_time : float
-        The time this state ended in experimental runtime
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        The time this state left, calling callbacks, and ending processes in experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     """
     def __init__(self, parent=None, duration=None, name=None, blocking=True):
         super(KeyState, self).__init__(parent=parent, duration=duration,
@@ -325,4 +304,4 @@ if __name__ == '__main__':
         Wait(1.0)
 
     exp.run()
-    
+

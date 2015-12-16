@@ -114,16 +114,16 @@ class StateClass(type):
 
 class State(object):
     """Base State object for the hierarchical state machine.
-    
-    This class contains all of the calls that are required of a state to run properly in 
-    experimental runtime.  Functions like *enter* and *leave* are the staples of a *State*.
-    These functions are called by the *Experiment* which then uses our own scheduler to 
-    set the start and end times of our *State*.  What follows is all of the information 
-    about our base *State* class. 
-    
+
+    This class contains all of the calls that are required of a state to run
+    properly in experimental runtime.  Functions like *enter* and *leave* are
+    the staples of a *State*. These functions are called by the *Experiment*
+    which then uses our own scheduler to set the start and end times of our
+    *State*.  What follows is all of the information about our base *State*
+    class.
+
     Parameters
     ----------
-    
     parent : ParentState
         The parent state that this state is contained within
     duration : float
@@ -134,18 +134,18 @@ class State(object):
     name : string
         The unique name you give this state.
     blocking : boolean (True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
-         
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
-    docstring for additional logged parameters. 
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
+    recorded in the state-specific log.
 
     instantiation_filename : string
-        The file in which this state is instantiated. 
+        The file in which this state is instantiated.
     instantiation_lineno : int
         the line number that this particular state was instantiated.
     start_time : float
@@ -153,14 +153,14 @@ class State(object):
     end_time : float
         The time this state ended in experimental runtime.
     enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
+        The time this state entered and started all of it's preprocessing in
+        experimental runtime.
     leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
+        Logged time that this state left, called callbacks, and ended processes
+        in experimental runtime.
     finalize_time : float
         The time this state calls `finalize()`
-        
+
     """
 
     # Apply the StateClass metaclass
@@ -498,25 +498,25 @@ class State(object):
 
     def get_log_fields(self):
         """Get the field names for the state log.
-        
+
         Returns
         -------
         list
             A list of string attribute names from this state
-        
+
         """
         return self._log_attrs
 
     @property
     def current_clone(self):
-        """A clone is needed when running state's within a *Loop* state. 
-        Allows for SMILE to keep track of all instances of this state, 
-        preparing future clones, and finishing up previous clones at a later time.  
-        
+        """A clone is needed when running state's within a *Loop* state.
+        Allows for SMILE to keep track of all instances of this state,
+        preparing future clones, and finishing up previous clones at a later time.
+
         Returns
         -------
         state
-            The most recently entered clone of this state. 
+            The most recently entered clone of this state.
         """
         # This will be called in the process of setting up
         # self,__original_state and self._most_recently_entered_clone, so it
@@ -575,14 +575,14 @@ class State(object):
         pass
 
     def enter(self, start_time):
-        """This function is called by our back end.  It does everything 
-        that needs to be done before the state even starts.  The back end will 
-        work ahead and run *enter* well before the state needs to start. 
-        
+        """This function is called by our back end.  It does everything
+        that needs to be done before the state even starts.  The back end will
+        work ahead and run *enter* well before the state needs to start.
+
         Parameters
         ----------
         start_time : float
-            This integer will be when the state will start, some time in the future. 
+            This integer will be when the state will start, some time in the future.
         """
         # set trace
         self.claim_exceptions()
@@ -706,13 +706,14 @@ class State(object):
 
     def cancel(self, cancel_time):
         """Force the state to end (possibly prematurely) at a specified time.
-        
+
         Parameters
         ----------
         cancel_time : float
-            The time you want this state to end, regardless of if it has reached its end time.
-            
-        
+            The time you want this state to end, regardless of if it has
+            reached its end time.
+
+
         """
         if not self._active:
             return
@@ -779,48 +780,38 @@ class AutoFinalizeState(State):
 
 class ParentState(State):
     """Base state for parents that can hold child states.
-    
+
+    This base class has all of the methods for dealing with child states.  When
+    Leaving, it will tell all of its children to leave. When Logging, it will
+    tell all of its children to log aswell.
+
     Parameters
-    ----------
-    children : list (None)
-        A list containing any *States* that you wish to be the children of *ParentState*.
-    parent : ParentState (None)
-        The state that is the parent of this state. Defaults to whatever *ParentState*
-        this state exists within. 
-    duration : float
-        The duration you would like the state to last in seconds.
-    save_log : boolean (False)
-        If set to True, will save a .slog with all of the information
-        from this state.
-    name : string
-        The unique name you give this state.
-    blocking : boolean (True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
-    
+        ----------
+        children : list (None)
+            A list containing any *States* that you wish to be the children of
+            *ParentState*.
+        parent : ParentState (None)
+            The state that is the parent of this state. Defaults to whatever
+            *ParentState* this state exists within.
+        duration : float
+            The duration you would like the state to last in seconds.
+        save_log : boolean (False)
+            If set to True, will save a .slog with all of the information
+            from this state.
+        name : string
+            The unique name you give this state.
+        blocking : boolean (True)
+            If True, this state will prevent a *Parallel* state from ending. If
+            False, this state will be canceled if its *ParallelParent* finishes
+            running. Only relevent if within a *ParallelParent*.
+
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
-    docstring for additional logged parameters. 
+    docstring for additional logged parameters.
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental.
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     """
     def __init__(self, children=None, parent=None, duration=None,
                  save_log=True, name=None, blocking=True):
@@ -844,12 +835,12 @@ class ParentState(State):
 
     def tron(self, depth=0):
         """Activate trace output for this state and all its children.
-        
+
         Parameters
         ----------
         depth : integer (0)
             The print depth for trace output. If depth = 1, the Child's Child will be traced.
-        
+
         """
         super(ParentState, self).tron(depth)
         child_depth = depth + 1
@@ -928,13 +919,14 @@ class ParentState(State):
 
     def cancel(self, cancel_time):
         """Force the state to end (possibly prematurely) at a specified time.
-        
+
         Parameters
         ----------
         cancel_time : float
-            The time you want this state to end, regardless of if it has reached its end time.
-            
-        
+            The time you want this state to end, regardless of if it has
+            reached its end time.
+
+
         """
         if not self._active:
             return
@@ -947,50 +939,36 @@ class ParentState(State):
 
 class Parallel(ParentState):
     """A State used to run other States simultaneously.
-    
-    A *ParentState* that runs all of its children in parallel. This state's duration 
-    is equal to the longest duration of its children. That means this state will not end
-    until all of its children are finished running.
-    
+
+    A *ParentState* that runs all of its children in parallel. This state's
+    duration is equal to the longest duration of its children. That means this
+    state will not end until all of its children are finished running.
+
     Parameters
     ----------
     children : list (None)
-        A list containing any *States* that you wish to be the children of *ParentState*.
+        A list containing any *States* that you wish to be the children of
+        *ParentState*.
     parent : ParentState (None)
-        The state that is the parent of this state. Defaults to whatever *ParentState*
-        this state exists within. 
+        The state that is the parent of this state. Defaults to whatever
+        *ParentState* this state exists within.
     save_log : boolean (True)
         If set to True, will save a .slog with all of the information
         from this state.
     name : string
         The unique name you give this state.
     blocking : boolean (True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
-    
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
-    docstring for additional logged parameters. 
+    docstring for additional logged parameters.
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state runs `finalize()`
     """
     def __init__(self, children=None, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -1005,9 +983,6 @@ class Parallel(ParentState):
         self.__blocking_remaining = set()
 
     def print_traceback(self, child=None, t=None):
-        """Print SMILE traceback and add a line indicating whether the traced
-        child of this Parellel is blocking or non-blocking.
-        """
         super(Parallel, self).print_traceback(child, t)
         if child is not None:
             if child._blocking:
@@ -1038,13 +1013,6 @@ class Parallel(ParentState):
             clock.schedule(self.leave)
 
     def child_leave_callback(self, child):
-        """When a state leaves, child_leave_callback is called on the parent. This 
-        tells the parent when its children are finished. 
-        
-        This particular callback checks to see if there are any remaining children 
-        that haven't finished yet. If there are no children left, this state calls 
-        *leave()*
-        """
         # called when any child leaves
         super(Parallel, self).child_leave_callback(child)
 
@@ -1063,11 +1031,6 @@ class Parallel(ParentState):
             self.leave()
 
     def _set_end_time(self):
-        """Determine the end time of this Parallel based on its children. The end time
-        will always be the end time of the child with the longest duration. If any of 
-        the children have an infinite duration, then the end_time for this state is set
-        to *None*.
-        """
         # check all end times for each blocking child
         end_times = [c._end_time for c in self.__blocking_children]
         if any([et is None for et in end_times]):
@@ -1117,25 +1080,30 @@ def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
 
 @contextmanager
 def Meanwhile(name=None, blocking=True):
-    """A context State used to run its children until a previous state is finished. 
-    
+    """A context State used to run its children until a previous state is finished
+
     States created in this context will run in serial during the execution
     of the previous state, but will be cancelled when the previous state ends.
     If there is no previous state in the current parent, this will apply to the
     parent in lieu of the previous state.
-    
+
     Example
     -------
-    
+
     ::
-        
+
         Wait(3)
         with Meanwhile():
-            Label(text='On the screen for 3 seconds, because of the Wait Duration')
-    
-    This Example will display the *Label* for as long as the state previous to the `Meanwhile()` 
-    is running. In this case, the duration of the *Meanwhile* is the same as the duration of 
-    the *Wait*. The moment the *Wait* finishes, the *Label* will disappear from the screen. 
+            Label(text='On the screen for 3 seconds, the Wait's Duration')
+
+    This Example will display the *Label* for as long as the state previous to
+    the `Meanwhile()` is running. In this case, the duration of the *Meanwhile*
+    is the same as the duration of the *Wait*. The moment the *Wait* finishes,
+    the *Label* will disappear from the screen.
+
+    Under the hood, this state is creating a ParallelWithPrevious state. Then,
+    it sets the previous state as blocking and the rest of the states are set
+    to non-blocking.
     """
     with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE",
                                blocking=blocking) as p:
@@ -1145,26 +1113,31 @@ def Meanwhile(name=None, blocking=True):
 
 @contextmanager
 def UntilDone(name=None, blocking=True):
-    """A context state used to run a previous state till its children are finished.
-    
+    """A context state used to run a previous state till its children are finished
+
     States created in this context will run in serial during the execution
     of the previous state, and the previous state will be cancelled when the
     states in the context end.  If there is no previous state, this will apply
     to the parent in lieu of the previous state.
-    
-    Example 
+
+    Example
     -------
-    
+
     ::
-    
-        Label(text='On the screen for 6 seconds, because of the 2 waits duration')
+
+        Label(text='On the screen for 6 seconds, the 2 Waits' duration')
         with UntilDone():
             Wait(3)
             Wait(3)
-    
-    In this example, the *Label* will display for 6 seconds, which is the time that 
-    it takes for both *Wait* states to finish running. The moment that the last *Wait* 
-    state ends, the *Label* will be canceled and disappear from the screen. 
+
+    In this example, the *Label* will display for 6 seconds, which is the time
+    that it takes for both *Wait* states to finish running. The moment that the
+    last *Wait* state ends, the *Label* will be canceled and disappear from the
+    screen.
+
+    Under the hood, this state is creating a ParallelWithPrevious state. Then,
+    it sets the previous state as non-blocking and the rest of the states are
+    set to blocking.
     """
     with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE",
                                blocking=blocking) as p:
@@ -1175,6 +1148,9 @@ def UntilDone(name=None, blocking=True):
 
 class SequentialState(ParentState):
     """Base state for parents that run a sequence of child states back to back.
+
+    This state takes children, like the Parent state, but on *enter* it clones
+    all of the children and schedules them in the correct sequential order.
     """
     def __init__(self, children=None, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -1231,69 +1207,109 @@ class SequentialState(ParentState):
 
 
 class Serial(SequentialState):
-    """*ParentState* that runs its children in serial, which means one after the other.
-    
-    This is a state used to section off states to be run in serial.  Usually, it is only used while using 
-    another state, like *Parallel* or *UntilDone*, but *Experiment* puts all states in a long *Serial* state
-    by default.  
-    
+    """*ParentState* that runs its children in serial, one after another.
+
+    This is a state used to section off states to be run in serial.  Usually,
+    it is only used while using another state, like *Parallel* or *UntilDone*,
+    but *Experiment* puts all states in a long *Serial* state by default.
+
     Parameters
     ----------
     children : list (None)
-        A list containing any *States* that you wish to be the children of *ParentState*
+        A list containing any *States* that you wish to be the children of
+        *ParentState*
     parent : ParentState (None)
-        The state that is the parent of this state. Defaults to whatever *ParentState*
-        this state exists within. 
+        The state that is the parent of this state. Defaults to whatever
+        *ParentState* this state exists within.
     save_log : boolean (True)
-        If set to True, will save a .slog with all of the information
-        from this state.
+        If set to True, will save a .slog with all of the information from this
+        state.
     name : string
         The unique name you give this state.
     blocking : boolean (True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*. 
-    
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
-    docstring for additional logged parameters. 
+    All parameters above are available to be accessed and manipulated within
+    the experiment code, and will be automatically recorded in the
+    state-specific log. Refer to State class docstring for additional logged
+    parameters.
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of its preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
+    Example
+    -------
+
+    The default state that an experiment is in is a Serial state.  That means
+    that the following two examples are equal and will run exactly the same.
+
+    ::
+
+        exp = Experiment()
+        Label(text='BOBABOOY', duration=1)
+        Label(text='BOBABOOOOOOOOY', duration=1)
+        Label(text='BOBABOOOOOOOOOOOOOOOOOOOOOOOY', duration=1)
+        exp.run()
+
+    ::
+
+        exp = Experiment()
+        with Serial():
+            Label(text='BOBABOOY', duration=1)
+            Label(text='BOBABOOOOOOOOY', duration=1)
+            Label(text='BOBABOOOOOOOOOOOOOOOOOOOOOOOY', duration=1)
+        exp.run()
+
+    These examples will display 3 labels in serial and then the experiment will
+    end.
+
+    Another example that would be helpful is to use Serial within a Parallel
+    state.  Say you want 2 sequences of states to run at the same time. The
+    easiest way to accomplish this is to use 2 Serial states within a Parallel
+    state.
+
+    ::
+
+        exp = Experiment()
+        with Parallel():
+            with Serial():
+                Label(text='Im on the Left!', duration=2,
+                      center_x=exp.screen.center_x-400)
+                Wait(2)
+                Label(text='Now Im on the Left again!!!', duration=2,
+                      center_x=exp.screen.center_x-400)
+            with Serial():
+                Wait(2)
+                Label(text='Now Im on the Right!', duration=2,
+                      center_x=exp.screen.center_x+400)
+                Wait(2)
+                Label(text='Now Im on the Right again!!!', duration=2,
+                      center_x=exp.screen.center_x400)
+        exp.run()
+
+    This example will take turns displaying Labels on either side of the
+    screen. In reality it each Serial state will run at the same time, but to
+    the eye it will look like they are taking turns.
+
     """
     def _get_child_iterator(self):
         return iter(self._children)
 
 
 class Subroutine(object):
-    """A Subroutine is a decorator for making resuable bits of statemachine. 
-    
+    """A Subroutine is a decorator for making resuable bits of statemachine.
+
     A decorator for functions that build reusable, encapsulated portions of
     state machine. You can pass in any number of keywords and keyword arguments
-    when defining your own *Subroutine*. The first argument you need to pass into 
-    your *Subroutine* when defining it is always **self**.
+    when defining your own *Subroutine*. The first argument you need to pass
+    into your *Subroutine* when defining it is always **self**.
 
     Example
     -------
-    
+
     ::
-    
+
         @Subroutine
         def Example_Subroutine(self,
                                num_loop=10,
@@ -1303,24 +1319,23 @@ class Subroutine(object):
             with Loop(num_loop):
                 Label(text=self.mult_temp, duration=3)
                 self.mult_temp = self.mult_temp*mult
-            
-    This will create a *Subroutine* that your experiment can call. The *Subroutine* will 
-    then run during experimental runtime just like any other state. The call would 
-    look something like what follows.
-    
+
+    This will create a *Subroutine* that your experiment can call. The
+    *Subroutine* will then run during experimental runtime just like any other
+    state. The call would look something like what follows.
+
     ::
-    
+
         Example_Subroutine(num_loop=15, input=200, mult=7)
-        
-    And just like that, the Example_Subroutine is added to the *ParentState's* children. 
+
+    And just like that, the Example_Subroutine is added to the *ParentState's*
+    children.
     """
     def __init__(self, func):
         self._func = func
         self.__doc__ = func.__doc__
 
     def __call__(self, *pargs, **kwargs):
-        """Return a SubroutineState for this Subroutine.
-        """
         with SubroutineState(subroutine=self._func.__name__,
                              parent=kwargs.pop("parent", None),
                              save_log=kwargs.pop("save_log", True),
@@ -1356,7 +1371,7 @@ class SubroutineState(Serial):
         self._subroutine = subroutine
         self._vars = {}
         self.__issued_refs = weakref.WeakValueDictionary()
-        
+
         self._log_attrs.extend(['subroutine'])
 
     def _enter(self):
@@ -1414,95 +1429,96 @@ class SubroutineSet(AutoFinalizeState):
         self._init_value = value
 
         self._log_attrs.extend(['subroutine_state', 'var_name', 'value'])
-        
+
     def _enter(self):
         self.__subroutine.set_var(self._var_name, self._value)
         clock.schedule(self.leave)
 
 
 class If(SequentialState):
-    """The way you do branching paths in a state machine.  
-    
-    Parent state to implement conditional branching. *If* state is used in
-    lieu of a traditional Python if statement. The SMILE *If* state will 
-    create a position linked list of **conditionals** and **states**.  It 
-    will then loop through the conditions, and when it finds a conditional
-    that evaluates to *True*, it runs the corresponding state. The last 
-    **conditional** in the list is always a *True* boolean, which then 
-    corisponds to an *Else* state that you can define in your experiment. 
-    
+    """The way you do branching paths in a state machine.
+
+    Parent state to implement conditional branching. *If* state is used in lieu
+    of a traditional Python if statement. The SMILE *If* state will create a
+    position linked list of **conditionals** and **states**.  It will then loop
+    through the conditions, and when it finds a conditional that evaluates to
+    *True*, it runs the corresponding state. The last **conditional** in the
+    list is always a *True* boolean, which then corresponds to an *Else* state
+    that you can define in your experiment.
+
+    Under the hood, the If state will create 2 Serial states when it
+    initializes. During experimental runtime, it decides which state to
+    actually run. If the next state is an Elif state then it will add itself to
+    the possible states to run of the If state. If the next state is an Else
+    state, then it will overwrite the Serial Else state that the If state
+    creates at initialization.
+
     Parameters
     ----------
-    conditional : logical 
-        You may only use logical opperators in this coditional statement, that
-        means you may not use **and** or **or**. You must use *&* and *|* in order
-        to do **and** and **or** respectively.
+    conditional : logical
+        You may only use logical opperators in this coditional statement,
+        that means you may not use **and** or **or**. You must use *&* and
+        *|* in order to do **and** and **or** respectively.
     true_state : ParentState (optional)
-        If given a ParentState, and the conditional is evaluated to be True, then
-        the given state will run. If a true_state is not defined, it will be created
-        as a *Serial* state with this state's children. 
+        If given a ParentState, and the conditional is evaluated to be
+        True, then the given state will run. If a true_state is not
+        defined, it will be created as a *Serial* state with this state's
+        children.
     false_state : ParentState (optional)
-        If given a ParentState, and the conditional is evaluated to be False, then
-        the given state will run. If a false_state is not defined, it will be created
-        as a *Serial* state that will do Nothing. 
+        If given a ParentState, and the conditional is evaluated to be
+        False, then the given state will run. If a false_state is not
+        defined, it will be created as a *Serial* state that will do
+        Nothing.
     parent : ParentState (optional)
         The parent to this state.
     save_log : boolean (optional, defaults = True)
-        If True, this state will save all of its information into a .slog file. 
+        If True, this state will save all of its information into a .slog
+        file.
     name : string (optional)
         The unique name of this state.
     blocking : boolean (optional, default = True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
-    
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
-    docstring for additional logged parameters. 
+    docstring for additional logged parameters.
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        The line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     outcome_index : integer
-        The index pointing to which condition evaluated to True. Where 0 is the *If* conditional 
-        and n, the max number it could be, means none of the conditionals evaluated to true and
-        it is running the *Else* state. 
-        
-    Example 
+        The index pointing to which condition evaluated to True. Where 0 is the
+        *If* conditional and n, the max number it could be, means none of the
+        conditionals evaluated to true and it is running the *Else* state.
+
+    Example
     -------
-    
+
     ::
-    
-        with If(trial.current['condition1'] == 0 & trial.current['condition2'] == 2):
-            Label(text=trial.current['stim'], color=trial.current['color1'], duration=3)
-        with Elif(trial.current['condition1'] == 1 & trial.current['condition2'] == 0):
-            Label(text=trial.current['stim'], color=trial.current['color2'], duration=3)
-        with Elif(trial.current['condition1'] == 1 & trial.current['condition2'] == 0):
-            Label(text=trial.current['stim'], color=trial.current['color3'], duration=3)
+
+        with If(trial.current['condition1'] == 0 &
+                trial.current['condition2'] == 2):
+            Label(text=trial.current['stim'],
+                  color=trial.current['color1'], duration=3)
+        with Elif(trial.current['condition1'] == 1 &
+                  trial.current['condition2'] == 0):
+            Label(text=trial.current['stim'],
+                  color=trial.current['color2'], duration=3)
+        with Elif(trial.current['condition1'] == 1 &
+                  trial.current['condition2'] == 0):
+            Label(text=trial.current['stim'],
+                  color=trial.current['color3'], duration=3)
         with Else():
             Label(text='No condtionals were true!', color='RED', duration=3)
-    
-    When we call `with Elif():` we are adding to the *If* state's internal list of 
-    **conditionals** and **states**. When you call `with Else():` you are adding to
-    the children of the default **false_state**, which only runs if all the other 
-    conditionals evaluate to *False*. 
+
+    When we call `with Elif():` we are adding to the *If* state's internal list
+    of **conditionals** and **states**. When you call `with Else():` you are
+    adding to the children of the default **false_state**, which only runs if
+    all the other conditionals evaluate to *False*.
     """
-    def __init__(self, conditional, true_state=None, false_state=None, 
+    def __init__(self, conditional, true_state=None, false_state=None,
                  parent=None, save_log=True, name=None, blocking=True):
 
         # init the parent class
@@ -1580,7 +1596,7 @@ class Elif(Serial):
         prev_state._init_cond.insert(-1, conditional)
         prev_state._out_states.insert(-1, self)
 
-        
+
 def Else(name="ELSE BODY"):
     """Returns the else clause of the preceding If state. See *If*
     """
@@ -1600,7 +1616,7 @@ def Else(name="ELSE BODY"):
         prev_state = parent._children[-1]
     except IndexError:
         raise StateConstructionError("No previous state for Else.")
-    
+
     # make sure it's the If
     if not isinstance(prev_state, If):
         raise StateConstructionError(
@@ -1614,75 +1630,66 @@ def Else(name="ELSE BODY"):
 
 
 class Loop(SequentialState):
-    """A * Loop* state that is used to do any kind of repeated section of statemachine. 
-    
+    """A * Loop* state that is used to do any kind of repeated section of statemachine.
+
     A *Loop* can be setup to run like the python ** for**, **while**, or
-    **do while** depending on what parameters you send into it. 
-    
+    **do while** depending on what parameters you send into it.
+
+
     Parameters
     ----------
     iterable : iterable (default = None, optional)
-        This is any iterable class. i.e. List, Seq, String, Tuple.  If this variable 
-        is set, then it will be looped over. *iterable* can also be an integer. If so, 
-        the *Loop* will loop a set number of times.  
+        This is any iterable class. i.e. List, Seq, String, Tuple.  If this
+        variable is set, then it will be looped over. *iterable* can also
+        be an integer. If so, the *Loop* will loop a set number of times.
     shuffle : Boolean (default = False, optional)
-        If shuffle is set to True, then your passed in iterable will be shuffled before 
-        it is presented. 
+        If shuffle is set to True, then your passed in iterable will be
+        shuffled before it is presented.
     conditional : Boolean (default = True, optional)
-        At the beginning of each iteration of the loop, it checks that conditional
-        evaluates to true. In conjunction with an iterable, it will end early if 
-        the conditional every evaluates to False. Without an iterable, the loop will
-        function as a while loop. 
+        At the beginning of each iteration of the loop, it checks that
+        conditional evaluates to true. In conjunction with an iterable, it
+        will end early if the conditional every evaluates to False. Without
+        an iterable, the loop will function as a while loop.
     parent : ParentState (optional)
         The parent to this state.
     save_log : boolean (optional, defaults = True)
-        If True, this state will save all of its information into a .slog file. 
+        If True, this state will save all of its information into a .slog
+        file.
     name : string (optional)
         The unique name of this state.
     blocking : boolean (optional, default = True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
-    
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
-    docstring for additional logged parameters. 
+    All parameters above and below are available to be accessed and manipulated
+    within the experiment code, and will be automatically recorded in the
+    state-specific log. Refer to State class docstring for additional logged
+    parameters.
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-       The line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime.  
-    finalize_time : float
-        The time this state calls `finalize()`
     i : integer
-        The index of the currect iterable.  If **iterable** was given an integer, then *i* will 
-        be the loop number in experimental runtime. 
-    current : Ref 
-        A reference to the current iteration of the looping variable in experimental runtime. 
+        The index of the currect iterable.  If **iterable** was given an
+        integer, then *i* will
+        be the loop number in experimental runtime.
+    current : Ref
+        A reference to the current iteration of the looping variable in
+        experimental runtime.
     outcome : boolean
-        A reference to the current iteration of the loop, telling the user what the conditional 
-        evaluated out to be, True or False. 
-        
+        A reference to the current iteration of the loop, telling the user what
+        the conditional evaluated out to be, True or False.
+
     Example
     -------
-    the command most used with *Loop* is `with Loop(trials) as trial:`. This will loop over 
-    the list **trials**.  You are able to access the current iteration of the loop by 
-    accessing the attribute `trial.current`. The following is an example that loops over 
-    a list of dictionaries and presents the name of a person and their favorite food. 
+    the command most used with *Loop* is `with Loop(trials) as trial:`. This
+    will loop over the list **trials**.  You are able to access the current
+    iteration of the loop by accessing the attribute `trial.current`. The
+    following is an example that loops over a list of dictionaries and presents
+    the name of a person and their favorite food.
+
     ::
-    
+
         words = [{'name':'bob',    'food':'pringle'},
                  {'name':'tom',    'food':'prune'},
                  {'name':'paul',   'food':'potato'},
@@ -1691,22 +1698,25 @@ class Loop(SequentialState):
                  {'name':'emily',  'food':'pizza'}]
         with Loop(words) as trial:
             with Parallel():
-                Label(text=trial.current['name'], duration=3, center_x=exp.screen.center_x/2)
-                Label(text=trial.current['food'], duration=3, center_x=exp.screen.center_x*3/2)
-    
-    The following is an example on how to loop X number of times. To access what the 
-    current iteration number is, you must call `trial.i`.
-    
+                Label(text=trial.current['name'], duration=3,
+                      center_x=exp.screen.center_x/2)
+                Label(text=trial.current['food'], duration=3,
+                      center_x=exp.screen.center_x*3/2)
+
+    The following is an example on how to loop X number of times. To access
+    what the current iteration number is, you must call `trial.i`.
+
     ::
-    
+
         X = 15
         with Loop(X) as trial:
             Label(text=trial.i, duration=1)
-    
-    The following is an example of a **while** kind of *Loop*. All you have to do is set the conditional. 
-    
+
+    The following is an example of a **while** kind of *Loop*. All you have to
+    do is set the conditional.
+
     ::
-    
+
         exp.X = 15
         with Loop(conditional = exp.X < 20):
             Label(text=exp.X, duration=3)
@@ -1777,52 +1787,59 @@ class Loop(SequentialState):
 
 class Record(State):
     """A *Record* records any changes in passed in Refs.
-    
-    A *Record* state is something you can use to record the changes in a *Reference*
-    variable.  See **Ref**. If any of the Reference objects changed, it will record 
-    all of them to a .slog file. Pass in Reference arguments by using keyword argument.  
-    
+
+    A *Record* state is something you can use to record the changes in a
+    *Reference* variable.  See **Ref**. If any of the Reference objects
+    changed, it will record all of them to a .slog file. Pass in Reference
+    arguments by using keyword argument.
+
     Parameters
-    ----------
-    duration : float (optional)
-        The duration of the state in seconds, if no duration is set, it will last forever. 
-    parent : ParentState (optional)
-        The state you would like this state to be a child of. If not set, the *Experiment* will
-        make it a child of a ParentState or the Experiment automatically.
-    name : string (optional)
-        The unique name of this state.
-    blocking : boolean (optional, default = True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its Parallel Parent finishes running. Only relevent if within a *Parallel* Parent.
-    kwargs : (keyword = parameter)
-        This is where you add what variables to check to see if they change. Give *Record* a 
-        parameter name and then make that equal to a Ref variable. An example is below. You 
-        may ask *Record* to check as many *Ref* variables as you would like. 
-    
+        ----------
+        duration : float (optional)
+            The duration of the state in seconds, if no duration is set, it
+            will last until cancelled.
+        parent : ParentState (optional)
+            The state you would like this state to be a child of. If not set,
+            the *Experiment* will make it a child of a ParentState or the
+            Experiment automatically.
+        name : string (optional)
+            The unique name of this state.
+        blocking : boolean (optional, default = True)
+            If True, this state will prevent a *Parallel* state from ending. If
+            False, this state will be canceled if its Parallel Parent finishes
+            running. Only relevent if within a *Parallel* Parent.
+        kwargs : (keyword = parameter)
+            This is where you add what variables to check to see if they
+            change. Give *Record* a parameter name and then make that equal to
+            a Ref variable. An example is below. You may ask *Record* to check
+            as many *Ref* variables as you would like.
+
     Example
     -------
-    This is an example of a *Record* used in parallel with Label, to record when the disapper_time changes.
-    
+    This is an example of a *Record* used in parallel with Label, to record
+    when the disapper_time changes.
+
     ::
-    
+
         with Parallel():
             lb = Label(text='boba booy', duration=2)
             Record(duration=5, dis_time=lb.disappear_time['time'])
-            
-    You can also just do a non-blocking *Record* that checks to see if a variable `exp.X` changes. 
-    
+
+    You can also just do a non-blocking *Record* that checks to see if a
+    variable `exp.X` changes.
+
     ::
-    
+
         exp.X = 5
         Record(duration=5, exp_x_is=exp.X, blocking=False)
-        Label(text='When this Label disappears, exp.X will be updated', duration=3)
+        Label(text='When this disappears, exp.X will be updated', duration=3)
         exp.X += 1
-        
+
     """
     def __init__(self, duration=None, parent=None, name=None, blocking=True,
                  **kwargs):
-        super(Record, self).__init__(parent=parent, 
-                                     duration=duration, 
+        super(Record, self).__init__(parent=parent,
+                                     duration=duration,
                                      save_log=False,
                                      name=name,
                                      blocking=blocking)
@@ -1903,36 +1920,40 @@ class Record(State):
 
 
 class Log(AutoFinalizeState):
-    """Used to log any variables during experimental runtime. 
-    
-    A *Log* state is used to log any number of variables that you want to record
-    to a .slog file.  Where ever it appears in your experiment, it will save out the 
-    values of all of the arugments you give it at that point in your experiment.  
-    Each call to *Log* will save to a seperate file. If used within a *Loop* state, it 
-    will write a row to the .slog for each iteration of the loop.  
-    
+    """Used to log any variables during experimental runtime.
+
+    A *Log* state is used to log any number of variables that you want to
+    record to a .slog file.  Where ever it appears in your experiment, it will
+    save out the values of all of the arugments you give it at that point in
+    your experiment.  Each call to *Log* will save to a seperate file. If used
+    within a *Loop* state, it will write a row to the .slog for each iteration
+    of the loop.
+
     Paramters
     ---------
     log_dict : dictionary (optional)
-        Use case for this parameter is to pass in `trial.current`, as long as `trial.current`
-        is a dictionary. This will save out all of the values of the the current iteration of 
-        your looping variable into different columns, like `log_dict_stim, log_dict_duration`.
+        Use case for this parameter is to pass in `trial.current`, as long
+        as `trial.current` is a dictionary. This will save out all of the
+        values of the the current iteration of your looping variable into
+        different columns, like `log_dict_stim, log_dict_duration`.
     parent : ParentState (optional)
-        The state you would like this state to be a child of. If not set, the *Experiment* will
-        make it a child of a ParentState or the Experiment automatically.
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
     name : string (optional)
         The unique name of this state
     kwargs : (keyword = argument)
-        As many arguments as you would like to pass in. Use the format `keyword = variable_name`
-        and *Log* will log the value of **variable_name** into a column called **keyword**. 
-        
-    Example
+        As many arguments as you would like to pass in. Use the format
+        `keyword = variable_name` and *Log* will log the value of
+        **variable_name** into a column called **keyword**.
+
     -------
-    This is an example of using *Log* in a *Loop*. Refer to the individual state's Doc Strings 
-    if something doesn't make sense, because this example brings a lot of different ideas together. 
-    
+    This is an example of using *Log* in a *Loop*. Refer to the individual
+    state's Doc Strings if something doesn't make sense, because this example
+    brings a lot of different ideas together.
+
     ::
-    
+
         words = [{'name':'bob',    'food':'pringle'},
                  {'name':'tom',    'food':'prune'},
                  {'name':'paul',   'food':'potato'},
@@ -1941,18 +1962,22 @@ class Log(AutoFinalizeState):
                  {'name':'emily',  'food':'pizza'}]
         with Loop(words) as trial:
             with Parallel():
-                Label(text=trial.current['name'], center_x=exp.screen.center_x/2)
-                Label(text=trial.current['food'], center_x=exp.screen.center_x*3/2)
+                Label(text=trial.current['name'],
+                      center_x=exp.screen.center_x/2)
+                Label(text=trial.current['food'],
+                      center_x=exp.screen.center_x*3/2)
                 Label(text='Press J if the person should like the food,
-                            Press K if the person shouldn't like the food.', 
+                            Press K if the person shouldn't like the food.',
                       center_y=exp.screen.center_y/2)
             with UntilDone():
                 kp = KeyPress(keys=['F', 'J'], duration=3)
             Log(trial.current,
                 key_reaction_time=kp.rt
                 key_pressed=kp.pressed)
-    
-    This example will save out 4 columns to a .slog, **log_dict_name**, **log_dict_food**, **key_reaction_time**, and **key_pressed**. 
+
+    This example will save out 4 columns to a .slog, **log_dict_name**,
+    **log_dict_food**, **key_reaction_time**, and **key_pressed**.
+
     """
     def __init__(self, log_dict=None, parent=None, name=None, **kwargs):
         # init the parent class
@@ -2018,8 +2043,8 @@ class _DelayedValueTest(State):
     def __init__(self, delay, value, parent=None, save_log=True, name=None,
                  blocking=True):
         # init the parent class
-        super(_DelayedValueTest, self).__init__(parent=parent, 
-                                                duration=0.0, 
+        super(_DelayedValueTest, self).__init__(parent=parent,
+                                                duration=0.0,
                                                 save_log=save_log,
                                                 name=name,
                                                 blocking=blocking)
@@ -2040,40 +2065,40 @@ class _DelayedValueTest(State):
 
 class Done(AutoFinalizeState):
     """Waits until a state is finished or a ref is evaluated.
-    
-    A *Done* state will block the experiment from continuing until a Ref value is filled, 
-    or a state is finalized. This is mainly only used when the timing of something like 
-    **appear_time** is needed to be logged.  
-    
-    Parameters 
-    ----------
-    states : list of states (optional)
-        You can pass is a list of states, and if so, the *Done* will wait until all of the given
-        states are finished running. 
-    kwargs : (keyword = argument)
-        If you pass in a keword argument, the *Done* state will block until that specific arugument 
-        is not None.
-        
-    Example 
+
+    A *Done* state will block the experiment from continuing until a Ref value
+    is filled, or a state is finalized. This is mainly only used when the
+    timing of something like **appear_time** is needed to be logged.
+
+    Parameters
+        ----------
+        states : list of states (optional)
+            You can pass is a list of states, and if so, the *Done* will
+            wait until all of the given states are finished running.
+        kwargs : (keyword = argument)
+            If you pass in a keword argument, the *Done* state will block
+            until that specific arugument is not None.
+
+    Example
     -------
-    
+
     ::
-    
+
         lb = Label(text='baba booy', duration=3)
         Done(lb)
         Log(label_off=lb.disappear_time['time'])
-        
+
     ::
-    
+
         lb = Label(text='baba booy', duration=3)
         Done(lb.disappear_time['time'])
         Log(label_off=lb.disappear_time['time'])
-    
+
     """
     def __init__(self, *states, **kwargs):
         # init the parent class
-        super(Done, self).__init__(parent=kwargs.pop("parent", None), 
-                                   duration=0.0, 
+        super(Done, self).__init__(parent=kwargs.pop("parent", None),
+                                   duration=0.0,
                                    save_log=kwargs.pop("save_log", True),
                                    name=kwargs.pop("name", None),
                                    blocking=kwargs.pop("blocking", True))
@@ -2094,8 +2119,6 @@ class Done(AutoFinalizeState):
         self._ended = True
 
     def _check(self):
-        """Check to see if all the tracked states are inactive.
-        """
         some_active = self.__some_active.eval()
         if not some_active:
             self.__some_active.remove_change_callback(self._check)
@@ -2103,63 +2126,50 @@ class Done(AutoFinalizeState):
 
 
 class Wait(State):
-    """Waits an ammount of seconds during experimental runtime. 
-    
-    A *Wait* state will wait for the duration that you give it, only then 
-    will it continue on to the next state. 
+    """Waits an ammount of seconds during experimental runtime.
+
+    A *Wait* state will wait for the duration that you give it, only then
+    will it continue on to the next state.
 
     Parameters
     ----------
-    duration : float 
+    duration : float
         The duration in seconds that you would like to wait.
     jitter : float (optional)
-        **jitter** is will be randomly added to the duration of this wait, somewhere 
-        between 0 and **jitter** seconds. 
+        **jitter** is will be randomly added to the duration of this wait,
+        somewhere between 0 and **jitter** seconds.
     until : Ref (optional)
         Waits *until* the passed in *Ref* variable is not None.
     parent : ParentState (optional)
-        The state you would like this state to be a child of. If not set, the *Experiment* will
-        make it a child of a ParentState or the Experiment automatically.
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
     save_log : boolean (default = True, optional)
-        If True, save out a .slog file contianing all of the information for this *Wait* state. 
+        If True, save out a .slog file contianing all of the information
+        for this *Wait* state.
     name : string (optional)
         The unique name of this state.
     blocking : boolean (optional, default = True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*. 
-    
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
-    docstring for additional logged parameters. 
+    All parameters above and below are available to be accessed and manipulated
+    within the experiment code, and will be automatically recorded in the
+    state-specific log. Refer to State class docstring for additional logged
+    parameters.
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        the line number that this particular state was instantiated.
-    name : string
-        The unique name given to this state.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     event_time : dictionary
-        Keys are *time* and *error*, where *time* refers to the time of the *Wait* state, and 
-        *error* gives you the maximum value that the error could be when setting the *time*. 
+        Keys are *time* and *error*, where *time* refers to the time the *Wait*
+        state ends when the until is evaluated as true, and *error* gives you
+        the maximum value that the error could be when setting the *time*.
     until_value : Ref
-        A reference to the *until*.  This will be evaluated at a later time. Once the state is 
-        finalized, the value of the until will be logged here. 
-        
+        A reference to the *until*.  This will be evaluated at a later time.
+        Once the state is finalized, the value of the until will be logged
+        here.
+
     """
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
                  save_log=True, name=None, blocking=True):
@@ -2167,8 +2177,8 @@ class Wait(State):
             duration = ref.jitter(duration, jitter)
 
         # init the parent class
-        super(Wait, self).__init__(parent=parent, 
-                                   duration=duration, 
+        super(Wait, self).__init__(parent=parent,
+                                   duration=duration,
                                    save_log=save_log,
                                    name=name,
                                    blocking=blocking)
@@ -2276,26 +2286,29 @@ def While(condition, body=None, name="WHILE", blocking=True):
 
 class ResetClock(AutoFinalizeState):
     """State to arbitrarily set the start time of the subsequent state.
-    
-    This state is used when the timing of stimuli is extremely important to the end user, 
-    to the extreme that they need to know the exact moment when a key was pressed after the 
-    stimuli was on the screen.  When calling the *ResetClock* state, you have to pass in a 
-    **new_time**, and then the next state's start time will be the same as the time that you 
-    reset the clock to.  
-    
+
+    This state is used when the timing of stimuli is extremely important to the
+    end user, to the extreme that they need to know the exact moment when a key
+    was pressed after the stimuli was on the screen.  When calling the
+    *ResetClock* state, you have to pass in a **new_time**, and then the next
+    state's start time will be the same as the time that you reset the
+    clock to.
+
     Parameters
     ----------
     new_time : Ref
-        The time you would like the next state's start time to be.  
+        The time you would like the next state's start time to be.
     parent : ParentState
-        The state that this state is a child of. 
+        The state that this state is a child of.
     save_log : boolean
-        If True, this state will log all of its important variables out to a 
-        .slog file.
+        If True, this state will log all of its important variables out to
+        a .slog file.
     name : string
-        The unique name given to this state. 
-        
-        
+        The unique name given to this state.
+    blocking : boolean
+
+
+
     """
     def __init__(self, new_time=None, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -2360,76 +2373,64 @@ class CallbackState(AutoFinalizeState):
 
 class Func(CallbackState):
     """The way you call and run a function during experimental runtime
-    
-    A *Func* is a state that calls a function during experimental runtime. The first argument
-    is always the name of the funciton and the rest of the arguments are the arguments that are 
-    sent to the function.  
-    
+
+    A *Func* is a state that calls a function during experimental runtime. The
+    first argument is always the name of the funciton and the rest of the
+    arguments are the arguments that are sent to the function.
+
     Parameters
     ----------
     func : function
-        Whatever function you would like to run as experimental runtime. 
+        Whatever function you would like to run as experimental runtime.
     pargs : positional arguments (argument, argument, argument)
-        This just means you can send in parameters to *func* without setting the keyword.
-    kwargs : (keyword = argument, keyword2 =argument2, keyword3 = argument3)
+        This just means you can send in parameters to *func* without
+        setting the keyword.
+    kwargs : (keyword = argument, keyword2 =argument2, ...)
         Whatever keyword arguments you need to send to *func*.
     parent : ParentState
         The parent state that this state is contained within.
     duration : float
         The duration you would like the state to last in seconds.
     save_log : Boolean (False)
-        If set to True, will save a .slog with all of the information from this state.
-    name : string
+        If set to True, will save a .slog with all of the information from
+        this state.
+    name : string, optional, default = None
         The unique name you give this state.
-    blocking : Boolean (True)
-        If True, this state will prevent a *Parallel* state from ending. If False, this state will
-        be canceled if its *ParallelParent* finishes running. Only relevent if within a *ParallelParent*.
-       
+    blocking : boolean. defualt = True, optional
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
     Logged Attributes
     -----------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state-specific log. Refer to State class
-    docstring for additional logged parameters. 
+    All parameters above and below are available to be accessed and manipulated
+    within the experiment code, and will be automatically recorded in the
+    state-specific log. Refer to State class docstring for additional logged
+    parameters.
 
-    instantiation_filename : string
-        The file in which this state is instantiated. 
-    instantiation_lineno : int
-        The line number that this particular state was instantiated.
-    start_time : float
-        The time the state was started in experimental runtime.
-    end_time : float
-        The time this state ended in experimental runtime.
-    enter_time : float
-        The time this state entered and started all of it's preprocessing in experimental
-        runtime.
-    leave_time : float
-        Logged time that this state left, called callbacks, and ended processes in
-        experimental runtime. 
-    finalize_time : float
-        The time this state calls `finalize()`
     result : Ref
-        A reference to the return value of this function, to be evaluted at experimental runtime. 
-        
+        A reference to the return value of this function, to be evaluted at
+        experimental runtime.
+
     Return
     ------
-    This state will return anything the called function will return. 
-    
+    This state will return anything the called function will return.
+
     Example
     -------
-    
+
     ::
-        
+
         def add_num(input, additive):
             input += additive
             return input
-        
+
         exp.X = 15
         exp.X = Func(add_num, input=exp.X, additive=5)
-    
-    This example will add 5 to `exp.X`. Very simple, but without using the *Func* state, you would be running 
-    **add_num** outside of experiment runtime. 
-    
+
+    This example will add 5 to `exp.X`. Very simple, but without using the
+    *Func* state, you would be running **add_num** outside of experiment
+    runtime.
     """
     def __init__(self, func, *pargs, **kwargs):
         # init the parent class
@@ -2454,11 +2455,11 @@ class Func(CallbackState):
 
 
 class Debug(CallbackState):
-    """Used to send debug messages to the console during experimental runtime. 
-    
-    A *Debug* state will print out the variables and the value of 
-    those variables during experiment runtime to the command prompt. 
-    
+    """Used to send debug messages to the console during experimental runtime.
+
+    A *Debug* state will print out the variables and the value of
+    those variables during experiment runtime to the command prompt.
+
     Parameters
     ----------
     parent : ParentState
@@ -2469,18 +2470,18 @@ class Debug(CallbackState):
     name : string
         The unique name you give this state.
     kwargs : (keyword = argument)
-        *Debug* will print out the value of all of the arguments at the time it is called
-        during experiment runtime, aswell as a timestamp.
-    
+        *Debug* will print out the value of all of the arguments at the time it
+        is called during experiment runtime, aswell as a timestamp.
+
     Example
     -------
-    
+
     ::
-    
+
         lb = Label(text='baba booy', duration=3)
         Debug(dis_time=lb.disappear_time['time'], lab_text=lb.text)
-        
-    
+
+
     """
     def __init__(self, parent=None, save_log=False, name=None, **kwargs):
         # init the parent class
@@ -2650,7 +2651,7 @@ if __name__ == '__main__':
                Wait(2.0))
         with If(outer.i >= 3):
             exp.not_done = False
-        
+
     block = range(3)
     with Loop(block) as trial:
         Debug(current=trial.current)
@@ -2659,11 +2660,11 @@ if __name__ == '__main__':
            Wait(2.))
 
 
-    If(True, 
+    If(True,
        Debug(name="True"),
        Debug(name="False"))
     Wait(1.0)
-    If(False, 
+    If(False,
        Debug(name="True"),
        Debug(name="False"))
     Wait(2.0)
