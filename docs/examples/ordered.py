@@ -17,18 +17,18 @@ Wait(1.0)
 
 # create stims
 with Parallel():
-    stimB = Label(text="B", x=exp.screen.center_x + 50,
-                  font_size=32,
-                  color=(0, 1, 1, 1))
-    stimF = Label(text="F", x=exp.screen.center_x - 50,
-                  font_size=32,
-                  color=(1, 1, 0, 1.))
+    stimB = Label(text="B", x=exp.screen.center_x + 25,
+                  font_size=64,
+                  color='blue')
+    stimF = Label(text="F", x=exp.screen.center_x - 25,
+                  font_size=64,
+                  color='orange')
 with UntilDone():
 
     Wait(1.0)
     with Parallel():
-        stimB.slide(x=exp.screen.center_x - 50, duration=2.0)
-        stimF.slide(x=exp.screen.center_x + 50, duration=2.0)
+        stimB.slide(x=exp.screen.center_x - 25, duration=3.0)
+        stimF.slide(x=exp.screen.center_x + 25, duration=3.0)
 
 Wait(1.0)
 
