@@ -35,14 +35,16 @@ def pass_thru(obj):
     return obj
 
 class Ref(object):
-    """Delayed function call. The basis of the SMILE state machine. This is the 
-    object that makes the magic happen. It allows us to delay the evaluation of a
-    variable until experimental runtime.  We needed to have the ability to test 
-    variables that haven't been set yet, for states like *If* and *Loop*, so we 
-    developed the Ref. If you try and evaluate a Ref before it is available, 
-    Smile will throw a **NotAvailableError**.  
+    """ Delayed function call. The basis of the SMILE state machine. This is the 
+        object that makes the magic happen. It allows us to delay the evaluation of a
+        variable until experimental runtime.  We needed to have the ability to test 
+        variables that haven't been set yet, for states like *If* and *Loop*, so we 
+        developed the Ref. If you try and evaluate a Ref before it is available, 
+        Smile will throw a **NotAvailableError**.  
 
-    Takes in a function and arguments and you can evaluate that call later. Ref supports most pythonic operations that simply return new Ref instances that evaluate recursively.
+        Takes in a function and arguments and you can evaluate that call later. 
+        Ref supports most pythonic operations that simply return new Ref instances that 
+        evaluate recursively.
 
     """
     def __init__(self, func, *pargs, **kwargs):
