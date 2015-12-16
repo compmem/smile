@@ -9,46 +9,34 @@
 
 # load all the states
 from smile import *
-import random
 
 # create an experiment
-exp = Experiment(screen_ind=0, pyglet_vsync=False)
+exp = Experiment()
 
 # define the trials for the experiment
-trials = [{'txt':str(i)} for i in range(50)]
+trials = [{'txt': str(i)} for i in range(50)]
 
-Set('stim',False)
-Set('stim_shown',False)
-Wait(1.0)
-with Loop(trials) as trial:
-    Wait(.005)
-    with If(Get('stim'), save_log=False):
-        with Parallel():
-            ustim = Update(Get('stim'),'text',trial.current['txt'])
-            # ustim2 = Update(Get('stim'),'x',
-            #                 Ref(gfunc=lambda : random.uniform(300,500)))
-            ustim2 = Update(Get('stim'),'x',
-                            Get('stim_shown').x+5)
-            ustim3 = Update(Get('stim'),'font_size',
-                            Get('stim_shown').font_size+1.0)
-        Set('stim_flip',ustim['last_flip'])
-    with Else():
-        stim = Text(trial.current['txt'], 
-                    x=300, 
-                    #x=exp.window.width//2, 
-                    y=Ref(exp['window'],'height')//2,
-                    bold=True)
-        Set('stim', stim, save_log=False)
-        Set('stim_shown', stim['shown'], save_log=False)
-        Set('stim_flip',stim['last_flip'])
+# save stim
+txt = Label(text=trials[0]['txt'],
+            x=300,
+            y=exp.screen.center_y,
+            bold=True)
+with UntilDone():
+    Wait(1.0)
+    with Loop(trials[1:]) as trial:
+        Wait(.005)
+        uw = UpdateWidget(txt,
+                          text=trial.current['txt'],
+                          x=txt.x+5,
+                          font_size=txt.font_size+1.0)
 
-    Log(txt=trial.current['txt'],
-        flip=Get('stim_flip'))
+        Log(name='flip_test',
+            txt=trial.current['txt'],
+            appear=uw.appear_time)
 
-Unshow(stim)
 Wait(2.0)
-Show(Text('Done!!!'),
-          duration=2.0)
-Wait(2.0, stay_active=True)
+Label(text='Done!!!', font_size=42, duration=2.0)
+Wait(2.0)
 
-exp.run()
+if __name__ == '__main__':
+    exp.run()

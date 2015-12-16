@@ -556,7 +556,7 @@ class UpdateWidgetUntimed(CallbackState):
     def _callback(self):
         self.__target_clone.live_change(**self.__target_clone.transform_params(
             self.__target_clone.apply_aliases(
-                {self._prop_name : self._prop_value})))
+                {self._prop_name: self._prop_value})))
 
 
 class UpdateWidget(VisualState):
@@ -598,13 +598,13 @@ class UpdateWidget(VisualState):
 
 
 class Animate(State):
-    #TODO: log updates!
+    # TODO: log updates!
     def __init__(self, target, interval=None, duration=None, parent=None,
                  save_log=True, name=None, blocking=True, **anim_params):
         super(Animate, self).__init__(duration=duration, parent=parent,
                                       save_log=save_log, name=name,
                                       blocking=blocking)
-        self.__target = target  #TODO: make sure target is a WidgetState
+        self.__target = target  # TODO: make sure target is a WidgetState
         self.__anim_params = anim_params
         self.__initial_params = None
         self._init_interval = interval

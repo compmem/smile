@@ -10,21 +10,28 @@
 # load all the states
 from smile import *
 
+# create the experiment
 exp = Experiment()
 
-Show(Text("Get Ready"),duration=1.0)
+# Prepare them
+Label(text="Get Ready...", font_size=40, duration=1.0)
 
+# Pause a moment
 Wait(.5)
 
-FreeKey(Text('??????',font_size=24))
+# collect responses for 10 seconds
+fk = FreeKey(Label(text='??????', font_size=40),
+             max_duration=10.0)
 
-Wait(1.0, stay_active=True)
+# show one way to log responses
+Log(fk.responses, name='free_key_test')
+
+# debug the output to screen, too
+Debug(responses=fk.responses)
+
+# wait sec
+Wait(1.0)
 
 
 if __name__ == '__main__':
-    #from smile.dag import DAG
-    #d = DAG(exp)
-    #d.write('/tmp/freekey.pdf')
-
     exp.run()
-

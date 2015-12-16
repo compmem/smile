@@ -21,15 +21,14 @@ RESP_KEYS = ['J','K']
 Wait(1.0)
 
 with Loop(trials) as trial:
-    #Wait(.5)
     t = Label(text=trial.current, font_size=24)
     with UntilDone():
         Wait(.2)
-        key = KeyPress(keys=RESP_KEYS, 
+        key = KeyPress(keys=RESP_KEYS,
                        base_time=t.appear_time['time'])
 
     # set whether it was a good RT
-    exp.good = key.rt<GOOD_RT
+    exp.good = key.rt < GOOD_RT
     with If(exp.good):
         Label(text='Awesome!', font_size=30, duration=1.0)
     with Else():
@@ -44,11 +43,8 @@ with Loop(trials) as trial:
 
     Wait(1.0)
 
-
 Wait(1.0)
 
 
 if __name__ == '__main__':
     exp.run()
-
-

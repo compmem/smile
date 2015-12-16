@@ -59,7 +59,8 @@ from video import (
     PageLayout,
     ScatterLayout,
     StackLayout,
-    BackgroundColor)
+    BackgroundColor,
+    UpdateWidget)
 from dotbox import DotBox
 from ref import Ref, val, jitter, shuffle
 #from smile.audio import Beep, SoundFile, RecordSoundFile
