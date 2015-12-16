@@ -23,7 +23,7 @@ from video import VisualState
 
 
 def MouseWithin(widget):
-""" An easy shortcut to wait for a mouse to be within a widget.
+    """An easy shortcut to wait for a mouse to be within a widget.
 
     This function returns True if the mouse position is within a given widget.
     When used in conjunction with the *Wait* state, it can wait until the mouse
@@ -55,12 +55,13 @@ def MouseWithin(widget):
 
 
 def MousePos(widget=None):
-""" Returns the position of the mouse.
+    """Returns the position of the mouse.
 
     If given a widget, this function will return the position of the mouse in
     referense to the position of the widget. If widget is set to None, then
     this function will return the mouse position in relation to the experiment
-    window. """
+    window.
+    """
     pos = Experiment._last_instance()._app.mouse_pos_ref
     if widget is None:
         return pos
@@ -71,12 +72,12 @@ def MousePos(widget=None):
 
 
 def MouseButton(widget=None):
-""" Returns a Reference to the next mouse button to be pressed.
+    """Returns a Reference to the next mouse button to be pressed.
 
     If given a widget, it will only return the mouse button pressed if it was
     pressed while the mouse was within the widget. If not given a widget, it
     will return a reference to the next button to be pressed on the mouse.
-"""
+    """
     button = Experiment._last_instance()._app.mouse_button_ref
     if widget is None:
         return button
@@ -85,25 +86,52 @@ def MouseButton(widget=None):
 
 
 def MouseRecord(widget=None, name="MouseRecord"):
-""" Returns a reference to a record about the next mouse press.
+    """Returns a reference to a record about the next mouse press.
 
     This funciton returns a *Record* that contains information about the button
     pressed and the position of the click of the mouse. It also logs this
     information into a .slog file.
 
 
-"""
+    """
     rec = Record(pos=MousePos(widget), button=MouseButton(widget), name=name)
     rec.override_instantiation_context()
     return rec
 
 
 class MouseCursor(VisualState):
-""" A state that shows your mouse cursor for a duration.
+    """A state that shows your mouse cursor for a duration.
 
     You are able to set things like the image that the mouse is, the duration
     the mouse should stay on the screen, and the offset of the image with
     parameters.
+
+    Parameters
+    ----------
+    filename : string, optional
+        The filename of a replacement cursor image. Will show this image
+        instead of the default arrow.
+    offset : tuple, optional, default = (50, 50)
+        The pixel offset of the image and the center of the cursor.
+        Defaults to (50, 50) for our default 100x100 pixel cursor image,
+        that way the center of the image is right at the end of the arrow
+        on a regular cursor.
+    duration : float, optional, default = None
+        The duration of this state. If None is given, then the state will
+        not set an end time and run until canceled.
+    parent : ParentState. optional, default = None
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
+    save_log : boolean, default = True, optional
+        If True, save out a .slog file contianing all of the information
+        for this *Wait* state.
+    name : string, optional, default = None
+        The unique name of this state
+    blocking : boolean, optional, default = True
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -116,34 +144,6 @@ class MouseCursor(VisualState):
     stack = []
     def __init__(self, filename=None, offset=None, duration=None, parent=None,
                  save_log=True, name=None, blocking=True):
-    """ Parameters
-        ----------
-        filename : string, optional
-            The filename of a replacement cursor image. Will show this image
-            instead of the default arrow.
-        offset : tuple, optional, default = (50, 50)
-            The pixel offset of the image and the center of the cursor.
-            Defaults to (50, 50) for our default 100x100 pixel cursor image,
-            that way the center of the image is right at the end of the arrow
-            on a regular cursor.
-        duration : float, optional, default = None
-            The duration of this state. If None is given, then the state will
-            not set an end time and run until canceled.
-        parent : ParentState. optional, default = None
-            The state you would like this state to be a child of. If not set,
-            the *Experiment* will make it a child of a ParentState or the
-            Experiment automatically.
-        save_log : boolean, default = True, optional
-            If True, save out a .slog file contianing all of the information
-            for this *Wait* state.
-        name : string, optional, default = None
-            The unique name of this state
-        blocking : boolean, optional, default = True
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its *ParallelParent* finishes
-            running. Only relevent if within a *ParallelParent*.
-
-    """
         super(MouseCursor, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
@@ -165,8 +165,6 @@ class MouseCursor(VisualState):
         self._log_attrs.extend(["filename", "offset"])
 
     def _enter(self):
-    """ Loads the mouse image, and sets up kivy graphics Rectangle.
-    """
         super(MouseCursor, self)._enter()
         texture = Image(self._filename).texture
         self.__instruction = kivy.graphics.Rectangle(texture=texture,
@@ -210,13 +208,47 @@ class MouseCursor(VisualState):
 
 
 class MousePress(CallbackState):
-""" A state used to track the pressing of a mouse button.
+    """A state used to track the pressing of a mouse button.
 
     A *MousePress* state will tell your experiment to record the buttons
     pressed, but not show the cursor. By default, your cursor is hidden and
     doesnt send any feedback to your experiment. You call *MousePress* like you
     would call *KeyPress* in that you can tell it what buttons are valid input,
     and what the correct input is.
+
+    Parameters
+    ----------
+    buttons : list (optional)
+        Give a list of mouse buttons names that the participant can press,
+        all uppercase letters. Example : ``['LEFT', 'RIGHT']``
+    correct_resp : list (optional)
+        If None, then every answer is incorrect. If given a list of
+        strings, even if it is one string in length, any buttons in that
+        list of strings will be concidered correct.
+    base_time : float (optional)
+        If you would like the timing of the button press's reaction time to
+        be based on the appear time a stimulus, you put that value here.
+    widget : widget (optional)
+        If you would like the mouse to appear only within a another visual
+        state, like a *Rectangle* or a *Label*, then you pass in that
+        visual state here.
+    duration : float (optional)
+        The duration of this state. If None is given, then the state will
+        not set an end time and run until canceled.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
+    save_log : boolean (default = True, optional)
+        If True, save out a .slog file contianing all of the information
+        for this *Wait* state.
+    name : string (optional)
+        The unique name of this state
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
 
     Logged Attributes
     -----------------
@@ -236,44 +268,10 @@ class MousePress(CallbackState):
         **press_time** - **base_time**
     pos : tuple
         A tuple, (x, y), that is the position of the mouse button press.
-"""
+    """
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
                  widget=None, duration=None, parent=None, save_log=True,
                  name=None, blocking=True):
-    """ Parameters
-        ----------
-        buttons : list (optional)
-            Give a list of mouse buttons names that the participant can press,
-            all uppercase letters. Example : ``['LEFT', 'RIGHT']``
-        correct_resp : list (optional)
-            If None, then every answer is incorrect. If given a list of
-            strings, even if it is one string in length, any buttons in that
-            list of strings will be concidered correct.
-        base_time : float (optional)
-            If you would like the timing of the button press's reaction time to
-            be based on the appear time a stimulus, you put that value here.
-        widget : widget (optional)
-            If you would like the mouse to appear only within a another visual
-            state, like a *Rectangle* or a *Label*, then you pass in that
-            visual state here.
-        duration : float (optional)
-            The duration of this state. If None is given, then the state will
-            not set an end time and run until canceled.
-        parent : ParentState (optional)
-            The state you would like this state to be a child of. If not set,
-            the *Experiment* will make it a child of a ParentState or the
-            Experiment automatically.
-        save_log : boolean (default = True, optional)
-            If True, save out a .slog file contianing all of the information
-            for this *Wait* state.
-        name : string (optional)
-            The unique name of this state
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its *ParallelParent* finishes
-            running. Only relevent if within a *ParallelParent*.
-
-    """
         super(MousePress, self).__init__(parent=parent,
                                          duration=duration,
                                          save_log=save_log,

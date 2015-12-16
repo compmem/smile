@@ -61,12 +61,47 @@ class KeyState(CallbackState):
 
 
 class KeyPress(KeyState):
-""" A state that listens for a keypress.
+    """A state that listens for a keypress.
 
     A *KeyPress* state will wait for a duration, if there is one, for a key
     that is within the **keys** list and then tell you if they picked a
     response that was within the **correct_resp** list, and tell you the
     response time.
+
+    Parameters
+    ----------
+    keys : list (optional)
+        A list of valid key names in the form of strings strings. If no
+        list is provided, any key can be pressed to continue passed this
+        state. Refer to *keyboard.key* for a list of valid key names, they
+        must all be in capitol letters
+    correct_resp : list, tuple, string (optional)
+        A list, tuple, or string, containing the names of any keys that
+        would be concidered a correct response.
+    base_time : float (optional)
+        If you need to record the time of the response precicely in
+        relation to the timing of another state, you put that here.
+        Example: If you would want to know exactly how long after a *Label*
+        state appears on the screen, you would set **base_time** to
+        lb.appear_time['time']
+    duration : float (optional)
+        The duration you would like your experiment to wait for a keypress.
+        If set to None, then it will wait until a key from **keys** is
+        pressed, then continue with the experiment.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
+    save_log : boolean (default = True, optional)
+        If True, save out a .slog file contianing all of the information
+        for this state.
+    name : string (optional)
+        The unique name of this state
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its Parallel Parent finishes
+        running. Only relevent if within a *Parallel* Parent.
+
 
     Logged Attributes
     -----------------
@@ -100,41 +135,6 @@ class KeyPress(KeyState):
     def __init__(self, keys=None, correct_resp=None, base_time=None,
                  duration=None, parent=None, save_log=True, name=None,
                  blocking=True):
-    """ Parameters
-        ----------
-        keys : list (optional)
-            A list of valid key names in the form of strings strings. If no
-            list is provided, any key can be pressed to continue passed this
-            state. Refer to *keyboard.key* for a list of valid key names, they
-            must all be in capitol letters
-        correct_resp : list, tuple, string (optional)
-            A list, tuple, or string, containing the names of any keys that
-            would be concidered a correct response.
-        base_time : float (optional)
-            If you need to record the time of the response precicely in
-            relation to the timing of another state, you put that here.
-            Example: If you would want to know exactly how long after a *Label*
-            state appears on the screen, you would set **base_time** to
-            lb.appear_time['time']
-        duration : float (optional)
-            The duration you would like your experiment to wait for a keypress.
-            If set to None, then it will wait until a key from **keys** is
-            pressed, then continue with the experiment.
-        parent : ParentState (optional)
-            The state you would like this state to be a child of. If not set,
-            the *Experiment* will make it a child of a ParentState or the
-            Experiment automatically.
-        save_log : boolean (default = True, optional)
-            If True, save out a .slog file contianing all of the information
-            for this state.
-        name : string (optional)
-            The unique name of this state
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its Parallel Parent finishes
-            running. Only relevent if within a *Parallel* Parent.
-
-    """
         # init the parent class
         super(KeyPress, self).__init__(parent=parent,
                                        duration=duration,
@@ -201,11 +201,27 @@ class KeyPress(KeyState):
 
 
 class KeyRecord(KeyState):
-""" A state that records keypresses during a duration.
+    """A state that records keypresses during a duration.
 
     A *KeyRecord* state will record any keypress, the keyup's and keydown's,
     aswell as any timing associated with them for a duration.
 
+    Parameters
+    ----------
+    duration : float (optional)
+        The duration you would like your experiment to wait for a keypress.
+        If set to None, then it will wait until a key from **keys** is
+        pressed, then continue with the experiment.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
+    name : string (optional)
+        The unique name of this state
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its Parallel Parent finishes
+        running. Only relevent if within a *Parallel* Parent.
 
     Logged Attributes
     -----------------
@@ -217,23 +233,6 @@ class KeyRecord(KeyState):
 
     """
     def __init__(self, parent=None, duration=None, name=None, blocking=True):
-    """ Parameters
-        ----------
-        duration : float (optional)
-            The duration you would like your experiment to wait for a keypress.
-            If set to None, then it will wait until a key from **keys** is
-            pressed, then continue with the experiment.
-        parent : ParentState (optional)
-            The state you would like this state to be a child of. If not set,
-            the *Experiment* will make it a child of a ParentState or the
-            Experiment automatically.
-        name : string (optional)
-            The unique name of this state
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its Parallel Parent finishes
-            running. Only relevent if within a *Parallel* Parent.
-    """
         super(KeyState, self).__init__(parent=parent, duration=duration,
                                        save_log=False, name=name,
                                        blocking=blocking)

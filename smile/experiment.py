@@ -498,7 +498,7 @@ class ExpApp(App):
 
 
 class Experiment(object):
-""" The base for a SMILE statemachine.
+    """The base for a SMILE statemachine.
 
     An *Experiment* is the object that needs to be defined when you are ready
     to start building your smile experiment. This is also the class that you
@@ -511,6 +511,16 @@ class Experiment(object):
     was written between `exp=Experiment()` and `exp.run()`.  Once all of the
     SMILE code is finished, the .py will continue passed `exp.run()` and run
     any code you might want to run after an experiment.
+
+    Parameters
+    ----------
+    fullscreen : boolean (default = True)
+        Set to False if you would like to not run in fullscreen.
+    resolution : tuple
+        A tuple of integers that define the size of the experiment window.
+    background_color : string (default = 'BLACK')
+        If given a string color name, see colors in video.py, the
+        background of the window will be set to that color
 
     Properties
     ----------
@@ -548,19 +558,9 @@ class Experiment(object):
     This example will set SavedVariable to 10 during experimental runtime, add
     the numbers 0 through 9 to it, and then end the experiment.  At the end,
     exp.SavedVariable will be equal to 55.
-"""
+    """
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
-    """ Parameters
-        ----------
-        fullscreen : boolean (default = True)
-            Set to False if you would like to not run in fullscreen.
-        resolution : tuple
-            A tuple of integers that define the size of the experiment window.
-        background_color : string (default = 'BLACK')
-            If given a string color name, see colors in video.py, the
-            background of the window will be set to that color
-    """
         #global Window
         self._process_args()
 
@@ -600,10 +600,10 @@ class Experiment(object):
         self._state_loggers = {}
 
     def set_background_color(self, color=None):
-        """ Sets the background during experimental build time.
+        """Sets the background during experimental build time.
 
-            To set the background color of an experiment during experimental
-            runtime you should use the state *BackgroundColor*.
+        To set the background color of an experiment during experimental
+        runtime you should use the state *BackgroundColor*.
         """
         if color is None:
             if self._background_color is None:
@@ -612,8 +612,6 @@ class Experiment(object):
         Window.clearcolor = normalize_color_spec(color)
 
     def get_var_ref(self, name):
-        """ Returns a reference to any of the variables in this class.
-        """
         try:
             return self.__issued_refs[name]
         except KeyError:

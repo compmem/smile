@@ -113,7 +113,7 @@ class StateClass(type):
 
 
 class State(object):
-""" Base State object for the hierarchical state machine.
+    """Base State object for the hierarchical state machine.
 
     This class contains all of the calls that are required of a state to run
     properly in experimental runtime.  Functions like *enter* and *leave* are
@@ -121,6 +121,23 @@ class State(object):
     which then uses our own scheduler to set the start and end times of our
     *State*.  What follows is all of the information about our base *State*
     class.
+
+    Parameters
+    ----------
+
+    parent : ParentState
+        The parent state that this state is contained within
+    duration : float
+        The duration you would like the state to last in seconds
+    save_log : Boolean (False)
+        If set to True, will save a .slog with all of the information
+        from this state.
+    name : string
+        The unique name you give this state.
+    blocking : boolean (True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -145,7 +162,7 @@ class State(object):
     finalize_time : float
         The time this state calls `finalize()`
 
-"""
+    """
 
     # Apply the StateClass metaclass
     __metaclass__ = StateClass
@@ -165,23 +182,6 @@ class State(object):
 
     def __init__(self, parent=None, duration=None, save_log=True, name=None,
                  blocking=True):
-    """ Parameters
-        ----------
-
-        parent : ParentState
-            The parent state that this state is contained within
-        duration : float
-            The duration you would like the state to last in seconds
-        save_log : Boolean (False)
-            If set to True, will save a .slog with all of the information
-            from this state.
-        name : string
-            The unique name you give this state.
-        blocking : boolean (True)
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its *ParallelParent* finishes
-            running. Only relevent if within a *ParallelParent*.
-    """
         # Weak value dictionary to track Refs issued by this state.  Necessary
         # because those Refs need to be notified when their dependencies
         # change.  This is first so that __setattr__ will work.
@@ -310,8 +310,6 @@ class State(object):
         self.__most_recently_entered_clone = self
 
     def __repr__(self):
-        """String representation.
-        """
         # Include the class name, the instantiation filename and line number,
         # the custome name, and the object ID (in hex)...
         return "<%s file=%r, line=%d, name=%r, id=%x>" % (
@@ -322,14 +320,6 @@ class State(object):
             id(self))
 
     def __setattr__(self, name, value):
-    """ The python setattr function.
-
-        This checks first to see if the attribute exists as the name with
-        an underscore before it.  This version of the attribute is a
-        reference. So when setting an attribute with an underscore, this
-        function creates a reference to that attribute first, then sets the
-        value.
-    """
         # First, set the sttribute value as normal.
         super(State, self).__setattr__(name, value)
 
@@ -348,9 +338,6 @@ class State(object):
         ref.dep_changed()
 
     def set_instantiation_context(self, obj=None):
-    """ Set this state's instantiation filename and line number to be the
-        place where the supplied object was instantiated.
-    """
         # If no object is provide as the source of the context, use self.
         if obj is None:
             obj = self
@@ -374,9 +361,6 @@ class State(object):
                 "Can't figure out where instantiation took place!")
 
     def override_instantiation_context(self, depth=0):
-    """ Set this state's instantiation filename and line number to be the
-        place where the calling function was called.
-    """
         # Get the desired frame from the call stack.
         (frame,
          filename,
@@ -390,8 +374,6 @@ class State(object):
         self._instantiation_lineno = lineno
 
     def begin_log(self):
-    """ Prepare the per-class state logs.
-    """
         if self.__save_log:
             # Use the state logger facily of the associated Experiment so that
             # only one state log is produced for the state class (rather than
@@ -399,14 +381,10 @@ class State(object):
             self._exp.setup_state_logger(type(self)._state_class.__name__)
 
     def end_log(self, to_csv=False):
-    """ Close the per-class state logs.
-    """
         # The associated Experiment cleans up its own state loggers.
         pass
 
     def tron(self, depth=0):
-    """ Active trace output.
-    """
         # set the tracing flag
         self.__tracing = True
 
@@ -414,14 +392,10 @@ class State(object):
         self.__depth = depth
 
     def troff(self):
-    """ Deactivate trace output.
-    """
         # clear the tracing flag
         self.__tracing = False
 
     def print_trace_msg(self, msg):
-    """ Print a one line message as part of trace output.
-    """
         # Create list of strings to identify this state (which will appear
         # comma-separated).  Name is included only if name is not None...
         id_strs = [
@@ -440,8 +414,6 @@ class State(object):
             )
 
     def print_traceback(self, child=None, t=None):
-    """ Print a SMILE traceback on the console.
-    """
         # Use the current time, if none is provided.
         if t is None:
             t = clock.now()
@@ -498,36 +470,15 @@ class State(object):
                 print "     %s: %r" % (attr_name, value)
 
     def claim_exceptions(self):  #TODO: make this a context manager instead?
-    """ Until another state 'claims exceptions', any uncaught exception will
-        be attributed to this state in the SMILE traceback.
-    """
         if self._exp is not None:
             # Set self as "current_state" in associated Experiment.
             self._exp._current_state = self
 
     def get_log_fields(self):
-    """ Get the field names for the state log.
-
-        Returns
-        -------
-        list
-            A list of string attribute names from this state
-
-    """
         return self._log_attrs
 
     @property
     def current_clone(self):
-    """ A clone is needed when running state's within a *Loop* state.
-        Allows for SMILE to keep track of all instances of this state,
-        preparing future clones, and finishing up previous clones at a later
-        time.
-
-        Returns
-        -------
-        state
-            The most recently entered clone of this state.
-    """
         # This will be called in the process of setting up
         # self,__original_state and self._most_recently_entered_clone, so it
         # has to work without those...
@@ -542,9 +493,6 @@ class State(object):
             return self
 
     def get_current_attribute_value(self, name):
-    """ Get the value of an attribute from the most recently entered clone
-        of this state.
-    """
         # Return the named attribute from the current clone.
         return getattr(self.current_clone, name)
 
@@ -562,8 +510,6 @@ class State(object):
             return ref
 
     def attribute_update_state(self, name, value):
-    """ Produce a state that updates an attribute of this state.
-    """
         raise NotImplementedError
 
     def _schedule_start(self):
@@ -579,23 +525,9 @@ class State(object):
         pass
 
     def _enter(self):
-    """ Custom method to call at enter time.  Optionally overridden in
-        subclasses.
-    """
         pass
 
     def enter(self, start_time):
-    """ This function is called when the previous state leaves.
-
-        *enter* does everything that needs to be done before the state even
-        starts. Passing in start_time tells this function to schedule a call to
-        *start* by the clock.
-
-        Parameters
-        ----------
-        start_time : float
-            This integer will be when the state will start, some time in the future.
-    """
         # set trace
         self.claim_exceptions()
 
@@ -674,14 +606,9 @@ class State(object):
         self.__finalize_callbacks.append((func, pargs, kwargs))
 
     def _leave(self):
-    """ Custom method to call at leave time.  Optionally overridden in
-        subclasses.
-    """
         pass
 
     def leave(self):
-    """ Allow subsequent states to enter.
-    """
         # ignore leave call if not active
         if self._following_may_run or not self._active:
             return
@@ -717,16 +644,6 @@ class State(object):
                     (call_time, call_duration, end_time))
 
     def cancel(self, cancel_time):
-    """ Force the state to end (possibly prematurely) at a specified time.
-
-        Parameters
-        ----------
-        cancel_time : float
-            The time you want this state to end, regardless of if it has
-            reached its end time.
-
-
-    """
         if not self._active:
             return
         if not self._started and cancel_time < self._start_time:
@@ -749,16 +666,11 @@ class State(object):
             self._end_time = cancel_time
 
     def save_log(self):
-    """ Write a record to the state log for the current execution of the
-        state.
-    """
         self._exp.write_to_state_log(
             type(self).__name__,
             {name : getattr(self, "_" + name) for name in self._log_attrs})
 
     def finalize(self):  #TODO: call a _finalize method?
-    """ Deactivate the state and perform any state logging.
-    """
         if not self._active:
             return
 
@@ -782,19 +694,40 @@ class State(object):
 
 
 class AutoFinalizeState(State):
-""" Base class for states that automatically finalize immediately after leaving
-"""
+    """
+    Base class for states that automatically finalize immediately after leaving
+    """
     def leave(self):
         super(AutoFinalizeState, self).leave()
         clock.schedule(self.finalize)
 
 
 class ParentState(State):
-""" Base state for parents that can hold child states.
+    """Base state for parents that can hold child states.
 
     This base class has all of the methods for dealing with child states.  When
     Leaving, it will tell all of its children to leave. When Logging, it will
     tell all of its children to log aswell.
+
+    Parameters
+    ----------
+    children : list (None)
+        A list containing any *States* that you wish to be the children of
+        *ParentState*.
+    parent : ParentState (None)
+        The state that is the parent of this state. Defaults to whatever
+        *ParentState* this state exists within.
+    duration : float
+        The duration you would like the state to last in seconds.
+    save_log : boolean (False)
+        If set to True, will save a .slog with all of the information
+        from this state.
+    name : string
+        The unique name you give this state.
+    blocking : boolean (True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -802,30 +735,9 @@ class ParentState(State):
     automatically recorded in the state-specific log. Refer to State class
     docstring for additional logged parameters.
 
-"""
+    """
     def __init__(self, children=None, parent=None, duration=None,
                  save_log=True, name=None, blocking=True):
-    """ Parameters
-        ----------
-        children : list (None)
-            A list containing any *States* that you wish to be the children of
-            *ParentState*.
-        parent : ParentState (None)
-            The state that is the parent of this state. Defaults to whatever
-            *ParentState* this state exists within.
-        duration : float
-            The duration you would like the state to last in seconds.
-        save_log : boolean (False)
-            If set to True, will save a .slog with all of the information
-            from this state.
-        name : string
-            The unique name you give this state.
-        blocking : boolean (True)
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its *ParallelParent* finishes
-            running. Only relevent if within a *ParallelParent*.
-
-    """
         super(ParentState, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
@@ -845,84 +757,41 @@ class ParentState(State):
         self._cancel_time = None
 
     def tron(self, depth=0):
-    """ Activate trace output for this state and all its children.
-
-        Parameters
-        ----------
-        depth : integer (0)
-            The print depth for trace output. If depth = 1, the Child's Child
-            will be traced.
-
-    """
         super(ParentState, self).tron(depth)
         child_depth = depth + 1
         for child in self._children:
             child.tron(child_depth)
 
     def troff(self):
-    """ Deactivate trace output for this state and all its children.
-    """
         super(ParentState, self).troff()
         for child in self._children:
             child.troff()
 
     def begin_log(self):
-    """ Prepare per-class state logs for this state and all its children.
-    """
         super(ParentState, self).begin_log()
         for child in self._children:
             child.begin_log()
 
     def end_log(self, to_csv=False):
-    """ Close per-class state logs for this state and all its children.
-    """
         super(ParentState, self).end_log(to_csv)
         for child in self._children:
             child.end_log(to_csv)
 
     def claim_child(self, child):
-    """ Add a state to the list of children, removing it from any prior parent.
-
-        Parameters
-        ----------
-        child : State
-            The state you would like this parent to claim.
-    """
         if not child._parent is None:
             child._parent._children.remove(child)
         child._parent = self
         self._children.append(child)
 
     def child_enter_callback(self, child):
-    """ Notify this state that one of its children has entered.
-
-        This state will be notified when the passed in child has entered.
-
-        Parameters
-        ----------
-        child : State
-            The child state that has entered.
-    """
         self.__unfinalized_children.add(child)
         if self._cancel_time is not None:
             child.cancel(self._cancel_time)
 
     def child_leave_callback(self, child):
-    """ Notify this state that one of its children has left.
-    """
         pass
 
     def child_finalize_callback(self, child):
-    """ Notify this state that one of its children has finalized.
-
-        If there are no other unfinalized children, this state will enter its
-        own finalize state.
-
-        Parameters
-        ----------
-        child : State
-            The child state that has finalized.
-    """
         self.__unfinalized_children.discard(child)
         if self._following_may_run and not len(self.__unfinalized_children):
             # we have no more unfinalized children,
@@ -930,14 +799,10 @@ class ParentState(State):
             self.finalize()
 
     def _enter(self):
-    """ It initializes the set of unfinalized children and cancel time.
-    """
         self.__unfinalized_children = set()
         self.__cancel_time = None
 
     def _leave(self):
-    """ The clock will schedule a finalize if the children are finished.
-    """
         if not len(self._children) or not len(self.__unfinalized_children):
             clock.schedule(self.finalize)
 
@@ -953,16 +818,6 @@ class ParentState(State):
             state = self._exp._parents.pop()
 
     def cancel(self, cancel_time):
-    """ Force the state to end (possibly prematurely) at a specified time.
-
-        Parameters
-        ----------
-        cancel_time : float
-            The time you want this state to end, regardless of if it has
-            reached its end time.
-
-
-    """
         if not self._active:
             return
         for child in self.__unfinalized_children:
@@ -973,11 +828,29 @@ class ParentState(State):
 
 
 class Parallel(ParentState):
-""" A State used to run other States simultaneously.
+    """A State used to run other States simultaneously.
 
     A *ParentState* that runs all of its children in parallel. This state's
     duration is equal to the longest duration of its children. That means this
     state will not end until all of its children are finished running.
+
+    Parameters
+    ----------
+    children : list (None)
+        A list containing any *States* that you wish to be the children of
+        *ParentState*.
+    parent : ParentState (None)
+        The state that is the parent of this state. Defaults to whatever
+        *ParentState* this state exists within.
+    save_log : boolean (True)
+        If set to True, will save a .slog with all of the information
+        from this state.
+    name : string
+        The unique name you give this state.
+    blocking : boolean (True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -1001,28 +874,9 @@ class Parallel(ParentState):
                   center_y=exp.screen.center_y+200)
         exp.run()
 
-"""
+    """
     def __init__(self, children=None, parent=None, save_log=True, name=None,
                  blocking=True):
-    """
-        Parameters
-        ----------
-        children : list (None)
-            A list containing any *States* that you wish to be the children of
-            *ParentState*.
-        parent : ParentState (None)
-            The state that is the parent of this state. Defaults to whatever
-            *ParentState* this state exists within.
-        save_log : boolean (True)
-            If set to True, will save a .slog with all of the information
-            from this state.
-        name : string
-            The unique name you give this state.
-        blocking : boolean (True)
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its *ParallelParent* finishes
-            running. Only relevent if within a *ParallelParent*.
-    """
         super(Parallel, self).__init__(children=children,
                                        parent=parent,
                                        save_log=save_log,
@@ -1034,9 +888,6 @@ class Parallel(ParentState):
         self.__blocking_remaining = set()
 
     def print_traceback(self, child=None, t=None):
-    """ Print SMILE traceback and add a line indicating whether the traced
-        child of this Parellel is blocking or non-blocking.
-    """
         super(Parallel, self).print_traceback(child, t)
         if child is not None:
             if child._blocking:
@@ -1045,12 +896,6 @@ class Parallel(ParentState):
                 print "     Non-blocking child..."
 
     def _enter(self):
-    """ Processes each child and makes a clone.
-
-        This method also checks to see if any of the children are blocking and
-        puts them into a seperate list.  It will also schedule the start times
-        for all of the children, so they start at exactly the same time.
-    """
         super(Parallel, self)._enter()
         # empty the children lists on enter
         self.__blocking_children = []
@@ -1073,12 +918,6 @@ class Parallel(ParentState):
             clock.schedule(self.leave)
 
     def child_leave_callback(self, child):
-    """ When a state leaves, child_leave_callback is called on the parent.
-
-        This particular callback checks to see if there are any remaining
-        children that haven't finished yet. If there are no children left, this
-        state calls *leave()*
-    """
         # called when any child leaves
         super(Parallel, self).child_leave_callback(child)
 
@@ -1097,11 +936,6 @@ class Parallel(ParentState):
             self.leave()
 
     def _set_end_time(self):
-    """ Determine the end time of this Parallel based on its children. The end
-        time will always be the end time of the child with the longest
-        duration. If any of the children have an infinite duration, then the
-        end_time for this state is set to *None*.
-    """
         # check all end times for each blocking child
         end_times = [c._end_time for c in self.__blocking_children]
         if any([et is None for et in end_times]):
@@ -1114,9 +948,9 @@ class Parallel(ParentState):
 
 @contextmanager
 def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
-""" States added in this context will be added to a Serial which is in
+    """States added in this context will be added to a Serial which is in
     Parallel with the state preceding this call.
-"""
+    """
     # get the exp reference
     from experiment import Experiment
     try:
@@ -1151,7 +985,8 @@ def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
 
 @contextmanager
 def Meanwhile(name=None, blocking=True):
-""" A context State used to run its children until a previous state is finished
+    """A context State used to run its children until a previous state is
+    finished
 
     States created in this context will run in serial during the execution
     of the previous state, but will be cancelled when the previous state ends.
@@ -1175,7 +1010,7 @@ def Meanwhile(name=None, blocking=True):
     Under the hood, this state is creating a ParallelWithPrevious state. Then,
     it sets the previous state as blocking and the rest of the states are set
     to non-blocking.
-"""
+    """
     with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE",
                                blocking=blocking) as p:
         yield p
@@ -1184,7 +1019,8 @@ def Meanwhile(name=None, blocking=True):
 
 @contextmanager
 def UntilDone(name=None, blocking=True):
-""" A context state used to run a previous state till its children are finished
+    """A context state used to run a previous state till its children are
+    finished
 
     States created in this context will run in serial during the execution
     of the previous state, and the previous state will be cancelled when the
@@ -1209,7 +1045,7 @@ def UntilDone(name=None, blocking=True):
     Under the hood, this state is creating a ParallelWithPrevious state. Then,
     it sets the previous state as non-blocking and the rest of the states are
     set to blocking.
-"""
+    """
     with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE",
                                blocking=blocking) as p:
         yield p
@@ -1218,11 +1054,11 @@ def UntilDone(name=None, blocking=True):
 
 
 class SequentialState(ParentState):
-""" Base state for parents that run a sequence of child states back to back.
+    """Base state for parents that run a sequence of child states back to back.
 
     This state takes children, like the Parent state, but on *enter* it clones
     all of the children and schedules them in the correct sequential order.
-"""
+    """
     def __init__(self, children=None, parent=None, save_log=True, name=None,
                  blocking=True):
         super(SequentialState, self).__init__(children=children,
@@ -1232,8 +1068,6 @@ class SequentialState(ParentState):
                                               blocking=blocking)
 
     def _enter(self):
-    """ If no children, schedule a leave time.
-    """
         super(SequentialState, self)._enter()
         self.__child_iterator = self._get_child_iterator()
         self.__current_child = None
@@ -1252,16 +1086,6 @@ class SequentialState(ParentState):
         raise NotImplementedError
 
     def child_leave_callback(self, child):
-    """ When one child leaves the next is scheduled.
-
-        This function does 1 of 3 things. If there is no next child, then it
-        calls its own *leave*.  If there is a cancel_time set, and the next
-        child's end_time is greater than the cancel_time, then this state sets
-        its own end_time to the cancel_time and calls *leave*. If neither of
-        those are true, then that means there is a next child and no
-        cancel_time. This state will then try to schedule the next child's
-        *enter* call.
-    """
         # gets called anytime a child leaves
         super(SequentialState, self).child_leave_callback(child)
         # get the time for the next state based on the end_time of the
@@ -1290,7 +1114,7 @@ class SequentialState(ParentState):
 
 
 class Serial(SequentialState):
-""" *ParentState* that runs its children in serial, one after another.
+    """*ParentState* that runs its children in serial, one after another.
 
     This is a state used to section off states to be run in serial.  Usually,
     it is only used while using another state, like *Parallel* or *UntilDone*,
@@ -1381,7 +1205,7 @@ class Serial(SequentialState):
 
 
 class Subroutine(object):
-""" A Subroutine is a decorator for making resuable bits of statemachine.
+    """A Subroutine is a decorator for making resuable bits of statemachine.
 
     A decorator for functions that build reusable, encapsulated portions of
     state machine. You can pass in any number of keywords and keyword arguments
@@ -1413,14 +1237,12 @@ class Subroutine(object):
 
     And just like that, the Example_Subroutine is added to the *ParentState's*
     children.
-"""
+    """
     def __init__(self, func):
         self._func = func
         self.__doc__ = func.__doc__
 
     def __call__(self, *pargs, **kwargs):
-    """ Return a SubroutineState for this Subroutine.
-    """
         with SubroutineState(subroutine=self._func.__name__,
                              parent=kwargs.pop("parent", None),
                              save_log=kwargs.pop("save_log", True),
@@ -1445,8 +1267,8 @@ class Subroutine(object):
 
 
 class SubroutineState(Serial):
-""" Serial-like state at the top-level of a deployment of a Subroutine.
-"""
+    """Serial-like state at the top-level of a deployment of a Subroutine.
+    """
     def __init__(self, subroutine, parent=None, save_log=True, name=None,
                  blocking=True):
         super(SubroutineState, self).__init__(parent=parent,
@@ -1464,8 +1286,6 @@ class SubroutineState(Serial):
         super(SubroutineState, self)._enter()
 
     def get_attribute_ref(self, name):
-    """ Return a Ref for a user variable of this SubroutineState.
-    """
         try:
             return super(SubroutineState, self).get_attribute_ref(name)
         except NameError:
@@ -1481,13 +1301,9 @@ class SubroutineState(Serial):
         return state
 
     def get_var(self, name):
-    """ Get a user variable of this SubroutineState.
-    """
         return self.current_clone._vars[name]
 
     def set_var(self, name, value):
-    """ Set a user variable of this SubroutineState.
-    """
         self.current_clone._vars[name] = value
         try:
             ref = self.__issued_refs[name]
@@ -1500,8 +1316,8 @@ class SubroutineState(Serial):
 
 
 class SubroutineSet(AutoFinalizeState):
-""" State that sets a user attribute value on a SubroutineState.
-"""
+    """State that sets a user attribute value on a SubroutineState.
+    """
     def __init__(self, subroutine, var_name, value, parent=None, save_log=True,
                  name=None):
         super(SubroutineSet, self).__init__(parent=parent,
@@ -1521,7 +1337,7 @@ class SubroutineSet(AutoFinalizeState):
 
 
 class If(SequentialState):
-""" The way you do branching paths in a state machine.
+    """The way you do branching paths in a state machine.
 
     Parent state to implement conditional branching. *If* state is used in lieu
     of a traditional Python if statement. The SMILE *If* state will create a
@@ -1537,6 +1353,34 @@ class If(SequentialState):
     the possible states to run of the If state. If the next state is an Else
     state, then it will overwrite the Serial Else state that the If state
     creates at initialization.
+
+    Parameters
+    ----------
+    conditional : logical
+        You may only use logical opperators in this coditional statement,
+        that means you may not use **and** or **or**. You must use *&* and
+        *|* in order to do **and** and **or** respectively.
+    true_state : ParentState (optional)
+        If given a ParentState, and the conditional is evaluated to be
+        True, then the given state will run. If a true_state is not
+        defined, it will be created as a *Serial* state with this state's
+        children.
+    false_state : ParentState (optional)
+        If given a ParentState, and the conditional is evaluated to be
+        False, then the given state will run. If a false_state is not
+        defined, it will be created as a *Serial* state that will do
+        Nothing.
+    parent : ParentState (optional)
+        The parent to this state.
+    save_log : boolean (optional, defaults = True)
+        If True, this state will save all of its information into a .slog
+        file.
+    name : string (optional)
+        The unique name of this state.
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -1577,34 +1421,6 @@ class If(SequentialState):
     """
     def __init__(self, conditional, true_state=None, false_state=None,
                  parent=None, save_log=True, name=None, blocking=True):
-    """ Parameters
-        ----------
-        conditional : logical
-            You may only use logical opperators in this coditional statement,
-            that means you may not use **and** or **or**. You must use *&* and
-            *|* in order to do **and** and **or** respectively.
-        true_state : ParentState (optional)
-            If given a ParentState, and the conditional is evaluated to be
-            True, then the given state will run. If a true_state is not
-            defined, it will be created as a *Serial* state with this state's
-            children.
-        false_state : ParentState (optional)
-            If given a ParentState, and the conditional is evaluated to be
-            False, then the given state will run. If a false_state is not
-            defined, it will be created as a *Serial* state that will do
-            Nothing.
-        parent : ParentState (optional)
-            The parent to this state.
-        save_log : boolean (optional, defaults = True)
-            If True, this state will save all of its information into a .slog
-            file.
-        name : string (optional)
-            The unique name of this state.
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its *ParallelParent* finishes
-            running. Only relevent if within a *ParallelParent*.
-    """
         # init the parent class
         super(If, self).__init__(parent=parent, save_log=save_log, name=name,
                                  blocking=blocking)
@@ -1651,8 +1467,8 @@ class If(SequentialState):
 
 
 class Elif(Serial):
-""" State to attach an elif to and If state. See *If*
-"""
+    """State to attach an elif to and If state. See *If*
+    """
     def __init__(self, conditional, parent=None, save_log=True, name=None,
                  blocking=True):
         # init the parent class
@@ -1682,8 +1498,8 @@ class Elif(Serial):
 
 
 def Else(name="ELSE BODY"):
-""" Returns the else clause of the preceding If state. See *If*
-"""
+    """Returns the else clause of the preceding If state. See *If*
+    """
     # get the exp reference
     from experiment import Experiment
     try:
@@ -1714,10 +1530,37 @@ def Else(name="ELSE BODY"):
 
 
 class Loop(SequentialState):
-""" A * Loop* state that is used to do any kind of repeated section of states.
+    """A * Loop* state that is used to do any kind of repeated section of
+    states.
 
     A *Loop* can be setup to run like the python ** for**, **while**, or
     **do while** depending on what parameters you send into it.
+
+    Parameters
+    ----------
+    iterable : iterable (default = None, optional)
+        This is any iterable class. i.e. List, Seq, String, Tuple.  If this
+        variable is set, then it will be looped over. *iterable* can also
+        be an integer. If so, the *Loop* will loop a set number of times.
+    shuffle : Boolean (default = False, optional)
+        If shuffle is set to True, then your passed in iterable will be
+        shuffled before it is presented.
+    conditional : Boolean (default = True, optional)
+        At the beginning of each iteration of the loop, it checks that
+        conditional evaluates to true. In conjunction with an iterable, it
+        will end early if the conditional every evaluates to False. Without
+        an iterable, the loop will function as a while loop.
+    parent : ParentState (optional)
+        The parent to this state.
+    save_log : boolean (optional, defaults = True)
+        If True, this state will save all of its information into a .slog
+        file.
+    name : string (optional)
+        The unique name of this state.
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -1779,36 +1622,9 @@ class Loop(SequentialState):
             Label(text=exp.X, duration=3)
             exp.X += 1
 
-"""
+    """
     def __init__(self, iterable=None, shuffle=False, conditional=True,
                  parent=None, save_log=True, name=None, blocking=True):
-    """
-        Parameters
-        ----------
-        iterable : iterable (default = None, optional)
-            This is any iterable class. i.e. List, Seq, String, Tuple.  If this
-            variable is set, then it will be looped over. *iterable* can also
-            be an integer. If so, the *Loop* will loop a set number of times.
-        shuffle : Boolean (default = False, optional)
-            If shuffle is set to True, then your passed in iterable will be
-            shuffled before it is presented.
-        conditional : Boolean (default = True, optional)
-            At the beginning of each iteration of the loop, it checks that
-            conditional evaluates to true. In conjunction with an iterable, it
-            will end early if the conditional every evaluates to False. Without
-            an iterable, the loop will function as a while loop.
-        parent : ParentState (optional)
-            The parent to this state.
-        save_log : boolean (optional, defaults = True)
-            If True, this state will save all of its information into a .slog
-            file.
-        name : string (optional)
-            The unique name of this state.
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its *ParallelParent* finishes
-            running. Only relevent if within a *ParallelParent*.
-    """
         super(Loop, self).__init__(parent=parent, save_log=save_log, name=name,
                                    blocking=blocking)
 
@@ -1831,9 +1647,6 @@ class Loop(SequentialState):
         self._log_attrs.extend(['outcome', 'i', 'current'])
 
     def iter_i(self):
-    """ Generate successive values of i for this loop, setting 'outcome'
-        value as appropriate.
-    """
         self._outcome = val(self._cond)
         if self._iterable is None:
             i = 0
@@ -1871,12 +1684,33 @@ class Loop(SequentialState):
 
 
 class Record(State):
-""" A *Record* records any changes in passed in Refs.
+    """A *Record* records any changes in passed in Refs.
 
     A *Record* state is something you can use to record the changes in a
     *Reference* variable.  See **Ref**. If any of the Reference objects
     changed, it will record all of them to a .slog file. Pass in Reference
     arguments by using keyword argument.
+
+    Parameters
+    ----------
+    duration : float (optional)
+        The duration of the state in seconds, if no duration is set, it
+        will last until cancelled.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
+    name : string (optional)
+        The unique name of this state.
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its Parallel Parent finishes
+        running. Only relevent if within a *Parallel* Parent.
+    kwargs : (keyword = parameter)
+        This is where you add what variables to check to see if they
+        change. Give *Record* a parameter name and then make that equal to
+        a Ref variable. An example is below. You may ask *Record* to check
+        as many *Ref* variables as you would like.
 
     Example
     -------
@@ -1902,27 +1736,6 @@ class Record(State):
     """
     def __init__(self, duration=None, parent=None, name=None, blocking=True,
                  **kwargs):
-    """ Parameters
-        ----------
-        duration : float (optional)
-            The duration of the state in seconds, if no duration is set, it
-            will last until cancelled.
-        parent : ParentState (optional)
-            The state you would like this state to be a child of. If not set,
-            the *Experiment* will make it a child of a ParentState or the
-            Experiment automatically.
-        name : string (optional)
-            The unique name of this state.
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its Parallel Parent finishes
-            running. Only relevent if within a *Parallel* Parent.
-        kwargs : (keyword = parameter)
-            This is where you add what variables to check to see if they
-            change. Give *Record* a parameter name and then make that equal to
-            a Ref variable. An example is below. You may ask *Record* to check
-            as many *Ref* variables as you would like.
-    """
                  super(Record, self).__init__(parent=parent,
                                      duration=duration,
                                      save_log=False,
@@ -1932,8 +1745,6 @@ class Record(State):
         self.__refs = kwargs
 
     def begin_log(self):
-    """ Set up per-class AND per-instance logs.
-    """
         super(Record, self).begin_log()
         if self._name is None:
             title = "record_%s_%d" % (
@@ -1946,8 +1757,6 @@ class Record(State):
         self.__log_writer = LogWriter(self.__log_filename)
 
     def end_log(self, to_csv=False):
-    """ Close logs.
-    """
         super(Record, self).end_log(to_csv)
         if self.__log_writer is not None:
             self.__log_writer.close()
@@ -1982,8 +1791,6 @@ class Record(State):
             ref.add_change_callback(self.record_change)
 
     def finalize(self):
-    """ Removes all of the call backs to References in this state.
-    """
         # ends at finalize time
         self._ended = True
 
@@ -1994,9 +1801,6 @@ class Record(State):
             ref.remove_change_callback(self.record_change)
 
     def record_change(self):
-    """ Record a change in the track Refs. If anything changes, write out
-        everything.
-    """
         # if anything changed, write everything
         try:
             record = val(self.__refs)
@@ -2008,7 +1812,7 @@ class Record(State):
 
 
 class Log(AutoFinalizeState):
-""" Used to log any variables during experimental runtime.
+    """Used to log any variables during experimental runtime.
 
     A *Log* state is used to log any number of variables that you want to
     record to a .slog file.  Where ever it appears in your experiment, it will
@@ -2016,6 +1820,24 @@ class Log(AutoFinalizeState):
     your experiment.  Each call to *Log* will save to a seperate file. If used
     within a *Loop* state, it will write a row to the .slog for each iteration
     of the loop.
+
+    Paramters
+    ---------
+    log_dict : dictionary (optional)
+        Use case for this parameter is to pass in `trial.current`, as long
+        as `trial.current` is a dictionary. This will save out all of the
+        values of the the current iteration of your looping variable into
+        different columns, like `log_dict_stim, log_dict_duration`.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
+    name : string (optional)
+        The unique name of this state
+    kwargs : (keyword = argument)
+        As many arguments as you would like to pass in. Use the format
+        `keyword = variable_name` and *Log* will log the value of
+        **variable_name** into a column called **keyword**.
 
     Example
     -------
@@ -2048,26 +1870,8 @@ class Log(AutoFinalizeState):
 
     This example will save out 4 columns to a .slog, **log_dict_name**,
     **log_dict_food**, **key_reaction_time**, and **key_pressed**.
-"""
-    def __init__(self, log_dict=None, parent=None, name=None, **kwargs):
-    """ Paramters
-        ---------
-        log_dict : dictionary (optional)
-            Use case for this parameter is to pass in `trial.current`, as long
-            as `trial.current` is a dictionary. This will save out all of the
-            values of the the current iteration of your looping variable into
-            different columns, like `log_dict_stim, log_dict_duration`.
-        parent : ParentState (optional)
-            The state you would like this state to be a child of. If not set,
-            the *Experiment* will make it a child of a ParentState or the
-            Experiment automatically.
-        name : string (optional)
-            The unique name of this state
-        kwargs : (keyword = argument)
-            As many arguments as you would like to pass in. Use the format
-            `keyword = variable_name` and *Log* will log the value of
-            **variable_name** into a column called **keyword**.
     """
+    def __init__(self, log_dict=None, parent=None, name=None, **kwargs):
         # init the parent class
         super(Log, self).__init__(parent=parent,
                                   name=name,
@@ -2077,8 +1881,6 @@ class Log(AutoFinalizeState):
         self._init_log_items = kwargs
 
     def begin_log(self):
-    """ Set up per-class AND per-instance logs.
-    """
         super(Log, self).begin_log()
         # set the filename, depends on whether name was passed in
         if self._name is None:
@@ -2092,8 +1894,6 @@ class Log(AutoFinalizeState):
         self.__log_writer = LogWriter(self.__log_filename)
 
     def end_log(self, to_csv=False):
-    """ Close logs.
-    """
         super(Log, self).end_log(to_csv)
         if self.__log_writer is not None:
             self.__log_writer.close()
@@ -2104,7 +1904,6 @@ class Log(AutoFinalizeState):
                 log2csv(self.__log_filename, csv_filename)
 
     def _enter(self):
-
         record = self._log_items.copy()
         record["log_time"] = self._start_time
         if self._log_dict is None:
@@ -2127,8 +1926,6 @@ class Log(AutoFinalizeState):
 
 
 class _DelayedValueTest(State):
-""" Internal class for testing the Done state.
-"""
     def __init__(self, delay, value, parent=None, save_log=True, name=None,
                  blocking=True):
         # init the parent class
@@ -2153,11 +1950,20 @@ class _DelayedValueTest(State):
 
 
 class Done(AutoFinalizeState):
-""" Waits until a state is finished or a ref is evaluated.
+    """Waits until a state is finished or a ref is evaluated.
 
     A *Done* state will block the experiment from continuing until a Ref value
     is filled, or a state is finalized. This is mainly only used when the
     timing of something like **appear_time** is needed to be logged.
+
+    Parameters
+    ----------
+    states : list of states (optional)
+        You can pass is a list of states, and if so, the *Done* will
+        wait until all of the given states are finished running.
+    kwargs : (keyword = argument)
+        If you pass in a keword argument, the *Done* state will block
+        until that specific arugument is not None.
 
     Example
     -------
@@ -2176,15 +1982,6 @@ class Done(AutoFinalizeState):
 
     """
     def __init__(self, *states, **kwargs):
-    """ Parameters
-        ----------
-        states : list of states (optional)
-            You can pass is a list of states, and if so, the *Done* will
-            wait until all of the given states are finished running.
-        kwargs : (keyword = argument)
-            If you pass in a keword argument, the *Done* state will block
-            until that specific arugument is not None.
-    """
         # init the parent class
         super(Done, self).__init__(parent=kwargs.pop("parent", None),
                                    duration=0.0,
@@ -2208,8 +2005,6 @@ class Done(AutoFinalizeState):
         self._ended = True
 
     def _check(self):
-    """ Check to see if all the tracked states are inactive.
-    """
         some_active = self.__some_active.eval()
         if not some_active:
             self.__some_active.remove_change_callback(self._check)
@@ -2217,10 +2012,34 @@ class Done(AutoFinalizeState):
 
 
 class Wait(State):
-""" Waits an ammount of seconds during experimental runtime.
+    """Waits an ammount of seconds during experimental runtime.
 
     A *Wait* state will wait for the duration that you give it, only then will
     it continue on to the next state.
+
+    Parameters
+    ----------
+    duration : float
+        The duration in seconds that you would like to wait.
+    jitter : float (optional)
+        **jitter** is will be randomly added to the duration of this wait,
+        somewhere between 0 and **jitter** seconds.
+    until : Ref (optional)
+        Waits *until* the passed in *Ref* variable is not None.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
+    save_log : boolean (default = True, optional)
+        If True, save out a .slog file contianing all of the information
+        for this *Wait* state.
+    name : string (optional)
+        The unique name of this state.
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
 
     Logged Attributes
     -----------------
@@ -2238,33 +2057,9 @@ class Wait(State):
         Once the state is finalized, the value of the until will be logged
         here.
 
-"""
+    """
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
                  save_log=True, name=None, blocking=True):
-    """ Parameters
-        ----------
-        duration : float
-            The duration in seconds that you would like to wait.
-        jitter : float (optional)
-            **jitter** is will be randomly added to the duration of this wait,
-            somewhere between 0 and **jitter** seconds.
-        until : Ref (optional)
-            Waits *until* the passed in *Ref* variable is not None.
-        parent : ParentState (optional)
-            The state you would like this state to be a child of. If not set,
-            the *Experiment* will make it a child of a ParentState or the
-            Experiment automatically.
-        save_log : boolean (default = True, optional)
-            If True, save out a .slog file contianing all of the information
-            for this *Wait* state.
-        name : string (optional)
-            The unique name of this state.
-        blocking : boolean (optional, default = True)
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its *ParallelParent* finishes
-            running. Only relevent if within a *ParallelParent*.
-
-    """
         if duration is not None and jitter is not None:
             duration = ref.jitter(duration, jitter)
 
@@ -2320,8 +2115,6 @@ class Wait(State):
         self.finalize()
 
     def schedule_check_until(self):
-    """ Setup until condition.
-    """
         self._started = True
         try:
             self._until_value = self.__until.eval()
@@ -2333,8 +2126,6 @@ class Wait(State):
             self.__until.add_change_callback(self.check_until)
 
     def check_until(self):
-    """ Callback to process a change to the until value.
-    """
         try:
             self._until_value = self.__until.eval()
         except NotAvailableError:
@@ -2345,9 +2136,9 @@ class Wait(State):
 
 
 def When(condition, body=None, name="WHEN", blocking=True):
-""" Construct states to wait until a Ref value becomes True and then start
+    """Construct states to wait until a Ref value becomes True and then start
     another state.
-"""
+    """
     if body is None:
         body = Serial(name="WHEN_BODY")
         body.override_instantiation_context()
@@ -2359,9 +2150,9 @@ def When(condition, body=None, name="WHEN", blocking=True):
 
 
 def While(condition, body=None, name="WHILE", blocking=True):
-""" Construct states to wait until a Ref value becomes True and then start
+    """Construct states to wait until a Ref value becomes True and then start
     another state.  Then cancel that state when the Ref value becomes False.
-"""
+    """
     if body is None:
         body = Serial(name="WHILE_BODY")
         body.override_instantiation_context()
@@ -2377,7 +2168,7 @@ def While(condition, body=None, name="WHILE", blocking=True):
 
 
 class ResetClock(AutoFinalizeState):
-""" State to arbitrarily set the start time of the subsequent state.
+    """State to arbitrarily set the start time of the subsequent state.
 
     This state is used when the timing of stimuli is extremely important to the
     end user, to the extreme that they need to know the exact moment when a key
@@ -2386,24 +2177,24 @@ class ResetClock(AutoFinalizeState):
     state's start time will be the same as the time that you reset the
     clock to.
 
-
+    Parameters
+    ----------
+    new_time : Ref
+        The time you would like the next state's start time to be.
+    parent : ParentState
+        The state that this state is a child of.
+    save_log : boolean
+        If True, this state will log all of its important variables out to
+        a .slog file.
+    name : string
+        The unique name given to this state.
+    blocking : boolean
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
     """
     def __init__(self, new_time=None, parent=None, save_log=True, name=None,
                  blocking=True):
-    """ Parameters
-        ----------
-        new_time : Ref
-            The time you would like the next state's start time to be.
-        parent : ParentState
-            The state that this state is a child of.
-        save_log : boolean
-            If True, this state will log all of its important variables out to
-            a .slog file.
-        name : string
-            The unique name given to this state.
-        blocking : boolean
-
-    """
         # init the parent class
         super(ResetClock, self).__init__(parent=parent,
                                          save_log=save_log,
@@ -2422,8 +2213,6 @@ class ResetClock(AutoFinalizeState):
 
 
 class CallbackState(AutoFinalizeState):
-""" Base state that calls a callback method starting at the states start_time.
-"""
     def __init__(self, repeat_interval=None, duration=0.0, parent=None,
                  save_log=True, name=None, blocking=True):
         super(CallbackState, self).__init__(duration=duration, parent=parent,
@@ -2449,25 +2238,44 @@ class CallbackState(AutoFinalizeState):
         self._ended = True
 
     def _callback(self):
-    """ Custom method that gets called at start time.  To be overridden by
-        subclasses.
-    """
         pass
 
     def callback(self):
-    """ Call the custom callback method.
-    """
         self.claim_exceptions()
         self._start = True
         self._callback()
 
 
 class Func(CallbackState):
-""" The way you call and run a function during experimental runtime
+    """The way you call and run a function during experimental runtime
 
     A *Func* is a state that calls a function during experimental runtime. The
     first argument is always the name of the funciton and the rest of the
     arguments are the arguments that are sent to the function.
+
+    Parameters
+    ----------
+    func : function
+        Whatever function you would like to run as experimental runtime.
+    pargs : positional arguments (argument, argument, argument)
+        This just means you can send in parameters to *func* without
+        setting the keyword.
+    kwargs : (keyword = argument, keyword2 =argument2, ...)
+        Whatever keyword arguments you need to send to *func*.
+    parent : ParentState
+        The parent state that this state is contained within.
+    duration : float
+        The duration you would like the state to last in seconds.
+    save_log : Boolean (False)
+        If set to True, will save a .slog with all of the information from
+        this state.
+    name : string, optional, default = None
+        The unique name you give this state.
+    blocking : boolean. defualt = True, optional
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
 
     Logged Attributes
     -----------------
@@ -2500,32 +2308,8 @@ class Func(CallbackState):
     *Func* state, you would be running **add_num** outside of experiment
     runtime.
 
-"""
-    def __init__(self, func, *pargs, **kwargs):
-    """ Parameters
-        ----------
-        func : function
-            Whatever function you would like to run as experimental runtime.
-        pargs : positional arguments (argument, argument, argument)
-            This just means you can send in parameters to *func* without
-            setting the keyword.
-        kwargs : (keyword = argument, keyword2 =argument2, ...)
-            Whatever keyword arguments you need to send to *func*.
-        parent : ParentState
-            The parent state that this state is contained within.
-        duration : float
-            The duration you would like the state to last in seconds.
-        save_log : Boolean (False)
-            If set to True, will save a .slog with all of the information from
-            this state.
-        name : string, optional, default = None
-            The unique name you give this state.
-        blocking : boolean. defualt = True, optional
-            If True, this state will prevent a *Parallel* state from ending. If
-            False, this state will be canceled if its *ParallelParent* finishes
-            running. Only relevent if within a *ParallelParent*.
-
     """
+    def __init__(self, func, *pargs, **kwargs):
         # init the parent class
         super(Func, self).__init__(
             parent=kwargs.pop("parent", None),
@@ -2548,10 +2332,23 @@ class Func(CallbackState):
 
 
 class Debug(CallbackState):
-""" Used to send debug messages to the console during experimental runtime.
+    """Used to send debug messages to the console during experimental runtime.
 
     A *Debug* state will print out the variables and the value of those
     variables during experiment runtime to the command prompt.
+
+    Parameters
+    ----------
+    parent : ParentState
+        The parent state that this state is contained within
+    save_log : Boolean (False)
+        If set to True, will save a .slog with all of the information
+        from this state.
+    name : string
+        The unique name you give this state.
+    kwargs : (keyword = argument)
+        *Debug* will print out the value of all of the arguments at the
+        time it is called during experiment runtime, aswell as a timestamp.
 
     Example
     -------
@@ -2564,20 +2361,6 @@ class Debug(CallbackState):
 
     """
     def __init__(self, parent=None, save_log=False, name=None, **kwargs):
-    """ Parameters
-        ----------
-        parent : ParentState
-            The parent state that this state is contained within
-        save_log : Boolean (False)
-            If set to True, will save a .slog with all of the information
-            from this state.
-        name : string
-            The unique name you give this state.
-        kwargs : (keyword = argument)
-            *Debug* will print out the value of all of the arguments at the
-            time it is called during experiment runtime, aswell as a timestamp.
-
-    """
         # init the parent class
         super(Debug, self).__init__(parent=parent,
                                     save_log=save_log,
@@ -2600,8 +2383,8 @@ class Debug(CallbackState):
 
 
 class PrintTraceback(CallbackState):
-""" State that prints a SMILE traceback on the console.
-"""
+    """State that prints a SMILE traceback on the console.
+    """
     def __init__(self, parent=None, save_log=False, name=None):
         # init the parent class
         super(PrintTraceback, self).__init__(parent=parent,

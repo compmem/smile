@@ -35,16 +35,16 @@ def pass_thru(obj):
     return obj
 
 class Ref(object):
-    """ Delayed function call. The basis of the SMILE state machine. This is the 
-        object that makes the magic happen. It allows us to delay the evaluation of a
-        variable until experimental runtime.  We needed to have the ability to test 
-        variables that haven't been set yet, for states like *If* and *Loop*, so we 
-        developed the Ref. If you try and evaluate a Ref before it is available, 
-        Smile will throw a **NotAvailableError**.  
+    """Delayed function call. The basis of the SMILE state machine. This is the
+    object that makes the magic happen. It allows us to delay the evaluation of a
+    variable until experimental runtime.  We needed to have the ability to test
+    variables that haven't been set yet, for states like *If* and *Loop*, so we
+    developed the Ref. If you try and evaluate a Ref before it is available,
+    Smile will throw a **NotAvailableError**.
 
-        Takes in a function and arguments and you can evaluate that call later. 
-        Ref supports most pythonic operations that simply return new Ref instances that 
-        evaluate recursively.
+    Takes in a function and arguments and you can evaluate that call later.
+    Ref supports most pythonic operations that simply return new Ref instances that
+    evaluate recursively.
 
     """
     def __init__(self, func, *pargs, **kwargs):
@@ -317,11 +317,11 @@ if __name__ == '__main__':
     y[0] = 8
     print y[0], val(ry[0] % 2), val(2 % ry[0])
 
-    class Jubba(object):     
+    class Jubba(object):
         def __init__(self, val):
             self.x = val
-            
-        def __getitem__(self, index):  
+
+        def __getitem__(self, index):
             return Ref.getattr(self, index)
 
     a = Jubba(5)
@@ -330,7 +330,7 @@ if __name__ == '__main__':
     print val(b), val(br)
     a.x += 42.0
     print val(b), val(br)
-    
+
     c = {'y': 6}
     d = Ref.getitem(c, 'y')
 
