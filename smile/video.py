@@ -445,7 +445,7 @@ class WidgetState(VisualState):
         return type(name, (cls,), {"__init__" : __init__})
 
     def __init__(self, widget_class, duration=None, parent=None, save_log=True,
-                 name=None, blocking=True, index=0, layout=None, **params)
+                 name=None, blocking=True, index=0, layout=None, **params):
         super(WidgetState, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,

@@ -1736,12 +1736,11 @@ class Record(State):
     """
     def __init__(self, duration=None, parent=None, name=None, blocking=True,
                  **kwargs):
-                 super(Record, self).__init__(parent=parent,
+        super(Record, self).__init__(parent=parent,
                                      duration=duration,
                                      save_log=False,
                                      name=name,
                                      blocking=blocking)
-
         self.__refs = kwargs
 
     def begin_log(self):
