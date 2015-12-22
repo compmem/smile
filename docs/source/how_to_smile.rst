@@ -321,7 +321,11 @@ screen that waits for a keypress to continue.
 
 ::
 
-
+    exp = Experiment()
+    Label(text="THESE ARE YOUR INSTRUCTIONS, PRESS ENTER")
+    with UntilDone():
+        KeyPress()
+    exp.run()
 
 Wait State
 ==========
@@ -348,7 +352,7 @@ long that would be, so we have the second *Wait* wait until lb1 has an
     with Parallel():
         with Serial():
             Wait(duration=3, jitter=2)
-            lb1 = Label(text="Im on the screen now", duration=2)
+            lb16 = Label(text="Im on the screen now", duration=2)
         with Serial():
             Wait(until=lb1.appear_time['time']!=None)
             lb2 = Label(text="Me Too!", duration=2,
@@ -357,9 +361,121 @@ long that would be, so we have the second *Wait* wait until lb1 has an
 
 If, ElIf, and Else States
 =========================
+These 3 states are how SMILE handles branching in your experiment. An *If*
+state is all you need to create a conditional branch, but through the use of
+the *Elif* and the *Else* state, you can create a much more complex experiment
+than if you didn't have to use of conditional states.
+
+The *If* is a parent state that runs all of its children in  serial **if** the
+conditional is evaluated as true during **ER**. Behind the scenes, the *If*
+state creates a linked list of conditionals and *Serial* states. Initially,
+this linked list is populated only by the conditional passed into the *If* and
+its children, and a True conditional linked with an empty *Serial* state.
+During **ER**, the experiment will loop through each of the conditionals till
+one of them evaluates to True and then will run the associated *Serial* state.
+
+If the next state after the *If* state is the *Elif* state, then whatever
+conditional is in the *Elif* will be added into the stack of conditionals
+within the *If* state. The children of the *Elif* will also be added to the
+appropriate stack. You can do as many *Elif*'s after the *If* state as you need
+to. The last state can be an *Else* state. When you define the children of the
+*Else* state, that *Serial* gets sent into the stack of conditionals and
+replaces the True's empty *Serial*.
+
+The following is a 4 option if test.
+
+::
+
+    exp = Experiment()
+    Label(text='PRESS A KEY')
+    with UntilDone():
+        kp = KeyPress()
+    with If(kp.pressed == "SPACE"):
+        Label(text="YOU PRESSED SPACE", duration=3)
+    with Elif(kp.pressed == "J"):
+        Label(text="YOU PRESSED THE K KEY", duration=3)
+    with Elif(kp.pressed == "F"):
+        Label(text="YOU PRESSED THE J KEY", duration=3)
+    with Else():
+        Label(text="I DONT KNOW WHAT YOU PRESSED", duration=3)
+    exp.run()
+
 
 Loop State
 ==========
+A *Loop* state can handle any kind of looping that you need. The main thing we
+use a *Loop* state is to loop over a list of ditionaries that contains your
+stimulus. You are also able to create while loops by passing in a *conditional*
+parameter. Lastly, instead of looping over a list of dictionaries, you can
+loop an exact number of times by passing in a number as a parameter.
+
+When creating a *Loop* state, you must define a variable to access all of the
+information about that loop. You do this by utilizing the pythonic *as*
+keyword. *with Loop(list_of_dic) as trial:* is the line that defines your loop.
+If during your loop you need to access the current iteration of a loop, you
+would try to access *trial.current*. Refer to the *smile.state.Loop* docstring
+for information on how to access the different properties of a *Loop*.
+
+Below I will show examples of all 3 Loops
+
+List of Dictionaries
+
+::
+
+    #List Gen
+    list_of_dic = [{'stim':"STIM 1", 'dur':3},
+                   {'stim':"STIM 2", 'dur':2},
+                   {'stim':"STIM 3", 'dur':5},
+                   {'stim':"STIM 4", 'dur':1}]
+    #Experiment
+    exp = Experiment()
+    with Loop(list_of_dic) as trial:
+        Label(text=trial.current['stim'], duration=trial.current['dur'])
+    exp.run()
+
+
+Loop a number of Times
+
+::
+
+    exp = Experiment()
+    with Loop(10):
+        Label(text='this will show up 10 times!', duration=1)
+        Wait(1)
+    exp.run()
+
+Loop while something is True
+
+::
+
+    exp = Experiment()
+    exp.test = 0
+    with Loop(conditional = (exp.test < 10)):
+        Label(text='this will show up 10 times!', duration=1)
+        Wait(1)
+        exp.test = exp.test + 1
+    exp.run()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
