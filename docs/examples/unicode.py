@@ -16,22 +16,13 @@ exp = Experiment()
 # initial wait
 Wait(1.0)
 
-# Wait for a bunch of different times
-times = [.001,.002,.005,.010,.020,.050] #,.1,.2,.5,1,2,5.]
-times_copy = times[:]
-times_copy.reverse()
-times.extend(times_copy)
-
-with Loop(times) as time:
-    w = Wait(time.current)
-    db = Debug(cur_time=time.current)
-    ResetClock(db.leave_time)
-    #Log(call_error=w['last_call_error'],
-    #    time=time.current,
-    #    start=w['start_time'],
-    #    call_time=w['last_call_time'])
+# Show a label
+Label(text=unichr(10025) + u" Unicode " + u"\u2729",
+      font_size=64, font_name='Arial Unicode')
+with UntilDone():
+    KeyPress()
+    
 Wait(1.0)
 
 if __name__ == '__main__':
-    import cProfile
-    cProfile.run('exp.run()','waitstats')
+    exp.run()

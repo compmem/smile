@@ -10,36 +10,27 @@
 # load all the states
 from smile import *
 
-# make some ordered groupings
-from pyglet.graphics import OrderedGroup
-
-background = OrderedGroup(0)
-foreground = OrderedGroup(1)
-
 # create an experiment
-exp = Experiment(screen_ind=0, pyglet_vsync=False)
+exp = Experiment()
 
 Wait(1.0)
 
 # create stims
 with Parallel():
-    stimF = Text("F", x=(exp['window'].width//2)-50, font_size=32, 
-                 color=(255,255,0,255), group=foreground)
-    stimB = Text("B", x=(exp['window'].width//2)+50, font_size=32, 
-                 color=(0,255,255,255), group=background)
+    stimB = Label(text="B", x=exp.screen.center_x + 25,
+                  font_size=64,
+                  color='blue')
+    stimF = Label(text="F", x=exp.screen.center_x - 25,
+                  font_size=64,
+                  color='orange')
+with UntilDone():
+
+    Wait(1.0)
+    with Parallel():
+        stimB.slide(x=exp.screen.center_x - 25, duration=3.0)
+        stimF.slide(x=exp.screen.center_x + 25, duration=3.0)
 
 Wait(1.0)
-
-# move them
-with Loop(range(100)):
-    with Parallel():
-        # move the stims across the screen
-        upstate = Update(stimF, "x", stimF['shown'].x+1)
-        Update(stimB, "x", stimB['shown'].x-1)
-    ResetClock(upstate['last_flip']['time'])
-    Wait(.05)
-    
-Wait(1.0, stay_active=True)
 
 if __name__ == '__main__':
     exp.run()

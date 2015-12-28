@@ -17,21 +17,21 @@ exp = Experiment()
 Wait(1.0)
 
 # Wait for a bunch of different times
-times = [.001,.002,.005,.010,.020,.050] #,.1,.2,.5,1,2,5.]
-times_copy = times[:]
-times_copy.reverse()
-times.extend(times_copy)
-
-with Loop(times) as time:
-    w = Wait(time.current)
-    db = Debug(cur_time=time.current)
-    ResetClock(db.leave_time)
-    #Log(call_error=w['last_call_error'],
-    #    time=time.current,
-    #    start=w['start_time'],
-    #    call_time=w['last_call_time'])
+trials = [{'val':str(i), 'val2':str(i+1)} for i in range(5)]
+with Loop(trials) as trial:
+    s = Label(text=trial.current['val'], duration=.5)
+    l = Log(trial.current,
+            appear_time=s.appear_time)
 Wait(1.0)
 
 if __name__ == '__main__':
-    import cProfile
-    cProfile.run('exp.run()','waitstats')
+    exp.run()
+
+    #print l.log_filename
+    #print s.log_filename
+    #from smile.log import LogReader
+    
+    #lr = LogReader(l.log_filename)
+    #print lr.field_names
+    #print 
+    

@@ -7,271 +7,333 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-import inspect
 import random
+import operator
+
+class NotAvailable(object):
+    """Special value for indicating a variable is not available yet.
+
+    We raise an error whenever you try to log or evaluate a
+    NotAvailable value. It is the responsibility of each state to set
+    every variable to some available value at or before finalize.
+
+    """
+    def __repr__(self):
+        return "NotAvailable"
+
+    def __nonzero__(self):
+        return False
+
+# make a single instance used everywhere
+NotAvailable = NotAvailable()
+
+class NotAvailableError(ValueError):
+    pass
+
+def pass_thru(obj):
+    """Returns its only argument. Needed to delay the evaluation of a variable."""
+    return obj
 
 class Ref(object):
+    """Delayed function call. The basis of the SMILE state machine. This is the 
+    object that makes the magic happen. It allows us to delay the evaluation of a
+    variable until experimental runtime.  We needed to have the ability to test 
+    variables that haven't been set yet, for states like *If* and *Loop*, so we 
+    developed the Ref. If you try and evaluate a Ref before it is available, 
+    Smile will throw a **NotAvailableError**.  
+
+    Takes in a function and arguments and you can evaluate that call later. Ref supports most pythonic operations that simply return new Ref instances that evaluate recursively.
+
     """
-    Reference to an object to delay evaluation.
+    def __init__(self, func, *pargs, **kwargs):
+        # store the arguments
+        self.func = func
+        self.pargs = pargs
+        self.use_cache = kwargs.pop("use_cache", True)
+        self.kwargs = kwargs
 
-    Most logical, mathematical, and indexing operations are implemented 
-    for Ref objects allowing for delayed operations. It is 
-    also possible to wrap functions for subsequent evaluation.
+        # initialize cached values
+        self.cache_value = None
+        self.cache_valid = False
 
-    Parameters
-    ----------
-    obj : object
-        Object to be referenced.
-    attr : string
-        Attribute of the object to be referenced.
-    gfunc : function
-        Function to be called at evaluation.
-    gfunc_args : list
-        List of arguments evaluated and passed to the gfunc.
-    gfunc_kwargs : dict
-        Dictionary of keyword arguments evaluated and passed to gfunc.
+        # init callbacks for changes
+        # ***Must be a set to support proper boolean comparisons***
+        self.change_callbacks = set()
 
-    Example
-    -------
-    d = {'x':10, 'y':20}
-    x = Ref(d,'x')
-    y = Ref(d,'y')
-    print val(x+y) # should be 30
-    z = x + y
-    print val(z) # should be 30
-    d['x'] += 10
-    print val(z) # should be 40
-    str_sum = Ref(str)(x+y)
-    ss = val(str_sum) # should be '40'
-    print type(ss),ss
-    
-    """
-    def __init__(self, obj=None, attr=None, 
-                 gfunc=None, gfunc_args=None, gfunc_kwargs=None, jitter=None):
-        self.gfunc = gfunc
-        self.gfunc_args = gfunc_args
-        self.gfunc_kwargs = gfunc_kwargs
-        self.obj = obj
-        self.attr = attr
-        self.jitter = jitter
-        # if self.gfunc is None:
-        #     # try and define it based on the obj and attr
-        #     if not obj is None and not attr is None:
-        #         if isinstance(attr,str) and hasattr(obj, attr):
-        #             # treat as attr
-        #             self.gfunc = lambda : getattr(obj, attr)
-        #         else:
-        #             # access with getitem
-        #             self.gfunc = lambda : obj[attr]
+        # recursively find Refs this Ref depends on
+        for dep in iter_deps((pargs, kwargs)):
+            # see if dep doesn't use cache
+            if not dep.use_cache:
+                # override our cache state
+                self.use_cache = False
+                break
 
-    def set(self, value):
-        if not self.obj is None and not self.attr is None:
-            if isinstance(self.attr,str) and hasattr(self.obj, self.attr):
-                # treat as attr
-                setattr(self.obj, self.attr, value)
-            else:
-                # access with getitem
-                self.obj[self.attr] = value
-        else:
-            raise ValueError('You can only set a reference with a known obj and attr')
-                
-    def __call__(self, *args, **kwargs):
-        if self.gfunc:
-            gfunc = self.gfunc
-        elif inspect.isfunction(self.obj) or \
-             inspect.isbuiltin(self.obj) or \
-             hasattr(self.obj, '__call__'):
-            gfunc = self.obj
-        else:
-            raise ValueError('You must specify a function as the obj or gfunc.')
-        return Ref(gfunc=gfunc, gfunc_args=args, gfunc_kwargs=kwargs)
+    def __repr__(self):
+        return "Ref(%s)" % ", ".join([repr(self.func)] +
+                                     map(repr, self.pargs) +
+                                     ["%s=%r" % (name, value) for
+                                      name, value in
+                                      self.kwargs.iteritems()])
+
+    @staticmethod
+    def getattr(obj, name):
+        return Ref(getattr, obj, name)
+
+    @staticmethod
+    def getitem(obj, index):
+        return Ref(operator.getitem, obj, index)
+
+    @staticmethod
+    def object(obj):
+        return Ref(pass_thru, obj, use_cache=False)
+
+    @staticmethod
+    def cond(cond, true_val, false_val):
+        return Ref(lambda cnd, tv, fv: (tv if cnd else fv),
+                   cond, true_val, false_val)
+
+    @staticmethod
+    def not_(obj):
+        return Ref(operator.not_, obj)
 
     def eval(self):
-        if self.gfunc:
-            # eval the args to the func if necessary
-            if self.gfunc_args is None:
-                args = []
-            else:
-                args = val(self.gfunc_args)
+        """Recursively evaluate the reference.
 
-            if self.gfunc_kwargs is None:
-                kwargs = {}
-            else:
-                kwargs = val(self.gfunc_kwargs)
-            
-            # eval the function
-            ret = self.gfunc(*args, **kwargs)
-        else:
-            # try and define it based on the obj and attr
-            if not self.obj is None:
-                # get the values of the obj and attr
-                obj = val(self.obj)
-            else:
-                raise ValueError("Ref must either have obj or gfunc defined.")
-            if not self.attr is None:
-                attr = val(self.attr)
-                if isinstance(attr,str) and hasattr(obj, attr):
-                    # treat as attr
-                    ret = getattr(obj, attr)
-                else:
-                    # access with getitem
-                    ret = obj[attr]
-            else:
-                ret = obj
-        if self.jitter is None:
-            return ret
-        elif isinstance(ret, float):
-            return random.uniform(ret, ret + val(self.jitter))
-        else:
-            raise ValueError("Ref with jitter must evaluate to a float.")
-        
+        .. note::
+          Internal use only!!!"""
+        # only return a cached value if it's valid
+        # and we do have change callbacks
+        if self.cache_valid and len(self.change_callbacks):
+            return self.cache_value
+
+        # evaluate all possible Refs
+        value = val(val(self.func)(*val(self.pargs), **val(self.kwargs)))
+
+        # save the cache if wanted
+        if self.use_cache:
+            self.cache_value = value
+            self.cache_valid = True
+
+        return value
+
+    def add_change_callback(self, func, *pargs, **kwargs):
+        """Add callback that's called when this value changes.
+        """
+        #print "add_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
+        # if this is the first callback
+        if not len(self.change_callbacks):
+            # set up dependency callbacks
+            self.setup_dep_callbacks()
+            self.cache_valid = False
+        # the tuple is needed because this is a set
+        self.change_callbacks.add((func, pargs, tuple(kwargs.iteritems())))
+
+    def remove_change_callback(self, func, *pargs, **kwargs):
+        #print "remove_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
+        self.change_callbacks.discard((func, pargs, tuple(kwargs.iteritems())))
+        # clean up if there are no more callbacks
+        if not len(self.change_callbacks):
+            self.teardown_dep_callbacks()
+
+    def setup_dep_callbacks(self):
+        for dep in iter_deps((self.func, self.pargs, self.kwargs)):
+            dep.add_change_callback(self.dep_changed)
+
+    def teardown_dep_callbacks(self):
+        # explicitly remove all change callbacks
+        for dep in iter_deps((self.func, self.pargs, self.kwargs)):
+            dep.remove_change_callback(self.dep_changed)
+
+    def dep_changed(self):
+        #print "dep_changed %r, %r" % (self, self.change_callbacks)
+        # cache is not valid
+        self.cache_valid = False
+        # iter through each change callback and call them
+        for func, pargs, kwargs in list(self.change_callbacks):
+            func(*pargs, **dict(kwargs))
+
+    # delayed operators...
+    def __call__(self, *pargs, **kwargs):
+        return Ref(apply, self, pargs, kwargs)
     def __getitem__(self, index):
-        return Ref(gfunc=lambda : val(self)[val(index)])
-
-    #def __getattribute__(self, attr):
+        return Ref(operator.getitem, self, index)
     def __getattr__(self, attr):
-        #return Ref(gfunc=lambda : getattr(val(self),val(attr)))
-        return Ref(gfunc=lambda : object.__getattribute__(val(self), val(attr)))
-        
-    def __lt__(self, o):
-        return Ref(gfunc=lambda : val(self)<val(o))
-    def __le__(self, o):
-        return Ref(gfunc=lambda : val(self)<=val(o))
-    def __gt__(self, o):
-        return Ref(gfunc=lambda : val(self)>val(o))
-    def __ge__(self, o):
-        return Ref(gfunc=lambda : val(self)>=val(o))
-    def __eq__(self, o):
-        return Ref(gfunc=lambda : val(self)==val(o))
-    def __ne__(self, o):
-        return Ref(gfunc=lambda : val(self)<>val(o))
-    def __and__(self, o):
-        return Ref(gfunc=lambda : val(self)&val(o))
-    def __rand__(self, o):
-        return Ref(gfunc=lambda : val(o)&val(self))
-    def __or__(self, o):
-        return Ref(gfunc=lambda : val(self)|val(o))
-    def __ror__(self, o):
-        return Ref(gfunc=lambda : val(o)|val(self))
-    def __xor__(self, o):
-        return Ref(gfunc=lambda : val(self)^val(o))
-    def __rxor__(self, o):
-        return Ref(gfunc=lambda : val(o)^val(self))
-    def __add__(self, o):
-        return Ref(gfunc=lambda : val(self)+val(o))
-    def __radd__(self, o):
-        return Ref(gfunc=lambda : val(o)+val(self))
-    def __sub__(self, o):
-        return Ref(gfunc=lambda : val(self)-val(o))
-    def __rsub__(self, o):
-        return Ref(gfunc=lambda : val(o)-val(self))
-    def __pow__(self, o):
-        return Ref(gfunc=lambda : val(self)**val(o))
-    def __rpow__(self, o):
-        return Ref(gfunc=lambda : val(o)**val(self))
-    def __mul__(self, o):
-        return Ref(gfunc=lambda : val(self)*val(o))
-    def __rmul__(self, o):
-        return Ref(gfunc=lambda : val(o)*val(self))
-    def __div__(self, o):
-        return Ref(gfunc=lambda : val(self)/val(o))
-    def __floordiv__(self, o):
-        return Ref(gfunc=lambda : val(self)//val(o))
-    def __rdiv__(self, o):
-        return Ref(gfunc=lambda : val(o)/val(self))
-    def __rfloordiv__(self, o):
-        return Ref(gfunc=lambda : val(o)//val(self))
-    def __mod__(self, o):
-        return Ref(gfunc=lambda : val(self)%val(o))
-    def __rmod__(self, o):
-        return Ref(gfunc=lambda : val(o)%val(self))
+        return Ref(getattr, self, attr)
+    def __lt__(self, other):
+        return Ref(operator.lt, self, other)
+    def __le__(self, other):
+        return Ref(operator.le, self, other)
+    def __gt__(self, other):
+        return Ref(operator.gt, self, other)
+    def __ge__(self, other):
+        return Ref(operator.ge, self, other)
+    def __eq__(self, other):
+        return Ref(operator.eq, self, other)
+    def __ne__(self, other):
+        return Ref(operator.ne, self, other)
+    def __and__(self, other):
+        return Ref(operator.and_, self, other)
+    def __rand__(self, other):
+        return Ref(operator.and_, other, self)
+    def __or__(self, other):
+        return Ref(operator.or_, self, other)
+    def __ror__(self, other):
+        return Ref(operator.or_, other, self)
+    def __xor__(self, other):
+        return Ref(operator.xor, self. other)
+    def __rxor__(self, other):
+        return Ref(operator.xor, other, self)
+    def __invert__(self):
+        return Ref(operator.invert, self)
+    def __add__(self, other):
+        return Ref(operator.add, self, other)
+    def __radd__(self, other):
+        return Ref(operator.add, other, self)
+    def __sub__(self, other):
+        return Ref(operator.sub, self, other)
+    def __rsub__(self, other):
+        return Ref(operator.sub, other, self)
+    def __pow__(self, other, modulo=None):
+        return Ref(pow, self, other, modulo)
+    def __rpow__(self, other):
+        return Ref(operator.pow, other, self)
+    def __mul__(self, other):
+        return Ref(operator.mul, self, other)
+    def __rmul__(self, other):
+        return Ref(operator.mul, other, self)
+    def __div__(self, other):
+        #NOTE: using lambda to be sensitive to __future__.division
+        return Ref(lambda a, b: a / b, self, other)
+    def __rdiv__(self, other):
+        #NOTE: using lambda to be sensitive to __future__.division
+        return Ref(lambda a, b: a / b, other, self)
+    def __floordiv__(self, other):
+        return Ref(operator.floordiv, self, other)
+    def __rfloordiv__(self, other):
+        return Ref(operator.floordiv, other, self)
+    def __mod__(self, other):
+        return Ref(operator.mod, self, other)
+    def __rmod__(self, other):
+        return Ref(operator.mod, other, self)
+    def __divmod__(self, other):
+        return Ref(divmod, self,other)
+    def __rdivmod__(self, other):
+        return Ref(divmod, other, self)
     def __pos__(self):
-        return self
+        return Ref(operator.pos, self)
     def __neg__(self):
-        return Ref(gfunc=lambda : -val(self))
-    def append(self,o):
-        return Ref(gfunc=lambda : val(self)+[val(o)])
+        return Ref(operator.neg, self)
     def __contains__(self, key):
-        return Ref(gfunc=lambda : key in val(self))
-        
-def val(x, recurse=True):
-    """
-    Evaluate a Ref object.
+        return Ref(operator.contains, self, key)
+    def __lshift(self, other):
+        return Ref(operator.lshift, self, other)
+    def __rlshift(self, other):
+        return Ref(operator.lshift, other, self)
+    def __rshift(self, other):
+        return Ref(operator.rshift, self, other)
+    def __rrshift(self, other):
+        return Ref(operator.rshift, other, self)
+    def __abs__(self):
+        return Ref(abs, self)
 
-    Call this when you need to evaluate a reference to get the current value.
 
-    This method will (optionally) recursively evaluate lists and dictionaries 
-    to ensure all Refs are evaluated. It is safe to call this on non-Ref objects,
-    and it will simply return what is passed in.
-    
-    Parameters
-    ----------
-    x : {Ref object, list, dict}
-        Ref object to evaluate.
-    recurse : Boolean
-        Whether to recurse lists and dicts.
-    
-    """
-    # possibly put this in a for loop if we run into infinite recursion issues
-    while isinstance(x,Ref): #or inspect.isfunction(x) or inspect.isbuiltin(x):
-        x = x.eval()
-    if recurse:
-        if isinstance(x,list):
-            # make sure we get value of all the items
-            x = [val(x[i]) for i in xrange(len(x))]
-        elif isinstance(x,tuple):
-            # make sure we get value of all the items
-            x = tuple([val(x[i]) for i in xrange(len(x))])
-        elif isinstance(x,dict):
-            x = {k:val(x[k]) for k in x}        
-    return x
+def jitter(lower, jitter_mag):
+    return Ref(random.uniform, lower, lower + jitter_mag, use_cache=False)
+
+def _shuffle(iterable):
+    lst = list(iterable)
+    random.shuffle(lst)
+    return lst
+def shuffle(iterable):
+    return Ref(_shuffle, iterable, use_cache=False)
+
+def val(obj):
+    try:
+        # handle all types of Refs
+        if isinstance(obj, Ref):
+            return obj.eval()
+        elif isinstance(obj, list):
+            return [val(value) for value in obj]
+        elif isinstance(obj, tuple):
+            return tuple(val(value) for value in obj)
+        elif isinstance(obj, dict):
+            return {val(key) : val(value) for key, value in obj.iteritems()}
+        elif isinstance(obj, slice):
+            return slice(val(obj.start), val(obj.stop), val(obj.step))
+        elif obj is NotAvailable:
+            raise NotAvailableError("'val' produced NotAvailable result.")
+        else:
+            return obj
+    except NotAvailableError:
+        raise NotAvailableError("val(%r) produced NotAvailable result" % obj)
+
+def iter_deps(obj):
+    """Generator to find all Ref dependencies of an object."""
+    if isinstance(obj, Ref):
+        yield obj
+    elif isinstance(obj, list) or isinstance(obj, tuple):
+        for value in obj:
+            for dep in iter_deps(value):
+                yield dep
+    elif isinstance(obj, dict):
+        for key, value in obj.iteritems():
+            for dep in iter_deps(key):
+                yield dep
+            for dep in iter_deps(value):
+                yield dep
+    elif isinstance(obj, slice):
+        for dep in iter_deps(obj.start):
+            yield dep
+        for dep in iter_deps(obj.stop):
+            yield dep
+        for dep in iter_deps(obj.step):
+            yield dep
 
 
 if __name__ == '__main__':
 
     import math
     x = [0.0]
-    r = Ref(math.cos)(Ref(x,0))
+    r = Ref(math.cos, Ref.getitem(x, 0))
     print x[0], val(r)
     x[0] += .5
     print x[0], val(r)
 
-    r = Ref(str)(Ref(x)[0])
+    r = Ref.object(str)(Ref.object(x)[0])
     x[0] += .75
     print x[0], val(r)
 
-    r = Ref((Ref(x)[0]>0)&(Ref(x)[0]<0))
-    print x[0],val(r)
-    r = Ref((Ref(x)[0]>0)&(Ref(x)[0]>=0))
+    r = (Ref.object(x)[0] > 0) & (Ref.object(x)[0] < 0)
+    print x[0], val(r)
+    r = (Ref.object(x)[0] > 0) & (Ref.object(x)[0] >= 0)
     x[0] -= 10.0
-    print x[0],val(r)
+    print x[0], val(r)
 
     y = [7]
-    ry = Ref(y)
-    print y[0],val(ry[0]%2), val(2%ry[0])
+    ry = Ref.object(y)
+    print y[0], val(ry[0] % 2), val(2 % ry[0])
     y[0] = 8
-    print y[0],val(ry[0]%2), val(2%ry[0])
+    print y[0], val(ry[0] % 2), val(2 % ry[0])
 
     class Jubba(object):     
         def __init__(self, val):
             self.x = val
             
         def __getitem__(self, index):  
-            return Ref(self, index)
-            #return Ref(lambda : getattr(self,index))
+            return Ref.getattr(self, index)
 
     a = Jubba(5)
-    b = Ref(a,'x')
-    br = Ref(a).x
+    b = Ref.getattr(a, 'x')
+    br = Ref.object(a).x
     print val(b), val(br)
-    a.x += 42.
+    a.x += 42.0
     print val(b), val(br)
     
-    c = {'y':6}
-    d = Ref(c,'y')
+    c = {'y': 6}
+    d = Ref.getitem(c, 'y')
 
     e = [4, 3, 2]
-    f = Ref(e,2)
+    f = Ref.getitem(e, 2)
 
     g = b+d+f
     print val(g)
@@ -286,7 +348,7 @@ if __name__ == '__main__':
     print val(g)
 
     x = Jubba([])
-    y = Ref(x,'x')
+    y = Ref.getitem(x, 'x')
     print val(y)
     y = y + [b]
     print val(y)

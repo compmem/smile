@@ -8,16 +8,10 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import os
+import time
 
-from state import State, Wait, Serial
-from state import schedule_delayed_interval, schedule_delayed
-from ref import Ref, val
-
-# get the last instance of the experiment class
-from experiment import Experiment, now, event_time
-
-from pyglet import clock
-import pyglet
+from state import Wait
+from clock import clock
 
 # add in system site-packages if necessary
 try:
@@ -28,6 +22,9 @@ except ImportError:
         os_sp_dir = '/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages'
     elif sys.platform.startswith('win'):
         os_sp_dir = 'C:\Python27\Lib\site-packages'
+    else:
+        raise ImportError("Could not import pyo and no special pyo path for "
+                          "this platform (%s)." % sys.platform)
     if not os_sp_dir in sys.path:
         sys.path.append(os_sp_dir)
         import pyo
@@ -44,8 +41,10 @@ _pyo_server = None
 # _pyo_server.start()
 
 
-def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1, 
-                      audio='portaudio', jackname='pyo', 
+#TODO: compensate for buffer lag where possible?
+
+def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
+                      audio='portaudio', jackname='pyo',
                       input_device=None, output_device=None):
     # grab the global server
     global _pyo_server
@@ -75,234 +74,403 @@ def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
 
     return _pyo_server
 
+def default_init_audio_server():
+    if _pyo_server is None:
+        # try and init it with defaults
+        # print some warning
+        init_audio_server()
 
-class Beep(State):
-    """
-    State that can play a beep.
-    
+
+class Beep(Wait):
+    """Produces a *Beep* noise during experimental runtime.
+
+    A *Beep* state is just like a *Wait* state, in that it pauses the execusion
+    of the experiment, but it also plays a beep sound. You can edit the beep
+    however you like by passing in different parameters.
+
     Parameters
     ----------
-    duration : {1.0, float}
-        Duration of the state.
-    freq: {400, int}
-    	Frequency of the beep in Hz 
-    fadein: {.05, float}
-    	Fade-in time of the beep
-    fadeout: {.05, float}
-    	Fade-out time of the beep
-    volume: {.5, float}
-    	Volume of the beep
-    parent: object
-    	The parent state
-        save_log: bool
-    If set to 'True,' details about the Beep state will be automatically saved 
-        in the log files.
-    
-    Example
-    -------
-    Beep(duration = 2.0, freq = 500, fadein = 0.1, fadeout = 0.2, volume = .5)
-    The state will play a beep at 500 Hz at 50% volume with 0.1 seconds fade-in, 
-    2.0 second duration, and 0.2 second fade-out
-    
-    """
-    def __init__(self, duration=1.0, freq=400, 
-                 fadein=.05, fadeout=.05, volume=.5,
-                 parent=None, 
-                 save_log=True):
-        # init the parent class
-        super(Beep, self).__init__(interval=0, parent=parent, 
-                                   duration=val(duration), 
-                                   save_log=save_log)
+    duration : float (default = None, optional)
+        The length of the beep. If set to None, the beep will last forever.
+    freq : integer (default = 400, optional)
+        The frequency value of your beep.
+    fadein : float (default = 0.05)
+        The loudness of the beep goes from 0 to volume in fadein seconds.
+    fadeout : floast (default = 0.05)
+        The loudness of the beep goes from volume to 0 in fadeout seconds.
+    volume : float (default = 0.5)
+        Loudness of the beep. 1 is max system volume and 0 is no volume.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set, the
+        *Experiment* will make it a child of a ParentState or the Experiment
+        automatically.
+    save_log : boolean (default = True, optional)
+        If True, save out a .slog file contianing all of the information for
+        this state.
+    name : string (optional)
+        The unique name of this state
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
 
-        # save the vars
-        self.dur = duration
-        self.freq = freq
-        self.fadein = fadein
-        self.fadeout = fadeout
-        self.volume = volume
+    Logged Attributes
+    -----------------
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
+    recorded in the state-specific log. Refer to State class
+    docstring for additional logged parameters.
 
-        self.sound_start = None
-
-        # set the log attrs
-        self.log_attrs.extend(['freq', 'volume', 'fadein', 'fadeout', 'sound_start'])
-
-    def _enter(self):
-        if _pyo_server is None:
-            # try and init it with defaults
-            # print some warning
-            init_audio_server()
-
-        # process the vars
-        self.duration = val(self.dur)
-        self._fader = pyo.Fader(fadein=val(self.fadein), fadeout=val(self.fadeout), 
-                                dur=self.duration, mul=val(self.volume))
-        self._sine = pyo.Sine(freq=val(self.freq), mul=self._fader).out()
-
-    def _callback(self, dt):
-        self._fader.play()
-        self.sound_start = event_time(now())
-
-
-class RecordSoundFile(State):
-    """
-    State that records microphone input to an audio file (WAV)
-    
-    Parameters
-    ----------
-    duration: {0, float}
-        Length of time to record the audio file
-    filename: str
-        Name of the audio file to create in the log directory.  If None, a
-        unique name is automatically generated each time the state is executed.
-    parent: object
-        The parent state
+    instantiation_filename : string
+        The file in which this state is instantiated.
+    instantiation_lineno : int
+        the line number that this particular state was instantiated.
+    start_time : float
+        The time the state was started in experimental runtime.
+    end_time : float
+        The time this state ended in experimental runtime.
+    enter_time : float
+        The time this state entered and started all of it's preprocessing in
+        experimental
+        runtime.
+    leave_time : float
+        Logged time that this state left, called callbacks, and ended processes
+        in experimental runtime.
+    finalize_time : float
+        The time this state calls `finalize()`
+    sound_start_time : float
+        The approximate time that the beep started to play.
 
     Example
     -------
-    RecordSoundFile(10.0)
-        Record audio for ten seconds.
-    
-    """
-    def __init__(self, duration, filename=None, parent=None):
-        # init the parent class
-        super(RecordSoundFile, self).__init__(interval=0, parent=parent,
-                                              duration=duration)
 
-        self.filename = filename
-        self.generate_filename = filename is None
+    ::
+
+        with Parallel():
+            Beep(duration=5, freq=750, fadein=1, fadeout=0)
+            Label(text='This is high pictch', duration=5)
+
+    """
+    def __init__(self, duration=None, freq=400, fadein=0.05, fadeout=0.05,
+                 volume=0.5, parent=None, save_log=True, name=None, blocking=True):
+        super(Beep, self).__init__(parent=parent,
+                                   duration=duration,
+                                   save_log=save_log,
+                                   name=name,
+                                   blocking=blocking)
+
+        self._init_freq = freq
+        self._init_fadein = fadein
+        self._init_fadeout = fadeout
+        self._init_volume = volume
+        self._sound_start_time = None
+        self.__fader = None
+        self.__sine = None
 
         # set the log attrs
-        self.log_attrs.extend(['filename', 'duration', 'rec_start'])
+        self.log_attrs.extend(['freq', 'volume', 'fadein', 'fadeout',
+                               'sound_start_time'])
 
     def _enter(self):
-        if _pyo_server is None:
-            # try and init it with defaults
-            # print some warning
-            init_audio_server()
-        if self.generate_filename:
-            self.filename = self.exp.reserve_data_filename("rec", "wav")
-            #TODO: when state names are implemented, use state name for file title
-        self.filepath = os.path.join(self.exp.subj_dir, val(self.filename))
+        super(Beep, self)._enter()
+        default_init_audio_server()
+        self._sound_start_time = None
+        if self._start_time == self._end_time:
+            self.__fader = None
+            self.__sine = None
+        else:
+            self.__fader = pyo.Fader(fadein=self._fadein,
+                                     fadeout=self._fadeout,
+                                     mul=self._volume)
+            self.__sine = pyo.Sine(freq=self._freq, mul=self.__fader)
+            clock.schedule(self._start_sound, event_time=self._start_time)
+            if self._end_time is not None:
+                clock.schedule(self._stop_sound,
+                               event_time=self._end_time-self._fadeout)
 
-    def _callback(self, dt):
-        self._rec = pyo.Record(
-            pyo.Input(), filename=self.filepath, chnls=2, fileformat=0,
-            sampletype=1, buffering=16)
-        self.rec_start = event_time(now())
-        pyo.Clean_objects(self.duration, self._rec).start()
-        # eventually use triggers for more accurate timing
+    def _start_sound(self):
+        self.__sine.out()
+        self.__fader.play()
+        self._sound_start_time = clock.now()
+
+    def _stop_sound(self):
+        if self.__fader is not None:
+            self.__fader.stop()
+            self.__fader = None
+            self.__sine = None
+
+    def cancel(self, cancel_time):
+        super(Beep, self).cancel(cancel_time)
+        clock.unschedule(self._stop_sound)
+        clock.schedule(self._stop_sound,
+                       event_time=self._end_time-self._fadeout)
 
 
-class SoundFile(State):
-    """
-    State that can play audio files
-    
+class SoundFile(Wait):
+    """Plays a sound file during experimental runtime.
+
+    A *SoundFile* state is used to play out a sound file in different ways
+    during your experiment.  It gives you the option to loop a sound file, or
+    even start at somepoint within the file, instead of at the begining.
+
     Parameters
     ----------
-    sound_file: file object
-    	The filepath to the sound file to be played 
-    start:  {0.0, float}
-    	The start time for the audio file to be played
-    stop: {None, float}
-    	The stop time for the audio file; defaults to playing the entire file
-    volume: {.5, float}
-    	The volume at which to play the audio file
-    loop: {False, bool}
-    	Loops the audio file after it finishes
-    duration: {0, float}
-    	Length of time to play the audio file 
-    parent: object
-    The parent state
-        save_log: bool
-    If set to 'True,' details about the Beep state will be automatically saved 
-        in the log files.
-    
-    Examples
-    --------
-    SoundFile(sound_file = 'some/file/path')
-    	A sound file at the designated file path will be played at 50% volume.
-    
+    filename : string
+        The path name to the file you would like to play.  Supported formats
+        are as follows :
+    volume : float (default = 0.5, optional)
+        Volume you wish to play the sound file at, between 0 and 1.
+    start : float (default = 0.0, optional)
+        The point in the sound file in seconds at which you want to start
+        playing.
+    stop : float (default = None, optional)
+        The point in the sound file, in seconds, at which you want to stop
+        playing. Must be greater than start.
+    duration : float (default = None, optional)
+        If None, it will play the whole sound file. If less than the duration
+        of the sound file, this state will cancel at that time.  If greater
+        than the duration of the sound file and *loop* is set to True, then it
+        will loop the sound file.
+    loop : boolean (default = False, optional)
+        If True, then the soundfile will loop over the duration of the state.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set, the
+        *Experiment* will make it a child of a ParentState or the Experiment
+        automatically.
+    save_log : boolean (default = True, optional)
+        If True, save out a .slog file contianing all of the information for
+        this state.
+    name : string (optional)
+        The unique name of this state
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
+    Logged Attributes
+    -----------------
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
+    recorded in the state-specific log. Refer to State class
+    docstring for additional logged parameters.
+
+    instantiation_filename : string
+        The file in which this state is instantiated.
+    instantiation_lineno : int
+        the line number that this particular state was instantiated.
+    start_time : float
+        The time the state was started in experimental runtime.
+    end_time : float
+        The time this state ended in experimental runtime.
+    enter_time : float
+        The time this state entered and started all of it's preprocessing in
+        experimental runtime.
+    leave_time : float
+        Logged time that this state left, called callbacks, and ended processes
+        in experimental runtime.
+    finalize_time : float
+        The time this state calls `finalize()`
+    sound_start_time : float
+        The time that the sound file started playing approximately.
     """
-    def __init__(self, sound_file, start=0, stop=None, volume=.5, loop=False,
-                 duration=0, parent=None, save_log=True):
-        # init the parent class
-        super(SoundFile, self).__init__(interval=0, parent=parent, 
-                                        duration=duration, 
-                                        save_log=save_log)
-
-        # save the vars
-        self.sound_file = sound_file
-        self.start = start
-        self.stop = stop
-        self.volume = volume
-        self.duration = duration
-        self.loop = loop
-
-        self.sound_start = None
+    def __init__(self, filename, volume=0.5, start=0.0, stop=None,
+                 duration=None, loop=False, parent=None, save_log=True,
+                 name=None, blocking=True):
+        super(SoundFile, self).__init__(parent=parent,
+                                        duration=duration,
+                                        save_log=save_log,
+                                        name=name,
+                                        blocking=blocking)
+        self._init_filename = filename
+        self._init_volume = volume
+        self._init_start = start
+        self._init_stop = stop
+        self._init_loop = loop
+        self._sound_start_time = None
 
         # set the log attrs
-        self.log_attrs.extend(['sound_file', 'volume', 'start', 'stop', 
-                               'loop', 'sound_start'])
+        self.log_attrs.extend(['filename', 'volume', 'start', 'stop', 'loop',
+                               'sound_start_time'])
 
     def _enter(self):
-        if _pyo_server is None:
-            # try and init it with defaults
-            # print some warning
-            init_audio_server()
-
-        # process the vars
-        sound_file = val(self.sound_file)
-        start = val(self.start)
-        stop = val(self.stop)
+        super(SoundFile, self)._enter()
+        default_init_audio_server()
+        self._sound_start_time = None
 
         # init the sound table (two steps to get mono in both speakers)
         sndtab = pyo.SndTable(initchnls=_pyo_server.getNchnls())
-        sndtab.setSound(path=sound_file, start=start, stop=stop)
+        sndtab.setSound(path=self._filename, start=self._start,
+                        stop=self._stop)
 
-        # set the duration if not looping
-        if val(self.loop):
-            # set callback for stopping sound
-            raise NotImplemented("Looping sounds is currently not supported.")
-        else:
-            self.duration = sndtab.getDur()
+        # set the end time
+        if not self._loop:
+            self.cancel(self._start_time + sndtab.getDur())
 
         # read in sound info
-        self._snd = pyo.TableRead(sndtab, freq=sndtab.getRate(),
-                                  loop=val(self.loop), 
-                                  mul=val(self.volume))
+        self.__snd = pyo.TableRead(sndtab, freq=sndtab.getRate(),
+                                   loop=self._loop,
+                                   mul=self._volume)
+        if self.__snd is None:
+            raise RuntimeError("Could not load sound file: %r" %
+                               self._filename)
 
-    def _callback(self, dt):
-        # play the sound
-        self._snd.out()
-        self.sound_start = event_time(now())
-        # eventually use triggers for more accurate timing
+        # schedule playing the sound
+        clock.schedule(self._start_sound, event_time=self._start_time)
+
+        # schedule stopping the sound
+        if self._end_time is not None:
+                clock.schedule(self._stop_sound, event_time=self._end_time)
+
+    def _start_sound(self):
+        self.__snd.out()
+        self._sound_start_time = clock.now()
+
+    def _stop_sound(self):
+        if self.__snd is not None:
+            self.__snd.stop()
+            self.__snd = None
+
+    def cancel(self, cancel_time):
+        super(SoundFile, self).cancel(cancel_time)
+        clock.unschedule(self._stop_sound)
+        clock.schedule(self._stop_sound, event_time=self._end_time)
+
+
+class RecordSoundFile(Wait):
+    """Records sound from a mic during experimental runtime.
+
+    A *RecordSoundFile* state will record sound from a mic for a duration and
+    save it out to a filename.
+
+    Parameters
+    ----------
+    duration : float
+        The duration you would like to record. If duration is None, then it
+        will record until canceled.
+    filename : string (optional)
+        The filename you would like to save the recording (this should have no
+        extension). It will be auto-generated based on the name of the state
+        and a timestamp if not provided.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set, the
+        *Experiment* will make it a child of a ParentState or the Experiment
+        automatically.
+    save_log : boolean (default = True, optional)
+        If True, save out a .slog file contianing all of the information for
+        this state.
+    name : string (optional)
+        The unique name of this state
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevent if within a *ParallelParent*.
+
+    Logged Attributes
+    -----------------
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
+    recorded in the state-specific log. Refer to State class
+    docstring for additional logged parameters.
+
+    instantiation_filename : string
+        The file in which this state is instantiated.
+    instantiation_lineno : int
+        the line number that this particular state was instantiated
+    name : string
+        The unique name given to this state
+    start_time : float
+        The time the state was started in experimental runtime
+    end_time : float
+        The time this state ended in experimental runtime
+    enter_time : float
+        The time this state entered and started all of it's preprocessing in
+        experimental runtime.
+    leave_time : float
+        Logged time that this state left, called callbacks, and ended processes
+        in experimental runtime.
+    finalize_time : float
+        The time this state calls `finalize()`
+    rec_start : float
+        The time at which the recording started.
+    """
+    def __init__(self, duration=None, filename=None, parent=None,
+                 save_log=True, name=None, blocking=True):
+        # init the parent class
+        super(RecordSoundFile, self).__init__(parent=parent,
+                                              duration=duration,
+                                              save_log=save_log,
+                                              name=name,
+                                              blocking=blocking)
+
+        self._init_filename = filename
+        self._rec_start = None
+        self.__rec = None
+
+        # set the log attrs
+        self.log_attrs.extend(['filename', 'rec_start'])
+
+    def _enter(self):
+        super(RecordSoundFile, self)._enter()
+        default_init_audio_server()
+        if self._filename is None:
+            self._filename = self._exp.reserve_data_filename(
+                "audio_%s" % self._name, "wav", use_timestamp=True)
+        else:
+            self._filename = self._exp.reserve_data_filename(
+                self._filename, "wav", use_timestamp=False)
+        clock.schedule(self._start_recording, event_time=self._start_time)
+        if self._end_time is not None:
+            clock.schedule(self._stop_recording, event_time=self._end_time)
+
+    def _start_recording(self):
+        self.__rec = pyo.Record(
+            pyo.Input(), filename=self._filename, chnls=2, fileformat=0,
+            sampletype=1, buffering=16)
+        self._rec_start = clock.now()
+
+    def _stop_recording(self):
+        if self.__rec is not None:
+            self.__rec.stop()
+            self.__rec = None
+
+    def cancel(self, cancel_time):
+        super(RecordSoundFile, self).cancel(cancel_time)
+        clock.unschedule(self._stop_recording)
+        clock.schedule(self._stop_recording, event_time=self._end_time)
 
 
 if __name__ == '__main__':
 
-    from experiment import Experiment, Get, Set
-    from state import Parallel, Loop, Func, Wait, ResetClock
-
-    init_audio_server()
+    from experiment import Experiment
+    from state import Parallel, Wait, Serial, Meanwhile, UntilDone, Loop
 
     exp = Experiment()
 
-    Beep(freq=[300,700],volume=.1)
-    Beep(freq=[500,500],volume=.1)
+    Wait(1.0)
+    Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
+    Beep(freq=880, volume=0.1, duration=1.0)
     with Parallel():
-        Beep(freq=[700,300],volume=.1)
-        #SoundFile('kongas.wav',
-        #      stop=5.0, volume=.1)
+        Beep(freq=440, volume=0.1, duration=2.0)
         with Serial():
             Wait(1.0)
-            Beep(freq=[400,400],volume=.1)
-        with Serial():
-            Wait(2.0)
-            Beep(freq=[300,300],volume=.1)
-        rec_snd = RecordSoundFile(8.0)
-        RecordSoundFile(4.0, "test.aiff")
-    SoundFile(Ref(rec_snd, "filepath"))
-
-    Wait(1.0, stay_active=True)
+            Beep(freq=880, volume=0.1, duration=2.0)
+    Wait(1.0)
+    with Meanwhile():
+        Beep(freq=500, volume=0.1)
+    Beep(freq=900, volume=0.1, duration=1.0)
+    SoundFile("test_sound.wav")
+    SoundFile("test_sound.wav", stop=1.0)
+    Wait(1.0)
+    SoundFile("test_sound.wav", loop=True, duration=3.0)
+    Wait(1.0)
+    SoundFile("test_sound.wav", start=0.5)
+    rec = RecordSoundFile()
+    with UntilDone():
+        with Loop(3):
+            Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
+            Beep(freq=880, volume=0.1, duration=1.0)
+    Wait(1.0)
+    SoundFile(rec.filename)
+    Wait(1.0)
 
     exp.run()

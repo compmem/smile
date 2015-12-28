@@ -7,11 +7,61 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from experiment import Experiment, Set, Get, Log
-from state import Parallel, Serial, If, Elif, Else, Loop, Wait, Func, ResetClock, Debug
-from keyboard import KeyPress
-from mouse import MousePress
-from video import Show, Update, Unshow, Text, Image, Movie, BackColor
-from video import Rectangle
-from ref import Ref,val
+# SMILE components
+from experiment import Experiment
+from state import (
+    Parallel,
+    Meanwhile,
+    UntilDone,
+    Serial,
+    Subroutine,
+    If,
+    Elif,
+    Else,
+    Loop,
+    Done,
+    Wait,
+    Record,
+    Log,
+    Func,
+    ResetClock,
+    Debug,
+    PrintTraceback)
+from keyboard import Key, KeyPress, KeyRecord
+from mouse import (
+    MouseWithin,
+    MousePos,
+    MouseButton,
+    MouseCursor,
+    MouseRecord,
+    MousePress)
+from video import (
+    Screenshot,
+    Bezier,
+    Mesh,
+    Point,
+    Triangle,
+    Quad,
+    Rectangle,
+    BorderImage,
+    Ellipse,
+    Image,
+    Label,
+    RstDocument,
+    Button,
+    ButtonPress,
+    Slider,
+    Video,
+    AnchorLayout,
+    BoxLayout,
+    FloatLayout,
+    GridLayout,
+    PageLayout,
+    ScatterLayout,
+    StackLayout,
+    BackgroundColor,
+    UpdateWidget)
+from dotbox import DotBox
+from ref import Ref, val, jitter, shuffle
+#from smile.audio import Beep, SoundFile, RecordSoundFile
 from freekey import FreeKey

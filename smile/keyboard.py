@@ -7,188 +7,301 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from pyglet.window import key
+import os.path
 
-from state import State
-from ref import Ref, val
+from state import CallbackState
+from ref import val, NotAvailable
+from clock import clock
+from experiment import Experiment
+from log import LogWriter, log2csv
 
-# get the last instance of the experiment class
-from experiment import Experiment, now
 
-class KeyPress(State):
+def Key(name):
+    """Acceptable Keys
+    ['A','B','C','D','E','F','G','H','I','J','K',
+     'L','M','N','O','P','Q','R','S','T','U','V',
+     'W','X','Y','Z','0','1','2','3','4','5','6',
+     '7','8','9','LSHIFT','RSHIFT','SPACEBAR','ENTER',
+     'LCTRL','RCTRL','ESC','`','','','','','','','','','','','',]
     """
-    Accept keyboard responses.
-    
+    exp = Experiment._last_instance()
+    return exp._app.get_key_ref(name.upper())
+
+
+class KeyState(CallbackState):
+    """For developer use only"""
+    def __init__(self, parent=None, duration=None, save_log=True, name=None,
+                 blocking=True):
+        super(KeyState, self).__init__(parent=parent, duration=duration,
+                                       save_log=save_log, name=name,
+                                       blocking=blocking)
+
+    def on_key_down(self, keycode, text, modifiers, event_time):
+        self.claim_exceptions()
+        self._on_key_down(keycode, text, modifiers, event_time)
+
+    def _on_key_down(self, keycode, text, modifiers, event_time):
+        pass
+
+    def on_key_up(self, keycode, event_time):
+        self.claim_exceptions()
+        self._on_key_up(keycode, event_time)
+
+    def _on_key_up(self, keycode, event_time):
+        pass
+
+    def _callback(self):
+        self._exp._app.add_callback("KEY_DOWN", self.on_key_down)
+        self._exp._app.add_callback("KEY_UP", self.on_key_up)
+
+    def _leave(self):
+        self._exp._app.remove_callback("KEY_DOWN", self.on_key_down)
+        self._exp._app.remove_callback("KEY_UP", self.on_key_up)
+        super(KeyState, self)._leave()
+
+
+class KeyPress(KeyState):
+    """A state that listens for a keypress.
+
+    A *KeyPress* state will wait for a duration, if there is one, for a key
+    that is within the **keys** list and then tell you if they picked a
+    response that was within the **correct_resp** list, and tell you the
+    response time.
+
     Parameters
     ----------
-    keys : list of str
-        List of keys that will be accepted as a response. Refer to
-        module pyglet.window.key documentation for compilation of
-        possible key constants. 
-    correct_resp : str
-        Correct key response for the current trial.
-    base_time : int
-        Manually set a time reference for the start of the state. This
-        will be used to calculate reaction times.
-    until : int
-        Time provided to make a response.
-    duration : {0.0, float}
-        Duration of the state in seconds.
-    parent : {None, ``ParentState``}
-        Parent state to attach to. Will search for experiment if None.
-    save_log : bool
-        If set to 'True,' details about the state will be
-        automatically saved in the log files.
-        
+    keys : list (optional)
+        A list of valid key names in the form of strings strings. If no
+        list is provided, any key can be pressed to continue passed this
+        state. Refer to *keyboard.key* for a list of valid key names, they
+        must all be in capitol letters
+    correct_resp : list, tuple, string (optional)
+        A list, tuple, or string, containing the names of any keys that
+        would be concidered a correct response.
+    base_time : float (optional)
+        If you need to record the time of the response precicely in
+        relation to the timing of another state, you put that here.
+        Example: If you would want to know exactly how long after a *Label*
+        state appears on the screen, you would set **base_time** to
+        lb.appear_time['time']
+    duration : float (optional)
+        The duration you would like your experiment to wait for a keypress.
+        If set to None, then it will wait until a key from **keys** is
+        pressed, then continue with the experiment.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
+    save_log : boolean (default = True, optional)
+        If True, save out a .slog file contianing all of the information
+        for this state.
+    name : string (optional)
+        The unique name of this state
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its Parallel Parent finishes
+        running. Only relevent if within a *Parallel* Parent.
+
+    Logged Attributes
+    -----------------
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
+    recorded in the state-specific log. Refer to State class
+    docstring for addtional logged parameters.
+
+    pressed : string
+        The name of the key they pressed.
+    press_time : float
+        The time in which they pressed a keyboard button
+    correct : boolean
+        Whether they pressed the **correct_resp** button or not.
+    rt : float
+        The reaction time associated with a key press.
+        **press_time** - **base_time**
+
     Example
     -------
-    KeyPress(keys=['J','K'])
-    Accept a key press as a response, but limit responses to either
-    'J' or 'K'.
-    
-    Log Parameters
-    ---------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
-    recorded in the state.yaml and state.csv files. Refer to State class
-    docstring for addtional logged parameters.        
-        pressed :
-            Which key was pressed.
-        press_time:
-            Time at which key was pressed.
-        correct:
-            Boolean indicator of whether the response was correct
-            or incorrect.
-        rt: 
-            Amount of time that has passed between stimulus onset
-            and the participant's response. Dependent on base_time.   
+
+    ::
+
+        Label(text='These are your instructions, press ENTER to continue')
+        with UntilDone():
+            kp = KeyPress(keys='ENTER')
+
+    This will show the instruction *Label* until the ENTER key is pressed.
+
     """
-    def __init__(self, keys=None, correct_resp=None, base_time=None, until=None,
-                 duration=-1, parent=None, save_log=True):
+    def __init__(self, keys=None, correct_resp=None, base_time=None,
+                 duration=None, parent=None, save_log=True, name=None,
+                 blocking=True):
         # init the parent class
-        super(KeyPress, self).__init__(interval=-1, parent=parent, 
-                                       duration=-1,
-                                       save_log=save_log)
+        super(KeyPress, self).__init__(parent=parent,
+                                       duration=duration,
+                                       save_log=save_log,
+                                       name=name,
+                                       blocking=blocking)
 
-        # save the keys we're watching (None for all)
-        if not isinstance(keys, list):
-            keys = [keys]
-        self.keys = keys
-        if not isinstance(correct_resp, list):
-            correct_resp = [correct_resp]
-        self.correct_resp = correct_resp
-        self.base_time_src = base_time  # for calc rt
-        self.base_time = None
-        if not isinstance(duration, Ref) and duration == -1:
-            self.wait_duration = None
-        else:
-            self.wait_duration = duration
-        self.wait_until = until
-        self.pressed = ''
-        self.press_time = None
-        self.correct = False
-        self.rt = None
-        
-        # if wait duration is -1 wait indefinitely
-
-        # if a wait_duration is specified, that's how long to look for
-        # keypresses.
-
-        # we're not waiting yet
-        self.waiting = False
+        self._init_keys = keys
+        self._init_correct_resp = correct_resp
+        self._init_base_time = base_time
+        self._pressed = ''
+        self._press_time = None
+        self._correct = False
+        self._rt = None
 
         # append log vars
-        self.log_attrs.extend(['keys', 'correct_resp', 'base_time',
-                               'pressed', 'press_time', 
-                               'correct', 'rt'])
+        self._log_attrs.extend(['keys', 'correct_resp', 'base_time',
+                                'pressed', 'press_time',
+                                'correct', 'rt'])
 
     def _enter(self):
+        super(KeyPress, self)._enter()
         # reset defaults
-        self.pressed = ''
-        self.press_time = None
-        self.correct = False
-        self.rt = None
-        self.base_time = None
+        self._pressed = NotAvailable
+        self._press_time = NotAvailable
+        self._correct = NotAvailable
+        self._rt = NotAvailable
+        if self._base_time is None:
+            self._base_time = self._start_time
+        if self._keys is None:
+            self._keys = []
+        elif type(self._keys) not in (list, tuple):
+            self._keys = [self._keys]
+        if self._correct_resp is None:
+            self._correct_resp = []
+        elif type(self._correct_resp) not in (list, tuple):
+            self._correct_resp = [self._correct_resp]
 
-    def _key_callback(self, symbol, modifiers, event_time):
-        # check the key and time (if this is needed)
-        keys = val(self.keys)
-        correct_resp = val(self.correct_resp)
-        sym_str = key.symbol_string(symbol)
-        if None in keys or sym_str in keys:
+    def _on_key_down(self, keycode, text, modifiers, event_time):
+        sym_str = keycode[1].upper()
+        if not len(self._keys) or sym_str in self._keys:
             # it's all good!, so save it
-            self.pressed = sym_str
-            self.press_time = event_time
+            self._pressed = sym_str
+            self._press_time = event_time
 
-            # # fill the base time val
-            # self.base_time = val(self.base_time_src)
-            # if self.base_time is None:
-            #     # set it to the state time
-            #     self.base_time = self.state_time
-            
             # calc RT if something pressed
-            self.rt = event_time['time']-self.base_time
+            self._rt = event_time['time'] - self._base_time
 
-            if self.pressed in correct_resp:
-                self.correct = True
+            self._correct = self._pressed in self._correct_resp
 
             # let's leave b/c we're all done
-            #self.interval = 0
-            self.leave()
-            
-    def _callback(self, dt):
-        if not self.waiting:
-            self.exp.window.key_callbacks.append(self._key_callback)
-            self.waiting = True
-        if self.base_time is None:
-            self.base_time = val(self.base_time_src)
-            if self.base_time is None:
-                # set it to the state time
-                self.base_time = self.state_time
-        wait_duration = val(self.wait_duration)
-        if (not wait_duration is None) and (now() >= self.base_time+wait_duration):
-            self.leave()
-        elif val(self.wait_until):
-            self.leave()
-            
+            self.cancel(event_time['time'])
+
     def _leave(self):
-        # remove the keyboard callback
-        self.exp.window.key_callbacks.remove(self._key_callback)
-        self.waiting = False
-        pass
-    
+        super(KeyPress, self)._leave()
+        if self._pressed is NotAvailable:
+            self._pressed = ''
+        if self._press_time is NotAvailable:
+            self._press_time = None
+        if self._correct is NotAvailable:
+            self._correct = False
+        if self._rt is NotAvailable:
+            self._rt = None
+
+
+class KeyRecord(KeyState):
+    """A state that records keypresses during a duration.
+
+    A *KeyRecord* state will record any keypress, the keyup's and keydown's,
+    aswell as any timing associated with them for a duration.
+
+    Parameters
+    ----------
+    duration : float (optional)
+        The duration you would like your experiment to wait for a keypress.
+        If set to None, then it will wait until a key from **keys** is
+        pressed, then continue with the experiment.
+    parent : ParentState (optional)
+        The state you would like this state to be a child of. If not set,
+        the *Experiment* will make it a child of a ParentState or the
+        Experiment automatically.
+    name : string (optional)
+        The unique name of this state
+    blocking : boolean (optional, default = True)
+        If True, this state will prevent a *Parallel* state from ending. If
+        False, this state will be canceled if its Parallel Parent finishes
+        running. Only relevent if within a *Parallel* Parent.
+
+    Logged Attributes
+    -----------------
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
+    recorded in the state-specific log. Refer to State class
+    docstring for addtional logged parameters.
+
+    """
+    def __init__(self, parent=None, duration=None, name=None, blocking=True):
+        super(KeyState, self).__init__(parent=parent, duration=duration,
+                                       save_log=False, name=name,
+                                       blocking=blocking)
+
+    def begin_log(self):
+        super(KeyRecord, self).begin_log()
+        title = "keyrec_%s_%d_%s" % (
+            os.path.splitext(
+                os.path.basename(self._instantiation_filename))[0],
+            self._instantiation_lineno,
+            self._name)
+        self.__log_filename = self._exp.reserve_data_filename(title, "slog")
+        self.__log_writer = LogWriter(self.__log_filename)
+
+    def end_log(self, to_csv=False):
+        super(KeyRecord, self).end_log(to_csv)
+        if self.__log_writer is not None:
+            self.__log_writer.close()
+            self.__log_writer = None
+            if to_csv:
+                csv_filename = (os.path.splitext(self.__log_filename)[0] +
+                                ".csv")
+                log2csv(self.__log_filename, csv_filename)
+
+    def _on_key_down(self, keycode, text, modifiers, event_time):
+        self.__log_writer.write_record({
+            "timestamp": event_time,
+            "key": keycode[1].upper(),
+            "state": "down"})
+
+    def _on_key_up(self, keycode, event_time):
+        self.__log_writer.write_record({
+            "timestamp": event_time,
+            "key": keycode[1].upper(),
+            "state": "up"})
 
 
 if __name__ == '__main__':
 
-    from experiment import Experiment, Get, Set, Log
-    from state import Wait, Func, Loop
-
-    def print_dt(state, *args):
-        print args, state.dt
+    from experiment import Experiment
+    from state import Wait, Debug, Loop, UntilDone, Log, Meanwhile
 
     exp = Experiment()
-    
-    Func(print_dt, args=['Key Press Test'])
+    with Meanwhile():
+        KeyRecord(name="record_all_key_presses")
 
-    Set('last_pressed','')
-    with Loop(conditional=(Get('last_pressed')!='K')):
+    Debug(name='Press T+G+D or SHIFT+Q+R')
+    Wait(until=((Key("T") & Key("G") & Key("D")) |
+                (Key("SHIFT") & Key("Q") & Key("R"))))
+    Debug(name='Key Press Test')
+
+    exp.last_pressed = ''
+    with Loop(conditional=(exp.last_pressed!='K')):
         kp = KeyPress(keys=['J','K'], correct_resp='K')
-        Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
-        Set('last_pressed',kp['pressed'])
-        Log(pressed=kp['pressed'], rt=kp['rt'])
-    
-    kp = KeyPress(keys=['J','K'], correct_resp='K')
-    Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
-    Wait(1.0)
+        Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
+        exp.last_pressed = kp.pressed
+        Log(pressed=kp.pressed, rt=kp.rt)
 
-    kp = KeyPress()
-    Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
-    Wait(1.0)
+    KeyRecord()
+    with UntilDone():
+        kp = KeyPress(keys=['J','K'], correct_resp='K')
+        Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
+        Wait(1.0)
 
-    kp = KeyPress(duration=2.0)
-    Func(print_dt, args=[kp['pressed'],kp['rt'],kp['correct']])
-    Wait(1.0, stay_active=True)
+        kp = KeyPress()
+        Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
+        Wait(1.0)
+
+        kp = KeyPress(duration=2.0)
+        Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
+        Wait(1.0)
 
     exp.run()
-    
+
