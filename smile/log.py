@@ -12,18 +12,20 @@ import cPickle
 import gzip
 import csv
 
+
 class LogWriter(object):
-    """An object that handles the writing of .slog files. 
-    
-    *LogWriter* is what we use to write data to a .slog file. The *Log* state 
-    relies heavily on this object.  
-    
+    """An object that handles the writing of .slog files.
+
+    *LogWriter* is what we use to write data to a .slog file. The
+    *Log* state relies heavily on this object.
+
     Parameters
     ----------
     filename : string
-        The filename that you would like to write to. Must end in .slog. 
-    field_names : list 
-        A list of strings that contains the fields you wish to write. 
+        The filename that you would like to write to. Must end in .slog.
+    field_names : list
+        A list of strings that contains the fields you wish to write.
+
     """
 
     def __init__(self, filename):
@@ -32,13 +34,12 @@ class LogWriter(object):
 
     def write_record(self, data):
         """Call this funciton to write a single row to the .slog file.
-        
+
         Parameters
         ----------
-        data : list 
-            This is a list of dictionaries where the keys are the field names that you
-            are writing out to the .slog file. 
-        
+        data : list
+            This is a list of dictionaries where the keys are the
+            field names that you are writing out to the .slog file.
         """
         # data must be a dict
         if not isinstance(data, dict):
@@ -51,16 +52,16 @@ class LogWriter(object):
 
 
 class LogReader(object):
-    """An object that handles reading from .slog files. 
-    
-    Passing in a filename, by calling **ReadRecord** you can read on row from the
-    .slog file. 
-    
+    """An object that handles reading from .slog files.
+
+    Passing in a filename, by calling **ReadRecord** you can read on
+    row from the .slog file.
+
     Parameters
     ----------
     filename : string
         The name of the .slog that you wish to read from.
-        
+
     """
     def __init__(self, filename):
         self._file = gzip.open(filename, "rb")
@@ -88,9 +89,9 @@ class LogReader(object):
 
 
 def _unwrap(d, prefix=''):
-    """
-    Process the items of a dict and unwrap them to the top level based
+    """Process the items of a dict and unwrap them to the top level based
     on the key names.
+
     """
     new_item = {}
     for k in d:
@@ -98,17 +99,17 @@ def _unwrap(d, prefix=''):
         key = prefix+k
 
         # see if dict
-        if isinstance(d[k],dict):
-            new_item.update(_unwrap(d[k],prefix=key+'_'))
+        if isinstance(d[k], dict):
+            new_item.update(_unwrap(d[k], prefix=key+'_'))
             continue
 
         # see if tuple/list
-        if isinstance(d[k],(tuple,list)):
+        if isinstance(d[k], (tuple, list)):
             # turn into indexed dict
             tdict = {}
             for j in range(len(d[k])):
                 tdict[str(j)] = d[k][j]
-            new_item.update(_unwrap(tdict,prefix=key+'_'))
+            new_item.update(_unwrap(tdict, prefix=key+'_'))
             continue
 
         # just add it in
@@ -125,7 +126,7 @@ def log2csv(log_filename, csv_filename, **append_columns):
         for fieldname in _unwrap(record):
             if fieldname not in colnames:
                 colnames.append(fieldname)
-                
+
     # loop again and write out to file
     with open(csv_filename, 'wb') as fout:
         # open CSV and write header
@@ -148,4 +149,3 @@ def log2csv(log_filename, csv_filename, **append_columns):
 
             # write it out
             dw.writerow(record)
-
