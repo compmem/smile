@@ -7,7 +7,7 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from smile import *
+from smile.common import *
 
 # set up an experiment
 exp = Experiment()

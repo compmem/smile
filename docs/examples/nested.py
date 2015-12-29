@@ -10,28 +10,24 @@
 # load all the states
 from smile.common import *
 
-# create the experiment
+# create an experiment
 exp = Experiment()
 
-# Prepare them
-Label(text="Get Ready...", font_size=40, duration=1.0)
-
-# Pause a moment
-Wait(.5)
-
-# collect responses for 10 seconds
-fk = FreeKey(Label(text='??????', font_size=40),
-             max_duration=10.0)
-
-# show one way to log responses
-Log(fk.responses, name='free_key_test')
-
-# debug the output to screen, too
-Debug(responses=fk.responses)
-
-# wait sec
+# initial wait
 Wait(1.0)
 
+# Present two stim with embedded If
+with Loop(range(10)) as trial:
+    with Parallel():
+        with If((trial.current % 2) == 0):
+            Label(text='      X', duration=2.0)
+        with Else():
+            Label(text='O      ', duration=2.0)
+        with Serial():
+            Label(text='   :   ', duration=1.0)
+            Label(text='   !   ', duration=1.0)
+
+Wait(1.0)
 
 if __name__ == '__main__':
     exp.run()

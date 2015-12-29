@@ -8,7 +8,7 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # load all the states
-from smile import *
+from smile.common import *
 
 # create an experiment
 exp = Experiment()

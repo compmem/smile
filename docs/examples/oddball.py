@@ -12,7 +12,7 @@ import random
 import string
 
 # load all the states
-from smile import *
+from smile.common import *
 from smile.pulse import Pulse
 from smile.audio import Beep
 

@@ -8,30 +8,23 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # load all the states
-from smile import *
+from smile.common import *
 
 # create an experiment
-exp = Experiment(screen_ind=0, pyglet_vsync=False)
+exp = Experiment()
 
 # initial wait
 Wait(1.0)
 
 # show above and below center
-with Parallel():
-    a = Text('Above',x=exp['window'].width//2,y=exp['window'].height//2,
-             anchor_y='bottom') 
-    b = Text('Below',x=exp['window'].width//2,y=exp['window'].height//2,
-             anchor_y='top')
-    c = Text('Way Below', x=b['x'], y=b['y']-100, anchor_y='top')
-
 Wait(2.)
+with Meanwhile():
+    with Parallel():
+        a = Label(text='Above', center_bottom=exp.screen.center)
+        b = Label(text='Below', center_top=exp.screen.center)
+        c = Label(text='Way Below', center_top=(b.center_x, b.bottom-100))
 
-with Parallel():
-    Unshow(a)
-    Unshow(b)
-    Unshow(c)
-
-Wait(2.0, stay_active=True)
+Wait(1.0)
 
 if __name__ == '__main__':
     exp.run()

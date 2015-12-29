@@ -11,7 +11,7 @@
 import random
 
 # load all the states
-from smile import *
+from smile.common import *
 from smile.pulse import Pulse
 
 # make some ordered groupings
