@@ -1,4 +1,4 @@
-from smile import *
+from smile.common import *
 import random
 
 words = ['plank','dear','thopter','initial','pull','complicated','assertain','biggest']

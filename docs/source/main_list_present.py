@@ -1,8 +1,8 @@
-from smile import *
+from smile.common import *
 from listpresent import ListPresent
 import random
 
-WORDS_TO_DISPLAY = ['The', 'Boredom', 'Is', 'The', 'Reason', 'I', 'started', 'Swimming', 'Its', 'Also', 'The', 'Reason', 'I','Started', 'Sinking','Questions','Dodge','Dip','Around','Breath','Hold']	
+WORDS_TO_DISPLAY = ['The', 'Boredom', 'Is', 'The', 'Reason', 'I', 'started', 'Swimming', 'Its', 'Also', 'The', 'Reason', 'I','Started', 'Sinking','Questions','Dodge','Dip','Around','Breath','Hold']
 INTER_STIM_DUR = .5
 STIM_DUR = 1
 INTER_ORIENT_DUR = .2

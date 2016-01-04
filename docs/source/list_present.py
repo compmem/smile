@@ -1,5 +1,5 @@
-from smile import *
-from smile.state import Subroutine
+from smile.common import *
+
 @Subroutine
 def ListPresent(self, listOfWords=[], interStimDur=.5, onStimDur=1, fixDur=1, interOrientDur=.2):
     self.timing = []

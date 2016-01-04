@@ -16,7 +16,7 @@ Create a directory called *SmileTest* and add a file named *main.py*
 
 ::
 
-    from smile import *
+    from smile.common import *
 
     exp = Experiment()
     Label(text="Hello World, Lets start Smiling!", duration=4)
@@ -107,7 +107,7 @@ The final version of **rand_word_1.py**
 
 ::
 
-    from smile import *
+    from smile.common import *
     import random
 
     words = ['plank', 'dear', 'adopter',
@@ -266,8 +266,9 @@ The final version of **rand_word_2.py**
 
 ::
 
-    from smile import *
+    from smile.common import *
     import random
+
     words = ['plank', 'dear', 'thopter',
              'initial', 'pull', 'complicated',
              'assertain', 'biggest']
@@ -305,8 +306,7 @@ Special Examples
 
 This section is designed to help you figure out how to use some of the more
 advanced states and interesting interactions with some of the states in smile.
-We will be going over how to use the *ButtonPress* state, the ** state, and how
-to define your own *Subrutine* state!
+We will be going over how to define your own *Subrutine* state!
 
 Subroutine
 -----------------------------
@@ -324,8 +324,7 @@ subroutine.
 
 ::
 
-    from smile import *
-    from smile.state import Subroutine
+    from smile.common import *
 
     @Subroutine
     def ListPresent(self,
@@ -402,7 +401,7 @@ Below is the finished **main_list_present.py**
 
 ::
 
-    from smile import *
+    from smile.common import *
     from list_present import ListPresent
     import random
 
@@ -429,8 +428,8 @@ Below is the finished **list_present.py**
 
 ::
 
-    from smile import *
-    from smile.state import Subroutine
+    from smile.common import *
+
     @Subroutine
     def ListPresent(self,
                     listOfWords=[],
@@ -485,7 +484,7 @@ The final version of **button_press_example.py**
 
 ::
 
-    from smile import *
+    from smile.common import *
 
     exp = Experiment()
 

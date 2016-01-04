@@ -1,4 +1,4 @@
-from smile import *
+from smile.common import *
 
 exp = Experiment()
 
