@@ -166,8 +166,9 @@ class Ref(object):
     def __getitem__(self, index):
         return Ref(operator.getitem, self, index)
 #Not sure how to make this work correctly
-#     def __setitem__(self, index, value):
-#         self = Ref(set_item, self, index, value)
+    def __setitem__(self, index, value):
+        self.pargs = [Ref(self.func, *self.pargs, **self.kwargs), index, value]
+        self.func = set_item
     def __getattr__(self, attr):
         return Ref(getattr, self, attr)
     def __lt__(self, other):
