@@ -18,6 +18,7 @@ with Parallel():
     rect = Rectangle(bottom=exp.screen.center_bottom,
                      color='white')
     r2 = Rectangle(bottom=rect.top, color='purple')
+    MouseCursor()
 with UntilDone():
     Wait(until=MouseWithin(rect))
     with Meanwhile():
@@ -27,6 +28,7 @@ with Parallel():
     choice_A = Rectangle(left_top=(exp.screen.left + 100, exp.screen.top - 100))
     choice_B = Rectangle(right_top=(exp.screen.right - 100, exp.screen.top - 100))
     mrec = Record(mouse_pos=MousePos())
+    MouseCursor()
 with UntilDone():
     mwa = MouseWithin(choice_A)
     mwb = MouseWithin(choice_B)
