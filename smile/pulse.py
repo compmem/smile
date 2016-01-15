@@ -17,7 +17,7 @@ except ImportError:
     have_parallel = False
 
 
-from state import Wait, State
+from state import Wait, State, Loop, Done, Log, Subroutine
 from clock import clock
 from experiment import event_time
 from ref import NotAvailable
@@ -26,7 +26,7 @@ from ref import NotAvailable
 class Pulse(State):
     """
     Send a sync pulse out the parallel port.
-    
+
     Parameters
     ----------
     code : {0, 255, integer}, string
@@ -34,40 +34,40 @@ class Pulse(State):
     width : {0.010, float}
         Time in seconds that the pulse is on. Default is 0.010 s.
         If the width is 0.0, the code is set and kept.
-    port : 
+    port :
         Port where to send the code
     parent : {None, ``ParentState``}
         Parent state to attach to. Will search for experiment if None.
     save_log : boolean
         If set to 'True,' details about the state will be
-        automatically saved in the log files. 
+        automatically saved in the log files.
     name : string
         Name of the state for debugging and tracking
-        
+
     Logged Attributes
     ---------------
-    All parameters above and below are available to be accessed and 
-    manipulated within the experiment code, and will be automatically 
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
-    docstring for addtional logged parameters. 
+    docstring for addtional logged parameters.
 
-    code_num : 
+    code_num :
         Number derived from the code.
     pulse_on :
         Time at which the pulse began.
     pulse_off :
         Time at which the pulse ended.
-    
+
     Example
     --------
-    
+
     ::
-        
+
         Pulse(code=1)
-    
+
     A sync pulse will be sent and will register 'S1' as the code
     on both the presentation machine and the EEG apparatus.
-    
+
     """
     def __init__(self, code=15, width=0.010, port=0,
                  parent=None, save_log=True, name=None):
@@ -97,15 +97,17 @@ class Pulse(State):
         self._pulse_off = NotAvailable
 
         # Convert code if necessary
-        if type(self._code)==str:
-            if self._code[0]=="S":
+        if type(self._code) == str:
+            if self._code[0] == "S":
                 # Use first 4 bits
                 ncode = int(self._code[1:])
-                if ncode < 0 or ncode > 16: ncode = 15
-            elif self._code[0]=="R":
+                if ncode < 0 or ncode > 16:
+                    ncode = 15
+            elif self._code[0] == "R":
                 # Use last 4 bits
                 ncode = int(self._code[1:])
-                if ncode < 0 or ncode > 16: ncode = 15
+                if ncode < 0 or ncode > 16:
+                    ncode = 15
                 ncode = ncode >> 4
             else:
                 # Convert to an integer
@@ -119,7 +121,7 @@ class Pulse(State):
 
     def _unschedule_start(self):
         clock.unschedule(self._callback)
-        
+
     def _callback(self):
         # we've started
         self._started = True
@@ -135,7 +137,7 @@ class Pulse(State):
                 start_time = clock.now()
                 self._pport.setData(self._code_num)
                 end_time = clock.now()
-            except: # eventually figure out which errors to catch
+            except:  # eventually figure out which errors to catch
                 sys.stderr.write("\nWARNING: The parallel module could not send pulses,\n" + 
                                  "\tso no sync pulsing will be generated.\n\n")
                 have_parallel = False
@@ -146,7 +148,7 @@ class Pulse(State):
                 clock.schedule(self.leave)
                 clock.schedule(self.finalize)
                 return
-                
+
             # set the pulse time
             time_err = (end_time - start_time)/2.
             self._pulse_on = event_time(start_time+time_err,
@@ -166,7 +168,7 @@ class Pulse(State):
 
                 # clean up/ close the port
                 self._pport = None
-                
+
                 # so we can finalize now, too
                 clock.schedule(self.finalize)
                 self._ended = True
@@ -178,7 +180,6 @@ class Pulse(State):
             self._ended = True
             clock.schedule(self.leave)
             clock.schedule(self.finalize)
-            
 
     def _pulse_off_callback(self):
         # turn off the code
@@ -199,6 +200,39 @@ class Pulse(State):
         clock.schedule(self.finalize)
 
 
+@Subroutine
+def JitteredPulses(self, code=1, width=0.010, port=0,
+                   pause_between=3.0, jitter_between=3.0):
+    """Send pulses separated by a jittered wait.
+
+    The typical use case for this subroutine is to send a random train
+    of pulses during an EEG experiment to allow for subsequent
+    synchronization of the EEG data with the behavioral data. This
+    would be accomplished by calling JitteredPulses within a Meanwhile
+    as the next state following the instantiation of the Experiment:
+
+    exp = Experiment()
+    with Meanwhile():
+        JitteredPulses()
+
+    """
+    # loop indefinitely
+    with Loop():
+        # send a pulse
+        pulse = Pulse(code=code, port=port, width=width)
+        Done(pulse)
+
+        # do a jittered wait
+        Wait(duration=pause_between,
+             jitter=jitter_between)
+
+        # Log the pulse to a pulse-specific log
+        Log(name='pulse',
+            pulse_on=pulse.pulse_on,
+            pulse_code=pulse.code,
+            pulse_off=pulse.pulse_off,
+            pulse_port=pulse.port,
+            pulse_width=pulse.width)
 
 
 if __name__ == '__main__':
