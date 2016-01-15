@@ -89,7 +89,7 @@ After you install Kivy, you must download and install SMILE. The following is a
 link to the smile download page, where you will download the zip, and extract
 it to an easy to find place.
 
-    -`SMILE Download <https://github.com/compmem/smile/tree/kivy>`_
+    -`SMILE Download <https://github.com/compmem/smile/tree/master>`_
 
 Now, all you have to do is open the terminal and navigate to the
 newly extracted smile download folder. This folder should contain setup.py. Run
