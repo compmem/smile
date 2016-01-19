@@ -12,16 +12,16 @@ from contextlib import contextmanager
 import weakref
 import operator
 
-import kivy_overrides
+import Kivy_overrides
 from state import State, CallbackState, Parallel, ParentState
 from ref import val, Ref, NotAvailable
 from clock import clock
 
-import kivy.graphics
-import kivy.uix.widget
-from kivy.properties import ObjectProperty, ListProperty
-import kivy.clock
-_kivy_clock = kivy.clock.Clock
+import Kivy.graphics
+import Kivy.uix.widget
+from Kivy.properties import ObjectProperty, ListProperty
+import Kivy.clock
+_Kivy_clock = Kivy.clock.Clock
 
 
 color_name_table = {
@@ -126,13 +126,13 @@ class Screenshot(CallbackState):
     blocking : boolean
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its Parallel Parent finishes
-        running. Only relevent if within a *Parallel* Parent.
+        running. Only relevant if within a *Parallel* Parent.
 
     Logged Attributes
     -----------------
     All parameters above and below are available to be accessed and manipulated
     within the experiment code, and will be automatically recorded in the
-    state-specific log. Refer to State class docstring for addtional logged
+    state-specific log. Refer to State class docstring for additional logged
     parameters.
 
     event_time : dictionary
@@ -169,9 +169,9 @@ class Screenshot(CallbackState):
 class VisualState(State):
     """The base state for all visual stimulus presenting states.
 
-    A *VisualState* contains all of the methods that are needed to draw things
-    onto the screen.  All visual stimulus presenting states will be a subclass
-    of this class. Using the *show()* and *unshow()* methods, you can subclass
+    A *VisualState* contains all of the methods that are needed to time visual
+    states.  All visual stimulus presenting states will be a subclass of this
+    class. Using the *show()* and *unshow()* methods, you can subclass
     *VisualState* to present to the *Experiment* window.
 
     Parameters
@@ -186,8 +186,8 @@ class VisualState(State):
         The unique name to this state
     blocking : boolean (optional, default = True)
         If True, this state will prevent a *Parallel* state from ending. If
-        False, this state willbe canceled if its *ParallelParent* finishes
-        running. Only relevent if within a *ParallelParent*.
+        False, this state will be canceled if its *ParallelParent* finishes
+        running. Only relevant if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -197,11 +197,11 @@ class VisualState(State):
     docstring for additional logged parameters.
 
     appear_time : dictionary
-        The keys are *time* and *error*. Where *time* referes to the time the
+        The keys are *time* and *error*. Where *time* refers to the time the
         visual stimulus appeared on the screen, and *error* refers to the
         maximum error in calculating the appear time of the stimulus.
     disappear_time : dictionary
-        The keys are *time* and *error*. Where *time* referes to the time the
+        The keys are *time* and *error*. Where *time* refers to the time the
         visual stimulus disappeared from the screen, and *error* refers to the
         maximum error in calculating the disappear time of the stimulus.
 
@@ -293,7 +293,7 @@ class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never 
     Parameters
     ----------
     color : touple or string
-        Pick either 4 values between 0 and 1 that corrispond to the RGBA
+        Pick either 4 values between 0 and 1 that correspond to the RGBA
         values of the color you would like to select, or you pick the
         string value, all capitol letters, that is the color you would
         like.
@@ -339,17 +339,17 @@ class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never 
 
 
 class WidgetState(VisualState):
-    """A *WidgetState* is used to wrap kivy widgets into SMILE classes
+    """A *WidgetState* is used to wrap Kivy widgets into SMILE classes
 
-    SMILE needed a wrapper for kivy widgets in order for them to interact in a
-    meaningful way, so that is why *WidgetState* was writen. If you decided to
-    go the route of using a custom kivy widget in SMILE, youll just need to
+    SMILE needed a wrapper for Kivy widgets in order for them to interact in a
+    meaningful way, so that is why *WidgetState* was written. If you decided to
+    go the route of using a custom Kivy widget in SMILE, you'll just need to
     wrap it with *WidgetState* and it should work without much issue.
 
     Parameters
     ----------
-    widget_class : a kivy Widget
-        Pass in a kivy Widget to get it wrapped.
+    widget_class : a Kivy Widget
+        Pass in a Kivy Widget to get it wrapped.
     duration : float
         In seconds, the duration of this state. If None, it will last
         until canceled.
@@ -366,7 +366,7 @@ class WidgetState(VisualState):
     index : integer
         The index of the widget if it exists within the context of another
         widget.
-    layout : Layout (kivy class)
+    layout : Layout (Kivy class)
         Used to calculate and assign widget positions
 
     Widget Parameters
@@ -392,15 +392,15 @@ class WidgetState(VisualState):
     size : touple (optional)
         (height, width)
     center : touple (optional)
-        A touple of integers that corrisponds to the center point of the widget
+        A touple of integers that corresponds to the center point of the widget
     center_x : integer (optional)
         The x coordinate of the center of your widget.
     center_y : integer (optional)
         The y coordinate of the center of your widget.
     left : integer (optional)
-        The x value that coorisponds to the left side of your widget.
+        The x value that corresponds to the left side of your widget.
     right : integer (optional)
-        The x value that coorisponds to the right side of your widget.
+        The x value that corresponds to the right side of your widget.
     left_bottom : touple (optional)
         (x, y)
     left_top : touple (optional)
@@ -551,7 +551,7 @@ class WidgetState(VisualState):
             return value
 
     def resolve_params(self, params):
-        # remove kivy's default size hints
+        # remove Kivy's default size hints
         # if a user didn't specify them
         if "size_hint" not in params:
             params.setdefault("size_hint_x", None)
@@ -641,7 +641,7 @@ class WidgetState(VisualState):
     def update(self, parent=None, save_log=True, name=None, blocking=True,
                **kwargs):
         """
-        Creates an UpdateWidget state that updates the passed in parameters.
+        Creates an **UpdateWidget** state that updates the passed in parameters
 
         Parameters
         ----------
@@ -687,8 +687,8 @@ class WidgetState(VisualState):
         ----------
         interval : float
             A frequency value. If not set, it is None, Animate will update at
-            the same interval as the framerate.  You cannot set interval to any
-            number faster than the framerate.
+            the same interval as the frame-rate.  You cannot set interval to any
+            number faster than the frame-rate.
         duration : float
             A duration, in seconds, that the Animate state will animate the
             changes to the target's properties. Over the course of a duration,
@@ -704,7 +704,7 @@ class WidgetState(VisualState):
             False, this state will be canceled if its *ParallelParent* finishes
             running. Only relevent if within a *ParallelParent*.
         anim_params : (keyword = argument)
-            These keywords have to be parameters or properties of the kivy
+            These keywords have to be parameters or properties of the Kivy
             widget passed in through this state that are to be changed over the
             course of the Animate state.
 
@@ -809,13 +809,13 @@ class UpdateWidgetUntimed(CallbackState):
 
 
 class UpdateWidget(VisualState):
-    """ A state used to change a states parameters in Experimental Runtime.
+    """ A state used to change a states parameters in Experimental Run Time.
 
     You call this state in your experiment if you want to change the parameters
     of a widget in experimental runtime. You can change anything that is a
-    property of the VisualState, or a property of the Kivy Widget. UpdateWidget
-    will call the *target* VisualState's method called *live_change* when the
-    experiment clock calls *show*.
+    property of the **VisualState**, or a property of the Kivy Widget.
+    **UpdateWidget** will call the *target* **VisualState**'s method called
+    *live_change* when the experiment clock calls *show*.
 
     Parameters
     ----------
@@ -832,19 +832,19 @@ class UpdateWidget(VisualState):
         False, this state will be canceled if its *ParallelParent* finishes
         running. Only relevent if within a *ParallelParent*.
     kwargs : (keyword = argument)
-        These keywords have to be parameters or properties of the kivy
+        These keywords have to be parameters or properties of the Kivy
         widget passed in through *target*.
 
     Logged Attributes
     -----------------
     All parameters above are available to be accessed and manipulated within
     the experiment code, and will be automatically recorded in the
-    state-specific log. Refer to VisualState and State classes docstring for
-    additional logged parameters.
+    state-specific log. Refer to **VisualState** and **State** classes
+    docstring for additional logged parameters.
 
     time : dictionary
         The keys *time* and *error* are associated with the appear time of the
-        UpdateWidget state. *time* points to the appoximate time that the
+        UpdateWidget state. *time* points to the approximate time that the
         update happens.
 
     """
@@ -888,7 +888,7 @@ class UpdateWidget(VisualState):
 class Animate(State):
     """A state that will animate the changes of properties over a duration.
 
-    This state will calculate how much a given property of a kivy Widget needs
+    This state will calculate how much a given property of a Kivy Widget needs
     to change each frame, so that it will be completed at the end of a
     duration. It is an extremely strong state that can do anything from blend
     one color of a rectangle state into another over 5 seconds, to completely
@@ -900,8 +900,8 @@ class Animate(State):
         This is the widget that will be changed during the Animate state.
     interval : float
         A frequency value. If not set, it is None, Animate will update at
-        the same interval as the framerate.  You cannot set interval to any
-        number faster than the framerate.
+        the same interval as the frame-rate.  You cannot set interval to any
+        number faster than the frame-rate.
     duration : float
         A duration, in seconds, that the this state will changes the values
         of the anim_params over.
@@ -916,7 +916,7 @@ class Animate(State):
         False, this state will be canceled if its *ParallelParent* finishes
         running. Only relevent if within a *ParallelParent*.
     anim_params : (keyword = argument)
-        These keywords have to be parameters or properties of the kivy
+        These keywords have to be parameters or properties of the Kivy
         widget passed in through *target* that are to be changed over the
         course of the Animate state's duration.
 
@@ -925,7 +925,7 @@ class Animate(State):
     All parameters above and below are available to be accessed and
     manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
-    docstring for addtional logged parameters.
+    docstring for additional logged parameters.
 
     Example
     -------
@@ -995,14 +995,14 @@ class Animate(State):
 def vertex_instruction_widget(instr_cls, name=None):
     """The widget wrapper for special drawing functions like *Rectangle*.
 
-    This class was created as a wrapper for all of the vertex kivy
+    This class was created as a wrapper for all of the vertex Kivy
     instructions. These these instructions range from *Rectangle* to *Bezier*.
     This class sets up the method *redraw* which is needed by these
     instructions.
     """
     if name is None:
         name = instr_cls.__name__
-    base_attrs = dir(kivy.graphics.instructions.VertexInstruction)
+    base_attrs = dir(Kivy.graphics.instructions.VertexInstruction)
     props = []
     for attr in dir(instr_cls):
         if attr in base_attrs:
@@ -1017,7 +1017,7 @@ def vertex_instruction_widget(instr_cls, name=None):
     def __init__(self, *pargs, **kwargs):
         super(type(self), self).__init__(*pargs, **kwargs)
         with self.canvas:
-            self._color = kivy.graphics.Color(*self.color)
+            self._color = Kivy.graphics.Color(*self.color)
             shape_kwargs = {}
             for prop in props:
                 value = getattr(self, prop)
@@ -1038,7 +1038,7 @@ def vertex_instruction_widget(instr_cls, name=None):
                 setattr(self._shape, prop, value)
     dict_["redraw"] = redraw
 
-    return type(name, (kivy.uix.widget.Widget,), dict_)
+    return type(name, (Kivy.uix.widget.Widget,), dict_)
 
 
 vertex_instructions = [
@@ -1054,7 +1054,7 @@ vertex_instructions = [
     #"RoundedRectangle"
     ]
 for instr in vertex_instructions:
-    exec("%s = WidgetState.wrap(vertex_instruction_widget(kivy.graphics.%s))" %
+    exec("%s = WidgetState.wrap(vertex_instruction_widget(Kivy.graphics.%s))" %
          (instr, instr))
 #widget_docs = {
 #    "Button" : {"__doc__": """
@@ -1088,18 +1088,18 @@ widgets = [
     "StackLayout"
     ]
 for widget in widgets:
-    modname = "kivy.uix.%s" % widget.lower()
+    modname = "Kivy.uix.%s" % widget.lower()
     exec("import %s" % modname)
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
 
-import kivy.uix.rst
-RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
+import Kivy.uix.rst
+RstDocument = WidgetState.wrap(Kivy.uix.rst.RstDocument)
 
 
-import kivy.uix.video
-class Video(WidgetState.wrap(kivy.uix.video.Video)):
-    """A WidgetState that plays a video.
+import Kivy.uix.video
+class Video(WidgetState.wrap(Kivy.uix.video.Video)):
+    """A **WidgetState** that plays a video.
 
     Use this smile state to play a video file. Depending on what package is
     driving your video core, you maybe able to play different types of
@@ -1132,12 +1132,12 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
     widget.
 
     allow_stretch : boolean
-        If True, the video will be streached to fit the widget's size.
+        If True, the video will be stretched to fit the widget's size.
 
     """
     def _set_widget_defaults(self):
         # force video to load immediately so that duration is available...
-        _kivy_clock.unschedule(self._widget._do_video_load)
+        _Kivy_clock.unschedule(self._widget._do_video_load)
         self._widget._do_video_load()
         self._widget._video.pause()
         if self._end_time is None:
@@ -1153,8 +1153,8 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
             self._end_time = self._start_time + self._widget._video.duration
 
         # override the update interval (eventually make this a setting)
-        _kivy_clock.unschedule(self._widget._video._update)
-        _kivy_clock.schedule_interval(self._widget._video._update, 1/60.)
+        _Kivy_clock.unschedule(self._widget._video._update)
+        _Kivy_clock.schedule_interval(self._widget._video._update, 1/60.)
 
         # set the size to (0, 0) so we know if it has been changed later
         self._widget.size = (0, 0)
@@ -1179,14 +1179,14 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         self._widget.state = "stop"
 
 
-import kivy.uix.image
-class Image(WidgetState.wrap(kivy.uix.image.Image)):
+import Kivy.uix.image
+class Image(WidgetState.wrap(Kivy.uix.image.Image)):
     """A WidgetState subclass to present and image on the screen.
 
-    This state will present an image from a file onto the experiment window.By
+    This state will present an image from a file onto the experiment window. By
     default, the size of the widget will be the size of the image, but you are
     able to set the height and width independently, as well as if you would
-    like the image to strech into the new size of the widget.
+    like the image to stretch into the new size of the widget.
 
     Parameters
     ----------
@@ -1200,7 +1200,7 @@ class Image(WidgetState.wrap(kivy.uix.image.Image)):
         The unique name to this state.
     blocking : boolean (optional, default = True)
         If True, this state will prevent a *Parallel* state from ending. If
-        False, this state willbe canceled if its *ParallelParent* finishes
+        False, this state will be canceled if its *ParallelParent* finishes
         running. Only relevent if within a *ParallelParent*.
     source : string
         Filename or source of your image file.
@@ -1220,14 +1220,14 @@ class Image(WidgetState.wrap(kivy.uix.image.Image)):
     def _set_widget_defaults(self):
         self._widget.size = self._widget.texture_size
 
-import kivy.uix.label
-class Label(WidgetState.wrap(kivy.uix.label.Label)):
+import Kivy.uix.label
+class Label(WidgetState.wrap(Kivy.uix.label.Label)):
     """State for presenting any kind of text stimulus onto the screen.
 
     This state presents a text stimulus for a duration. Using widget
-    parameters, you are able to set any of the properties that a kivy Label
-    would need set.  This includes anything from boldening your text to
-    changing the font of you text. Because this is a kivy widget you are able
+    parameters, you are able to set any of the properties that a Kivy Label
+    would need set.  This includes anything from emboldening your text to
+    changing the font of you text. Because this is a Kivy widget you are able
     to set any of the size and shape properties as parameters when setting up
     this state.
 
@@ -1254,7 +1254,7 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
     """
     def _set_widget_defaults(self):
         # we need to update the texture now
-        _kivy_clock.unschedule(self._widget.texture_update)
+        _Kivy_clock.unschedule(self._widget.texture_update)
         self._widget.texture_update()
         self._widget.size = self._widget.texture_size
 
