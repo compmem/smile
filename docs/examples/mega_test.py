@@ -1,6 +1,5 @@
 from smile.common import *
 from smile.video import ProgressBar, TextInput
-from smile.audio import SoundFile, Beep, RecordSoundFile
 exp = Experiment()
 
 
@@ -14,6 +13,15 @@ with Parallel():
         Wait(2)
         t1lb3 = Label(text='2', center_x=exp.screen.center_x*3/2, duration=1)
 
+######### CONDITIONAL LOOP ####################################################
+
+exp.counter = 0
+
+with Loop(conditional=(exp.counter < 5)):
+    Label(text='SHAZBOT SAYS : This hasn\'t been on the screen for 5 times',
+          text_size=(300, None),duration=.5)
+    Wait(.2)
+    exp.counter+=1
 
 ######### FLIP TEST FRAMERATE #################################################
 
@@ -196,7 +204,7 @@ with UntilDone():
     img.slide(size=(100, 200), duration=1.0)
 
 ######### AUDIO BEEP RECORD PLAY ##############################################
-
+# from smile.audio import SoundFile, Beep, RecordSoundFile
 # Wait(1.0)
 # Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
 # Beep(freq=880, volume=0.1, duration=1.0)
@@ -223,7 +231,6 @@ with UntilDone():
 # Wait(1.0)
 # SoundFile(rec.filename)
 # Wait(1.0)
-
 ################### RUN IT ####################################################
 exp.run()
 
