@@ -12,16 +12,16 @@ from contextlib import contextmanager
 import weakref
 import operator
 
-import Kivy_overrides
+import kivy_overrides
 from state import State, CallbackState, Parallel, ParentState
 from ref import val, Ref, NotAvailable
 from clock import clock
 
-import Kivy.graphics
-import Kivy.uix.widget
-from Kivy.properties import ObjectProperty, ListProperty
-import Kivy.clock
-_Kivy_clock = Kivy.clock.Clock
+import kivy.graphics
+import kivy.uix.widget
+from kivy.properties import ObjectProperty, ListProperty
+import kivy.clock
+_kivy_clock = kivy.clock.Clock
 
 
 color_name_table = {
@@ -551,7 +551,7 @@ class WidgetState(VisualState):
             return value
 
     def resolve_params(self, params):
-        # remove Kivy's default size hints
+        # remove kivy's default size hints
         # if a user didn't specify them
         if "size_hint" not in params:
             params.setdefault("size_hint_x", None)
@@ -1002,7 +1002,7 @@ def vertex_instruction_widget(instr_cls, name=None):
     """
     if name is None:
         name = instr_cls.__name__
-    base_attrs = dir(Kivy.graphics.instructions.VertexInstruction)
+    base_attrs = dir(kivy.graphics.instructions.VertexInstruction)
     props = []
     for attr in dir(instr_cls):
         if attr in base_attrs:
@@ -1017,7 +1017,7 @@ def vertex_instruction_widget(instr_cls, name=None):
     def __init__(self, *pargs, **kwargs):
         super(type(self), self).__init__(*pargs, **kwargs)
         with self.canvas:
-            self._color = Kivy.graphics.Color(*self.color)
+            self._color = kivy.graphics.Color(*self.color)
             shape_kwargs = {}
             for prop in props:
                 value = getattr(self, prop)
@@ -1038,7 +1038,7 @@ def vertex_instruction_widget(instr_cls, name=None):
                 setattr(self._shape, prop, value)
     dict_["redraw"] = redraw
 
-    return type(name, (Kivy.uix.widget.Widget,), dict_)
+    return type(name, (kivy.uix.widget.Widget,), dict_)
 
 
 vertex_instructions = [
@@ -1054,7 +1054,7 @@ vertex_instructions = [
     #"RoundedRectangle"
     ]
 for instr in vertex_instructions:
-    exec("%s = WidgetState.wrap(vertex_instruction_widget(Kivy.graphics.%s))" %
+    exec("%s = WidgetState.wrap(vertex_instruction_widget(kivy.graphics.%s))" %
          (instr, instr))
 #widget_docs = {
 #    "Button" : {"__doc__": """
@@ -1088,17 +1088,17 @@ widgets = [
     "StackLayout"
     ]
 for widget in widgets:
-    modname = "Kivy.uix.%s" % widget.lower()
+    modname = "kivy.uix.%s" % widget.lower()
     exec("import %s" % modname)
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
 
-import Kivy.uix.rst
-RstDocument = WidgetState.wrap(Kivy.uix.rst.RstDocument)
+import kivy.uix.rst
+RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
 
 
-import Kivy.uix.video
-class Video(WidgetState.wrap(Kivy.uix.video.Video)):
+import kivy.uix.video
+class Video(WidgetState.wrap(kivy.uix.video.Video)):
     """A **WidgetState** that plays a video.
 
     Use this smile state to play a video file. Depending on what package is
@@ -1137,7 +1137,7 @@ class Video(WidgetState.wrap(Kivy.uix.video.Video)):
     """
     def _set_widget_defaults(self):
         # force video to load immediately so that duration is available...
-        _Kivy_clock.unschedule(self._widget._do_video_load)
+        _kivy_clock.unschedule(self._widget._do_video_load)
         self._widget._do_video_load()
         self._widget._video.pause()
         if self._end_time is None:
@@ -1153,8 +1153,8 @@ class Video(WidgetState.wrap(Kivy.uix.video.Video)):
             self._end_time = self._start_time + self._widget._video.duration
 
         # override the update interval (eventually make this a setting)
-        _Kivy_clock.unschedule(self._widget._video._update)
-        _Kivy_clock.schedule_interval(self._widget._video._update, 1/60.)
+        _kivy_clock.unschedule(self._widget._video._update)
+        _kivy_clock.schedule_interval(self._widget._video._update, 1/60.)
 
         # set the size to (0, 0) so we know if it has been changed later
         self._widget.size = (0, 0)
@@ -1179,8 +1179,8 @@ class Video(WidgetState.wrap(Kivy.uix.video.Video)):
         self._widget.state = "stop"
 
 
-import Kivy.uix.image
-class Image(WidgetState.wrap(Kivy.uix.image.Image)):
+import kivy.uix.image
+class Image(WidgetState.wrap(kivy.uix.image.Image)):
     """A WidgetState subclass to present and image on the screen.
 
     This state will present an image from a file onto the experiment window. By
@@ -1220,8 +1220,8 @@ class Image(WidgetState.wrap(Kivy.uix.image.Image)):
     def _set_widget_defaults(self):
         self._widget.size = self._widget.texture_size
 
-import Kivy.uix.label
-class Label(WidgetState.wrap(Kivy.uix.label.Label)):
+import kivy.uix.label
+class Label(WidgetState.wrap(kivy.uix.label.Label)):
     """State for presenting any kind of text stimulus onto the screen.
 
     This state presents a text stimulus for a duration. Using widget
@@ -1254,7 +1254,7 @@ class Label(WidgetState.wrap(Kivy.uix.label.Label)):
     """
     def _set_widget_defaults(self):
         # we need to update the texture now
-        _Kivy_clock.unschedule(self._widget.texture_update)
+        _kivy_clock.unschedule(self._widget.texture_update)
         self._widget.texture_update()
         self._widget.size = self._widget.texture_size
 
