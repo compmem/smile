@@ -62,7 +62,7 @@ words = ['Bob','Tom','Dom']
 
 
 with ButtonPress():
-    MouseCursor("crosshairs.png", (50,50))
+    MouseCursor("crosshairsSmall.png", (25,25))
     a = Button(text='Choice A', center_x=exp.screen.center_x/2)
     b = Button(text='Choice B')
     c = Button(text='Choice C', center_x=exp.screen.center_x*3/2)
@@ -73,7 +73,7 @@ with Loop(words) as trial:
     Label(text=trial.current, duration=4)
     with UntilDone():
         with ButtonPress(correct_resp='chA', duration=4) as bp:
-            MouseCursor("crosshairs.png", (50,50))
+            MouseCursor("crosshairsLarge.png", (150,150))
             Button(name='chA',text='Choice A', center_x=exp.screen.center_x/2)
             Button(name='chB',text='Choice B', center_x=exp.screen.center_x*3/2)
     Wait(.2)
@@ -148,7 +148,7 @@ with ButtonPress():
                      center_top=exp.screen.left_top, blocking=False)
     rect.animate(center_x=lambda t, initial: slider.value, blocking=False)
     ti = TextInput(text="EDIT!", top=slider.bottom, blocking=False)
-    MouseCursor("crosshairs.png",(50,50))
+    MouseCursor("crosshairsMedium.png",(50,50))
 label = Label(text=ti.text, duration=1.0, font_size=50, color="white")
 
 Ellipse(color="white", width=100, height=100)
@@ -204,33 +204,33 @@ with UntilDone():
     img.slide(size=(100, 200), duration=1.0)
 
 ######### AUDIO BEEP RECORD PLAY ##############################################
-# from smile.audio import SoundFile, Beep, RecordSoundFile
-# Wait(1.0)
-# Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
-# Beep(freq=880, volume=0.1, duration=1.0)
-# with Parallel():
-#     Beep(freq=440, volume=0.1, duration=2.0)
-#     with Serial():
-#         Wait(1.0)
-#         Beep(freq=880, volume=0.1, duration=2.0)
-# Wait(1.0)
-# with Meanwhile():
-#     Beep(freq=500, volume=0.1)
-# Beep(freq=900, volume=0.1, duration=1.0)
-# SoundFile("test_sound.wav")
-# SoundFile("test_sound.wav", stop=1.0)
-# Wait(1.0)
-# SoundFile("test_sound.wav", loop=True, duration=3.0)
-# Wait(1.0)
-# SoundFile("test_sound.wav", start=0.5)
-# rec = RecordSoundFile()
-# with UntilDone():
-#     with Loop(3):
-#         Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
-#         Beep(freq=880, volume=0.1, duration=1.0)
-# Wait(1.0)
-# SoundFile(rec.filename)
-# Wait(1.0)
+from smile.audio import SoundFile, Beep, RecordSoundFile
+Wait(1.0)
+Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
+Beep(freq=880, volume=0.1, duration=1.0)
+with Parallel():
+    Beep(freq=440, volume=0.1, duration=2.0)
+    with Serial():
+        Wait(1.0)
+        Beep(freq=880, volume=0.1, duration=2.0)
+Wait(1.0)
+with Meanwhile():
+    Beep(freq=500, volume=0.1)
+Beep(freq=900, volume=0.1, duration=1.0)
+SoundFile("test_sound.wav")
+SoundFile("test_sound.wav", stop=1.0)
+Wait(1.0)
+SoundFile("test_sound.wav", loop=True, duration=3.0)
+Wait(1.0)
+SoundFile("test_sound.wav", start=0.5)
+rec = RecordSoundFile()
+with UntilDone():
+    with Loop(3):
+        Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
+        Beep(freq=880, volume=0.1, duration=1.0)
+Wait(1.0)
+SoundFile(rec.filename)
+Wait(1.0)
 ################### RUN IT ####################################################
 exp.run()
 
