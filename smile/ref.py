@@ -34,13 +34,17 @@ def pass_thru(obj):
     """Returns its only argument. Needed to delay the evaluation of a variable."""
     return obj
 
+def set_item(ls, index, value):
+    ls[index] = value
+    return ls
+
 class Ref(object):
-    """Delayed function call. The basis of the SMILE state machine. This is the 
+    """Delayed function call. The basis of the SMILE state machine. This is the
     object that makes the magic happen. It allows us to delay the evaluation of a
-    variable until experimental runtime.  We needed to have the ability to test 
-    variables that haven't been set yet, for states like *If* and *Loop*, so we 
-    developed the Ref. If you try and evaluate a Ref before it is available, 
-    Smile will throw a **NotAvailableError**.  
+    variable until experimental runtime.  We needed to have the ability to test
+    variables that haven't been set yet, for states like *If* and *Loop*, so we
+    developed the Ref. If you try and evaluate a Ref before it is available,
+    Smile will throw a **NotAvailableError**.
 
     Takes in a function and arguments and you can evaluate that call later. Ref supports most pythonic operations that simply return new Ref instances that evaluate recursively.
 
@@ -82,6 +86,10 @@ class Ref(object):
     @staticmethod
     def getitem(obj, index):
         return Ref(operator.getitem, obj, index)
+
+    @staticmethod
+    def setitem(obj, index, value):
+        return Ref(set_item, obj, index, value)
 
     @staticmethod
     def object(obj):
@@ -157,6 +165,10 @@ class Ref(object):
         return Ref(apply, self, pargs, kwargs)
     def __getitem__(self, index):
         return Ref(operator.getitem, self, index)
+#Not sure how to make this work correctly
+    def __setitem__(self, index, value):
+        self.pargs = [Ref(self.func, *self.pargs, **self.kwargs), index, value]
+        self.func = set_item
     def __getattr__(self, attr):
         return Ref(getattr, self, attr)
     def __lt__(self, other):
@@ -315,11 +327,11 @@ if __name__ == '__main__':
     y[0] = 8
     print y[0], val(ry[0] % 2), val(2 % ry[0])
 
-    class Jubba(object):     
+    class Jubba(object):
         def __init__(self, val):
             self.x = val
-            
-        def __getitem__(self, index):  
+
+        def __getitem__(self, index):
             return Ref.getattr(self, index)
 
     a = Jubba(5)
@@ -328,7 +340,7 @@ if __name__ == '__main__':
     print val(b), val(br)
     a.x += 42.0
     print val(b), val(br)
-    
+
     c = {'y': 6}
     d = Ref.getitem(c, 'y')
 
