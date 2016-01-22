@@ -1318,7 +1318,7 @@ class Serial(SequentialState):
 
 
 class Subroutine(object):
-    """A Subroutine is a decorator for making reusable bits of stat-machine.
+    """A Subroutine is a decorator for making reusable bits of state-machine.
 
     A decorator for functions that build reusable, encapsulated portions of
     state machine. You can pass in any number of keywords and keyword arguments
