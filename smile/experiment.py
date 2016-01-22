@@ -498,13 +498,13 @@ class ExpApp(App):
 
 
 class Experiment(object):
-    """The base for a SMILE statemachine.
+    """The base for a SMILE state-machine.
 
     An *Experiment* is the object that needs to be defined when you are ready
     to start building your smile experiment. This is also the class that you
-    save all of your experimental runtime variables into. Experiment also gives
-    you access to things like screen size, resolution, and framerate during
-    experimental runtime.
+    save all of your experimental run time variables into. Experiment also gives
+    you access to things like screen size, resolution, and frame-rate during
+    experimental run time.
 
     When you have all of your smile code written, the last line you need to add
     to your experiment is `exp.run()`. This will run all of the smile code that
@@ -515,7 +515,7 @@ class Experiment(object):
     Parameters
     ----------
     fullscreen : boolean (default = True)
-        Set to False if you would like to not run in fullscreen.
+        Set to False if you would like to not run in full-screen.
     resolution : tuple
         A tuple of integers that define the size of the experiment window.
     background_color : string (default = 'BLACK')
@@ -542,9 +542,9 @@ class Experiment(object):
     You always want to call `exp = Experiment()` before you type your SMILE
     code. However, you do not want to put this line at the top of your .py.
     Another thing you need to use your newly created *Experiment* variable is
-    to **set** and **get** variables during experimental runtime. You are able
+    to **set** and **get** variables during experimental run time. You are able
     to add and set new attributes to your *Experiment* variable that will not
-    be evaluated until experimental runtime.
+    be evaluated until experimental run time.
 
     ::
 
@@ -670,8 +670,8 @@ class Experiment(object):
         Construct a unique filename for a data file in the log directory.  The
         filename will incorporate the specified 'title' string and it will have
         extension specified with 'ext' (without the dot, if not None).  The
-        filename will also incorporate a timestamp and a number to disambiguate
-        data files with the same title, extension, and timestamp.  The filename
+        filename will also incorporate a time-stamp and a number to disambiguate
+        data files with the same title, extension, and time-stamp.  The filename
         is not a file path.  The filename will be distinct from all filenames
         previously returned from this method even if a file of that name has
         not yet been created in the log directory.
