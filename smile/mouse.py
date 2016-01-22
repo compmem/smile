@@ -29,6 +29,12 @@ def MouseWithin(widget):
     When used in conjunction with the *Wait* state, it can wait until the mouse
     is within a widget.
 
+    Parameters
+    ----------
+    widget : Kivy Widget (Any WidgetState)
+        This parameter is whatever widget you would like to check and see if
+        the mouse is within it.
+
     Example
     -------
 
@@ -58,7 +64,7 @@ def MousePos(widget=None):
     """Returns the position of the mouse.
 
     If given a widget, this function will return the position of the mouse in
-    referense to the position of the widget. If widget is set to None, then
+    reference to the position of the widget. If widget is set to None, then
     this function will return the mouse position in relation to the experiment
     window. """
     pos = Experiment._last_instance()._app.mouse_pos_ref
@@ -86,7 +92,7 @@ def MouseButton(widget=None):
 def MouseRecord(widget=None, name="MouseRecord"):
     """Returns a reference to a record about the next mouse press.
 
-    This funciton returns a *Record* that contains information about the button pressed
+    This function returns a *Record* that contains information about the button pressed
     and the position of the click of the mouse. It also logs this information into a .slog
     file.
 
@@ -101,7 +107,7 @@ class MouseCursor(VisualState):
     """ A state that shows your mouse cursor for a duration.
 
     A *MouseCursor* state will tell your experiment to show your cursor. By
-    default, your cursor is hidden and doesnt send any feedback to your
+    default, your cursor is hidden and doesn't send any feedback to your
     experiment.
 
     Parameters
@@ -122,14 +128,14 @@ class MouseCursor(VisualState):
         the *Experiment* will make it a child of a ParentState or the
         Experiment automatically.
     save_log : boolean, default = True, optional
-        If True, save out a .slog file contianing all of the information
+        If True, save out a .slog file containing all of the information
         for this *Wait* state.
     name : string, optional, default = None
         The unique name of this state
     blocking : boolean, optional, default = True
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
-        running. Only relevent if within a *ParallelParent*.
+        running. Only relevant if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -210,7 +216,7 @@ class MousePress(CallbackState):
 
     A *MousePress* state will tell your experiment to record the buttons
     pressed, but not show the cursor. By default, your cursor is hidden and
-    doesnt send any feedback to your experiment. You call *MousePress* like you
+    doesn't send any feedback to your experiment. You call *MousePress* like you
     would call *KeyPress* in that you can tell it what buttons are valid input,
     and what the correct input is.
 
@@ -223,12 +229,12 @@ class MousePress(CallbackState):
     correct_resp : list (optional)
         If None, then every answer is incorrect. If given a list of
         strings, even if it is one string in length, any buttons in that
-        list of strings will be concidered correct.
+        list of strings will be considered correct.
     base_time : float (optional)
         If you would like the timing of the button press's reaction time to
         be based on the appear time a stimulus, you put that value here.
     widget : widget (optional)
-        If you would like the mouse to appear only within a another visual
+        If you would like the mouse to appear only within another visual
         state, like a *Rectangle* or a *Label*, then you pass in that
         visual state here.
     duration : float (optional)
@@ -239,14 +245,14 @@ class MousePress(CallbackState):
         the *Experiment* will make it a child of a ParentState or the
         Experiment automatically.
     save_log : boolean (default = True, optional)
-        If True, save out a .slog file contianing all of the information
+        If True, save out a .slog file containing all of the information
         for this *Wait* state.
     name : string (optional)
         The unique name of this state
     blocking : boolean (optional, default = True)
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
-        running. Only relevent if within a *ParallelParent*.
+        running. Only relevant if within a *ParallelParent*.
     Logged Attributes
     -----------------
     All parameters above and below are available to be accessed and

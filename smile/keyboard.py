@@ -18,11 +18,13 @@ from log import LogWriter, log2csv
 
 def Key(name):
     """Acceptable Keys
+
     ['A','B','C','D','E','F','G','H','I','J','K',
      'L','M','N','O','P','Q','R','S','T','U','V',
      'W','X','Y','Z','0','1','2','3','4','5','6',
      '7','8','9','LSHIFT','RSHIFT','SPACEBAR','ENTER',
-     'LCTRL','RCTRL','ESC','`','','','','','','','','','','','',]
+     'LCTRL','RCTRL','ESC']
+
     """
     exp = Experiment._last_instance()
     return exp._app.get_key_ref(name.upper())
@@ -77,9 +79,9 @@ class KeyPress(KeyState):
         must all be in capitol letters
     correct_resp : list, tuple, string (optional)
         A list, tuple, or string, containing the names of any keys that
-        would be concidered a correct response.
+        would be considered a correct response.
     base_time : float (optional)
-        If you need to record the time of the response precicely in
+        If you need to record the time of the response precisely in
         relation to the timing of another state, you put that here.
         Example: If you would want to know exactly how long after a *Label*
         state appears on the screen, you would set **base_time** to
@@ -93,21 +95,21 @@ class KeyPress(KeyState):
         the *Experiment* will make it a child of a ParentState or the
         Experiment automatically.
     save_log : boolean (default = True, optional)
-        If True, save out a .slog file contianing all of the information
+        If True, save out a .slog file containing all of the information
         for this state.
     name : string (optional)
         The unique name of this state
     blocking : boolean (optional, default = True)
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its Parallel Parent finishes
-        running. Only relevent if within a *Parallel* Parent.
+        running. Only relevant if within a *Parallel* Parent.
 
     Logged Attributes
     -----------------
     All parameters above and below are available to be accessed and
     manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
-    docstring for addtional logged parameters.
+    docstring for additional logged parameters.
 
     pressed : string
         The name of the key they pressed.
@@ -203,7 +205,7 @@ class KeyRecord(KeyState):
     """A state that records keypresses during a duration.
 
     A *KeyRecord* state will record any keypress, the keyup's and keydown's,
-    aswell as any timing associated with them for a duration.
+    as well as any timing associated with them for a duration.
 
     Parameters
     ----------
@@ -220,14 +222,14 @@ class KeyRecord(KeyState):
     blocking : boolean (optional, default = True)
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its Parallel Parent finishes
-        running. Only relevent if within a *Parallel* Parent.
+        running. Only relevant if within a *Parallel* Parent.
 
     Logged Attributes
     -----------------
     All parameters above and below are available to be accessed and
     manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
-    docstring for addtional logged parameters.
+    docstring for additional logged parameters.
 
     """
     def __init__(self, parent=None, duration=None, name=None, blocking=True):
