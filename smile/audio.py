@@ -84,7 +84,7 @@ def default_init_audio_server():
 class Beep(Wait):
     """Produces a *Beep* noise during experimental runtime.
 
-    A *Beep* state is just like a *Wait* state, in that it pauses the execusion
+    A *Beep* state is just like a *Wait* state, in that it pauses the execution
     of the experiment, but it also plays a beep sound. You can edit the beep
     however you like by passing in different parameters.
 
@@ -96,7 +96,7 @@ class Beep(Wait):
         The frequency value of your beep.
     fadein : float (default = 0.05)
         The loudness of the beep goes from 0 to volume in fadein seconds.
-    fadeout : floast (default = 0.05)
+    fadeout : float (default = 0.05)
         The loudness of the beep goes from volume to 0 in fadeout seconds.
     volume : float (default = 0.5)
         Loudness of the beep. 1 is max system volume and 0 is no volume.
@@ -105,14 +105,14 @@ class Beep(Wait):
         *Experiment* will make it a child of a ParentState or the Experiment
         automatically.
     save_log : boolean (default = True, optional)
-        If True, save out a .slog file contianing all of the information for
+        If True, save out a .slog file containing all of the information for
         this state.
     name : string (optional)
         The unique name of this state
     blocking : boolean (optional, default = True)
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
-        running. Only relevent if within a *ParallelParent*.
+        running. Only relevant if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -126,16 +126,16 @@ class Beep(Wait):
     instantiation_lineno : int
         the line number that this particular state was instantiated.
     start_time : float
-        The time the state was started in experimental runtime.
+        The time the state was started in experimental run time.
     end_time : float
-        The time this state ended in experimental runtime.
+        The time this state ended in experimental run time.
     enter_time : float
         The time this state entered and started all of it's preprocessing in
         experimental
-        runtime.
+        run time.
     leave_time : float
         Logged time that this state left, called callbacks, and ended processes
-        in experimental runtime.
+        in experimental run time.
     finalize_time : float
         The time this state calls `finalize()`
     sound_start_time : float
@@ -207,17 +207,17 @@ class Beep(Wait):
 
 
 class SoundFile(Wait):
-    """Plays a sound file during experimental runtime.
+    """Plays a sound file during experimental run time.
 
     A *SoundFile* state is used to play out a sound file in different ways
     during your experiment.  It gives you the option to loop a sound file, or
-    even start at somepoint within the file, instead of at the begining.
+    even start at some point within the file, instead of at the beginning.
 
     Parameters
     ----------
     filename : string
         The path name to the file you would like to play.  Supported formats
-        are as follows :
+        for pyo are : WAVE, AIFF, AU, RAW, SD2, FLAC, CAF, OOG
     volume : float (default = 0.5, optional)
         Volume you wish to play the sound file at, between 0 and 1.
     start : float (default = 0.0, optional)
@@ -232,20 +232,21 @@ class SoundFile(Wait):
         than the duration of the sound file and *loop* is set to True, then it
         will loop the sound file.
     loop : boolean (default = False, optional)
-        If True, then the soundfile will loop over the duration of the state.
+        If True, then the **SoundFile** will loop over the duration of the
+        state.
     parent : ParentState (optional)
         The state you would like this state to be a child of. If not set, the
         *Experiment* will make it a child of a ParentState or the Experiment
         automatically.
     save_log : boolean (default = True, optional)
-        If True, save out a .slog file contianing all of the information for
+        If True, save out a .slog file containing all of the information for
         this state.
     name : string (optional)
         The unique name of this state
     blocking : boolean (optional, default = True)
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
-        running. Only relevent if within a *ParallelParent*.
+        running. Only relevant if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -259,15 +260,15 @@ class SoundFile(Wait):
     instantiation_lineno : int
         the line number that this particular state was instantiated.
     start_time : float
-        The time the state was started in experimental runtime.
+        The time the state was started in experimental run time.
     end_time : float
-        The time this state ended in experimental runtime.
+        The time this state ended in experimental run time.
     enter_time : float
         The time this state entered and started all of it's preprocessing in
-        experimental runtime.
+        experimental run time.
     leave_time : float
         Logged time that this state left, called callbacks, and ended processes
-        in experimental runtime.
+        in experimental run time.
     finalize_time : float
         The time this state calls `finalize()`
     sound_start_time : float
@@ -337,7 +338,7 @@ class SoundFile(Wait):
 
 
 class RecordSoundFile(Wait):
-    """Records sound from a mic during experimental runtime.
+    """Records sound from a mic during experimental run time.
 
     A *RecordSoundFile* state will record sound from a mic for a duration and
     save it out to a filename.
@@ -350,20 +351,20 @@ class RecordSoundFile(Wait):
     filename : string (optional)
         The filename you would like to save the recording (this should have no
         extension). It will be auto-generated based on the name of the state
-        and a timestamp if not provided.
+        and a time-stamp if not provided.
     parent : ParentState (optional)
         The state you would like this state to be a child of. If not set, the
         *Experiment* will make it a child of a ParentState or the Experiment
         automatically.
     save_log : boolean (default = True, optional)
-        If True, save out a .slog file contianing all of the information for
+        If True, save out a .slog file containing all of the information for
         this state.
     name : string (optional)
         The unique name of this state
     blocking : boolean (optional, default = True)
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
-        running. Only relevent if within a *ParallelParent*.
+        running. Only relevant if within a *ParallelParent*.
 
     Logged Attributes
     -----------------
@@ -379,15 +380,15 @@ class RecordSoundFile(Wait):
     name : string
         The unique name given to this state
     start_time : float
-        The time the state was started in experimental runtime
+        The time the state was started in experimental run time
     end_time : float
-        The time this state ended in experimental runtime
+        The time this state ended in experimental run time
     enter_time : float
         The time this state entered and started all of it's preprocessing in
-        experimental runtime.
+        experimental run time.
     leave_time : float
         Logged time that this state left, called callbacks, and ended processes
-        in experimental runtime.
+        in experimental run time.
     finalize_time : float
         The time this state calls `finalize()`
     rec_start : float

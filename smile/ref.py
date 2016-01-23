@@ -35,14 +35,44 @@ def pass_thru(obj):
     return obj
 
 class Ref(object):
-    """Delayed function call. The basis of the SMILE state machine. This is the 
-    object that makes the magic happen. It allows us to delay the evaluation of a
-    variable until experimental runtime.  We needed to have the ability to test 
-    variables that haven't been set yet, for states like *If* and *Loop*, so we 
-    developed the Ref. If you try and evaluate a Ref before it is available, 
-    Smile will throw a **NotAvailableError**.  
+    """Delayed function call.
 
-    Takes in a function and arguments and you can evaluate that call later. Ref supports most pythonic operations that simply return new Ref instances that evaluate recursively.
+    The basis of the SMILE state machine. This is the object that makes the
+    magic happen. It allows us to delay the evaluation of a variable until
+    experimental run time.  We needed to have the ability to test variables
+    that haven't been set yet, for states like *If* and *Loop*, so we developed
+    the Ref. If you try and evaluate a Ref before it is available, SMILE will
+    throw a **NotAvailableError**.
+
+    It can be used as either a Delayed function call or as a delayed evaluation
+    of a variable. Say you would like to present the width of a Rectangle on
+    the screen. Since the Rectangle doesn't exist at BT, you can't pass it into
+    *str()* and hope that it evaluates. Your code would break. Instead, you can
+    pass in a reference to the return value of str(rec.width) into your label
+    with the Ref object.
+
+    If you attempt to apply an operators to a Ref, a new Ref will be
+    constructed, containing the old Ref and everything else associated with the
+    new operation.
+
+    Example
+    -------
+
+    ::
+
+        from smile.common import *
+
+        exp = Experiment()
+
+        with Loop(10) as looper:
+            with Parallel():
+                rec = Rectangle(width=176*(looper.i + 1), height=222,
+                                color='BROWN', duration=1)
+                Label(text="The width of the rectangle is " + Ref(str, rec.width), duration=1,
+                      center_x=exp.screen.center_x/2)
+        exp.run()
+
+
 
     """
     def __init__(self, func, *pargs, **kwargs):
@@ -315,11 +345,11 @@ if __name__ == '__main__':
     y[0] = 8
     print y[0], val(ry[0] % 2), val(2 % ry[0])
 
-    class Jubba(object):     
+    class Jubba(object):
         def __init__(self, val):
             self.x = val
-            
-        def __getitem__(self, index):  
+
+        def __getitem__(self, index):
             return Ref.getattr(self, index)
 
     a = Jubba(5)
@@ -328,7 +358,7 @@ if __name__ == '__main__':
     print val(b), val(br)
     a.x += 42.0
     print val(b), val(br)
-    
+
     c = {'y': 6}
     d = Ref.getitem(c, 'y')
 
