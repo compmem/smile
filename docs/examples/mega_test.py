@@ -117,7 +117,7 @@ with Loop(3):
 
 ######### VIDEO TESTING STUFF #################################################
 
-Video(source="test_video.mp4", duration=4.0, width=500, height=100)
+Video(source="test_video.mp4", duration=4.0)
 
 pb = ProgressBar(max=100)
 with UntilDone():
@@ -223,10 +223,10 @@ Wait(1.0)
 SoundFile("test_sound.wav", loop=True, duration=3.0)
 Wait(1.0)
 SoundFile("test_sound.wav", start=0.5)
-rec = RecordSoundFile()
+rec = RecordSoundFile(filename='Test_rec.mp3')
 with UntilDone():
     with Loop(3):
-        Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
+        Beep(freq=[1000, 500, 600], volume=0.1, duration=1.0)
         Beep(freq=880, volume=0.1, duration=1.0)
 Wait(1.0)
 SoundFile(rec.filename)
