@@ -25,7 +25,7 @@ def MathDistract(self,
                  incorrect_beep_rf=0.5,
                  ans_mod=[0,1,-1,10,-10],
                  ans_prob=[.5,.125,.125,.125,.125],
-                 visual_feeback=True):
+                 visual_feedback=True):
     """
     Math distractor for specified period of time.  Logs to a subroutine_0.slog
 
@@ -131,7 +131,7 @@ def MathDistract(self,
             kp = KeyPress(keys=(keys['True'],keys['False']), correct_resp=trial.current['correct_key'])
             # If visual_feedback is True, display a the words Correct! or Incorrect! in red or green
             # for the remainder of the trial duration.
-            with If(visual_feeback):
+            with If(visual_feedback):
                 with If(kp.correct):
                     Label(text='Correct!', center_x=self.exp.screen.center_x, center_y=self.exp.screen.center_y/2.0,
                             font_size=60,duration=0.5, color='green')
@@ -168,7 +168,7 @@ if __name__ == '__main__':
     exp = Experiment()
     with Loop(3) as lp:
         Label(text="Trial "+Ref(str,lp.i), duration=1)
-        md = MathDistract(visual_feeback=True, duration=10, max_probs=12)
+        md = MathDistract(visual_feedback=True, duration=10, max_probs=12)
         Log(name='Bababooie',
         resp_time=md.responses)
     exp.run()
