@@ -5,61 +5,7 @@ from keyboard import KeyPress
 from ref import Ref
 import random
 
-
-
-@Subroutine
-def MathDistract(self,
-                 num_vars=2,
-                 min_num=1,
-                 max_num=9,
-                 max_probs=50,
-                 duration=30,
-                 keys={'True':'F','False':'J'},
-                 plus_and_minus=False,
-                 text_size = None,
-                 correct_beep_dur=.5,
-                 correct_beep_freq=400,
-                 correct_beep_rf=0.5,
-                 incorrect_beep_dur=.5,
-                 incorrect_beep_freq=200,
-                 incorrect_beep_rf=0.5,
-                 ans_mod=[0,1,-1,10,-10],
-                 ans_prob=[.5,.125,.125,.125,.125],
-                 visual_feedback=True):
-    """
-    Math distractor for specified period of time.  Logs to a subroutine_0.slog
-
-    INPUT ARGS:
-      duration - set this param for non-self-paced distractor;
-                         buzzer sounds when time's up; you get at least
-                         minDuration/problemTimeLimit problems.
-      num_vars - Number of variables in the problem.
-      max_num - Max possible number for each variable.
-      min_num - Min possible number for each varialbe.
-      max_probs - Max number of problems.
-      plus_and_minus - True will have both plus and minus.
-      min_duration - Minimum duration of distractor.
-      text_size - Vertical height of the text.
-      correct_beep_dur - Duration of correct beep.
-      correct_beep_freq - Frequency of correct beep.
-      correct_beep_rf - Rise/Fall of correct beep.
-      incorrect_beep_dur - Duration of incorrect beep.
-      incorrect_beep_freq - Frequency of incorrect beep.
-      incorrect_beep_rf - Rise/Fall of incorrect beep
-      keys - dictionary of keys for true/false problems. e.g., tfKeys = ('True':'T','False':'F')
-      ans_mod - For True/False problems, the possible values to add to correct answer.
-      ans_prob - The probability of each modifer on ansMod (must add to 1).
-      visual_feedback - Whether to provide visual feedback to indicate correctness.
-
-    OUTPUT ARGS
-      MathDistract.responses - A list of dictionaries containing the following:
-                                      - responses['correct'] == Boolean
-                                      - responses['resp_time'] == Float (seconds)
-                                      - responses['stim'] == String (The trial's stimulus)
-    """
-
-    self.responses = []
-    def gen_questions(num_vars, max_num, min_num, max_probs, plus_and_minus, ans_mod, ans_prob):
+def _gen_questions(num_vars, max_num, min_num, max_probs, plus_and_minus, ans_mod, ans_prob):
         #List Gen
         trials=[]
         for i in range(max_probs):
@@ -122,7 +68,63 @@ def MathDistract(self,
                     'correct_key':keys[str(condition)]
             })
         return trials
-    trials = Ref(gen_questions,num_vars, max_num, min_num, max_probs, plus_and_minus, ans_mod, ans_prob)
+
+
+
+@Subroutine
+def MathDistract(self,
+                 num_vars=2,
+                 min_num=1,
+                 max_num=9,
+                 max_probs=50,
+                 duration=30,
+                 keys={'True':'F','False':'J'},
+                 plus_and_minus=False,
+                 text_size = None,
+                 correct_beep_dur=.5,
+                 correct_beep_freq=400,
+                 correct_beep_rf=0.5,
+                 incorrect_beep_dur=.5,
+                 incorrect_beep_freq=200,
+                 incorrect_beep_rf=0.5,
+                 ans_mod=[0,1,-1,10,-10],
+                 ans_prob=[.5,.125,.125,.125,.125],
+                 visual_feedback=True):
+    """
+    Math distractor for specified period of time.  Logs to a subroutine_0.slog
+
+    INPUT ARGS:
+      duration - set this param for non-self-paced distractor;
+                         buzzer sounds when time's up; you get at least
+                         minDuration/problemTimeLimit problems.
+      num_vars - Number of variables in the problem.
+      max_num - Max possible number for each variable.
+      min_num - Min possible number for each varialbe.
+      max_probs - Max number of problems.
+      plus_and_minus - True will have both plus and minus.
+      min_duration - Minimum duration of distractor.
+      text_size - Vertical height of the text.
+      correct_beep_dur - Duration of correct beep.
+      correct_beep_freq - Frequency of correct beep.
+      correct_beep_rf - Rise/Fall of correct beep.
+      incorrect_beep_dur - Duration of incorrect beep.
+      incorrect_beep_freq - Frequency of incorrect beep.
+      incorrect_beep_rf - Rise/Fall of incorrect beep
+      keys - dictionary of keys for true/false problems. e.g., tfKeys = ('True':'T','False':'F')
+      ans_mod - For True/False problems, the possible values to add to correct answer.
+      ans_prob - The probability of each modifer on ansMod (must add to 1).
+      visual_feedback - Whether to provide visual feedback to indicate correctness.
+
+    OUTPUT ARGS
+      MathDistract.responses - A list of dictionaries containing the following:
+                                      - responses['correct'] == Boolean
+                                      - responses['resp_time'] == Float (seconds)
+                                      - responses['stim'] == String (The trial's stimulus)
+    """
+
+    self.responses = []
+
+    trials = Ref(_gen_questions,num_vars, max_num, min_num, max_probs, plus_and_minus, ans_mod, ans_prob)
     Debug(name='bob', text=trials)
     with Loop(trials) as trial:
         Label(text='+', duration=1.0, font_size=50, color='white')
