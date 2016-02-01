@@ -155,8 +155,8 @@ class MouseCursor(VisualState):
                                           blocking=blocking)
         if filename is None:
             self._init_filename = os.path.join(os.path.dirname(__file__),
-                                               "crosshairs.png")
-            self._init_offset = (50, 50)
+                                               "crosshairs_50x50.png")
+            self._init_offset = (25, 25)
         else:
             self._init_filename = filename
             self._init_offset = offset
