@@ -1015,22 +1015,35 @@ class Parallel(ParentState):
         # empty the children lists on enter
         self.__blocking_children = []
         self.__my_children = []
+        self.__remaining = set()
+        self.__blocking_remaining = set()
         if len(self._children):
-            # process each child and make clones
+            # process each child
             for child in self._children:
-                # clone the child
-                inactive_child = child._clone(self)
-                self.__my_children.append(inactive_child)
-                # if it's blocking append to the blocking children
-                if child._blocking:
-                    self.__blocking_children.append(inactive_child)
-                clock.schedule(partial(inactive_child.enter, self._start_time))
-            # set of all non-run cloned children
-            self.__remaining = set(self.__my_children)
-            self.__blocking_remaining = set(self.__blocking_children)
+                self._insert_child(child, self._start_time)
         else:
             self._end_time = self._start_time
             clock.schedule(self.leave)
+
+    def _insert_child(self, child, start_time):
+        # clone the child
+        child = child._clone(self)
+        # add it to the list of running children
+        self.__my_children.append(child)
+        # if it's blocking append to the blocking children
+        if child._blocking:
+            self.__blocking_children.append(child)
+            self.__blocking_remaining.add(child)
+        # set of all non-run cloned children
+        self.__remaining.add(child)
+        # schedule the state to run
+        clock.schedule(partial(child.enter, start_time))
+
+    def insert(self, children=None, parent=None, save_log=True, name=None):
+        if isinstance(children, State):
+            children = [children]
+        return ParallelInsertState(self, children=children, parent=parent,
+                                   save_log=save_log, name=name)
 
     def child_leave_callback(self, child):
         # called when any child leaves
@@ -1059,6 +1072,25 @@ class Parallel(ParentState):
         else:
             # otherwise, set to max end time
             self._end_time = max(end_times)
+
+
+class ParallelInsertState(ParentState):
+    def __init__(self, parallel_state, children=None, parent=None,
+                 save_log=True, name=None):
+        super(ParallelInsertState, self).__init__(children=children,
+                                                  parent=parent,
+                                                  save_log=save_log,
+                                                  name=name,
+                                                  blocking=True)
+        self.__parallel_state = parallel_state
+
+    def _enter(self):
+        super(ParallelInsertState, self)._enter()
+        parallel_state = self.__parallel_state.current_clone
+        for child in self._children:
+            parallel_state._insert_child(child, self._start_time)
+        self._end_time = self._start_time
+        clock.schedule(self.leave)
 
 
 @contextmanager
@@ -2743,6 +2775,21 @@ if __name__ == '__main__':
             Wait(1.0)
         Wait(100.0)
     Func(print_actual_duration, s)
+
+    Debug(name='before parallel')
+    with Parallel() as p:
+        Debug(name='in parallel')
+        with Loop(5) as l:
+            with p.insert():
+                with Serial():
+                    Wait(l.i)
+                    Debug(name='in insert after n second wait', n=l.i)
+                with Serial():
+                    Wait(2.0)
+                    Debug(name='in insert after 2s wait', n=l.i)
+                Debug(name='in insert', n=l.i)
+            p.insert(Debug(name='in insert #2', n=l.i))
+    Debug(name='after parallel')
 
     Wait(2.0)
 
