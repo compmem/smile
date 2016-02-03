@@ -17,7 +17,7 @@ from video import Label
 
 # set the allowable keys (A-Z)
 asciiplus = [str(unichr(i)) for i in range(65,65+26)]
-asciiplus += ['ENTER','BACKSPACE','SPACE']
+asciiplus += ['ENTER','BACKSPACE','SPACEBAR']
 asciiplus += ['%d'%i for i in range(10)]
 
 @Subroutine
@@ -141,7 +141,7 @@ def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
                     self.fk_first_key_time = kp.press_time
 
                 # append the text
-                with If(kp.pressed == 'SPACE'):
+                with If(kp.pressed == 'SPACEBAR'):
                     # handle the space
                     self.fk_cur_resp += ' '
                 with Else():
