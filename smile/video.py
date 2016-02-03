@@ -312,6 +312,7 @@ class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never 
         running. Only relevent if within a *ParallelParent*.
     """
     layers = []
+
     def __init__(self, color, duration=None, parent=None, save_log=True,
                  name=None, blocking=True):
         super(BackgroundColor, self).__init__(parent=parent,
@@ -336,6 +337,31 @@ class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never 
             self._exp.set_background_color(color)
         else:
             BackgroundColor.layers.remove(self)
+
+
+class BlockingFlips(VisualState):
+    """Force blocking flips when updating the screen.
+    """
+    layers = []
+
+    def __init__(self, duration=None, parent=None, save_log=True,
+                 name=None, blocking=True):
+        super(BlockingFlips, self).__init__(parent=parent,
+                                            duration=duration,
+                                            save_log=save_log,
+                                            name=name,
+                                            blocking=blocking)
+
+    def show(self):
+        BlockingFlips.layers.append(self)
+        self._exp._app.force_blocking_flip = len(BlockingFlips.layers) > 0
+
+    def unshow(self):
+        if BlockingFlips.layers[-1] is self:
+            BlockingFlips.layers.pop()
+        else:
+            BlockingFlips.layers.remove(self)
+        self._exp._app.force_blocking_flip = len(BlockingFlips.layers) > 0
 
 
 class WidgetState(VisualState):

@@ -110,6 +110,10 @@ class Screen(object):
         self.__app = app
 
     @property
+    def last_flip(self):
+        return self.__app.last_flip_ref
+
+    @property
     def width(self):
         return self.__app.width_ref
 
@@ -207,6 +211,9 @@ class ExpApp(App):
         self.mouse_button_ref = Ref.getattr(self, "mouse_button")
         self.width_ref = Ref.getattr(Window, "width")
         self.height_ref = Ref.getattr(Window, "height")
+        self.last_flip = event_time(0.0, 0.0)
+        self.last_flip_ref = Ref.getattr(self, "last_flip")
+        self.force_blocking_flip = False
         self.__screen = Screen(self)
         self.flip_interval = 1/60. # default to 60 Hz
 
@@ -419,7 +426,7 @@ class ExpApp(App):
             while len(self.video_queue) and self.video_queue[0].flipped:
                 del self.video_queue[0]
             if need_flip:
-                if len(flip_time_callbacks):
+                if len(flip_time_callbacks) or self.force_blocking_flip:
                     #print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     self.blocking_flip()  #TODO: use sync events instead!
                     for cb in flip_time_callbacks:
@@ -452,6 +459,7 @@ class ExpApp(App):
         #glDisableVertexAttribArray(0)  # kivy needs this to stay enabled
         glFinish()
         self.last_flip = event_time(clock.now(), 0.0)
+        self.last_flip_ref.dep_changed()
         return self.last_flip
 
     def calc_flip_interval(self, nflips=55, nignore=5):
