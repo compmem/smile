@@ -1,8 +1,8 @@
 from smile.common import *
 from smile.video import ProgressBar, TextInput
 exp = Experiment()
-
-
+import smile
+import os
 ######### PARALLEL LOOPING LABEL ##############################################
 with Parallel():
     with Loop(100) as lp:
@@ -62,7 +62,7 @@ words = ['Bob','Tom','Dom']
 
 
 with ButtonPress():
-    MouseCursor("crosshairsSmall.png", (25,25))
+    MouseCursor()
     a = Button(text='Choice A', center_x=exp.screen.center_x/2)
     b = Button(text='Choice B')
     c = Button(text='Choice C', center_x=exp.screen.center_x*3/2)
@@ -73,7 +73,7 @@ with Loop(words) as trial:
     Label(text=trial.current, duration=4)
     with UntilDone():
         with ButtonPress(correct_resp='chA', duration=4) as bp:
-            MouseCursor("crosshairsLarge.png", (150,150))
+            MouseCursor()
             Button(name='chA',text='Choice A', center_x=exp.screen.center_x/2)
             Button(name='chB',text='Choice B', center_x=exp.screen.center_x*3/2)
     Wait(.2)
@@ -117,13 +117,13 @@ with Loop(3):
 
 ######### VIDEO TESTING STUFF #################################################
 
-Video(source="test_video.mp4", duration=4.0)
+Video(source=os.path.join(os.path.dirname(smile.__file__), "test_video.mp4"), duration=4.0)
 
 pb = ProgressBar(max=100)
 with UntilDone():
     pb.slide(value=100, duration=5.0)
 
-Image(source="face-smile.png", duration=5.0)
+Image(source=os.path.join(os.path.dirname(smile.__file__), "face-smile.png"), duration=5.0)
 
 text = """
 .. _top:
@@ -148,7 +148,7 @@ with ButtonPress():
                      center_top=exp.screen.left_top, blocking=False)
     rect.animate(center_x=lambda t, initial: slider.value, blocking=False)
     ti = TextInput(text="EDIT!", top=slider.bottom, blocking=False)
-    MouseCursor("crosshairsMedium.png",(50,50))
+    MouseCursor()
 label = Label(text=ti.text, duration=1.0, font_size=50, color="white")
 
 Ellipse(color="white", width=100, height=100)
@@ -198,7 +198,7 @@ with BoxLayout(width=500, height=500, top=exp.screen.top, duration=4.0):
     Rectangle(color="#00FF00", pos=(0, 0), size_hint=(1, 1), duration=2.0)
     Rectangle(color=(0.0, 0.0, 1.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=1.0)
     rect.slide(color=(1.0, 1.0, 1.0, 1.0), duration=1.0)
-img = Image(source="face-smile.png", size=(10, 10), allow_stretch=True,
+img = Image(source=os.path.join(os.path.dirname(smile.__file__), "face-smile.png"), size=(10, 10), allow_stretch=True,
             keep_ratio=False, mipmap=True)
 with UntilDone():
     img.slide(size=(100, 200), duration=1.0)
@@ -217,12 +217,12 @@ Wait(1.0)
 with Meanwhile():
     Beep(freq=500, volume=0.1)
 Beep(freq=900, volume=0.1, duration=1.0)
-SoundFile("test_sound.wav")
-SoundFile("test_sound.wav", stop=1.0)
+SoundFile(os.path.join(os.path.dirname(smile.__file__), "test_sound.wav"))
+SoundFile(os.path.join(os.path.dirname(smile.__file__), "test_sound.wav"), stop=1.0)
 Wait(1.0)
-SoundFile("test_sound.wav", loop=True, duration=3.0)
+SoundFile(os.path.join(os.path.dirname(smile.__file__), "test_sound.wav"), loop=True, duration=3.0)
 Wait(1.0)
-SoundFile("test_sound.wav", start=0.5)
+SoundFile(os.path.join(os.path.dirname(smile.__file__), "test_sound.wav"), start=0.5)
 rec = RecordSoundFile(filename='Test_rec.mp3')
 with UntilDone():
     with Loop(3):
