@@ -11,7 +11,7 @@
 import cPickle
 import gzip
 import csv
-
+import os
 
 class LogWriter(object):
     """An object that handles the writing of .slog files.
@@ -60,11 +60,21 @@ class LogReader(object):
     Parameters
     ----------
     filename : string
-        The name of the .slog that you wish to read from.
-
+        The name of the .slog that you wish to read.
+    unwrap : boolean
+        Whether to unwrap sub-dicts and tuples when reading.
+    append_columns : dict
+        Additional columns to add to each record.
     """
-    def __init__(self, filename):
+    def __init__(self, filename, unwrap=False, **append_columns):
+        # set the file
         self._file = gzip.open(filename, "rb")
+
+        # save whether we should unwrap when reading
+        self._unwrap = unwrap
+
+        # save additional columns to append
+        self._append_columns = append_columns
 
         # set up the unpickler
         self._unpickler = cPickle.Unpickler(self._file)
@@ -73,7 +83,18 @@ class LogReader(object):
         """Returns a dicitionary with the field names as keys.
         """
         try:
-            return self._unpickler.load()
+            # get the dict
+            rec = self._unpickler.load()
+
+            # unwrap it
+            if self._unwrap:
+                rec = _unwrap(rec)
+
+            # append additional cols
+            rec.update(self._append_columns)
+
+            # return it
+            return rec
         except EOFError:
             return None
 
@@ -118,14 +139,57 @@ def _unwrap(d, prefix=''):
     return new_item
 
 
-def log2csv(log_filename, csv_filename, **append_columns):
-    """Convert a slog to a CSV."""
+def _root_to_files(log_filename):
+    """Get set of slogs from root."""
+    if os.path.exists(log_filename):
+        # there is just one
+        log_files = [log_filename]
+    else:
+        # try appending numbers
+        log_files = []
+        for distinguisher in xrange(256):
+            filename = "%s_%d.slog" % (log_filename,
+                                       distinguisher)
+            if os.path.exists(filename):
+                log_files.append(filename)
+            else:
+                break
+    return log_files
+
+
+def log2dl(log_filename, unwrap=True, **append_columns):
+    """Convert slog files to list of dicts (a dict-list).
+    """
+    # determine set of slogs
+    log_files = _root_to_files(log_filename)
+    if len(log_files) == 0:
+        raise IOError("No matching slog files found.")
+
+    # loop over slogs pulling out dicts
+    dl = []
+    for i, slog in enumerate(log_files):
+        append_columns.update({'log_num': i})
+        dl.extend([r for r in
+                   LogReader(slog,
+                             unwrap=unwrap,
+                             **append_columns)])
+    return dl
+
+
+def log2csv(log_filename, csv_filename=None, **append_columns):
+    """Convert slog files to a CSV."""
+    # determine set of slogs
+    log_files = _root_to_files(log_filename)
+    if len(log_files) == 0:
+        raise IOError("No matching slog files found.")
+
     # get the set of colnames
     colnames = append_columns.keys()
-    for record in LogReader(log_filename):
-        for fieldname in _unwrap(record):
-            if fieldname not in colnames:
-                colnames.append(fieldname)
+    for slog in log_files:
+        for record in LogReader(slog):
+            for fieldname in _unwrap(record):
+                if fieldname not in colnames:
+                    colnames.append(fieldname)
 
     # loop again and write out to file
     with open(csv_filename, 'wb') as fout:
