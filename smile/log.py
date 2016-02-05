@@ -184,12 +184,18 @@ def log2csv(log_filename, csv_filename=None, **append_columns):
         raise IOError("No matching slog files found.")
 
     # get the set of colnames
-    colnames = append_columns.keys()
-    for slog in log_files:
-        for record in LogReader(slog):
-            for fieldname in _unwrap(record):
+    colnames = []
+    for i, slog in enumerate(log_files):
+        # update the append_columns
+        append_columns.update({'log_num': i})
+        for record in LogReader(slog, unwrap=True, **append_columns):
+            for fieldname in record:
                 if fieldname not in colnames:
                     colnames.append(fieldname)
+
+    if csv_filename is None:
+        # try making one out of the log_filename root
+        csv_filename = os.path.splitext(log_filename)[0] + '.csv'
 
     # loop again and write out to file
     with open(csv_filename, 'wb') as fout:
@@ -198,18 +204,17 @@ def log2csv(log_filename, csv_filename=None, **append_columns):
         dw.writeheader()
 
         # loop over log entries
-        for record in LogReader(log_filename):
-            # unwrap dict to top level
-            record = _unwrap(record)
+        for i, slog in enumerate(log_files):
+            # update the append_columns
+            append_columns.update({'log_num': i})
 
-            # append cols after unwraping
-            record.update(append_columns)
+            # loop over all records
+            for record in LogReader(slog, unwrap=True, **append_columns):
+                # handle unicode
+                record = dict((k, v.encode('utf-8')
+                               if isinstance(v, unicode)
+                               else v)
+                              for k, v in record.iteritems())
 
-            # handle unicode
-            record = dict((k, v.encode('utf-8')
-                           if isinstance(v, unicode)
-                           else v)
-                          for k, v in record.iteritems())
-
-            # write it out
-            dw.writerow(record)
+                # write it out
+                dw.writerow(record)
