@@ -5,6 +5,7 @@ import smile
 import os
 ######### PARALLEL LOOPING LABEL ##############################################
 with Parallel():
+
     with Loop(100) as lp:
         t1lb1 = Label(text='0', center_x=exp.screen.center_x/2, duration=.1, font_size=(lp.i+1))
     with Loop(5):
