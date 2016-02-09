@@ -1169,8 +1169,8 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         if self._end_time is None:
             # we need the duration to set the end time
             if self._widget._video.duration == -1:
-                # try for half a ms
-                for i in range(5):
+                # try for up to 1 ms
+                for i in range(10):
                     if self._widget._video.duration == -1:
                         break
                     print 'd',
@@ -1191,12 +1191,13 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         self._widget._video._update(0)  # prevent white flash at start
         if self._widget.width == 0 and self._widget.height == 0:
             if not self._widget._video.texture:
-                # gotta wait for the texture to load (up to .5ms)
-                for i in range(5):
+                # gotta wait for the texture to load (up to 1ms)
+                for i in range(10):
                     if self._widget._video.texture:
                         break
                     print 't',
                     clock.usleep(100)
+                    self._widget._video._update(0)
             self.live_change(size=self._widget._video.texture.size)
         super(Video, self).show()
 
