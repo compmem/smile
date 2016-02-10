@@ -1,5 +1,10 @@
+============
+How to SMILE
+============
+
+
 What is SMILE?
---------------
+==============
 
 SMILE is a State Machine Interface Library for Experiments. In broad terms, a
 state machine is an abstract device that stores the current status of relevant
@@ -16,7 +21,7 @@ The goal of SMILE was to create an easy to use State Machine Interface where
 the hardest part about coding an experiment would be the stimulus list
 generation. Through SMILE, we have developed a state machine interface between
 the experimenter and Kivy, a python library that specializes in creating and
-displaying stimulus on the screen in the form of widgets. With Smile, you are
+displaying stimulus on the screen in the form of widgets. With SMILE, you are
 able to build a Psychology experiment without the hassle of handling any of the
 timing, the logging of data, or the presenting of stimulus. SMILE is considered
 to be a hierarchical state machine.  This is because all of the states in
@@ -24,7 +29,8 @@ SMILE have a parent-child relationship that comes into play when dealing with
 the timing of multiple states at the same time.
 
 What is A Hierarchical State Machine?
--------------------------------------
+=====================================
+
 A Hierarchical State Machine is a state machine that relies on both the input
 and all the previous states' information in order to make a decision as to
 which state to go to next. It takes context information from the previous
@@ -61,7 +67,8 @@ about SMILE is the difference between *Experimental Build Time* and
 *Experimental Run Time*.
 
 Build Time V.S. Run Time
-------------------------
+========================
+
 The difference between **BT** and **RT** is the most important concept to
 understand when learning to SMILE. The SMILE code that you type out in your
 experiment is being run before the experiment even starts. There are 2 lines of
@@ -69,13 +76,13 @@ code that designate the start of **BT** and then the start of **RT**. Those
 lines are *exp = Experiment()* and *exp.run()* respectively.
 
 *exp = Experiment()* initializes your instance of an Experiment. All calls to a
-state must take place after this line in your code! Once this line is ran,
+state must take place after this line in your code! Once this line is run,
 **BT** starts.  **BT**, or Experimental Build Time, is the section of your
 code that sets up how your experiment will run.
 
 .. note::
 
-    Any functions called in **BT** will not be run during **RT** unless ran
+    Any functions called in **BT** will not be run during **RT** unless run
     through the proper channel. See *Calling functions in RT*.
 
 During Experimental Build Time, you are setting up all of the states in your
@@ -120,7 +127,8 @@ follows
 
 
 What are References?
---------------------
+====================
+
 The second most important things to understand about SMILE are how References
 work. The definition of a SMILE reference is a variable who's value is to be
 evaluated later. Without the *Reference* we would not be able to separate the
@@ -163,7 +171,8 @@ You shouldn't run into *NotAvaiableError*'s unless you are trying to time
 a state based off the disappear time of something.
 
 The states of a State
----------------------
+=====================
+
 Every state in SMILE runs through 6 main function calls. These function calls
 are automatic and never need to be called by the end user, but it is important
 to understand what they do and when they do it to fully understand SMILE.
@@ -171,16 +180,16 @@ These function calls are *__init__*, *.enter()*, *.start()*, *.end()*,
 *.leave()*, and *.finalize()*. Each of these calls happen at different parts of
 the experiment, and have different functions depending on the subclass.
 
-*.__init__* happens during **BT** and is the only one to happen at **BT**.
+**.__init__** happens during **BT** and is the only one to happen at **BT**.
 This function usually sets up all of the references, proccesses some of the
 parameters, and knows what to do if a parameter is missing or wasn't passed in.
 
-*.enter()* happens during **RT** and will be called after the previous state
+**.enter()** happens during **RT** and will be called after the previous state
 calls *.leave()*. This function will evaluate all of the parameters that were
 references, and set all the values of the remaining parameters. It will also
 schedule a start time for this state.
 
-*.start()* is a class of function calls that, during **RT**, the state starts
+**.start()** is a class of function calls that, during **RT**, the state starts
 doing whatever makes it special. this function is not always called *.start()*.
 In the case of an *Image* state, *.start()* is replaced with *.appear()*. The
 *.start()* functions could do anything from showing an image to recording a
@@ -191,7 +200,7 @@ main function.
 
     A *.start()* kind of call will only exist in an Action State (see below).
 
-*.end()* is a class of function calls that, during **RT**, ends whatever makes
+**.end()** is a class of function calls that, during **RT**, ends whatever makes
 the state special. In the case of an Image, *.end()* is replaced with
 *.disappear()*. After *.end()*, *.leave()* is available to be called.
 
@@ -199,26 +208,27 @@ the state special. In the case of an Image, *.end()* is replaced with
 
     A *.end()* kind of call will only exist in an Action State (see below).
 
-*.leave()* happens during **RT** and will be called whenever the duration of
+**.leave()** happens during **RT** and will be called whenever the duration of
 a state is over, or whenever the rules of a state says it should end. A special
 case for this is the *.cancel()* call. If a state should need to be ended early
 for whatever reason, the *Experiment* will call the state's *.cancel()* method
 and that method will setup an immediate call to both *.leave()* and
 *.finalize()*.
 
-*.finalize()* happens during **RT** but not until after a state has left.
+**.finalize()** happens during **RT** but not until after a state has left.
 This call usually happens whenever the clock has extra time, IE during a *Wait*
 state. This call will save out the logs, setup callbacks to the *ParentState* to
 tell it that this state has finished, and set *self.active* to false. This call
-is used to clean up the state sometime after the state has ran *.leave()*.
+is used to clean up the state sometime after the state has run *.leave()*.
 
 The Flow States of SMILE
-------------------------
+========================
 One of the basic types of SMILE states are the **Flow** states.  **Flow**
 states are states that control the flow of your experiment.
 
 Serial State
-============
+------------
+
 A *Serial* state is a state that has children, and runs its children one after
 the other. All states defined between the lines *exp = Experiment()* and
 *exp.run()* in your experiment will exist as children of a *Serial* state. Once
@@ -251,7 +261,8 @@ which all of the states initialized between *exp = Experiment()* and
 *exp.run()* are children of.
 
 Parallel State
-==============
+--------------
+
 A *Parallel state is a state that has children, and runs those children in
 parallel of each other. That means they run at the same time. The key to a
 *Parallel* state is that it will not end unless all of its children have
@@ -284,7 +295,8 @@ the *Parallel* state will end after the first *Label*'s duration of 3 seconds
 instead of the third *Label*'s duration which was 10 seconds.
 
 Meanwhile State
-===============
+---------------
+
 A *Meanwhile* state is one of two parallel with previous states. A *Meanwhile*
 will run all of its children in a *Serial* state and then run that in
 *Parallel* with the previous state in the stack. A *Meanwhile* state will
@@ -313,7 +325,8 @@ As soon as the *KeyPress* state ends, the *Label* will disappear off the screen
 because the *Meanwhile* will have canceled it.
 
 UntilDone State
-===============
+---------------
+
 An *UntilDone* state is one of two parallel with previous states.  An
 *UntilDone* state will run all of its children in a *Serial* state and then run
 that in a *Parallel* with the previous state. An *UntilDone* state will
@@ -336,7 +349,8 @@ screen that waits for a keypress to continue.
     exp.run()
 
 Wait State
-==========
+----------
+
 A *Wait* state is a very simple state that has a lot of power behind it. At a
 top level, it allows your experiment to hold up for a *duration* in seconds.
 There are other option you can add to the wait to make it more complicated. The
@@ -368,7 +382,8 @@ long that would be, so we have the second *Wait* wait until lb1 has an
     exp.run()
 
 If, ElIf, and Else States
-=========================
+-------------------------
+
 These 3 states are how SMILE handles branching in your experiment. An *If*
 state is all you need to create a conditional branch, but through the use of
 the *Elif* and the *Else* state, you can create a much more complex experiment
@@ -410,7 +425,8 @@ The following is a 4 option if test.
 
 
 Loop State
-==========
+----------
+
 A *Loop* state can handle any kind of looping that you need. The main thing we
 use a *Loop* state is to loop over a list of dictionaries that contains your
 stimulus. You are also able to create while loops by passing in a *conditional*
@@ -466,7 +482,8 @@ Loop while something is True
 
 
 The Action States of SMILE
---------------------------
+==========================
+
 The other basic type of SMILE states are the **Action** states. The Action
 states handle both the input and output in your experiment. The following are
 subclasses of WidgetState.
@@ -479,7 +496,8 @@ subclasses of WidgetState.
     refer to the WidgetState Doctring.
 
 Label
-=====
+-----
+
 **Label** is a *WidgetState* that displays text on the screen for a *duration*.
 The parameter to interface with its output is called *text*. Whatever string
 you pass into *text*, the label will display on the screen. You can also set
@@ -490,7 +508,8 @@ would pass in (width_of_text, None) so you don't restrict the text in the
 vertical direction.
 
 Image
-=====
+-----
+
 **Image** is a *WidgetState* that displays an image on the screen for a
 *duration*. The parameter to interface with its output is called *source*. You
 pass in a string path-name to the image you would like to present onto the
@@ -503,7 +522,8 @@ If you would like to make the image stretch to fill the entirety of the widget,
 you need to set *allow_stretch* to True and *keep_ratio* to False.
 
 Video
-=====
+-----
+
 **Video** is a *WidgetState* that shows a video on the screen for a *duration*.
 The parameter to interface with its output is called *source*. You pass in a
 string path-name to the video you would like to present on the screen. The
@@ -515,19 +535,27 @@ to completely fill the **Video** Widget with the video, set the *keep_ratio*
 parameter to False.
 
 Vertex Instructions
-===================
+-------------------
+
 Each **Vertex Instruction** outlined in *video.py* displays a predefined shape
 on the screen for a *duration*. The following are all of the basic Vertex
 Instructions that SMILE implements.
 
-    -Bezier
-    -Mesh
-    -Point
-    -Triangle
-    -Quad
-    -Rectangle
-    -BorderImage
-    -Ellipse
+    - Bezier
+
+    - Mesh
+
+    - Point
+
+    - Triangle
+
+    - Quad
+
+    - Rectangle
+
+    - BorderImage
+
+    - Ellipse
 
 The parameters for each of these vary, but just like any other SMILE state,
 they take the same parameters as the default *State* class. They are Kivy
@@ -535,7 +563,8 @@ widgets wrapped in our *WidgetState* class, so if you need to know how to use
 them or what parameters they take, please refer to the Kivy documentation.
 
 Beep
-====
+----
+
 **Beep** is a state that plays a beep noise at a set frequency and volume for
 a *duration*. The four parameters you need to set the output of this **Beep**
 are *freq*, *volume*, *fadein*, and *fadeout*. *freq* and *volume* are used to
@@ -545,7 +574,8 @@ in seconds and they represent the time it takes to get from 0 to *volume* and
 *volume* to 0 respectively.
 
 SoundFile
-=========
+---------
+
 **SoundFile** is a state that plays sound file, like an mp3, for a *duration*
 that defaults to the duration of the file. The parameter used to interface
 with the output of this state is *filename*. *filename* is the path name to the
@@ -565,13 +595,15 @@ If you would like the sound file to run on a loop for the *duration* of the
 **State**, then you must set the *loop* parameter to True.
 
 RecordSoundFile
-===============
+---------------
+
 **RecordSoundFile** will record any sound coming into a microphone for the
 *duration* of the state. The file you wish to save this sound file into will be
 passed into the *filename* parameter.
 
 Button
-======
+------
+
 **Button** is a visual and an input state that draws a button on the screen
 with optional text in the button for a *duration*. You may also set every button
 to have a *name* that can be reference by **ButtonPress** states to determine
@@ -579,7 +611,8 @@ if you pressed the *correct* button. Check out the SMILE tutorial example for
 *ButtonPress* for more information.
 
 ButtonPress
-===========
+-----------
+
 **ButtonPress** is a parent state, much like **Parallel** that will run until
 a button inside of it is pressed. When defining a **ButtonPress** state, you
 can tell it the name of a button inside of it that will be deemed as the
@@ -588,7 +621,8 @@ correct button to press by passing in that string *name* of the correct
 **ButtonPress** example in the SMILE tutorial document.
 
 KeyPress
-========
+--------
+
 **KeyPress** is an input state that waits for a keyboard press during its
 *duration*. You are able to pass in as parameters a list of strings that are
 acceptable keyboard buttons into *keys*. You are also able to select a correct
@@ -605,13 +639,15 @@ the following attributes :
 Check the SMILE tutorial page for an example on how to use KeyPress.
 
 KeyRecord
-=========
+---------
+
 **KeyRecord** is an input state that records all of the keyboard inputs for its
 *duration*. This state will write out each keypress during its *duration* to a
 *.slog* file.
 
 MouseCursor
-===========
+-----------
+
 **MouseCursor** is a visual state that shows your mouse for its *duration*. In
 order to effectively use **ButtonPress** and **Button** states, you must also use
 **MouseCursor** in parallel. Refer to the **ButtonPress** example in the
@@ -622,7 +658,8 @@ to this state. Whatever image you have in the passed in filename will be
 presented on the screen instead of your default mouse cursor.
 
 MouseButton
-===========
+-----------
+
 **MouseButton** is an input state that waits for a mouse button press during its
 duration. It will return a reference to the next mouse button pressed.
 

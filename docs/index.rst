@@ -11,6 +11,12 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   install
+   how_to_smile
+   tutorial
+   accessing_data
+   android
+   smile
 
 
 Indices and tables
