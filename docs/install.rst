@@ -1,5 +1,5 @@
 ============================
-Installation of Smile!
+Installation of SMILE!
 ============================
 
 Getting ready to SMILE? Then you are in the right place. This guide will tell
@@ -8,39 +8,41 @@ Scroll down to the appropriate operating system and follow the directions provid
 to install Kivy, SMILE, and any needed extra packages.
 
 Installing SMILE on Windows
----------------------------
+===========================
 
 
 Before you attempt to do anything, the first step should be installing
 Anaconda. Anaconda is a python distribution that contains scientific python
 packages such as numpy or matplotlib. If you already have python installed,
 Anaconda will install all of it's scientific packages to that distribution.
-Below is a link to the Anaconda install page.
+Below is a link to the Anaconda install page. Make sure to download the 32 bit
+diststribution of Anaconda, and the 2.7 version of python, install it and make
+sure both check boxes are checked when installing. These check boxes will
+register Anaconda as the default python of your system. Advanced users who don't
+want Anaconda to be their default python will want to uncheck the bottom
+check-box.
 
     -`Anaconda Download Page <https://www.continuum.io/downloads>`_
 
-The next thing you need to download and install is *Kivy*. Follow the link
-provided and download the latest *Wheel* of Kivy.
+The next thing you need to download and install is *Kivy*. Anaconda allows you
+to install Kivy and its dependencies with ease. The first thing you are going to
+do is open up your Anaconda 32bit command prompt and run the following line to
+install Kivy's dependencies.
 
-    -`windows Portable Install <http://kivy.org/docs/installation/installation-windows.html>`_
+.. note:
 
-Download the latest Wheel (*.whl*) from their website. You want to download
-a Kivy-1.9.1-cp27, either 32 bit or 64 bit depending on your operating system.
-
-After downloading the appropriate *.whl* file, we need to install it to your python.
-in an Anaconda command-prompt run the following command, replacing *C:\Path\To\Wheel\wheel_you_need.whl*
-with the correct path to the downloaded file.
-
-::
-
-    > pip install C:\Path\To\Wheel\wheel_you_need.whl
-
-You need to also make sure you install all of Kivy's dependencies. Run the
-following line in an Anaconda command-prompt to do so.
+    Run the following as one line in your command prompt
 
 ::
 
     > pip install docutils pygments pypiwin32 kivy.deps.sdl2 kivy.deps.glew kivy.deps.gstreamer --extra-index-url https://kivy.org/downloads/packages/simple/
+
+Then, run the following command in your Anaconda 32bit command prompt to install
+Kivy to the Anaconda python.
+
+::
+
+    > pip install kivy
 
 After running the last command, it is now time to download SMILE. Download
 SMILE from the github link provided and then extract it.
@@ -54,23 +56,28 @@ folder that contains setup.py and run the following line.
 
     > pip install .
 
-This will install SMILE to your version of python.
-
 The final thing you need to install to gain access to all of SMILE's
-functionallity is PYO. Download and install the windows version of PYO from
-their website. The link is provided below.
+functionallity is PYO. PYO is used to play and record sound with SMILE. Download
+and install the windows version of PYO from their website. The link is provided
+below.
 
     -`PYO Download <http://ajaxsoundstudio.com/software/pyo/>`_
 
+.. note:
+
+    When PYO asks for a directory to install to, choose `C:\Python27`. If that
+    folder doesn't already exist, create it and then attempt to install PYO into
+    that folder
+
 With that, you are finished installing SMILE. Congrats! Head over to
-`Smile Tutorial<tutorial.html>`_ to start SMILING.
+`SMILE Tutorial<tutorial.html>`_ to start SMILING.
 
 Windows Troubleshooting
-+++++++++++++++++++++++
+-----------------------
 
 *If you are trying to replace an older version of smile*, or if you just need
 to upgrade your currect version, you must run the following command while the
-command promt is in the smile download folder
+Anaconda command promt is in the SMILE download folder.
 
 ::
 
@@ -78,7 +85,7 @@ command promt is in the smile download folder
 
 
 Installing SMILE on Mac
------------------------
+=======================
 
 The first step is to download and install kivy. The following link will take you
 to the Mac-Kivy install guide.
@@ -99,7 +106,7 @@ the following line to install SMILE to your the special Kivy python distribution
 
     $ kivy -m pip install .
 
-Easy, smile should have installed without any issue.
+Easy. SMILE should have installed without any issue.
 
 The final thing you need to install to gain access to all of SMILE's
 functionallity is PYO. Download and install the Mac version of PYO from their
@@ -108,16 +115,22 @@ website. The link is provided below.
     -`PYO Download <http://ajaxsoundstudio.com/software/pyo/>`_
 
 With that, you are finished installing SMILE. Congrats! Head over to
-`Smile Tutorial<tutorial.html>`_ to start SMILING.
+`SMILE Tutorial<tutorial.html>`_ to start SMILING.
 
 Mac Troubleshooting
-+++++++++++++++++++
+-------------------
 
-To be added when problems are found.
+*If you are trying to replace an older version of smile*, or if you just need
+to upgrade your currect version, you must run the following command while the
+Anaconda command promt is in the SMILE download folder.
+
+::
+
+    $ kivy -m pip install . --upgrade
 
 
 Installing Smile with Linux
----------------------------
+===========================
 
 SMILE requires Kivy to run properly, but if you would like to use the
 smild.sound functionallity, you need to download and install PYO aswell. Run
@@ -138,7 +151,7 @@ run the following line in your terminal window.
 
 ::
 
-    $ pip install .
+    $ python -m pip install .
 
 This will add SMILE to your python distribuiton.
 
@@ -146,6 +159,6 @@ With that, you are finished installing SMILE. Congrats! Head over to
 `Smile Tutorial<tutorial.html>`_ to start SMILING.
 
 Linux Troubleshooting
-+++++++++++++++++++++
+---------------------
 
 To be added when problems are found.

@@ -1,4 +1,6 @@
-
+=============================
+Data accessing and Processing
+=============================
 
 Saving your Data into SLOG Files
 ================================
@@ -46,27 +48,24 @@ the time at which the given reference changed.
 Reading your SLOG files in python
 =================================
 
-In order to use the data that your experiment has collected, you have to either
-use ``-c`` in the command line when running your experiment to save out a
-*.csv* file along with all of the *.slog* files, or you have to open *.slog*
-files with our *Log_Reader* class.
+In order to slog through your data, you are going to need to do one of two
+things. The first would be to pull your data into python by using the **Log**
+method called *Log.log2dl()*. This method converts your *.slog* file to a
+list of dicitonairies so that you can perform any pythonic functions on it in
+order to analyze your data. **log2dl** has one required parameter,
+*log_filename*, which should be a string that starts out *log_* and ends with
+whatever you put in the *name* parameter of yours **Log** in your experiment.
 
-A *Log_Reader* is the class we use to efficiently read out the *.slog* file
-into python. *Log_Reader* takes a sting filename as a parameter, has an
-important function, and an important property. The property is
-``.field_names``.  This returns a list of strings that are the names of all of
-the columns. The function is ``.read_record()``.  This will the next row in the
-*.slog* file, and return a dictionary with the keys being the field names.
-If the next row is blank or returns EOF, then it will return None.
+If there are multiple files with the same name, they have trailing *_#* in the
+filename. **log2dl** will pull all of the files with the same base name, and
+concatinate them into one long list of dictionaries.
 
-Below is an example of using *Log_Reader*.
-
-::
-
-    lr = Log_Reader(filename='/data/logged_file.slog')
-    temp = Log_Reader.read_record()
-    While(temp != None):
-        print temp
-
-This will print out every dictionary that *read_record()* will produce.
+The other way you can access your data is to convert all of your *.slog* files
+to *.csv* files. You can do this very easily by running the **Log.log2csv()**
+method. This method will take two parameters, *log_filename* and *csv_filename*.
+*log_filename* works the same way as in **log2dl**, where you need to pass in
+a string that is *log_* plus the name that you provided in the *name* parameter
+of your **Log**. If no *csv_filename* is given, then it will be saved as the
+same name as your *log_filename* plus *.csv*. From there, you can use your
+prefered method of analyzing your data.
 
