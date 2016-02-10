@@ -170,6 +170,11 @@ is made available.
 You shouldn't run into *NotAvaiableError*'s unless you are trying to time
 a state based off the disappear time of something.
 
+Running a SMILE Experiment
+==========================
+
+
+
 The states of a State
 =====================
 
