@@ -15,7 +15,6 @@ Contents:
    how_to_smile
    tutorial
    accessing_data
-   android
    smile
 
 

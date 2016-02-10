@@ -1,4 +1,4 @@
-smile package
+SMILE package
 =============
 
 smile.audio module
