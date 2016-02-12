@@ -14,7 +14,7 @@ docstrings. In most cases, every state will save out 2 rows of data to the
 data for each of those fields.
 
 The kind of state that writes multiple lines out to its associated *.slog* file
-is the *Log* state.  Wherever you put it into your experiment, it will log the
+is the :py:class:`~smile.state.Log` state.  Wherever you put it into your experiment, it will log the
 values of all of the keywords/argument pairs you pass into it.  It your *Log*
 exists within a loop, it will write out the values of the keyword/argument
 pairs during each iteration of the loop during experimental runtime.  In this
@@ -37,35 +37,35 @@ Below is an example of a *Log* state.
             name="looping_log",
             label_appear_time=lb.appear_time['time'])
 
-This example will save 11 rows into a *.slog* file. If ``trial.current`` is the
+This example will save 11 rows into a `.slog` file. If ``trial.current`` is the
 first argument for *Log*, then it will save out all of the information about
 your looping variable out in different columns.
 
 A Record state will record all of the references given.  It will write a line
-to the *.slog* file everytime one of the references changes. It will also log
+to the `.slog` file everytime one of the references changes. It will also log
 the time at which the given reference changed.
 
 Reading your SLOG files in python
 =================================
 
 In order to slog through your data, you are going to need to do one of two
-things. The first would be to pull your data into python by using the **Log**
-method called *Log.log2dl()*. This method converts your *.slog* file to a
+things. The first would be to pull your data into python by using the :py:class:`~smile.state.Log`
+method called :py:func:`~smile.state.log2dl`. This method converts your `.slog` file to a
 list of dicitonairies so that you can perform any pythonic functions on it in
-order to analyze your data. **log2dl** has one required parameter,
-*log_filename*, which should be a string that starts out *log_* and ends with
-whatever you put in the *name* parameter of yours **Log** in your experiment.
+order to analyze your data. *log2dl* has one required parameter,
+*log_filename*, which should be a string that starts out `log_` and ends with
+whatever you put in the *name* parameter of yours *Log* in your experiment.
 
-If there are multiple files with the same name, they have trailing *_#* in the
-filename. **log2dl** will pull all of the files with the same base name, and
+If there are multiple files with the same name, they have trailing `_#` in the
+filename. *log2dl* will pull all of the files with the same base name, and
 concatinate them into one long list of dictionaries.
 
-The other way you can access your data is to convert all of your *.slog* files
-to *.csv* files. You can do this very easily by running the **Log.log2csv()**
+The other way you can access your data is to convert all of your `.slog` files
+to `.csv` files. You can do this very easily by running the :py:func:`~smile.state.log.Log2csv`
 method. This method will take two parameters, *log_filename* and *csv_filename*.
-*log_filename* works the same way as in **log2dl**, where you need to pass in
-a string that is *log_* plus the name that you provided in the *name* parameter
-of your **Log**. If no *csv_filename* is given, then it will be saved as the
-same name as your *log_filename* plus *.csv*. From there, you can use your
+*log_filename* works the same way as in *log2dl*, where you need to pass in
+a string that is `log_` plus the name that you provided in the *name* parameter
+of your *Log*. If no *csv_filename* is given, then it will be saved as the
+same name as your *log_filename* plus `.csv`. From there, you can use your
 prefered method of analyzing your data.
 
