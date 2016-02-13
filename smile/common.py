@@ -56,6 +56,7 @@ from video import (
     TextInput,
     ToggleButton,
     ProgressBar,
+    CodeInput,
     Video,
     AnchorLayout,
     BoxLayout,

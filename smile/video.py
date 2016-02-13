@@ -1102,6 +1102,7 @@ widgets = [
     "TextInput",
     "ToggleButton",
     "ProgressBar",
+    "CodeInput",
 
     #...
     "AnchorLayout",
