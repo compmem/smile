@@ -6,7 +6,7 @@
 What is SMILE?
 ==============
 
-.. image:: smile_example.png
+.. image:: _static/smile_example.png
     :width: 375
     :height: 241
     :align: right
