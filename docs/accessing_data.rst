@@ -29,7 +29,7 @@ loop.
 
 Below is an example of a *Log* state.
 
-::
+.. code-block:: python
 
     with Loop(10) as trial:
         lb = Label(text=trial.i, duration=2)

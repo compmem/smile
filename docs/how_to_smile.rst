@@ -96,7 +96,8 @@ you must add `exp.` to the beginning of your variable name. If you do this, it
 creates a :py:class:`~smile.experiment.Set` in SMILE that will run in **RT**.  An example is as
 follows.
 
-::
+.. code-block:: python
+    :linenos:
 
     exp.variableName = lbl.appear_time['time']
 
@@ -222,7 +223,8 @@ of the *Serial* state.
 
 The following two experiments are equivalent.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -231,7 +233,8 @@ The following two experiments are equivalent.
     Label(text="Third state", duration=2)
     exp.run()
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -264,7 +267,8 @@ will have their `.cancel()` method called to allow the *Parallel* state to end.
 An example below has 3 :py:class:`~smile.video.Label` states that will disappear from the screen at
 the same time, despite having 3 different durations.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -299,7 +303,8 @@ run until they leave, or until the experiment is over.
 The following example shows how to use a *Meanwhile* to create an instructions
 screen that waits for a keypress to continue.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -327,7 +332,8 @@ run until they leave, then the your experiment will end.
 The following example shows how to use an *UntilDone* to create an instructions
 screen that waits for a keypress to continue.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -356,7 +362,8 @@ does. Since the first *Wait* has a jitter, it is impossible to detect how
 long that would be, so we have the second *Wait* wait until lb1 has an
 *appear_time*.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -396,7 +403,8 @@ replaces the True's empty *Serial*.
 
 The following is a 4 option if test.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -434,7 +442,8 @@ Below I will show examples of all 3 Loops
 
 List of Dictionaries
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     #List Gen
@@ -453,7 +462,8 @@ List of Dictionaries
 
 Loop a number of Times
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -464,7 +474,8 @@ Loop a number of Times
 
 Loop while something is True
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -507,7 +518,8 @@ vertical direction.
 
 The following is a Label displaying the word "BabaBooie"
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -531,7 +543,8 @@ you need to set *allow_stretch* to True and *keep_ratio* to False.
 Below is an example of an image at the path "test_image.png" to be presented to
 the center of the screen.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -555,7 +568,8 @@ between 0 and the *duration* parameter, which tells the video where to start.
 Below is an example of playing a video at the path "test_video.mp4" that starts
 4 seconds into the video and plays for the entire duration (duration=None).
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -604,7 +618,8 @@ in seconds and they represent the time it takes to get from 0 to *volume* and
 Below is an example of a beep at 555hz, for 2 seconds, with no fade in or out,
 and at 50% volume.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -635,7 +650,8 @@ If you would like the sound file to run on a loop for the *duration* of the
 Below is an example of playing a sound file at path "test_sound.mp3" at 50%
 volume for the full duration of the sound file.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -652,7 +668,8 @@ passed into the *filename* parameter.
 Below is an example of recording sound for 10 second while looking at a Label
 that says "PLEASE TALK TO YOUR COMPUTER", and saves it into "new_sound.mp3".
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -676,7 +693,8 @@ Below is an example of a Form, where a :py:class:`~smile.video.Label` state will
 ask someone to type in an answer to a :py:class:`~smile.video.TextInput`. Then
 they will press the button when they are finished typing.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     from smile.video import TextInput
@@ -709,7 +727,8 @@ correct button to press by passing in that string *name* of the correct
 Here is an example of choosing between 3 buttons where only one of the buttons
 is the correct button to click.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -742,7 +761,8 @@ the following attributes :
 
 The following is a keypress example that will show you what key you pressed.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -764,7 +784,8 @@ KeyRecord
 The following example will save out a `.slog` file into log_bob.slog after
 recording all of the keypresses during a 10 second period.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = Experiment()
@@ -789,7 +810,8 @@ imaginary image to be displayed as the cursor. Since the imaginary image is
 of the cursor to be (50,50) so that the actual *click* of the mouse is in the
 correct location.
 
-::
+.. code-block:: python
+    :linenos:
 
     from smile.common import *
     exp = experiment()
