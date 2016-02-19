@@ -68,7 +68,8 @@ from video import (
     StackLayout,
     BackgroundColor,
     UpdateWidget,
-    BlockingFlips)
+    BlockingFlips,
+    NonBlockingFlips)
 from dotbox import DotBox
 from ref import Ref, val, jitter, shuffle
 #from smile.audio import Beep, SoundFile, RecordSoundFile

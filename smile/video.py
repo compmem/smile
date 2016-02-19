@@ -364,6 +364,31 @@ class BlockingFlips(VisualState):
         self._exp._app.force_blocking_flip = len(BlockingFlips.layers) > 0
 
 
+class NonBlockingFlips(VisualState):
+    """Force non-blocking flips when updating the screen.
+    """
+    layers = []
+
+    def __init__(self, duration=None, parent=None, save_log=True,
+                 name=None, blocking=True):
+        super(NonBlockingFlips, self).__init__(parent=parent,
+                                               duration=duration,
+                                               save_log=save_log,
+                                               name=name,
+                                               blocking=blocking)
+
+    def show(self):
+        NonBlockingFlips.layers.append(self)
+        self._exp._app.force_nonblocking_flip = len(NonBlockingFlips.layers) > 0
+
+    def unshow(self):
+        if NonBlockingFlips.layers[-1] is self:
+            NonBlockingFlips.layers.pop()
+        else:
+            NonBlockingFlips.layers.remove(self)
+        self._exp._app.force_nonblocking_flip = len(NonBlockingFlips.layers) > 0
+
+
 class WidgetState(VisualState):
     """A *WidgetState* is used to wrap Kivy widgets into SMILE classes
 

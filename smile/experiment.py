@@ -214,6 +214,7 @@ class ExpApp(App):
         self.last_flip = event_time(0.0, 0.0)
         self.last_flip_ref = Ref.getattr(self, "last_flip")
         self.force_blocking_flip = False
+        self.force_nonblocking_flip = False
         self.__screen = Screen(self)
         self.flip_interval = 1/60. # default to 60 Hz
 
@@ -426,15 +427,21 @@ class ExpApp(App):
             while len(self.video_queue) and self.video_queue[0].flipped:
                 del self.video_queue[0]
             if need_flip:
-                if len(flip_time_callbacks) or self.force_blocking_flip:
-                    #print "BLOCKING FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    self.blocking_flip()  #TODO: use sync events instead!
+                if not self.force_nonblocking_flip and \
+                   (len(flip_time_callbacks) or self.force_blocking_flip):
+                    # print "BLOCKING FLIP!"
+                    self.blocking_flip()  # TODO: use sync events instead!
                     for cb in flip_time_callbacks:
                         cb(self.last_flip)
                 else:
-                    #print "FLIP!"  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    # print "FLIP!"
                     EventLoop.window.dispatch('on_flip')
                     self.last_flip = event_time(clock.now(), 0.0)
+
+                    # still may need to update flip_time_callbacks
+                    # even though they will be wrong
+                    for cb in flip_time_callbacks:
+                        cb(self.last_flip)
                 self.pending_flip_time = None
 
         # save the time
