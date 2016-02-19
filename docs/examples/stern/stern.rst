@@ -212,7 +212,7 @@ located below.
 stern.py in Full
 =============
 
-.. code-break:: python
+.. code-block:: python
     :linenos:
 
     # global imports
@@ -280,7 +280,7 @@ stern.py in Full
 config.py in Full
 =================
 
-.. code-break:: python
+.. code-block:: python
     :linenos:
 
     # config vars
@@ -301,7 +301,7 @@ config.py in Full
 gen_stim.py in Full
 ===================
 
-.. code-break:: python
+.. code-block:: python
     :linenos:
 
     # generate sternberg trial
