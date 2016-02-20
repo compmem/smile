@@ -70,7 +70,7 @@ from video import (
     UpdateWidget,
     BlockingFlips,
     NonBlockingFlips)
-from dotbox import DotBox
+from dotbox import DotBox, DynamicDotBox
 from ref import Ref, val, jitter, shuffle
 #from smile.audio import Beep, SoundFile, RecordSoundFile
 from freekey import FreeKey

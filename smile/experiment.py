@@ -427,8 +427,8 @@ class ExpApp(App):
             while len(self.video_queue) and self.video_queue[0].flipped:
                 del self.video_queue[0]
             if need_flip:
-                if not self.force_nonblocking_flip and \
-                   (len(flip_time_callbacks) or self.force_blocking_flip):
+                if self.force_blocking_flip or \
+                   (len(flip_time_callbacks) and not self.force_nonblocking_flip):
                     # print "BLOCKING FLIP!"
                     self.blocking_flip()  # TODO: use sync events instead!
                     for cb in flip_time_callbacks:

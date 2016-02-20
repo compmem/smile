@@ -7,7 +7,9 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from video import WidgetState
+from video import WidgetState, BlockingFlips, NonBlockingFlips
+from state import Wait, Meanwhile, Parallel, Loop, Subroutine
+from ref import jitter
 
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ListProperty
@@ -17,8 +19,7 @@ import random
 
 @WidgetState.wrap
 class DotBox(Widget):
-    """
-    Display a box filled with random square dots.
+    """Display a box filled with random square dots.
 
     Parameters
     ----------
@@ -36,7 +37,7 @@ class DotBox(Widget):
     backcolor = ListProperty([0, 0, 0, 0])
     num_dots = NumericProperty(10)
     pointsize = NumericProperty(5)
-    
+
     def __init__(self, **kwargs):
         super(type(self), self).__init__(**kwargs)
 
@@ -68,13 +69,14 @@ class DotBox(Widget):
     def _update(self, *pargs):
         # calc new point locations
         bases = (self.x+self.pointsize, self.y+self.pointsize)
-        scales = (self.width-(self.pointsize*2), self.height-(self.pointsize*2))
-        points = [bases[i%2]+scales[i%2]*loc
-                  for i,loc in enumerate(self._locs)]
+        scales = (self.width-(self.pointsize*2),
+                  self.height-(self.pointsize*2))
+        points = [bases[i % 2]+scales[i % 2]*loc
+                  for i, loc in enumerate(self._locs)]
         # points = [[random.randint(int(self.x+self.pointsize),
-        #                           int(self.x+self.width-self.pointsize)), 
+        #                           int(self.x+self.width-self.pointsize)),
         #            random.randint(int(self.y+self.pointsize),
-        #                           int(self.y+self.height-self.pointsize))] 
+        #                           int(self.y+self.height-self.pointsize))]
         #           for i in xrange(self.num_dots)]
         # points = [item for sublist in points for item in sublist]
 
@@ -93,11 +95,73 @@ class DotBox(Widget):
 
             # draw the points
             self._points = Point(points=points, pointsize=self.pointsize)
-    
+
+
+@Subroutine
+def DynamicDotBox(self, duration=None,
+                  update_interval=jitter(1/20., (1/10.)-(1/20.)),
+                  **dotbox_args):
+    """Display random dots that update at an interval.
+
+    Parameters
+    ----------
+    duration : float or None
+        Duration to show the random dots.
+    update_interval : float
+        How often to update the random dots. Default is to jitter
+        between 10 and 20 Hz.
+    dotbox_args : kwargs
+        See the DotBox for any kwargs options to control the DotBox
+
+    Examples
+    --------
+    Display a dynamic dot box with 40 dots for 3 seconds:
+
+    ::
+        DynamicDotBox(size=(500, 500), num_dots=40, duration=3.0)
+
+
+    Display two dynamic dot boxes side-by-side until a key press:
+    ::
+
+        with Parallel():
+            ddb1 = DynamicDotBox(center_x=exp.screen.center_x-200,
+                                 num_dots=40, size=(400, 400))
+            ddb2 = DynamicDotBox(center_x=exp.screen.center_x+200,
+                                 num_dots=80, size=(400, 400))
+        with UntilDone():
+            kp = KeyPress()
+
+    """
+    # only go as long as duration (can be unlimited)
+    Wait(duration=duration)
+    with Meanwhile():
+        # Show the first dots blocking
+        with Parallel():
+            BlockingFlips(blocking=False, save_log=False)
+            db = DotBox(duration=update_interval, **dotbox_args)
+
+        # save its appear_time
+        self.appear_time = db.appear_time
+
+        # save other aspects of dotbox
+        self.color = db.color
+        self.backcolor = db.backcolor
+        self.num_dots = db.num_dots
+        self.pointsize = db.pointsize
+
+        # loop until max time with no blocking so other timing is good
+        with Loop():
+            with Parallel():
+                NonBlockingFlips(blocking=False, save_log=False)
+                DotBox(duration=update_interval, save_log=False,
+                       **dotbox_args)
+
+
 if __name__ == '__main__':
 
     from experiment import Experiment
-    from state import Wait, UntilDone, Parallel, Serial
+    from state import UntilDone, Serial
 
     exp = Experiment(background_color="#330000")
 
@@ -111,7 +175,7 @@ if __name__ == '__main__':
         db.slide(center=exp.screen.left_top, duration=2.0)
         db.slide(center=exp.screen.center, duration=1.0)
 
-    db2 = DotBox(color='red', backcolor=(.1,.1,.1,.5))
+    db2 = DotBox(color='red', backcolor=(.1, .1, .1, .5))
     with UntilDone():
         with Parallel():
             with Serial():
@@ -119,13 +183,12 @@ if __name__ == '__main__':
                 db2.slide(color='olive', duration=1.0)
                 db2.slide(color='orange', duration=1.0)
                 db2.slide(pointsize=20, duration=1.0)
-            db2.slide(size=(400,400),duration=4.0)
+            db2.slide(size=(400, 400), duration=4.0)
 
-    db3 = DotBox(color='green',backcolor='purple', size=(400,400))
+    db3 = DotBox(color='green', backcolor='purple', size=(400, 400))
     with UntilDone():
         db3.slide(num_dots=50, duration=3.0)
 
     Wait(2.0)
     exp.run(trace=False)
 
-    
