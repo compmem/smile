@@ -1860,6 +1860,10 @@ class Record(State):
             If True, this state will prevent a *Parallel* state from ending. If
             False, this state will be canceled if its Parallel Parent finishes
             running. Only relevant if within a *Parallel* Parent.
+        triggers : list
+            List of strings matching key word arg names to trigger on. This
+            makes it possible to only save out all values when a certain set
+            of references change values
         kwargs : (keyword = parameter)
             This is where you add what variables to check to see if they
             change. Give *Record* a parameter name and then make that equal to
@@ -1868,28 +1872,20 @@ class Record(State):
 
     Example
     -------
-    This is an example of a *Record* used in parallel with Label, to record
-    when the disappear_time changes.
+    This is an example of a *Record* used in parallel with Video to track the
+    flip time for each frame.
 
     ::
 
         with Parallel():
-            lb = Label(text='boba booy', duration=2)
-            Record(duration=5, dis_time=lb.disappear_time['time'])
+            vd = Video(source='test_video.mp4')
+            Record(name='flips', blocking=False,
+                   flip_time=exp.screen.last_flip['time'])
 
-    You can also just do a non-blocking *Record* that checks to see if a
-    variable `exp.X` changes.
-
-    ::
-
-        exp.X = 5
-        Record(duration=5, exp_x_is=exp.X, blocking=False)
-        Label(text='When this disappears, exp.X will be updated', duration=3)
-        exp.X += 1
 
     """
     def __init__(self, duration=None, parent=None, name=None, blocking=True,
-                 **kwargs):
+                 triggers=None, **kwargs):
         super(Record, self).__init__(parent=parent,
                                      duration=duration,
                                      save_log=False,
@@ -1897,6 +1893,7 @@ class Record(State):
                                      blocking=blocking)
 
         self.__refs = kwargs
+        self.__triggers = triggers
 
     def begin_log(self):
         """Set up per-class AND per-instance logs.
@@ -1942,11 +1939,16 @@ class Record(State):
 
         # starts recording changes for each ref
         for name, ref in self.__refs.iteritems():
-            # get current value
-            self.record_change()
-
+            # only add in refs that trigger
+            if self.__triggers and name not in self.__triggers:
+                continue
+            
             # start changing anytime it changes
-            ref.add_change_callback(self.record_change)
+            if hasattr(ref, 'add_change_callback'):
+                ref.add_change_callback(self.record_change)
+
+        # get current value
+        self.record_change()
 
     def finalize(self):
         # ends at finalize time
@@ -1954,14 +1956,21 @@ class Record(State):
 
         # we're done
         super(Record, self).finalize()
+
         # stop tracking changes for each ref
         for name, ref in self.__refs.iteritems():
-            ref.remove_change_callback(self.record_change)
+            # only stop refs that trigger
+            if self.__triggers and name not in self.__triggers:
+                continue
+
+            # must be a ref to stop callbacks
+            if hasattr(ref, 'remove_change_callback'):
+                ref.remove_change_callback(self.record_change)
 
     def record_change(self):
         """Record a change in the track Refs.
         """
-        # if anything changed, write everything
+        # if anything (or just triggers) changed, write everything
         try:
             record = val(self.__refs)
         except NotAvailableError:
@@ -2123,13 +2132,13 @@ class Done(AutoFinalizeState):
     timing of something like **appear_time** is needed to be logged.
 
     Parameters
-        ----------
-        states : list of states (optional)
-            You can pass is a list of states, and if so, the *Done* will
-            wait until all of the given states are finished running.
-        kwargs : (keyword = argument)
-            If you pass in a keyword argument, the *Done* state will block
-            until that specific argument is not None.
+    ----------
+    states : list of states (optional)
+        You can pass is a list of states, and if so, the *Done* will
+        wait until all of the given states are finished running.
+    kwargs : (keyword = argument)
+        If you pass in a keyword argument, the *Done* state will block
+        until that specific argument is not None.
 
     Example
     -------
