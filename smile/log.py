@@ -159,6 +159,34 @@ def _root_to_files(log_filename):
 
 def log2dl(log_filename, unwrap=True, **append_columns):
     """Convert slog files to list of dicts (a dict-list).
+
+    Parameters
+    ----------
+    log_filename : string
+        Either a full filename with the slog extension or base
+        name with everything up to the numerical index of a log,
+        such as 'log_study', which will use the same algorithm
+        that saved the files each time the experiment was run in
+        in order to loop and read them all in.
+    unwrap : boolean
+        Whether to unwrap logged lists and dictionaries into a
+        single row. e.g., 'log': {'time':10, 'error':.001} would
+        turn into two columns: 'log_time' and 'log_error'.
+    append_columns : kwargs
+        Columns to add the same value to each row. Useful for adding
+        a subject id to the data.
+
+    Examples
+    --------
+    This method is particularly useful for loading data for analysis
+    with Pandas. This example will load all logs that begin with
+    "log_study" into a Pandas DataFrame, adding in a column for
+    subject:
+
+    ..
+        import pandas as pd
+        df = pd.DataFrame(log2dl('log_study', subject='exp001'))
+
     """
     # determine set of slogs
     log_files = _root_to_files(log_filename)
@@ -177,7 +205,34 @@ def log2dl(log_filename, unwrap=True, **append_columns):
 
 
 def log2csv(log_filename, csv_filename=None, **append_columns):
-    """Convert slog files to a CSV."""
+    """Convert slog files to a CSV.
+
+    Parameters
+    ----------
+    log_filename : string
+        Either a full filename with the slog extension or base
+        name with everything up to the numerical index of a log,
+        such as 'log_study', which will use the same algorithm
+        that saved the files each time the experiment was run in
+        in order to loop and read them all in.
+    csv_filename : string
+        Name of CSV file to write out. If None will use the
+        log_filename
+    append_columns : kwargs
+        Columns to add the same value to each row. Useful for adding
+        a subject id to the data.
+
+    Examples
+    --------
+    This method is particularly useful for loading data for analysis
+    with general stats programs, such as R. This example will convert
+    all logs that begin with "log_study" into a CSV file "log_study.csv',
+    adding a column for subject:
+
+    ..
+        log2csv('log_study', subject='exp001')
+
+"""
     # determine set of slogs
     log_files = _root_to_files(log_filename)
     if len(log_files) == 0:
