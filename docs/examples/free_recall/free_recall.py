@@ -4,8 +4,9 @@ from smile.freekey import FreeKey
 
 #execute both the configuration file and the
 #stimulus generation file
-execfile("config.py")
-execfile("gen_stim.py")
+from config import *
+from gen_stim import *
+
 #Initialize the Experiment
 exp = Experiment()
 

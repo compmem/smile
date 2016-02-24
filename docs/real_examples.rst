@@ -20,4 +20,4 @@ Experiments
    examples/stroop/stroop
    examples/stern/stern
    examples/free_recall/freerecall
-   mouse_tracking
+   examples/iat_mouse/iat_mouse

@@ -17,13 +17,11 @@ to execute the config.py file and the gen_stim.py file.
 
     from smile.common import *
     from smile.audio import RecordSoundFile
-    from random import *
-    from math import *
 
     #execute both the configuration file and the
     #stimulus generation file
-    execfile("config.py")
-    execfile("gen_stim.py")
+    from config import *
+    from gen_stim import *
 
 For this experiment we defined two functions that would generate our list of
 lists of dictionaries full of the information we need to run each trial of our
@@ -139,6 +137,8 @@ experiment variables. The following is `config.py`.
 
     #Read in the instructions
     instruct_text = open('stroop_instructions.rst', 'r').read()
+    RSTFONTSIZE = 30
+    RSTWIDTH = 900
     NUMBLOCKS = 4
     LENBLOCKS = 24
     recDuration = 2
@@ -161,7 +161,7 @@ variables and the loops that drive our experiment.
     exp = Experiment()
 
     #Show the instructions as an RstDocument Viewer on the screen
-    init_text = RstDocument(text=instruct_text, width=600, top=exp.screen.top, height=exp.screen.height)
+    init_text = RstDocument(text=instruct_text, font_size=RSTFONTSIZE, width=RSTWIDTH, top=exp.screen.top, height=exp.screen.height)
     with UntilDone():
         #Once you press any key, the UntilDone will cancel the RstDocument,
         #allowing the rest of the experiment to continue running.
@@ -233,6 +233,7 @@ paricipants.
     from smile.log as lg
     #define subject pool
     subjects = ["s000/","s001/","s002/"]
+    dic_list = []
     for sbj in subjects:
         #get at all the different subjects
         dic_list.append(lg.log2dl(log_filename="data/" + sbj + "Log_Stroop"))
@@ -267,15 +268,15 @@ stroop.py in Full
 
     #execute both the configuration file and the
     #stimulus generation file
-    execfile("config.py")
-    execfile("gen_stim.py")
+    from config import *
+    from gen_stim import *
 
 
     #Define the Experiment Variable
     exp = Experiment()
 
     #Show the instructions as an RstDocument Viewer on the screen
-    init_text = RstDocument(text=instruct_text, width=600, top=exp.screen.top, height=exp.screen.height)
+    init_text = RstDocument(text=instruct_text, font_size=RSTFONTSIZE, width=RSTWIDTH, top=exp.screen.top, height=exp.screen.height)
     with UntilDone():
         #Once you press any key, the UntilDone will cancel the RstDocument,
         #allowing the rest of the experiment to continue running.
@@ -324,6 +325,8 @@ config.py in Full
     :linenos:
 
     instruct_text = open('stroop_instructions.rst', 'r').read()
+    RSTFONTSIZE = 30
+    RSTWIDTH = 900
     NUMBLOCKS = 4
     LENBLOCKS = 24
     recDuration = 2

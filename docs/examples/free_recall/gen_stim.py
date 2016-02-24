@@ -1,5 +1,5 @@
 import random
-
+from config import NUMBLOCKS, stimList, NUMPERBLOCK, MINFKDUR
 
 random.shuffle(stimList)
 

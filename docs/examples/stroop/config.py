@@ -4,3 +4,5 @@ LENBLOCKS = 24
 recDuration = 2
 interBlockDur = 2
 interStimulusInterval = 2
+RSTFONTSIZE = 30
+RSTWIDTH = 900

@@ -7,13 +7,13 @@ from smile.common import *
 
 #execute both the configuration file and the
 #stimulus generation file
-execfile("config.py")
-execfile("gen_stim.py")
+from config import *
+from gen_stim import *
 
 #Define the experiment
 exp = Experiment()
 #Present the instructions to the participant
-init_text = RstDocument(text=instruct_text, width=600, top=exp.screen.top, height=exp.screen.height)
+init_text = RstDocument(text=instruct_text, width=RSTWIDTH, font_size=RSTFONTSIZE, top=exp.screen.top, height=exp.screen.height)
 with UntilDone():
     #Once the KeyPress is detected, the UntilDone
     #cancels the RstDocument

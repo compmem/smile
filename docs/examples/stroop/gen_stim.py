@@ -1,3 +1,5 @@
+from random import shuffle
+from config import NUMBLOCKS, LENBLOCKS
 def gen_lists(num_of_blocks, len_of_blocks):
 	#First, let's define some variables.
 	total_words = num_of_blocks * len_of_blocks #The total number of words.

@@ -35,8 +35,8 @@ import smile as well as execute the `config.py` and the `gen_stim.py`.
 
     #execute both the configuration file and the
     #stimulus generation file
-    execfile("config.py")
-    execfile("gen_stim.py")
+    from config import *
+    from gen_stim import *
 
 Inside `config.py` we setup any variables that will need to be used during the
 experiment as well as open any files that we might need for list generation or
@@ -64,8 +64,8 @@ instructions for the participant.
     STIMDUR = 2
     PFI = 4
     FONTSIZE = 40
-    RSTFONTSIZE = 50
-    RSTWIDTH = 600
+    RSTFONTSIZE = 30
+    RSTWIDTH = 900
 
     MINFKDUR = 20
 
@@ -160,6 +160,7 @@ and `s002`.
     from smile.log as lg
     #define subject pool
     subjects = ["s000/","s001/","s002/"]
+    dic_list = []
     for sbj in subjects:
         #get at all the different subjects
         dic_list.append(lg.log2dl(log_filename="data/" + sbj + "Log_FreeKey"))
@@ -193,8 +194,9 @@ free_recall.py in Full
 
     #execute both the configuration file and the
     #stimulus generation file
-    execfile("config.py")
-    execfile("gen_stim.py")
+    from config import *
+    from gen_stim import *
+
     #Initialize the Experiment
     exp = Experiment()
 
@@ -247,8 +249,8 @@ config.py in Full
     STIMDUR = 2
     PFI = 4
     FONTSIZE = 40
-    RSTFONTSIZE = 50
-    RSTWIDTH = 600
+    RSTFONTSIZE = 30
+    RSTWIDTH = 900
 
     MINFKDUR = 20
 

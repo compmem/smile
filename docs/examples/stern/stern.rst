@@ -32,8 +32,8 @@ We will also execute the configuration file and the stimulus generation file.
 
     #execute both the configuration file and the
     #stimulus generation file
-    execfile("config.py")
-    execfile("gen_stim.py")
+    from config import *
+    from gen_stim import *
 
 
 Easy, Now lets also setup all the experiment variables. These are all the
@@ -52,6 +52,8 @@ following is `config.py`
     ITEMS = string.ascii_lowercase
     #instructions writen in another document
     instruct_text = open('stern_instructions.rst', 'r').read()
+    RSTFONTSIZE = 30
+    RSTWIDTH = 900
     STUDY_DURATION = 1.2
     STUDY_ISI = .4
     RETENTION_INTERVAL = 1.0
@@ -109,7 +111,7 @@ the following code explain what every few lines do.
     #Define the experiment
     exp = Experiment()
     #Present the instructions to the participant
-    init_text = RstDocument(text=instruct_text, width=600, top=exp.screen.top, height=exp.screen.height)
+    init_text = RstDocument(text=instruct_text, width=RSTWIDTH, font_size=RSTFONTSIZE, top=exp.screen.top, height=exp.screen.height)
     with UntilDone():
         #Once the KeyPress is detected, the UntilDone
         #cancels the RstDocument
@@ -187,6 +189,7 @@ and `s002`.
     from smile.log as lg
     #define subject pool
     subjects = ["s000/","s001/","s002/"]
+    dic_list = []
     for sbj in subjects:
         #get at all the different subjects
         dic_list.append(lg.log2dl(log_filename="data/" + sbj + "Log_Stern"))
@@ -223,13 +226,13 @@ stern.py in Full
 
     #execute both the configuration file and the
     #stimulus generation file
-    execfile("config.py")
-    execfile("gen_stim.py")
+    from config import *
+    from gen_stim import *
 
     #Define the experiment
     exp = Experiment()
     #Present the instructions to the participant
-    init_text = RstDocument(text=instruct_text, width=600, top=exp.screen.top, height=exp.screen.height)
+    init_text = RstDocument(text=instruct_text, width=RSTWIDTH, font_size=RSTFONTSIZE top=exp.screen.top, height=exp.screen.height)
     with UntilDone():
         #Once the KeyPress is detected, the UntilDone
         #cancels the RstDocument
@@ -288,6 +291,8 @@ config.py in Full
     NUM_ITEMS = [2,3,4]
     ITEMS = string.ascii_lowercase
     instruct_text = open('stern_instructions.rst', 'r').read()
+    RSTFONTSIZE = 30
+    RSTWIDTH = 900
     STUDY_DURATION = 1.2
     STUDY_ISI = .4
     RETENTION_INTERVAL = 1.0

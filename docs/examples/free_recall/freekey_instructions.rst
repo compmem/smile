@@ -8,9 +8,7 @@ wait a brief period then be asked to recall as many of those words as possible.
 
 ::
 
-    When the **XXXXXX** appears on the screen, type out one word and then press the
-    **ENTER** key. Try to remember as many words from the list as possible within
-    the time limit provided.
+    When the **XXXXXX** appears on the screen, type out one word and then press the **ENTER** key. Try to remember as many words from the list as possible within the time limit provided.
 
 Once the time runs out, you will be presented with another block of words to
 try to remember.
