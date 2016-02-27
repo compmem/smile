@@ -35,11 +35,12 @@ the timing of multiple states at the same time.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    install
    how_to_smile
    tutorial
+   real_examples
    accessing_data
    smile
 
