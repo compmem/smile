@@ -18,10 +18,11 @@ would be needed to run analysis of this experiment, i.e. reaction times.
 The Experiment
 ==============
 
-First lets do the imports of the experiment. Below is the start of `stern.py`.
+First, let's do the imports of the experiment. Below is the start of `stern.py`.
 We will also execute the configuration file and the stimulus generation file.
 
 .. code-block:: python
+
     :linenos:
 
     # global imports
@@ -36,12 +37,13 @@ We will also execute the configuration file and the stimulus generation file.
     from gen_stim import *
 
 
-Easy, Now lets also setup all the experiment variables. These are all the
+Easy! Now, let's also set up all the experiment variables. These are all the
 variables that are needed for generating stimuli, durations of states, and
 little things like instructions and the keys for **KeyPress** states. The
 following is `config.py`
 
 .. code-block:: python
+
     :linenos:
 
     # config vars
@@ -50,7 +52,7 @@ following is `config.py`
     NUM_ITEMS = [2,2,2,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4,4,4,4]
     random.shuffle(NUM_ITEMS)
     ITEMS = string.ascii_lowercase
-    #instructions writen in another document
+    #instructions written in another document
     instruct_text = open('stern_instructions.rst', 'r').read()
     RSTFONTSIZE = 30
     RSTWIDTH = 900
@@ -66,12 +68,13 @@ following is `config.py`
     FONTSIZE = 30
 
 Next is the generation of our stimuli. In SMILE, the best practice is to
-generate lists of dictionaires to loop over, that way you don't have to do any
+generate lists of dictionaries to loop over, that way you don't have to do any
 calculations during the actual experiments. Next is the definition of a function
-that was writen to generate a stern trial called `stern_trial()`, as well as
+that was written to generate a stern trial called `stern_trial()`, as well as
 where we call it to generate our stimulus. The following is `gen_stim.py`
 
 .. code-block:: python
+
     :linenos:
 
     # generate sternberg trial
@@ -102,10 +105,11 @@ where we call it to generate our stimulus. The following is `gen_stim.py`
     for t in range(len(trials)):
         trials[t]['trial_num'] = t
 
-After we generate our stimulus we need to setup our experiment. The comments in
+After we generate our stimulus we need to set up our experiment. The comments in
 the following code explain what every few lines do.
 
 .. code-block:: python
+
     :linenos:
 
     #Define the experiment
@@ -162,28 +166,29 @@ the following code explain what every few lines do.
 Analysis
 ========
 
-When coding your experiment, you don't have to worry about losing any data,
-becaues all of it is saved out into `.slog` files anyway. The thing you do have
-to worry about is whether or not you want that data easily available or if you
-want to spend hours **slogging** through your data. We made it easy for you
+When coding your experiment, you don't have to worry about losing any data
+because all of it is saved out into `.slog` files anyway. The thing you do have
+to worry about is whether or not you want that data to be easily available or if
+you want to spend hours **slogging** through your data. We made it easy for you
 to pick which data you want saved out during the running of your experiment with
 use of the **Log** state.
 
 The relevant data that we need from a **Sternberg** task would be the reaction
-times for every test event, all of the presented letters from the the study and
+times for every test event, all of the presented letters from the study and
 test portion of the experiment, and whether they answered correctly or not. In
 the **Log** that we defined in our experiment above, we saved a little more than
 that out, because it is better to save out data and not need it, then to not
 save it and need it later.
 
-If you would like to grab your data from the `.slog` files to analize your data
+If you would like to grab your data from the `.slog` files to analyze your data
 in python, you need to use the :py:func:`~smile.log.log2dl`. This function will
 read in all of the `.slog` files with the same base name, and convert them into
 one long list of dictionaries. Below is a the few lines of code you would use to
-get at all of the data from three imaginary paricipants, named as `s000`, `s001`,
+get at all of the data from three imaginary participants, named as `s000`, `s001`,
 and `s002`.
 
 .. code-block:: python
+
     :linenos:
 
     from smile.log as lg
@@ -198,10 +203,11 @@ and `s002`.
     print dic_list[0]['study_times']
 
 You can also translate all of the `.slog` files into `.csv` files easily by
-running the command :py:func:`~smile.log.log2csv` for each paricipant. An example of this is
+running the command :py:func:`~smile.log.log2csv` for each participant. An example of this is
 located below.
 
 .. code-block:: python
+
     :linenos:
 
     from smile.log as lg
@@ -216,6 +222,7 @@ stern.py in Full
 =============
 
 .. code-block:: python
+
     :linenos:
 
     # global imports
@@ -284,6 +291,7 @@ config.py in Full
 =================
 
 .. code-block:: python
+
     :linenos:
 
     # config vars
@@ -307,9 +315,10 @@ gen_stim.py in Full
 ===================
 
 .. code-block:: python
+
     :linenos:
 
-    # generate sternberg trial
+    # generate Sternberg trial
     def stern_trial(nitems=2, lure_trial=False,):
         if lure_trial:
             condition = 'lure'
@@ -336,3 +345,10 @@ gen_stim.py in Full
     random.shuffle(trials)
     for t in range(len(trials)):
         trials[t]['trial_num'] = t
+		
+CITATION
+========
+
+::
+
+	Sternberg, S. (1966), "High-speed scanning in human memory", Science 153 (3736), 652-654
