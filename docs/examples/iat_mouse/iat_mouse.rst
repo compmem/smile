@@ -2,28 +2,28 @@
 IAT Mouse Tracking
 ==================
 
-The IAT, or Implicit-Association Test, was intruduced by Anthony Greenwald et al.
+The IAT, or Implicit-Association Test, was introduced by Anthony Greenwald et al.
 in 1998. This task is designed to get at the individual differences in our
 implicit associations with different concepts that make up our lives. The basic
-IAT requires the participant to rapidly catagorize two target concepts with an
+IAT requires the participant to rapidly categorize two target concepts with an
 attribute, such that the response times will be faster with strongly associated
-pairings rather than slower for weakly associated pairings. The key here is that
+pairings and slower for weakly associated pairings. The key here is that
 the participant should act as quickly as they can so this experiment can better
 get at the implicit associations rather than the surface level associations.
 
-In the study that we are showing off in smile (Yu, Wang, Wang et al. 2012), they
+The study that we are showing off in smile (Yu, Wang, Wang et al. 2012) 
 designed an IAT that incorporated *mouse tracking* into their study to better
 get at the underlying mechanisms of implicit-association. We ask our
-participants to view names of flowers, names of bugs, positively assocaited
-nouns, and negatively associated nouns and to classify them into catagories.
-The blocks of stimulus will be better explained below in the **Stimulus Generation**
+participants to view names of flowers, names of bugs, positively associated
+nouns, and negatively associated nouns and to classify them into categories.
+The blocks of stimuli will be better explained below in the **Stimulus Generation**
 section of this document.
 
 This SMILE experiment will utilize many of the :py:module:`Mouse <smile.mouse>`
 Classes in `mouse.py`, including :py:class:`~smile.mouse.MouseCursor` and
-:py:class:`~smile.mouse.MouseRecord`. We will also be using may of the SMILE
+:py:class:`~smile.mouse.MouseRecord`. We will also be using many of the SMILE
 **flow** states like :py:class:`~smile.state.Loop` and :py:class:`~smile.state.Meanwhile`
-and :py:class:`~smile.state.If`. Along with the uce of **Mouse** states, we will
+and :py:class:`~smile.state.If`. Along with the use of **Mouse** states, we will
 be using :py:class:`~smile.video.ButtonPress` as our main form of input for the
 experiment.
 
@@ -39,6 +39,7 @@ In `iat_mouse.py` we have the imports that we need for the experiment. Below are
 those imports.
 
 .. code-break:: python
+
     :linenos:
 
     from smile.common import *
@@ -46,8 +47,8 @@ those imports.
     from gen_stim import *
 
 Our experiment first imports smile.commmon, where all of the most used states
-are imported from, as well as config and gen_stim. Lets take a look into config,
-were set define our global variables for the experiment.
+are imported from, as well as config and gen_stim. Let's take a look into config,
+where we set and define our global variables for the experiment.
 
 .. code-break:: python
     :linenos:
@@ -78,10 +79,11 @@ were set define our global variables for the experiment.
 
 After defining our global variables, we should define our stimulus generator. In
 `gen_stim.py` we define a function that generates lists of dictionaries that
-represent out blocks of trials. The following is our `gen_stim.py`, where first
-we setup our lists of stimulus to be pulled from.
+represent out blocks of trials. The following is our `gen_stim.py`, where we
+first set up our lists of stimuli to be pulled from.
 
 .. code-block:: python
+
     :linenos:
 
     import random as rm
@@ -113,6 +115,7 @@ Next we define our `gen_blocks()` function. At the bottom of `gen_stim.py` we
 also call `gen_blocks()` so our iat_mouse.py doesn't have to.
 
 .. code-block:: python
+
     :linenos:
 
     def gen_blocks(type):
@@ -175,34 +178,34 @@ also call `gen_blocks()` so our iat_mouse.py doesn't have to.
     BLOCKS = gen_blocks(1)
 
 Now we can look at the rest of `iat_mouse.py`. The following is the setup of the
-block loop and the setup of the trial loop. At the beginnnig of each loop, you
+block loop and the setup of the trial loop. At the beginning of each loop, you
 will see a new instructions page and will not be able to go on with the experiment
 until you press a key. The block loop will loop over the *BLOCKS* that were
-defined in `gen_stim.py`, were as the trial loop will loop over the *words* key
-that is attached to each block's dictionairy.
+defined in `gen_stim.py`, whereas the trial loop will loop over the *words* key
+that is attached to each block's dictionary.
 
 .. code-block:: python
 
-    #Setup the Block loop, where *block* is a
+    #Set up the Block loop, where *block* is a
     #Reference to the variable you are looping over
     with Loop(BLOCKS) as block:
-        #Show the instructions to the paricipant
+        #Show the instructions to the participant
         RstDocument(text=block.current['instruct'], base_font_size=RSTFONTSIZE, width=RSTWIDTH, height=exp.screen.height)
         with UntilDone():
             #When a KeyPress is detected, the UntilDone
             #will cancel the RstDocument state
             KeyPress()
         #Setup a loop over each Trial in a Block. *block.current* references the
-        #current interation of the loop, which is a dictionary that contatins the list
+        #current iteration of the loop, which is a dictionary that contains the list
         #words. *trial* will be our reference to the current word in our loop.
         with Loop(block.current['words']) as trial:
 
 The core of this experiment is the trial level loop. Below is the code that defines
 the states that run each and every trial for the participant. This is the section
-of code that defines the button press, defines the things that happen while
+of code that defines the button press, the things that happen while
 the buttons are waiting to be pressed, and the Log the logs out the information
 from each trial. It also sets up the MouseRecord that tracks the mouse positions
-that need to be analyzed for this experiment
+that need to be analyzed for this experiment.
 
 .. code-block:: python
 
@@ -211,11 +214,11 @@ that need to be analyzed for this experiment
             exp.mouse_test = False
             #The following is a ButtonPress state. This state works like KeyPress,
             #but instead waits for any of the buttons that are its children to be
-            #press.
+            #pressed.
             with ButtonPress(correct_resp=trial.current['correct']) as bp:
                 #block.current is a dictionary that has all of the information we
                 #would need during each individual block, including the text that is
-                #in these buttons, which differes from block to block
+                #in these buttons, which differs from block to block
                 Button(text=block.current['left_word'], name="left", left=0,
                        top=exp.screen.top, width = BUTTONWIDTH, height=BUTTONHEIGHT, text_size = (170, None),
                        font_size=FONTSIZE, halign='center')
@@ -223,9 +226,9 @@ that need to be analyzed for this experiment
                        right=exp.screen.right, top=exp.screen.top,
                        width = BUTTONWIDTH, height = BUTTONHEIGHT, text_size = (170, None),
                        font_size=FONTSIZE, halign='center')
-                #Required! To see the mouse on the screen
+                #Required to see the mouse on the screen!
                 MouseCursor()
-            #while Those buttons are waiting to be pressed, go ahead and do the
+            #while those buttons are waiting to be pressed, go ahead and do the
             #children of this next state, the Meanwhile
             with Meanwhile():
                 #The start button that is required to be pressed before the trial
@@ -246,13 +249,13 @@ that need to be analyzed for this experiment
                         #wait until the mouse leaves the rectangle from above
                         wt = Wait(until=(MouseWithin(rtgl) == False))
                         #If they waited too long to start moving, tell the experiment
-                        #to display a warning message to the paricipant
+                        #to display a warning message to the participant
                         with If(wt.event_time['time'] - wt.start_time > MOUSEMOVEINTERVAL):
                             exp.mouse_test = True
             with If(exp.mouse_test):
-                Label(text="You are taking to long to move, Please speed up!",
+                Label(text="You are taking too long to move, Please speed up!",
                       font_size=FONTSIZE, color="RED", duration=WARNINGDURATION)
-            #wait the interstimulus interval
+            #wait for the interstimulus interval
             Wait(INTERTRIALINTERVAL)
             #WRITE THE LOGS
             Log(name="IAT_MOUSE",
@@ -269,24 +272,25 @@ that need to be analyzed for this experiment
 Analysis
 ========
 
-When coding your experiment, you don't have to worry about losing any data,
-becaues all of it is saved out into `.slog` files anyway. The thing you do have
+When coding your experiment, you don't have to worry about losing any data
+because all of it is saved out into `.slog` files anyway. The thing you do have
 to worry about is whether or not you want that data easily available or if you
 want to spend hours **slogging** through your data. We made it easy for you
 to pick which data you want saved out during the running of your experiment with
 use of the **Log** state.
 
-Relavent data from the **IAT MOUSE TRACKING** task would be the responses from
+Relevant data from the **IAT MOUSE TRACKING** task would be the responses from
 the **ButtonPress** and the mouse movements that are saved in the `.slog` files.
 
-If you would like to grab your data from the `.slog` files to analize your data
+If you would like to grab your data from the `.slog` files to analyze your data
 in python, you need to use the :py:func:`~smile.log.log2dl`. This function will
 read in all of the `.slog` files with the same base name, and convert them into
 one long list of dictionaries. Below is a the few lines of code you would use to
-get at all of the data from three imaginary paricipants, named as `s000`, `s001`,
+get at all of the data from three imaginary participants, named as `s000`, `s001`,
 and `s002`.
 
 .. code-block:: python
+
     :linenos:
 
     from smile.log as lg
@@ -303,10 +307,11 @@ and `s002`.
     print dic_list[0]['reaction_time']
 
 You can also translate all of the `.slog` files into `.csv` files easily by
-running the command :py:func:`~smile.log.log2csv` for each paricipant. An example of this is
+running the command :py:func:`~smile.log.log2csv` for each participant. An example of this is
 located below.
 
 .. code-block:: python
+
     :linenos:
 
     from smile.log as lg
@@ -325,6 +330,7 @@ iat_mouse.py in full
 ====================
 
 .. code-block:: python
+
     :linenos:
 
     from smile.common import *
@@ -334,7 +340,7 @@ iat_mouse.py in full
     #Start setting up the experiment
     exp = Experiment()
 
-    #Show the instructions to the paricipant
+    #Show the instructions to the participant
     RstDocument(text=instruct_text, base_font_size=RSTFONTSIZE, width=RSTWIDTH, height=exp.screen.height)
     with UntilDone():
         #When a KeyPress is detected, the UntilDone
@@ -344,7 +350,7 @@ iat_mouse.py in full
     #Reference to the variable you are looping over
     with Loop(BLOCKS) as block:
         #Setup a loop over each Trial in a Block. *block.current* references the
-        #current interation of the loop, which is a dictionary that contatins the list
+        #current iteration of the loop, which is a dictionary that contains the list
         #words. *trial* will be our reference to the current word in our loop.
         with Loop(block.current['words']) as trial:
             #initialize our testing variable in Experiment Runtime
@@ -356,7 +362,7 @@ iat_mouse.py in full
             with ButtonPress(correct_resp=trial.current['correct']) as bp:
                 #block.current is a dictionary that has all of the information we
                 #would need during each individual block, including the text that is
-                #in these buttons, which differes from block to block
+                #in these buttons, which differs from block to block
                 Button(text=block.current['left_word'], name="left", left=0,
                        top=exp.screen.top, width = BUTTONWIDTH, height=BUTTONHEIGHT, text_size = (170, None),
                        font_size=FONTSIZE, halign='center')
@@ -364,9 +370,9 @@ iat_mouse.py in full
                        right=exp.screen.right, top=exp.screen.top,
                        width = BUTTONWIDTH, height = BUTTONHEIGHT, text_size = (170, None),
                        font_size=FONTSIZE, halign='center')
-                #Required! To see the mouse on the screen
+                #Required to see the mouse on the screen!
                 MouseCursor()
-            #while Those buttons are waiting to be pressed, go ahead and do the
+            #while those buttons are waiting to be pressed, go ahead and do the
             #children of this next state, the Meanwhile
             with Meanwhile():
                 #The start button that is required to be pressed before the trial
@@ -387,11 +393,11 @@ iat_mouse.py in full
                         #wait until the mouse leaves the rectangle from above
                         wt = Wait(until=(MouseWithin(rtgl) == False))
                         #If they waited too long to start moving, tell the experiment
-                        #to display a warning message to the paricipant
+                        #to display a warning message to the participant
                         with If(wt.event_time['time'] - wt.start_time > MOUSEMOVEINTERVAL):
                             exp.mouse_test = True
             with If(exp.mouse_test):
-                Label(text="You are taking to long to move, Please speed up!",
+                Label(text="You are taking too long to move, Please speed up!",
                       font_size=FONTSIZE, color="RED", duration=WARNINGDURATION)
             #wait the interstimulus interval
             Wait(INTERTRIALINTERVAL)
@@ -442,6 +448,7 @@ gen_stim.py in Full
 ===================
 
 .. code-block:: python
+
     :linenos:
 
     import random as rm

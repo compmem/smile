@@ -16,7 +16,7 @@ Anaconda. Anaconda is a python distribution that contains scientific python
 packages such as numpy or matplotlib. If you already have python installed,
 Anaconda will install all of it's scientific packages to that distribution.
 Below is a link to the Anaconda install page. Make sure to download the 32 bit
-diststribution of Anaconda, and the 2.7 version of python, install it and make
+distribution of Anaconda, and the 2.7 version of python. Install it, and make
 sure both check boxes are checked when installing. These check boxes will
 register Anaconda as the default python of your system. Advanced users who don't
 want Anaconda to be their default python will want to uncheck the bottom
@@ -75,7 +75,7 @@ With that, you are finished installing SMILE. Congrats! Head over to
 Windows Troubleshooting
 -----------------------
 
-*If you are trying to replace an older version of smile*, or if you just need
+*If you are trying to replace an older version of SMILE*, or if you just need
 to upgrade your currect version, you must run the following command while the
 Anaconda command promt is in the SMILE download folder.
 
@@ -93,14 +93,14 @@ to the Mac-Kivy install guide.
     -`Mac-Kivy Install Guide <http://kivy.org/docs/installation/installation-macosx.html>`_
 
 After you install Kivy, you must download and install SMILE. The following is a
-link to the smile download page, where you will download the zip, and extract
+link to the SMILE download page, where you will download the zip, and extract
 it to an easy to find place.
 
     -`SMILE Download <https://github.com/compmem/smile/tree/master>`_
 
 Now, all you have to do is open the terminal and navigate to the
 newly extracted smile download folder. This folder should contain setup.py. Run
-the following line to install SMILE to your the special Kivy python distribution.
+the following line to install SMILE to your special Kivy distribution of python.
 
 ::
 
@@ -120,7 +120,7 @@ With that, you are finished installing SMILE. Congrats! Head over to
 Mac Troubleshooting
 -------------------
 
-*If you are trying to replace an older version of smile*, or if you just need
+*If you are trying to replace an older version of SMILE*, or if you just need
 to upgrade your currect version, you must run the following command while the
 Anaconda command promt is in the SMILE download folder.
 
@@ -129,11 +129,11 @@ Anaconda command promt is in the SMILE download folder.
     $ kivy -m pip install . --upgrade
 
 
-Installing Smile with Linux
+Installing SMILE with Linux
 ===========================
 
 SMILE requires Kivy to run properly, but if you would like to use the
-smild.sound functionallity, you need to download and install PYO aswell. Run
+smile.sound functionallity, you need to download and install PYO aswell. Run
 the following in your command line to install both Kivy and PYO at the same
 time.
 
@@ -142,11 +142,11 @@ time.
     $ sudo aptitude install python-pyo python-kivy
 
 Then, download SMILE from github and extract it to a place you can find later.
-The download link is the following.
+The download link is the following:
 
     -`SMILE Download <https://github.com/compmem/smile/tree/kivy>`_
 
-Next, navigate to the newly extracted smile folder, that contains setup.py, and
+Next, navigate to the newly extracted smile folder that contains setup.py, and
 run the following line in your terminal window.
 
 ::
@@ -156,7 +156,7 @@ run the following line in your terminal window.
 This will add SMILE to your python distribuiton.
 
 With that, you are finished installing SMILE. Congrats! Head over to
-`Smile Tutorial<tutorial.html>`_ to start SMILING.
+`SMILE Tutorial<tutorial.html>`_ to start SMILING.
 
 Linux Troubleshooting
 ---------------------
