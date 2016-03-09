@@ -2,6 +2,11 @@
 Stroop Task
 ===========
 
+.. image:: _static/stroop.png
+    :width: 375
+    :height: 241
+    :align: right
+
 This is the stroop task. The participant is required to view a list of words,
 appearing one at a time on the screen, and say out loud the color of the text.
 Each sound file corresponding to each trial are saved out as `.wav` files, with

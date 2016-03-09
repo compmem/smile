@@ -2,6 +2,11 @@
 Sternberg Task
 ==============
 
+.. image:: _static/stern.png
+    :width: 375
+    :height: 241
+    :align: right
+
 This is the Sternberg task. Developed by Saul Sternberg in the 1960's, this task
 is designed to test a participants working memory by asking them to view a list
 of several stimuli, usually words, numbers, or letters, and then showing them
