@@ -33,6 +33,10 @@ to be a hierarchical state machine.  This is because all of the states in
 SMILE have a parent-child relationship that comes into play when dealing with
 the timing of multiple states at the same time.
 
+Why SMILE?
+==========
+
+Not yet finished
 
 .. toctree::
    :maxdepth: 1
