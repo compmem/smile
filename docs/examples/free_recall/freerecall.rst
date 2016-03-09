@@ -2,6 +2,11 @@
 Free Recall
 ===========
 
+.. image:: _static/free_recall.png
+    :width: 375
+    :height: 241
+    :align: right
+
 Free-Recall is a psychological paradigm where the participant is shown a list of
 words and is then asked to recall the displayed words in any order immediately
 after being shown or after a period of delay.
@@ -297,7 +302,7 @@ CITATION
 ::
 
 	Murdock, Bennet B. (1962), "The serial position effect of free recall", Journal of Experimental Psychology 64 (5): 482–488
-	
+
 ::
 
 	Waugh, Nancy C. (1961), "Free versus serial recall", Journal of Experimental Psychology 62 (5): 496–502

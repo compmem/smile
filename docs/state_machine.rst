@@ -40,6 +40,8 @@ required to program your experiment. The **most important** idea to realize
 about SMILE is the difference between *Experimental Build Time* and
 *Experimental Run Time*.
 
+.. _run_build_time:
+
 Build Time V.S. Run Time
 ========================
 
@@ -98,7 +100,10 @@ follows.
 
     exp.variableName = lbl.appear_time['time']
 
+For more information about setting in **RT** see the :ref:`Setting a Variable in RT <setting_in_rt>`
+section of **Advanced SMILEing**
 
+.. _ref_def:
 
 What are References?
 ====================
@@ -143,4 +148,7 @@ is made available.
 
 You shouldn't run into *NotAvaiableError*'s unless you are trying to time
 a state based off the disappear time of something.
+
+For more information about :py:class:`~smile.ref.Ref` and :py:class:`~smile.state.Func`
+please see :ref:`Preforming Functions and Operations in RT <func_ref_def>`
 

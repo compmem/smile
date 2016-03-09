@@ -2,6 +2,11 @@
 IAT Mouse Tracking
 ==================
 
+.. image:: _static/iat_mouse.png
+    :width: 375
+    :height: 241
+    :align: right
+
 The IAT, or Implicit-Association Test, was introduced by Anthony Greenwald et al.
 in 1998. This task is designed to get at the individual differences in our
 implicit associations with different concepts that make up our lives. The basic
@@ -11,7 +16,7 @@ pairings and slower for weakly associated pairings. The key here is that
 the participant should act as quickly as they can so this experiment can better
 get at the implicit associations rather than the surface level associations.
 
-The study that we are showing off in smile (Yu, Wang, Wang et al. 2012) 
+The study that we are showing off in smile (Yu, Wang, Wang et al. 2012)
 designed an IAT that incorporated *mouse tracking* into their study to better
 get at the underlying mechanisms of implicit-association. We ask our
 participants to view names of flowers, names of bugs, positively associated
@@ -56,13 +61,13 @@ where we set and define our global variables for the experiment.
     #RST VARIABLES
     RSTFONTSIZE = 50
     RSTWIDTH = 600
-    instruct1 = open('iatmouse_instructions1.rst', 'r').read()
-    instruct2 = open('iatmouse_instructions2.rst', 'r').read()
-    instruct3 = open('iatmouse_instructions3.rst', 'r').read()
-    instruct4 = open('iatmouse_instructions4.rst', 'r').read()
-    instruct5 = open('iatmouse_instructions5.rst', 'r').read()
-    instruct6 = open('iatmouse_instructions6.rst', 'r').read()
-    instruct7 = open('iatmouse_instructions7.rst', 'r').read()
+    instruct1 = open('iat_mouse_instructions1.rst', 'r').read()
+    instruct2 = open('iat_mouse_instructions2.rst', 'r').read()
+    instruct3 = open('iat_mouse_instructions3.rst', 'r').read()
+    instruct4 = open('iat_mouse_instructions4.rst', 'r').read()
+    instruct5 = open('iat_mouse_instructions5.rst', 'r').read()
+    instruct6 = open('iat_mouse_instructions6.rst', 'r').read()
+    instruct7 = open('iat_mouse_instructions7.rst', 'r').read()
 
     #MOUSE MOVING VARIABLES
     WARNINGDURATION = 2.0

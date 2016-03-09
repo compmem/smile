@@ -1942,7 +1942,7 @@ class Record(State):
             # only add in refs that trigger
             if self.__triggers and name not in self.__triggers:
                 continue
-            
+
             # start changing anytime it changes
             if hasattr(ref, 'add_change_callback'):
                 ref.add_change_callback(self.record_change)
@@ -2486,8 +2486,9 @@ class Func(CallbackState):
             input += additive
             return input
 
-        exp.X = 15
-        exp.X = Func(add_num, input=exp.X, additive=5)
+        Y = 15
+        X = Func(add_num, input=Y, additive=5)
+        Label(text=Ref(str, X.result), duration=2)
 
     This example will add 5 to `exp.X`. Very simple, but without using the
     *Func* state, you would be running **add_num** outside of experiment
