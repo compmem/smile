@@ -57,6 +57,9 @@ class StateBuilder(object):
         # Set the parent of the clone.
         new_clone._parent = parent
 
+        # Prepare the Ref context for the clone.
+        new_clone._ref_context = {self: new_clone}
+
         return new_clone
 
     def __getattr__(self, name):
@@ -76,13 +79,8 @@ class StateBuilder(object):
             except NotImplementedError:
                 raise AttributeError("State does not support attribute setting!")
 
-        # First, set the sttribute value as normal.
+        # First, set the attribute value as normal.
         super(StateBuilder, self).__setattr__(name, value)
-
-        # If this state is not the current clone of the original state, no
-        # further action is taken...
-        if self.current_clone is not self:
-            return
 
         # If the name has the prefix "_init_" create a corresponding internal
         # attribute without that prefix.  Set it to None for now.  At enter
@@ -184,7 +182,7 @@ class State(object):
         # Weak value dictionary to track Refs issued by this state.  Necessary
         # because those Refs need to be notified when their dependencies
         # change.  This is first so that __setattr__ will work.
-        self.__issued_refs = weakref.WeakValueDictionary()
+        self.__dict__["_State__issued_refs"] = weakref.WeakValueDictionary()
 
         # If true, we write a log entry every time this state finalizes.
         self.__save_log = save_log
@@ -308,6 +306,9 @@ class State(object):
         # most recently started execution of a state.
         self.__most_recently_entered_clone = self
 
+        # Initialize with empty Ref context.
+        self._ref_context = {}
+
     def __repr__(self):
         """String representation.
         """
@@ -324,10 +325,9 @@ class State(object):
         # First, set the sttribute value as normal.
         super(State, self).__setattr__(name, value)
 
-        # If this state is not the current clone of the original state, or the
-        # attribute is not named with a leading underscore, not further action
-        # is taken...
-        if name[0] != "_" or self.current_clone is not self:
+        # If the attribute is not named with a leading underscore, no further
+        # action is taken...
+        if name[0] != "_":
             return
 
         # If we've issued a Ref for this attribute, notify the Ref that its
@@ -488,7 +488,7 @@ class State(object):
             else:
                 print "     %s: %r" % (attr_name, value)
 
-    def claim_exceptions(self):  #TODO: make this a context manager instead?
+    def claim_exceptions(self):  #TODO: make this a context manager instead?  # TODO: rename and change doc string (used for finding current clone now too)
         """Until another state 'claims exceptions', any uncaught exception will
         be attributed to this state in the SMILE traceback.
         """
@@ -508,32 +508,21 @@ class State(object):
         return self._log_attrs
 
     @property
-    def current_clone(self):
-        """A clone is needed when running state's within a *Loop* state.
-        Allows for SMILE to keep track of all instances of this state,
-        preparing future clones, and finishing up previous clones at a later time.
+    def current_clone(self):  # TODO: new doc string!
+        ancestor = self._exp._current_state
+        while ancestor is not None:
+            try:
+                return ancestor._ref_context[self]
+            except KeyError:
+                ancestor = ancestor._parent
+        raise RuntimeError("No current clone of %r found!" % self)
 
-        Returns
-        -------
-        state
-            The most recently entered clone of this state.
-        """
-        # This will be called in the process of setting up
-        # self,__original_state and self._most_recently_entered_clone, so it
-        # has to work without those...
-        if ("_State__original_state" in self.__dict__ and
-            "_State__most_recently_entered_clone" in self.__dict__):
-            # Return the most recently entered clone of the original state.
-            return self.__original_state.__dict__[
-                "_State__most_recently_entered_clone"]
-        else:
-            # If those attributes are not set up yet, assume self is the
-            # current clone, since no clones could have been created yet.
-            return self
+    @property
+    def original_builder(self):
+        return self.__original_state
 
     def get_current_attribute_value(self, name):
-        """Get the value of an attribute from the most recently entered clone
-        of this state.
+        """Get the value of an attribute from the current clone of this state.
         """
         # Return the named attribute from the current clone.
         return getattr(self.current_clone, name)
@@ -631,6 +620,12 @@ class State(object):
                     ("Attempting to use unavailable value (%r) "
                      "for attribute %r of %r.  Do you need to use a Done "
                      "state?") % (value, name, self))
+
+        # propagate self to ancestors' ref contexts...
+        ancestor = self._parent
+        while ancestor is not None:
+            ancestor._ref_context[self.__original_state] = self
+            ancestor = ancestor._parent
 
         # apply the duration, if supplied...
         if self._duration is None:
@@ -815,14 +810,21 @@ class ParentState(State):
     """
     def __init__(self, children=None, parent=None, duration=None,
                  save_log=True, name=None, blocking=True):
+        # keep track of references issued for user variables
+        self.__dict__["_ParentState__issued_refs"] = \
+            weakref.WeakValueDictionary()
+
         super(ParentState, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
                                           name=name,
                                           blocking=blocking)
+
         # process children
         if children is None:
             children = []
+        elif isinstance(children, State):
+            children = [children]
         self._children = []
         for c in children:
             self.claim_child(c)
@@ -832,6 +834,40 @@ class ParentState(State):
 
         # cancel time (None if not cancelled)
         self._cancel_time = None
+
+    def get_attribute_ref(self, name):
+        """Return a Ref for a user variable of this ParentState.
+        """
+        try:
+            return super(ParentState, self).get_attribute_ref(name)
+        except NameError:
+            if "__" in name:
+                raise NameError
+            try:
+                return self.__issued_refs[name]
+            except KeyError:
+                ref = Ref(self.get_var, name)
+                self.__issued_refs[name] = ref
+                return ref
+
+    def attribute_update_state(self, name, value):
+        state = ParentSet(self, name, value)
+        return state
+
+    def get_var(self, name):
+        """Get a user variable of this ParentState.
+        """
+        return self.current_clone._vars[name]
+
+    def set_var(self, name, value):
+        """Set a user variable of this ParentState.
+        """
+        self.current_clone._vars[name] = value
+        try:
+            ref = self.__issued_refs[name]
+        except KeyError:
+            return
+        ref.dep_changed()
 
     def tron(self, depth=0):
         """Activate trace output for this state and all its children.
@@ -901,6 +937,7 @@ class ParentState(State):
     def _enter(self):
         self.__unfinalized_children = set()
         self.__cancel_time = None
+        self._vars = {}
 
     def _leave(self):
         if not len(self._children) or not len(self.__unfinalized_children):
@@ -935,6 +972,27 @@ class ParentState(State):
         if self._end_time is None or cancel_time < self._end_time:
             self._end_time = cancel_time
         self._cancel_time = cancel_time
+
+
+class ParentSet(AutoFinalizeState):
+    """State that sets a user attribute value on a ParentState.
+    """
+    def __init__(self, state, var_name, value, parent=None, save_log=True,
+                 name=None):
+        super(ParentSet, self).__init__(parent=parent,
+                                        save_log=save_log,
+                                        name=name,
+                                        duration=0.0)
+        self.__state = state
+        self._state_name = state._name
+        self._init_var_name = var_name
+        self._init_value = value
+
+        self._log_attrs.extend(['state_name', 'var_name', 'value'])
+
+    def _enter(self):
+        self.__state.set_var(self._var_name, self._value)
+        clock.schedule(self.leave)
 
 
 class Parallel(ParentState):
@@ -1038,10 +1096,10 @@ class Parallel(ParentState):
         self.__remaining.add(child)
         # schedule the state to run
         clock.schedule(partial(child.enter, start_time))
+        # return the child
+        return child
 
     def insert(self, children=None, parent=None, save_log=True, name=None):
-        if isinstance(children, State):
-            children = [children]
         return ParallelInsertState(self, children=children, parent=parent,
                                    save_log=save_log, name=name)
 
@@ -1083,14 +1141,39 @@ class ParallelInsertState(ParentState):
                                                   name=name,
                                                   blocking=True)
         self.__parallel_state = parallel_state
+        self._inserted = []
 
     def _enter(self):
         super(ParallelInsertState, self)._enter()
         parallel_state = self.__parallel_state.current_clone
+        self._inserted = []
         for child in self._children:
-            parallel_state._insert_child(child, self._start_time)
+            self._inserted.append(StateHandle(
+                parallel_state._insert_child(child, self._start_time)))
         self._end_time = self._start_time
         clock.schedule(self.leave)
+
+    @property
+    def first(self):
+        return self.inserted[0]
+
+    @property
+    def last(self):
+        return self.inserted[-1]
+
+
+class StateHandle(object):
+    def __init__(self, state):
+        self.__state = state
+
+    def __getattr__(self, name):
+        try:
+            return getattr(self.__state, name)
+        except AttributeError:
+            try:
+                return getattr(self.__state, "_" + name)
+            except AttributeError:
+                raise AttributeError(name)
 
 
 @contextmanager
@@ -1421,70 +1504,8 @@ class SubroutineState(Serial):
                                               name=name,
                                               blocking=blocking)
         self._subroutine = subroutine
-        self._vars = {}
-        self.__issued_refs = weakref.WeakValueDictionary()
 
         self._log_attrs.extend(['subroutine'])
-
-    def _enter(self):
-        self._vars = {}
-        super(SubroutineState, self)._enter()
-
-    def get_attribute_ref(self, name):
-        """Return a Ref for a user variable of this SubroutineState.
-        """
-        try:
-            return super(SubroutineState, self).get_attribute_ref(name)
-        except NameError:
-            try:
-                return self.__issued_refs[name]
-            except KeyError:
-                ref = Ref(self.get_var, name)
-                self.__issued_refs[name] = ref
-                return ref
-
-    def attribute_update_state(self, name, value):
-        state = SubroutineSet(self, name, value)
-        return state
-
-    def get_var(self, name):
-        """Get a user variable of this SubroutineState.
-        """
-        return self.current_clone._vars[name]
-
-    def set_var(self, name, value):
-        """Set a user variable of this SubroutineState.
-        """
-        self.current_clone._vars[name] = value
-        try:
-            ref = self.__issued_refs[name]
-        except KeyError:
-            return
-        ref.dep_changed()
-
-    def __dir__(self):
-        return super(SubroutineState, self).__dir__() + self._vars.keys()
-
-
-class SubroutineSet(AutoFinalizeState):
-    """State that sets a user attribute value on a SubroutineState.
-    """
-    def __init__(self, subroutine, var_name, value, parent=None, save_log=True,
-                 name=None):
-        super(SubroutineSet, self).__init__(parent=parent,
-                                            save_log=save_log,
-                                            name=name,
-                                            duration=0.0)
-        self.__subroutine = subroutine
-        self._subroutine_state = subroutine._name
-        self._init_var_name = var_name
-        self._init_value = value
-
-        self._log_attrs.extend(['subroutine_state', 'var_name', 'value'])
-
-    def _enter(self):
-        self.__subroutine.set_var(self._var_name, self._value)
-        clock.schedule(self.leave)
 
 
 class If(SequentialState):
