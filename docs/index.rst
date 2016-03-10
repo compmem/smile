@@ -19,7 +19,7 @@ possible states and to define the rules for transitioning from one of those
 states to another. A common example used to describe a state machine is
 a stoplight: in this case, the three possible states are a red state, a green
 state, and a yellow state. There is a set order of cycling through these
-states; specifically, red transition so green, green transitions to yellow, and
+states; specifically, red transitions to green, green transitions to yellow, and
 yellow cycles back to red.
 
 The goal of SMILE was to create an easy to use State Machine Interface where
@@ -33,13 +33,18 @@ to be a hierarchical state machine.  This is because all of the states in
 SMILE have a parent-child relationship that comes into play when dealing with
 the timing of multiple states at the same time.
 
+Why SMILE?
+==========
+
+Not yet finished
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    install
    how_to_smile
    tutorial
+   real_examples
    accessing_data
    smile
 

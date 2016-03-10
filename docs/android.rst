@@ -13,7 +13,7 @@ Preparing your Experiment Directory
    SMILE .py files and call this folder "SMILE"
 
 3. NOTE : You must add a line to your "main.py" exactly as shown below. If you don't
-   include the spaces on either side of the equal sign, buildozer will not compile your experiment for android:
+   include the spaces on either side of the equal sign, Buildozer will not compile your experiment for Android:
 
 ::
 
@@ -24,17 +24,17 @@ Preparing your Experiment Directory
     You may put whatever numbers you want in place of the 1.0.0 but they
     must be in quotations.
 
-Installing Buildozer (Your SMILE for android best friend)
+Installing Buildozer (Your SMILE for Android best friend)
 =========================================================
 
-Buildozer is a packager that allows linux systems to create a file (.apk) that has
+Buildozer is a packager that allows Linux systems to create a file (.apk) that has
 everything you need to run your python program packed into that file. This program
 automates the entire process by downloading everything that is needed for the
-program Python-For-Android, including the SDK and NDK for android.
+program Python-For-Android, including the SDK and NDK for Android.
 
-In the terminal, change directory to wherever you want to install buildozer
+In the terminal, change directory to wherever you want to install Buildozer
 (probably just in your documents folder) and then run the following in your terminal
-window
+window:
 
 ::
 
@@ -42,31 +42,31 @@ window
     >>>cd buildozer
     >>>sudo python2.7 setup.py install
 
-This installs buildozer and then allows you to run buildozer from any directory.
+This installs Buildozer and then allows you to run Buildozer from any directory.
 
 Customizing your build specifications
 =====================================
-First things first, we must have buildozer generate a "buildozer.spec" file for our
+First things first, we must have Buildozer generate a "buildozer.spec" file for our
 python program. Run the following line in your terminal in your project directory.
 
 ::
 
     >>>buildozer init
 
-You will see that buildozer has created a file called "buildozer.spec". In this file
+You will see that Buildozer has created a file called "buildozer.spec". In this file
 we need to make some changes. Open the file with and we will start with editing the "title" line.
 
 ::
 
     title : Whatever you name your Experiment
 
-Easy. Next we need to edit the source line. This line tells buildozer what files in
+Easy. Next we need to edit the source line. This line tells Buildozer what files in
 the experiment directory to include when packing everything up into your .apk file.
 
 .. note::
 
-    We are adding file extentions to the end of this line. Use the format of
-    ",extention". They must have a comma in between each new extention. The py,
+    We are adding file extensions to the end of this line. Use the format of
+    ",extension". They must have a comma in between each new extension. The py,
     kv, jpg, png, atlas are the defaults and required to be included.
 
 ::
@@ -74,14 +74,14 @@ the experiment directory to include when packing everything up into your .apk fi
     source.include_exts = py,png,jpg,kv,atlas,mp3,mp4
 
 Next, we will edit the log_level line. If we set log_level to 2 then we are able to
-see all of the logs and the errors if buildozer breaks.
+see all of the logs and the errors if Buildozer breaks.
 
 ::
 
     log_level = 2
 
-Finally, we need to edit the requirements line. This line tells buildozer what
-packages to download and include into it's packaged version of python. kivy is
+Finally, we need to edit the requirements line. This line tells Buildozer what
+packages to download and include into its packaged version of python. Kivy is
 required always for SMILE, but here you can include packages like "ffmpeg" for
 playing video through SMILE.
 
@@ -93,10 +93,10 @@ Building your project with Buildozer
 ====================================
 
 This next step takes a few minutes to run. Running the next line in your terminal
-will download all of the python-for-android files, all of your required packages that
+will download all of the python-for-Android files and your required packages that
 can be downloaded, package all of your included files that match any of your
 include_exts, and download the SDK and NDK that are needed to compile your python
-code. In your terminal run the following line.
+code. In your terminal, run the following line:
 
 ::
 
@@ -113,18 +113,18 @@ that the application file has been saved in the *bin* folder.
 Changing up the blacklist to allow SMILE to Run
 ===============================================
 
-Once buildozer has built your .apk, it also filled your directory with some new
+Once Buildozer has built your .apk, it also filled your directory with some new
 folders. The important folder for this step is the *.buildozer* folder. We need to
-edit the *blacklist.txt* file to tell buildozer to include *python._csv*, otherwise
-SMILE cannot run. First, Navagate to the path below.
+edit the *blacklist.txt* file to tell Buildozer to include *python._csv*, otherwise
+SMILE cannot run. First, navigate to the path below.
 
 ::
 
     >>>cd .buildozer/android/platform/python-for-android/dist/myapp/
 
-In This folder, gedit **blacklist.txt**. Under the ``unused binaries python modules``
-section of the file, put a *#* in fron of the line that has **_csv.so** in it. What the
-new line should look like is presented below
+In this folder, gedit **blacklist.txt**. Under the ``unused binaries python modules``
+section of the file, put a *#* in front of the line that has **_csv.so** in it. What the
+new line should look like is presented below.
 
 ::
 
@@ -133,36 +133,36 @@ new line should look like is presented below
 .. note::
 
     If you do not comment out this line with *#* then the **_csv.so** will not be
-    included in your ".apk" and then SMILE will break.
+    included in your ".apk", and then SMILE will break.
 
 Setting up an Android phone as a Developer to install Homebrew apps
 ===================================================================
 
-Different android devices have processes that are basically the same for setting up
+Most Android devices have processes that are basically the same for setting up
 a phone in Developer mode.
 
-1. Navagate to *Settings->About Phone* and tap the *Build Number* button 7 times.
+1. Navigate to *Settings->About Phone* and tap the *Build Number* button 7 times.
    This sets up your phone for developer mode. This unlocks a new settings tab
    called *Developer Options*.
 
-2. Navagate to *Settings->Developer Options* and Enable *USB debugging*. This allows
-   your linux machine to send the build version of your python experiment straight to
+2. Navigate to *Settings->Developer Options* and Enable *USB debugging*. This allows
+   your Linux machine to send the build version of your python experiment straight to
    your phone.
 
 
 Finally Adding your APK to your Phone
 =====================================
 
-If you hook up via USB to your linux machine, you will be able to automatically
-upload the .apk to your android phone. With the following line sent into your
+If you hook up via USB to your Linux machine, you will be able to automatically
+upload the .apk to your Android phone. With the following line sent into your
 terminal, you rebuild your program with the required python libraries. This line also
-sets your terminal to print out the logs from your phone. The line is as follows.
+sets your terminal to print out the logs from your phone. The line is as follows:
 
 ::
 
     >>>buildozer android debug deploy run logcat
 
-This will open the app on your phone allowing you to see if it works!
+This will open the app on your phone, allowing you to see if it works!
 
 .. note::
 

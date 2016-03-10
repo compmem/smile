@@ -10,12 +10,12 @@ This file is a specially compressed file filled with all of the important data
 associated with the state.  It logs not only all of the parameters, but also
 all of the variables listed in the *Logged Attributes* section of the
 docstrings. In most cases, every state will save out 2 rows of data to the
-*.slog* file.  The first row is the field names and the second row will the the
+*.slog* file.  The first row is the field names, and the second row will be the
 data for each of those fields.
 
 The kind of state that writes multiple lines out to its associated *.slog* file
 is the :py:class:`~smile.state.Log` state.  Wherever you put it into your experiment, it will log the
-values of all of the keywords/argument pairs you pass into it.  It your *Log*
+values of all of the keywords/argument pairs you pass into it.  If your *Log*
 exists within a loop, it will write out the values of the keyword/argument
 pairs during each iteration of the loop during experimental runtime.  In this
 case, the *.slog* file will have the first row be the keywords, and the
@@ -29,7 +29,7 @@ loop.
 
 Below is an example of a *Log* state.
 
-::
+.. code-block:: python
 
     with Loop(10) as trial:
         lb = Label(text=trial.i, duration=2)
@@ -51,10 +51,10 @@ Reading your SLOG files in python
 In order to slog through your data, you are going to need to do one of two
 things. The first would be to pull your data into python by using the :py:class:`~smile.state.Log`
 method called :py:func:`~smile.state.log2dl`. This method converts your `.slog` file to a
-list of dicitonairies so that you can perform any pythonic functions on it in
+list of dictionaries so that you can perform any pythonic functions on it in
 order to analyze your data. *log2dl* has one required parameter,
 *log_filename*, which should be a string that starts out `log_` and ends with
-whatever you put in the *name* parameter of yours *Log* in your experiment.
+whatever you put in the *name* parameter of your *Log* in your experiment.
 
 If there are multiple files with the same name, they have trailing `_#` in the
 filename. *log2dl* will pull all of the files with the same base name, and
@@ -67,5 +67,5 @@ method. This method will take two parameters, *log_filename* and *csv_filename*.
 a string that is `log_` plus the name that you provided in the *name* parameter
 of your *Log*. If no *csv_filename* is given, then it will be saved as the
 same name as your *log_filename* plus `.csv`. From there, you can use your
-prefered method of analyzing your data.
+preferred method of analyzing your data.
 

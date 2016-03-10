@@ -830,6 +830,29 @@ class Experiment(object):
 
 
 class Set(AutoFinalizeState):
+    """How to set a variable during Experimental Runtime.
+
+    Whenever you ask SMILE to set an `exp.` variable, SMILE will create a
+    Set state. The same way you can set using `exp.` you can with Set. On
+    enter(), a Set state will call the Experiment method `set_var` which
+    checks to see if the variable was created, creates it if not, and then
+    fills it with the value passed into the Set state.
+
+    Parameters
+    ----------
+    var_name : string
+       The name of the variable you want to set. This is the same as what
+       you would put next to `exp.`.
+    value : object
+       Whatever you would like to set the variable's value to.
+    parent : ParentState
+       The parent state that this state is contained within.
+    save_log : Boolean (False)
+       If set to True, will save a .slog with all of the information from
+       this state.
+    name : string, optional, default = None
+        The unique name you give this state.
+    """
     def __init__(self, var_name, value, parent=None, save_log=True, name=None):
         # init the parent class
         super(Set, self).__init__(parent=parent,
