@@ -57,7 +57,10 @@ from video import (
     ToggleButton,
     ProgressBar,
     CodeInput,
+    CheckBox,
     Video,
+    Camera,
+    FileChooserListView,
     AnchorLayout,
     BoxLayout,
     FloatLayout,
@@ -68,6 +71,7 @@ from video import (
     StackLayout,
     BackgroundColor,
     UpdateWidget,
+    Animate,
     BlockingFlips,
     NonBlockingFlips)
 from dotbox import DotBox, DynamicDotBox
