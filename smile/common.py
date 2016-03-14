@@ -69,6 +69,7 @@ from video import (
     RelativeLayout,
     ScatterLayout,
     StackLayout,
+    ScrollView,
     BackgroundColor,
     UpdateWidget,
     Animate,

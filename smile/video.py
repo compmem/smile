@@ -1211,7 +1211,8 @@ widgets = [
     "GridLayout",
     "PageLayout",
     "ScatterLayout",
-    "StackLayout"
+    "StackLayout",
+    "ScrollView",
     ]
 for widget in widgets:
     modname = "kivy.uix.%s" % widget.lower()
