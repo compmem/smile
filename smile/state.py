@@ -571,7 +571,7 @@ class State(object):
         Parameters
         ----------
         start_time : float
-            This integer will be when the state will start, some time in the future.
+            When the state will start, some time in the future.
         """
         # set trace
         self.claim_exceptions()

@@ -17,6 +17,7 @@ from state import State, CallbackState, Parallel, ParentState
 from ref import val, Ref, NotAvailable
 from clock import clock
 
+import kivy.metrics
 import kivy.graphics
 import kivy.uix.widget
 from kivy.properties import ObjectProperty, ListProperty
@@ -286,13 +287,13 @@ class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never 
     """ Sets the BackgroundColor for a duration.
 
     If you need to change the background color during experimental runtime, you
-    would use this state. The color can either be set as a string or a touple
+    would use this state. The color can either be set as a string or a tuple
     with RGBA values between 0 and 1. The list of string colors are in
     smile.video.color_name_table.
 
     Parameters
     ----------
-    color : touple or string
+    color : tuple or string
         Pick either 4 values between 0 and 1 that correspond to the RGBA
         values of the color you would like to select, or you pick the
         string value, all capitol letters, that is the color you would
@@ -434,16 +435,16 @@ class WidgetState(VisualState):
         x coordinate of the bottom left point of the widget.
     y : integer (optional)
         y coordinate of the bottom left point of the widget.
-    pos : touple (optional)
+    pos : tuple (optional)
         (x, y)
     height : integer (optional)
         The height of the widget.
     width : integer (optional)
         The width of the widget.
-    size : touple (optional)
+    size : tuple (optional)
         (height, width)
-    center : touple (optional)
-        A touple of integers that corresponds to the center point of the widget
+    center : tuple (optional)
+        A tuple of integers that corresponds to the center point of the widget
     center_x : integer (optional)
         The x coordinate of the center of your widget.
     center_y : integer (optional)
@@ -452,21 +453,21 @@ class WidgetState(VisualState):
         The x value that corresponds to the left side of your widget.
     right : integer (optional)
         The x value that corresponds to the right side of your widget.
-    left_bottom : touple (optional)
+    left_bottom : tuple (optional)
         (x, y)
-    left_top : touple (optional)
+    left_top : tuple (optional)
         (x, y + height)
-    left_center : touple (optional)
+    left_center : tuple (optional)
         (x, (y + height) / 2)
-    center_bottom : touple (optional)
+    center_bottom : tuple (optional)
         ((x + width) / 2, y)
-    center_top : touple (optional)
+    center_top : tuple (optional)
         ((x + width) / 2, y + height)
-    right_bottom : touple (optional)
+    right_bottom : tuple (optional)
         (x + width, y)
-    right_top : touple (optional)
+    right_top : tuple (optional)
         (x + width, y + height)
-    right_center : touple (optional)
+    right_center : tuple (optional)
         (x + width, (y + height) / 2)
     opacity : float (optional)
         Float between 0 and 1.  The opacity of the widget and its children.
@@ -496,7 +497,8 @@ class WidgetState(VisualState):
         return type(name, (cls,), {"__init__" : __init__})
 
     def __init__(self, widget_class, duration=None, parent=None, save_log=True,
-                 name=None, blocking=True, index=0, layout=None, **params):
+                 name=None, blocking=True, index=0, layout=None,
+                 rotate=0, rotate_origin=None, **params):
         super(WidgetState, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
@@ -507,6 +509,8 @@ class WidgetState(VisualState):
         self.__widget_param_names = widget_class().properties().keys()
         self.__widget_class = widget_class
         self._init_index = index
+        self._init_rotate = rotate
+        self._init_rotate_origin = rotate_origin
         self._widget = None
         self.__parent_widget = None
         self._constructor_param_names = params.keys()
@@ -525,7 +529,9 @@ class WidgetState(VisualState):
         self.__y_pos_mode = None
 
         # set the log attrs
-        self._log_attrs.extend(['constructor_params'])
+        self._log_attrs.extend(['constructor_params',
+                                'index', 'rotate',
+                                'rotate_origin'])
 
         self.__parallel = None
 
@@ -536,22 +542,25 @@ class WidgetState(VisualState):
             try:
                 props = WidgetState.property_aliases[name]
             except KeyError:
-                if name in self.__widget_param_names:
+                if name in self.__widget_param_names + ['rotate', 'rotate_origin']:
                     props = name
                 else:
                     return super(WidgetState, self).get_attribute_ref(name)
             if isinstance(props, str):
                 ref = Ref(self.get_current_param, props)
             elif isinstance(props, tuple):
-                ref = tuple(Ref(self.get_current_param, prop) for
-                            prop in props)
+                # must make this a Ref to tuple or there is a weakref error
+                prop_tuple = [Ref(self.get_current_param, prop) for
+                              prop in props]
+                ref = Ref(tuple, prop_tuple)
+                #ref = prop_tuple
             else:
                 raise RuntimeError("Bad value for 'props': %r" % props)
             self.__issued_refs[name] = ref
             return ref
 
     def attribute_update_state(self, name, value):
-        if name in self.__widget_param_names:
+        if name in self.__widget_param_names + ['rotate', 'rotate_origin']:
             return UpdateWidgetUntimed(self, name, value)
         else:
             raise AttributeError("%r is not a property of this widget (%r)." %
@@ -559,7 +568,11 @@ class WidgetState(VisualState):
 
     def get_current_param(self, name):
         # important that this is pulling from the current clone
-        return getattr(self.current_clone._widget, name)
+        current_clone = self.current_clone
+        if name in ['index', 'rotate', 'rotate_origin']:
+            return getattr(current_clone, '_'+name)
+        else:
+            return getattr(current_clone._widget, name)
 
     def property_callback(self, name, *pargs):
         # ensure we update dependencies if necessary
@@ -571,8 +584,9 @@ class WidgetState(VisualState):
 
     def eval_init_refs(self):
         return self.transform_params(self.apply_aliases(
-            {name : getattr(self, "_" + name) for
-             name in self._constructor_param_names}))
+            {name: getattr(self, "_" + name) for
+             name in self._constructor_param_names +
+             ['rotate', 'rotate_origin']}))
 
     def apply_aliases(self, params):
         new_params = {}
@@ -598,6 +612,19 @@ class WidgetState(VisualState):
         # normalize color specifier...
         if value is not None and "color" in name:
             return normalize_color_spec(value)
+        # elif "rotate_origin" in name and isinstance(value, str):
+        #     # convert the string to position based on self
+        #     try:
+        #         props = WidgetState.property_aliases[value]
+        #     except KeyError:
+        #         props = value
+        #     if isinstance(props, str):
+        #         return Ref(self.get_current_param, props,
+        #                    current_clone=self)
+        #     elif isinstance(props, tuple):
+        #         return tuple(Ref(self.get_current_param, prop,
+        #                          current_clone=self) for
+        #                      prop in props)
         else:
             return value
 
@@ -614,9 +641,18 @@ class WidgetState(VisualState):
         # construct the widget, set params, and bind them
         self._widget = self.__widget_class(**params)
         self._set_widget_defaults()
+
+        # handle rotation
+        # will fill None after live_change
+        if self._rotate_origin is None:
+            rot_orig = (0,0)
+        else:
+            rot_orig = self._rotate_origin
+        self.__rotate_inst = kivy.graphics.Rotate(angle=self._rotate,
+                                                  origin=rot_orig)
         self.live_change(**params)
-        self._widget.bind(**{name : partial(self.property_callback, name) for
-                            name in self.__widget_param_names})
+        self._widget.bind(**{name: partial(self.property_callback, name) for
+                             name in self.__widget_param_names})
 
     def _set_widget_defaults(self):
         pass
@@ -633,12 +669,24 @@ class WidgetState(VisualState):
             # The ScatterLayout does not have an index
             self.__parent_widget.add_widget(self._widget)
 
+        # handle rotation
+        self._widget.canvas.before.add(kivy.graphics.PushMatrix())
+        #self.__rotate_inst = kivy.graphics.Rotate(angle=self._rotate,
+        #                                          )#origin=self._rotate_origin)
+        self._widget.canvas.before.add(self.__rotate_inst)
+        self._widget.canvas.after.add(kivy.graphics.PopMatrix())
+
     def unshow(self):
         # remove the widget from the parent
         self.__parent_widget.remove_widget(self._widget)
         self.__parent_widget = None
 
     def live_change(self, **params):
+        # first remove rotation params b/c they don't go to widget
+        rot_params = {rp: params.pop(rp)
+                      for rp in ['rotate', 'rotate_origin']
+                      if rp in params}
+
         # handle setting any property of a widget
         xy_pos_props = {"pos": "min", "center": "mid"}
         x_pos_props = {"x": "min", "center_x": "mid", "right": "max"}
@@ -672,6 +720,7 @@ class WidgetState(VisualState):
             params["center_x"] = self._widget.center_x
         elif self.__x_pos_mode == "max":
             params["right"] = self._widget.right
+
         if new_y_pos_mode is not None:
             self.__y_pos_mode = new_y_pos_mode
         elif self.__y_pos_mode is None:
@@ -688,6 +737,18 @@ class WidgetState(VisualState):
         for name, value in params.iteritems():
             if name in pos_props:
                 setattr(self._widget, name, value)
+
+        # set the rotation info
+        if 'rotate' in rot_params:
+            self._rotate = rot_params['rotate']
+            self.__rotate_inst.angle = self._rotate
+        if 'rotate_origin' in rot_params:
+            if rot_params['rotate_origin'] is None:
+                # defaults to center of widget
+                rot_params['rotate_origin'] = self._widget.center
+            self._rotate_origin = rot_params['rotate_origin']
+            self.__rotate_inst.origin = self._rotate_origin
+            pass
 
     def update(self, parent=None, save_log=True, name=None, blocking=True,
                **kwargs):
@@ -771,7 +832,6 @@ class WidgetState(VisualState):
         """Like animate, but you are able to give a duration and the option to
         give a speed and acceleration.
 
-
         """
         def interp(a, b, w):
             if isinstance(a, dict):
@@ -814,7 +874,7 @@ class WidgetState(VisualState):
     def __enter__(self):
         if self.__parallel is not None:
             raise RuntimeError("WidgetState context is not reentrant!")  #!!!
-        #TODO: make sure we're the previous state?
+        # TODO: make sure we're the previous state?
         WidgetState.layout_stack.append(self)
         self.__parallel = Parallel(name="LAYOUT")
         self.__parallel.override_instantiation_context()
@@ -1027,15 +1087,17 @@ class Animate(State):
         self._started = True
         now = clock.now()
         if self.__initial_params is None:
+            # get values from the target (not the target_clone)
+            # because get_attribute_ref looks up the target clone
             self.__initial_params = {
-                name : self.__target_clone.get_attribute_ref(name).eval() for
+                name: self.__target.get_attribute_ref(name).eval() for
                 name in self.__anim_params.iterkeys()}
         if self._end_time is not None and now >= self._end_time:
             clock.unschedule(self.update)
             clock.schedule(self.finalize)
             now = self._end_time
         t = now - self._start_time
-        params = {name : func(t, self.__initial_params[name]) for
+        params = {name: func(t, self.__initial_params[name]) for
                   name, func in
                   self.__anim_params.iteritems()}
         self.__target_clone.live_change(
@@ -1121,6 +1183,16 @@ for instr in vertex_instructions:
 #                "__init__" : }
 #}
 
+
+# handle kivy window loading bug
+# override the sp, which loads a Window to call dpi2px
+# TODO: make this conditional on actually running
+def _sp(value):
+    return float(value)
+_sp_save = kivy.metrics.sp
+kivy.metrics.sp = _sp
+
+# load the widgets
 widgets = [
     "Button",
     "Slider",
@@ -1128,6 +1200,8 @@ widgets = [
     "ToggleButton",
     "ProgressBar",
     "CodeInput",
+    "CheckBox",
+    "Camera",
 
     #...
     "AnchorLayout",
@@ -1147,6 +1221,13 @@ for widget in widgets:
 
 import kivy.uix.rst
 RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
+
+import kivy.uix.filechooser
+FileChooserListView = WidgetState.wrap(kivy.uix.filechooser.FileChooserListView)
+
+
+# set the sp function back
+kivy.metrics.sp = _sp_save
 
 
 import kivy.uix.video
