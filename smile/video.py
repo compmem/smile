@@ -745,7 +745,7 @@ class WidgetState(VisualState):
         if 'rotate_origin' in rot_params:
             if rot_params['rotate_origin'] is None:
                 # defaults to center of widget
-                rot_params['rotate_origin'] = self._widget.center
+                rot_params['rotate_origin'] = list(self._widget.center)
             self._rotate_origin = rot_params['rotate_origin']
             self.__rotate_inst.origin = self._rotate_origin
             pass
