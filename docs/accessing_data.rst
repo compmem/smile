@@ -24,7 +24,7 @@ loop.
 
 .. note::
 
-    Every instance of the Log state in your experiment will save to a seperate
+    Every instance of the Log state in your experiment will save to a separate
     file.
 
 Below is an example of a *Log* state.
@@ -42,7 +42,7 @@ first argument for *Log*, then it will save out all of the information about
 your looping variable out in different columns.
 
 A Record state will record all of the references given.  It will write a line
-to the `.slog` file everytime one of the references changes. It will also log
+to the `.slog` file every time one of the references changes. It will also log
 the time at which the given reference changed.
 
 Reading your SLOG files in python
@@ -58,7 +58,7 @@ whatever you put in the *name* parameter of your *Log* in your experiment.
 
 If there are multiple files with the same name, they have trailing `_#` in the
 filename. *log2dl* will pull all of the files with the same base name, and
-concatinate them into one long list of dictionaries.
+concatenate them into one long list of dictionaries.
 
 The other way you can access your data is to convert all of your `.slog` files
 to `.csv` files. You can do this very easily by running the :py:func:`~smile.state.log.Log2csv`

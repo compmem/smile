@@ -3,7 +3,7 @@ Installation of SMILE!
 ============================
 
 Getting ready to SMILE? Then you are in the right place. This guide will tell
-you how to install SMILE and the package that SMILE is dependant upon, Kivy!
+you how to install SMILE and the package that SMILE is dependent upon, Kivy!
 Scroll down to the appropriate operating system and follow the directions provided
 to install Kivy, SMILE, and any needed extra packages.
 
@@ -14,7 +14,7 @@ Installing SMILE on Windows
 Before you attempt to do anything, the first step should be installing
 Anaconda. Anaconda is a python distribution that contains scientific python
 packages such as numpy or matplotlib. If you already have python installed,
-Anaconda will install all of it's scientific packages to that distribution.
+Anaconda will install all of its scientific packages to that distribution.
 Below is a link to the Anaconda install page. Make sure to download the 32 bit
 distribution of Anaconda, and the 2.7 version of python. Install it, and make
 sure both check boxes are checked when installing. These check boxes will
@@ -57,7 +57,7 @@ folder that contains setup.py and run the following line.
     > pip install .
 
 The final thing you need to install to gain access to all of SMILE's
-functionallity is PYO. PYO is used to play and record sound with SMILE. Download
+functionality is PYO. PYO is used to play and record sound with SMILE. Download
 and install the windows version of PYO from their website. The link is provided
 below.
 
@@ -76,8 +76,8 @@ Windows Troubleshooting
 -----------------------
 
 *If you are trying to replace an older version of SMILE*, or if you just need
-to upgrade your currect version, you must run the following command while the
-Anaconda command promt is in the SMILE download folder.
+to upgrade your current version, you must run the following command while the
+Anaconda command prompt is in the SMILE download folder.
 
 ::
 
@@ -87,7 +87,7 @@ Anaconda command promt is in the SMILE download folder.
 Installing SMILE on Mac
 =======================
 
-The first step is to download and install kivy. The following link will take you
+The first step is to download and install Kivy. The following link will take you
 to the Mac-Kivy install guide.
 
     -`Mac-Kivy Install Guide <http://kivy.org/docs/installation/installation-macosx.html>`_
@@ -109,7 +109,7 @@ the following line to install SMILE to your special Kivy distribution of python.
 Easy. SMILE should have installed without any issue.
 
 The final thing you need to install to gain access to all of SMILE's
-functionallity is PYO. Download and install the Mac version of PYO from their
+functionality is PYO. Download and install the Mac version of PYO from their
 website. The link is provided below.
 
     -`PYO Download <http://ajaxsoundstudio.com/software/pyo/>`_
@@ -121,8 +121,8 @@ Mac Troubleshooting
 -------------------
 
 *If you are trying to replace an older version of SMILE*, or if you just need
-to upgrade your currect version, you must run the following command while the
-Anaconda command promt is in the SMILE download folder.
+to upgrade your current version, you must run the following command while the
+Anaconda command prompt is in the SMILE download folder.
 
 ::
 
@@ -133,7 +133,7 @@ Installing SMILE with Linux
 ===========================
 
 SMILE requires Kivy to run properly, but if you would like to use the
-smile.sound functionallity, you need to download and install PYO aswell. Run
+smile.sound functionality, you need to download and install PYO as well. Run
 the following in your command line to install both Kivy and PYO at the same
 time.
 
@@ -153,7 +153,7 @@ run the following line in your terminal window.
 
     $ python -m pip install .
 
-This will add SMILE to your python distribuiton.
+This will add SMILE to your python distribution.
 
 With that, you are finished installing SMILE. Congrats! Head over to
 `SMILE Tutorial<tutorial.html>`_ to start SMILING.

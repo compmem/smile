@@ -53,8 +53,8 @@ python program. Run the following line in your terminal in your project director
 
     >>>buildozer init
 
-You will see that Buildozer has created a file called "buildozer.spec". In this file
-we need to make some changes. Open the file with and we will start with editing the "title" line.
+You will see that Buildozer has created a file called "buildozer.spec". We need to make 
+some changes in this file. Open the file with and we will start with editing the "title" line.
 
 ::
 
@@ -132,8 +132,8 @@ new line should look like is presented below.
 
 .. note::
 
-    If you do not comment out this line with *#* then the **_csv.so** will not be
-    included in your ".apk", and then SMILE will break.
+    If you do not comment out this line with *#* the **_csv.so** will not be
+    included in your ".apk" and then SMILE will break.
 
 Setting up an Android phone as a Developer to install Homebrew apps
 ===================================================================
@@ -173,7 +173,7 @@ This will open the app on your phone, allowing you to see if it works!
 
     If it looks like the app breaks before running, press *Ctrl+C*. If you press
     this early enough, then you will be able to *Ctrl+F* and find *python*. This
-    will let you find the lines that *kivy* has sent to the log and help you
+    will let you find the lines that *Kivy* has sent to the log and help you
     find where and why your SMILE program broke.
 
 

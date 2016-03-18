@@ -17,7 +17,6 @@ To start, I'll show you how the simplest *SMILE* experiment is programmed.
 Create a directory called *SmileTest* and add a file named *main.py*
 
 .. code-block:: python
-
     :linenos:
 
     from smile.common import *
@@ -42,7 +41,7 @@ know that the definition process is complete, and the *experiment* is ready to
 run. In the next step, we will see how stimulus generation and stimulus
 presentation can be separated with ease in this :py:class:`~smile.state.Loop` state example.
 
-Looping over Lists! in Style
+Looping over Lists! In Style
 ============================
 
 To start this out, let's define the experiment we are going to create. We are
@@ -50,7 +49,7 @@ going to present a list of predefined words to the participant for 2 seconds
 each and wait 1 second in between each word. Sounds complicated right? Wrong!
 With SMILE, all you need to know is a basic idea of what the timing is in your
 experiment and SMILE will take care of the rest! Create a new directory
-called *exp2* and create a file called *randWord1.py*. In the file, lets define
+called *exp2* and create a file called *randWord1.py*. In the file, let's define
 the stimulus.
 
 .. code-block:: python
@@ -96,7 +95,7 @@ send your list to *Loop* as a prarameter.  This tells SMILE to loop over
 experiment, and the running state of the experiment.  Until ``exp.run()`` is
 called, *trial* will not have a value. The next line defines a :py:class:`~smile.video.Label` state
 that displays text for a duration. By default, it displays in the middle of the
-experiment window. Notice that ``trial.current``. In order to access the
+experiment window. Notice ``trial.current``. In order to access the
 numbers from our random list, we need to use ``trial.current`` instead of
 ``words[x]``. ``trial.current`` is a way to tell SMILE to access the
 *current* member of the *words* list while looping.
@@ -111,7 +110,6 @@ Finished **rand_word_1.py**
 ---------------------------------------
 
 .. code-block:: python
-
     :linenos:
 
     from smile.common import *
@@ -134,7 +132,7 @@ Finished **rand_word_1.py**
 
     exp.run()
 
-And Now, With user Input!
+And Now, With User Input!
 =========================
 
 The final step for our basic SMILE tutorial is to add user input and logging.
@@ -179,7 +177,7 @@ keys our participant will be pressing later.
 
 
     #We are ready to start building the Experiment!
-    exp = Experiment():py:class:`~smile.experiment.Experiment`
+    exp = Experiment()
 
 
 We changed the line ``stimulusDuration=2`` into ``maxResponseTime=4``. Next, we
@@ -234,7 +232,7 @@ listgen value that we set earlier.
 
     exp.run()
 
-The Last thing we need to add to this experiment, at the end of the ``Loop()``,
+The last thing we need to add to this experiment, at the end of the ``Loop()``,
 is the :py:class:`~smile.state.Log`. Wherever you put a :py:class:`~smile.state.Log` state in the experiment, it will
 save out a **.slog** file to a folder called *data* in your experiment
 directory under whatever name you put in the *name* field.
@@ -266,7 +264,6 @@ Finished **rand_word_2.py**
 ---------------------------
 
 .. code-block:: python
-
     :linenos:
 
     from smile.common import *
@@ -400,7 +397,6 @@ Finished **main_list_present.py**
 +++++++++++++++++++++++++++++++++
 
 .. code-block:: python
-
     :linenos:
 
     from smile.common import *
@@ -430,7 +426,6 @@ Finished **list_present.py**
 ++++++++++++++++++++++++++++
 
 .. code-block:: python
-
     :linenos:
 
     from smile.common import *
@@ -489,7 +484,6 @@ Finished **button_press_example.py**
 ++++++++++++++++++++++++++++++++++++
 
 .. code-block:: python
-
     :linenos:
 
     from smile.common import *
