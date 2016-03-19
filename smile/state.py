@@ -99,7 +99,7 @@ class StateBuilder(object):
         return lst + self._log_attrs
 
 class StateClass(type):
-    """A metaclass for States which creates a StateBuilder class for each State
+    """A metaclass for States that creates a StateBuilder class for each State
     class.
     """
     def __init__(cls, name, bases, dict_):
@@ -113,12 +113,13 @@ class StateClass(type):
 class State(object):
     """Base State object for the hierarchical state machine.
 
-    This class contains all of the calls that are required of a state to run
-    properly in experimental run time.  Functions like *enter* and *leave* are
-    the staples of a **State**. These functions are called by the **Experiment**
-    which then uses our own scheduler to set the start and end times of our
-    **State**. Below is a list of parameters and logged attributes that all
-    **State** subclasses have access to and use.
+    This class contains all of the calls that are required of a state
+    to run properly in experimental run time.  Functions like *enter*
+    and *leave* are the staples of a **State**. These functions are
+    called by the **Experiment** which then uses our own scheduler to
+    set the start and end times of our **State**. Below is a list of
+    parameters and logged attributes that all **State** subclasses
+    have access to and use.
 
     Parameters
     ----------
@@ -273,7 +274,7 @@ class State(object):
 
         # Raise an error if we are non-blocking, but not the child of a
         # Parallel...
-        #TODO: check this any time self._blocking is assigned!
+        # TODO: check this any time self._blocking is assigned!
         if not self._blocking and not isinstance(self._parent, Parallel):
             raise StateConstructionError(
                 "A state which is not a child of a Parallel cannot be "
@@ -320,6 +321,11 @@ class State(object):
             self._instantiation_lineno,
             self._name,
             id(self))
+
+    def __reduce__(self):
+        """Don't try to pickle state objects, just string repr."""
+        # PBS: Ideally do this without str
+        return (str, (self.__repr__(),))
 
     def __setattr__(self, name, value):
         # First, set the sttribute value as normal.
@@ -465,7 +471,7 @@ class State(object):
             if type(tm) not in (float, int):
                 return repr(tm)
             offset = t - tm
-            if offset < 0.0:  #TODO: display time relative to experiment start
+            if offset < 0.0:  # TODO: display time relative to experiment start
                 return "%fs from now%s" % (-offset, error)
             else:
                 return "%fs ago%s" % (offset, error)
@@ -488,7 +494,10 @@ class State(object):
             else:
                 print "     %s: %r" % (attr_name, value)
 
-    def claim_exceptions(self):  #TODO: make this a context manager instead?  # TODO: rename and change doc string (used for finding current clone now too)
+    def claim_exceptions(self):
+        # TODO: make this a context manager instead?
+        # TODO: rename and change doc string
+        # (used for finding current clone now too)
         """Until another state 'claims exceptions', any uncaught exception will
         be attributed to this state in the SMILE traceback.
         """
@@ -515,7 +524,11 @@ class State(object):
                 return ancestor._ref_context[self]
             except KeyError:
                 ancestor = ancestor._parent
-        raise RuntimeError("No current clone of %r found!" % self)
+
+        # assume we are the clone we were looking for
+        # PBS: Is there a way to know if self is a clone?
+        return self
+        #raise RuntimeError("No current clone of %r found!" % self)
 
     @property
     def original_builder(self):
@@ -1168,12 +1181,16 @@ class StateHandle(object):
 
     def __getattr__(self, name):
         try:
-            return getattr(self.__state, name)
-        except AttributeError:
+            return self.__state.get_attribute_ref(name)
+        except NameError:
+            # PBS: I doubt this code will ever get hit
             try:
-                return getattr(self.__state, "_" + name)
+                return getattr(self.__state, name)
             except AttributeError:
-                raise AttributeError(name)
+                try:
+                    return getattr(self.__state, "_" + name)
+                except AttributeError:
+                    raise AttributeError(name)
 
 
 @contextmanager

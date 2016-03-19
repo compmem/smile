@@ -17,9 +17,9 @@ exp = Experiment()
 # initial wait
 Wait(1.0)
 
-# placeholder for info
-exp.cinfo = []
+# placeholder for saving inserted circs
 exp.circs = []
+
 # Accept input for 5 seconds
 Wait(5.)
 with Meanwhile():
@@ -35,16 +35,16 @@ with Meanwhile():
                 circ = Ellipse(center=mp.pos, color=(jitter(0, 1),
                                                      jitter(0, 1),
                                                      jitter(0, 1)))
-            Set('circs',
-                exp.circs + [ins.first],
-                save_log=False)
+            # Set('circs',
+            #     exp.circs + [ins.first],
+            #     save_log=False)
+            exp.circs = exp.circs + [ins.first]
 
 # print out the locs we saved
 with Loop(exp.circs, save_log=False) as c:
     Debug(i=c.i,
           center=c.current.center,
           color=c.current.color)
-Debug(info=exp.cinfo)
 Wait(1.0)
 
 if __name__ == '__main__':
