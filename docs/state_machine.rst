@@ -11,7 +11,7 @@ which state to go to next. It takes context information from the previous
 states and the input parameters of the current state in order to pick the next
 state. Another property of a HSM is the parent-child relationship that some
 states have.  In the traffic light example, the green state and the yellow
-state could be children of the vehicalsGO state, as in when vehicalsGo enters
+state could be children of the vehiclesGo state, as in when vehiclesGo enters
 it would run green state followed by yellow state after a set time. This
 parent-child relationship allows a HSM to give control of several different
 states to a single parent, allowing for the running of several states at once
@@ -19,14 +19,14 @@ and a higher level of logical progression between states.
 
 SMILE possesses both of these qualities. SMILE takes care of the linking of
 children and parents by creating pythonic contexts and using the *with* keyword.
-Back to the Traffic light example, in SMILE you could create your own
-ParentState called *vehicalsGo*. In your experiment you would write the
+Back to the traffic light example, in SMILE you could create your own
+ParentState called *vehiclesGo*. In your experiment you would write the
 following lines to tell SMILE to treat the *green* and *yellow* states as
-children to the *vehicalsGo* state.
+children to the *vehiclesGo* state.
 
 ::
 
-    with vehicalsGo():
+    with vehiclesGo():
         green(duration = 10)
         yellow(duration = 3)
     red(duration = 14)
@@ -70,7 +70,7 @@ dictionaries to be looped over in a SMILE :py:class:`~smile.state.Loop` state, w
 dictionary is a different piece of stimulus information that was generated
 during the List Generation step.
 
-In building your experiment, you may need access to variable that isn't
+In building your experiment, you may need access to a variable that isn't
 available until the experiment is actually running. As an example, imagine that
 you would like to create a :py:class:`~smile.video.Label` just 200 pixels to the left of the screen
 center. The screen property of Experiment won't be initialized until
@@ -108,17 +108,17 @@ section of **Advanced SMILEing**
 What are References?
 ====================
 
-The second most important things to understand about SMILE are how References
-work. The definition of a SMILE reference is a variable who's value is to be
+The second most important things to understand about SMILE is how References
+work. The definition of a SMILE reference is a variable whose value is to be
 evaluated later. Without the *Reference* we would not be able to separate the
 Experimental Build Time and Experimental Run Time as easily. A :py:class:`~smile.ref.Ref` is a
 class that holds any kind of value from a function call and parameters to an
 expression of several variables like `fu + bar - coocoo`. In relation to
 expressions, References are recursive. Every Reference has a method called
 :py:func:`~smile.ref.Ref.eval` which will attempt to evaluate the value of each part of the
-expression. If one part of the experession is a Reference, then that Reference
-will be recursively evaluated aswell. If the Reference is to a list of values,
-each value in the list will be evaluated. Same with any other listlike.
+expression. If one part of the expression is a Reference, then that Reference
+will be recursively evaluated as well. If the Reference is to a list of values,
+each value in the list will be evaluated. Same with any other list.
 
 Another interesting thing a Reference can do is create a Reference object that
 contains a conditional expression to be evaluated later. These are important
@@ -144,7 +144,7 @@ is made available.
 
     This state is not for regular use. Only use it if you encounter a
     NotAvailableError. If you misuse the *Done* state, your experiment will
-    have hangups in the framerate or running of the experiment.
+    have hang-ups in the framerate or running of the experiment.
 
 You shouldn't run into *NotAvaiableError*'s unless you are trying to time
 a state based off the disappear time of something.

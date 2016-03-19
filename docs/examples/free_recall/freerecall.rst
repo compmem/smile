@@ -2,7 +2,7 @@
 Free Recall
 ===========
 
-.. image:: _static/free_recall.png
+.. image:: ../../_static/free_recall.png
     :width: 375
     :height: 241
     :align: right
@@ -32,7 +32,6 @@ The first thing we will look at is `free_recall.py`. In this file we need to
 import smile as well as execute the `config.py` and the `gen_stim.py`.
 
 .. code-block:: python
-
     :linenos:
 
     #freekey.py
@@ -49,7 +48,6 @@ experiment as well as open any files that we might need for list generation or
 instructions for the participant.
 
 .. code-block:: python
-
     :linenos:
 
     #Names of the stimulus files
@@ -84,7 +82,6 @@ dictionaries where **study** points to a list of words and **duration** points
 to the duration that the participants have to freely recall the words.
 
 .. code-block:: python
-
     :linenos:
 
     import random
@@ -163,7 +160,6 @@ get at all of the data from three imaginary participants, named as `s000`, `s001
 and `s002`.
 
 .. code-block:: python
-
     :linenos:
 
     from smile.log as lg
@@ -182,7 +178,6 @@ running the command :py:func:`~smile.log.log2csv` for each participant. An examp
 located below.
 
 .. code-block:: python
-
     :linenos:
 
     from smile.log as lg
@@ -196,7 +191,6 @@ free_recall.py in Full
 ======================
 
 .. code-block:: python
-
     :linenos:
 
     #freekey.py
@@ -239,7 +233,6 @@ config.py in Full
 =================
 
 .. code-block:: python
-
     :linenos:
 
     #Names of the stimulus files
@@ -273,7 +266,6 @@ gen_stim.py in Full
 ===================
 
 .. code-block:: python
-
     :linenos:
 
     import random

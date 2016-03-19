@@ -2,7 +2,7 @@
 SMILE States
 ============
 
-The states of a State
+The States of a State
 =====================
 
 Every state in SMILE runs through 6 main function calls. These function calls
@@ -13,7 +13,7 @@ These function calls are *__init__*, *.enter()*, *.start()*, *.end()*,
 the experiment, and have different functions depending on the subclass.
 
 **.__init__** happens during **BT** and is the only one to happen at **BT**.
-This function usually sets up all of the references, proccesses some of the
+This function usually sets up all of the references, processes some of the
 parameters, and knows what to do if a parameter is missing or wasn't passed in.
 
 **.enter()** happens during **RT** and will be called after the previous state
@@ -22,7 +22,7 @@ references, and set all the values of the remaining parameters. It will also
 schedule a start time for this state.
 
 **.start()** is a class of function calls that, during **RT**, the state starts
-doing whatever makes it special. this function is not always called *.start()*.
+doing whatever makes it special. This function is not always called *.start()*.
 In the case of an :py:class:`~smile.video.Image` state, *.start()* is replaced with *.appear()*. The
 *.start()* functions could do anything from showing an image to recording a
 keypress. After *.start()* this state will begin actually performing its
@@ -48,7 +48,7 @@ and that method will setup an immediate call to both *.leave()* and
 *.finalize()*.
 
 **.finalize()** happens during **RT** but not until after a state has left.
-This call usually happens whenever the clock has extra time, IE during a :py:class:`~smile.state.Wait`
+This call usually happens whenever the clock has extra time, i.e. during a :py:class:`~smile.state.Wait`
 state. This call will save out the logs, setup callbacks to the :py:class:`~smile.state.ParentState` to
 tell it that this state has finished, and set *self.active* to false. This call
 is used to clean up the state sometime after the state has run *.leave()*.
@@ -103,7 +103,7 @@ parallel of each other. That means they run at the same time. The key to a
 run their `.leave()` function. Once it has no more children running, it will
 schedule its own `.leave()` call, allowing the next state to run.
 
-The exception to this rule is a parameter called *blocking*. It is a boolean
+The exception to this rule is a parameter called *blocking*. It is a Boolean
 property of every state. If set to False and the state exists as a child of a
 *Parallel* state, it will not prevent the *Parallel* state from calling its own
 `.leave()` method. This means a *Parallel* will end when all of its *blocking*
@@ -171,7 +171,7 @@ that in a :py:class:`~smile.state.Parallel` with the previous state. An *UntilDo
 
 If an *UntilDone* is created and there is no previous state, aka right after
 the `exp = Experiment()` line, then all of the children of the *UntilDone* will
-run until they leave, then the your experiment will end.
+run until they leave. Then, the experiment will end.
 
 The following example shows how to use an *UntilDone* to create an instructions
 screen that waits for a keypress to continue.
@@ -190,7 +190,7 @@ Wait State
 
 A :py:class:`~smile.state.Wait` state is a very simple state that has a lot of power behind it. At a
 top level, it allows your experiment to hold up for a *duration* in seconds.
-There are other option you can add to the wait to make it more complicated. The
+There are other options you can add to the wait to make it more complicated. The
 *jitter* parameter allows for the *Wait* to pause your experiment for the
 *duration* plus a random number between 0 and *jitter* seconds.
 
@@ -231,8 +231,8 @@ The *If* is a parent state that runs all of its children in  serial **if** the
 conditional is evaluated as true during **RT**. Behind the scenes, the *If*
 state creates a linked list of conditionals and :py:class:`~smile.state.Serial` states. Initially,
 this linked list is populated only by the conditional passed into the *If* and
-its children, and a True conditional linked with an empty *Serial* state.
-During **RT**, the experiment will loop through each of the conditionals till
+its children and a True conditional linked with an empty *Serial* state.
+During **RT**, the experiment will loop through each of the conditionals until
 one of them evaluates to True and then will run the associated *Serial* state.
 
 If the next state after the *If* state is the *Elif* state, then whatever
@@ -267,8 +267,8 @@ Loop State
 ----------
 
 A :py:class:`~smile.state.Loop` state can handle any kind of looping that you need. The main thing we
-use a *Loop* state is to loop over a list of dictionaries that contains your
-stimulus. You are also able to create while loops by passing in a *conditional*
+use a *Loop* state for is to loop over a list of dictionaries that contains your
+stimuli. You are also able to create while loops by passing in a *conditional*
 parameter. Lastly, instead of looping over a list of dictionaries, you can
 loop an exact number of times by passing in a number as a parameter.
 
@@ -276,7 +276,7 @@ When creating a *Loop* state, you must define a variable to access all of the
 information about that loop. You do this by utilizing the pythonic *as*
 keyword. `with Loop(list_of_dic) as trial:` is the line that defines your loop.
 If during your loop you need to access the current iteration of a loop, you
-would try to access `trial.current`. Refer to the :py:class:`~smile.state.Loop`* docstring
+would need to access `trial.current`. Refer to the :py:class:`~smile.state.Loop`* docstring
 for information on how to access the different properties of a *Loop*.
 
 Below I will show examples of all 3 Loops
@@ -348,7 +348,7 @@ Label
 :py:class:`~smile.video.Label` is a :py:class:`~smile.video.WidgetState` that displays text on the screen for a *duration*.
 The parameter to interface with its output is called *text*. Whatever string
 you pass into *text*, the label will display on the screen. You can also set
-*text_size*, a touple that contains (width, height) of the area that your
+*text_size*, a tuple that contains (width, height) of the area that your
 text is allow to exist in. This parameter is only useful to set if you are
 displaying a multiple line amount of text on the screen, in which case you
 would pass in (width_of_text, None) so you don't restrict the text in the
@@ -535,7 +535,7 @@ they will press the button when they are finished typing.
     with Parallel():
         #Required to show the mouse on the screen during your experiment!
         MouseCursor()
-        Label(text="Yo, Tell me about your ay!?!?", center_y=exp.screen.center_y+50)
+        Label(text="Yo, Tell me about your day!?!?", center_y=exp.screen.center_y+50)
         TextInput(text="", width=500, height=200)
     #When the button is pressed, the Button state ends, causing
     #The parallel to cancel all of its children, the Label and the
@@ -566,7 +566,7 @@ is the correct button to click.
         #Required to do anything with buttons.
         MouseCursor()
         Label(text="Choose WISELY young WEESLY")
-        #Define both bottons, naming them both unique things
+        #Define both buttons, naming them both unique things
         Button(name="First_Choice",text="LEFT CHOICE", center_x=exp.screen.center_x-200)
         Button(name="Second_Choice",text="RIGHT CHOICE", center_x=exp.screen.center_x+200)
     Label(text=bp.pressed, duration=2)
@@ -577,7 +577,7 @@ KeyPress
 --------
 
 :py:class:`~smile.keyboard.KeyPress` is an input state that waits for a keyboard press during its
-*duration*. You are able to pass in as parameters a list of strings that are
+*duration*. You are able to pass in a list of strings as parameters that are
 acceptable keyboard buttons into *keys*. You are also able to select a correct
 key by passing in its string name as a parameter to *correct_resp*.
 
@@ -599,7 +599,7 @@ The following is a keypress example that will show you what key you pressed.
         #Wait until any key is pressed
         kp = KeyPress()
         #Even though kp.pressed is a reference, you are able
-        #to concatinate strings together
+        #to concatenate strings together
         Label(text="You Pressed :" + kp.pressed, duration = 2)
     exp.run()
 
@@ -629,7 +629,7 @@ order to effectively use **ButtonPress** and **Button** states, you must also us
 SMILE tutorial page for more information.
 
 You can also set the cursor image and the offset of the image as parameters
-to this state. Whatever image you have in the passed in filename will be
+to this state. Whatever image you have as the passed in filename will be
 presented on the screen instead of your default mouse cursor.
 
 The following example is of a mouse cursor that needs to be presented with an
@@ -646,4 +646,4 @@ correct location.
     exp.run()
 
 For more useful mouse tutorials, see the **Mouse Stuff** section of the Tutorial
-docutment.
+document.

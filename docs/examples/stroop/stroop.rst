@@ -2,7 +2,7 @@
 Stroop Task
 ===========
 
-.. image:: _static/stroop.png
+.. image:: ../../_static/stroop.png
     :width: 375
     :height: 241
     :align: right
@@ -33,7 +33,6 @@ lists of dictionaries full of the information we need to run each trial of our
 experiment. The first is called `gen_lists()`. The following is `gen_stim.py`.
 
 .. code-block:: python
-
     :linenos:
 
     def gen_lists():
@@ -140,7 +139,6 @@ Now that we have our list gen setup, let's run our list gen and setup our
 experiment variables. The following is `config.py`.
 
 .. code-block:: python
-
     :linenos:
 
     #Read in the instructions
@@ -236,7 +234,6 @@ the few lines of code you would use to get at all of the data from all of your
 participants.
 
 .. code-block:: python
-
     :linenos:
 
     from smile.log as lg
@@ -254,7 +251,6 @@ running the command :py:func:`~smile.log.log2csv` for each participant. An examp
 located below.
 
 .. code-block:: python
-
     :linenos:
 
     from smile.log as lg
@@ -269,7 +265,6 @@ stroop.py in Full
 =================
 
 .. code-block:: python
-
     :linenos:
 
     from smile.common import *
@@ -333,7 +328,6 @@ config.py in Full
 =================
 
 .. code-block:: python
-
     :linenos:
 
     instruct_text = open('stroop_instructions.rst', 'r').read()
@@ -349,7 +343,6 @@ gen_stim.py in Full
 ===================
 
 .. code-block:: python
-
     :linenos:
 
     def gen_lists(num_of_blocks, len_of_blocks):

@@ -2,7 +2,7 @@
 Sternberg Task
 ==============
 
-.. image:: _static/stern.png
+.. image:: ../../_static/stern.png
     :width: 375
     :height: 241
     :align: right
@@ -27,7 +27,6 @@ First, let's do the imports of the experiment. Below is the start of `stern.py`.
 We will also execute the configuration file and the stimulus generation file.
 
 .. code-block:: python
-
     :linenos:
 
     # global imports
@@ -48,7 +47,6 @@ little things like instructions and the keys for **KeyPress** states. The
 following is `config.py`
 
 .. code-block:: python
-
     :linenos:
 
     # config vars
@@ -79,7 +77,6 @@ that was written to generate a stern trial called `stern_trial()`, as well as
 where we call it to generate our stimulus. The following is `gen_stim.py`
 
 .. code-block:: python
-
     :linenos:
 
     # generate sternberg trial
@@ -114,7 +111,6 @@ After we generate our stimulus we need to set up our experiment. The comments in
 the following code explain what every few lines do.
 
 .. code-block:: python
-
     :linenos:
 
     #Define the experiment
@@ -193,7 +189,6 @@ get at all of the data from three imaginary participants, named as `s000`, `s001
 and `s002`.
 
 .. code-block:: python
-
     :linenos:
 
     from smile.log as lg
@@ -212,7 +207,6 @@ running the command :py:func:`~smile.log.log2csv` for each participant. An examp
 located below.
 
 .. code-block:: python
-
     :linenos:
 
     from smile.log as lg
@@ -227,7 +221,6 @@ stern.py in Full
 =============
 
 .. code-block:: python
-
     :linenos:
 
     # global imports
@@ -296,7 +289,6 @@ config.py in Full
 =================
 
 .. code-block:: python
-
     :linenos:
 
     # config vars
@@ -320,7 +312,6 @@ gen_stim.py in Full
 ===================
 
 .. code-block:: python
-
     :linenos:
 
     # generate Sternberg trial

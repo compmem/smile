@@ -2,7 +2,7 @@
 IAT Mouse Tracking
 ==================
 
-.. image:: _static/iat_mouse.png
+.. image:: ../../_static/iat_mouse.png
     :width: 375
     :height: 241
     :align: right
@@ -43,8 +43,7 @@ we split our experiment into 3 different files, `gen_stim.py`, `config.py`, and
 In `iat_mouse.py` we have the imports that we need for the experiment. Below are
 those imports.
 
-.. code-break:: python
-
+.. code-block:: python
     :linenos:
 
     from smile.common import *
@@ -55,7 +54,7 @@ Our experiment first imports smile.commmon, where all of the most used states
 are imported from, as well as config and gen_stim. Let's take a look into config,
 where we set and define our global variables for the experiment.
 
-.. code-break:: python
+.. code-block:: python
     :linenos:
 
     #RST VARIABLES
@@ -88,7 +87,6 @@ represent out blocks of trials. The following is our `gen_stim.py`, where we
 first set up our lists of stimuli to be pulled from.
 
 .. code-block:: python
-
     :linenos:
 
     import random as rm
@@ -120,7 +118,6 @@ Next we define our `gen_blocks()` function. At the bottom of `gen_stim.py` we
 also call `gen_blocks()` so our iat_mouse.py doesn't have to.
 
 .. code-block:: python
-
     :linenos:
 
     def gen_blocks(type):
@@ -295,7 +292,6 @@ get at all of the data from three imaginary participants, named as `s000`, `s001
 and `s002`.
 
 .. code-block:: python
-
     :linenos:
 
     from smile.log as lg
@@ -316,7 +312,6 @@ running the command :py:func:`~smile.log.log2csv` for each participant. An examp
 located below.
 
 .. code-block:: python
-
     :linenos:
 
     from smile.log as lg
@@ -335,7 +330,6 @@ iat_mouse.py in full
 ====================
 
 .. code-block:: python
-
     :linenos:
 
     from smile.common import *
@@ -422,7 +416,7 @@ iat_mouse.py in full
 config.py in Full
 =================
 
-.. code-break:: python
+.. code-block:: python
     :linenos:
 
     #RST VARIABLES
@@ -453,7 +447,6 @@ gen_stim.py in Full
 ===================
 
 .. code-block:: python
-
     :linenos:
 
     import random as rm
