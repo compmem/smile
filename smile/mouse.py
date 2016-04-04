@@ -68,6 +68,7 @@ def MousePos(widget=None):
     this function will return the mouse position in relation to the experiment
     window. """
     pos = Experiment._last_instance()._app.mouse_pos_ref
+    #pos = Ref.getattr(Experiment._last_instance()._app, "mouse_pos_ref")
     if widget is None:
         return pos
     else:
@@ -83,6 +84,7 @@ def MouseButton(widget=None):
     while the mouse was within the widget. If not given a widget, it will return a
     reference to the next button to be pressed on the mouse.  """
     button = Experiment._last_instance()._app.mouse_button_ref
+    #button = Ref.getattr(Experiment._last_instance()._app, "mouse_button_ref")
     if widget is None:
         return button
     else:
@@ -164,12 +166,13 @@ class MouseCursor(VisualState):
         self.__texture = None
         self.__instruction = None
         self.__color_instruction = kivy.graphics.Color(1.0, 1.0, 1.0, 1.0)
-        self.__pos_ref = self._exp._app.mouse_pos_ref
+        self.__pos_ref = None
 
         self._log_attrs.extend(["filename", "offset"])
 
     def _enter(self):
         super(MouseCursor, self)._enter()
+        self.__pos_ref = self._exp._app.mouse_pos_ref
         texture = Image(self._filename).texture
         self.__instruction = kivy.graphics.Rectangle(texture=texture,
                                                      size=texture.size)
@@ -289,9 +292,10 @@ class MousePress(CallbackState):
         self._correct = False
         self._rt = None
         self._pos = None
+        self.__widget = widget
 
-        self.__pos_ref = MousePos(widget)
-        self.__button_ref = MouseButton(widget)
+        self.__pos_ref = None  # MousePos(widget)
+        self.__button_ref = None  # MouseButton(widget)
 
         # append log vars
         self._log_attrs.extend(['buttons', 'correct_resp', 'base_time',
@@ -300,6 +304,10 @@ class MousePress(CallbackState):
 
     def _enter(self):
         super(MousePress, self)._enter()
+
+        self.__pos_ref = MousePos(self.__widget)
+        self.__button_ref = MouseButton(self.__widget)
+
         if self._base_time is None:
             self._base_time = self._start_time
         if self._buttons is None:
