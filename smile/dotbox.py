@@ -9,6 +9,7 @@
 
 from video import WidgetState, BlockingFlips, NonBlockingFlips
 from state import Wait, Meanwhile, Parallel, Loop, Subroutine
+from state import Serial, If, Else
 from ref import jitter
 
 from kivy.uix.widget import Widget
@@ -16,6 +17,7 @@ from kivy.properties import NumericProperty, ListProperty
 from kivy.graphics import Point, Color, Rectangle
 
 import random
+
 
 @WidgetState.wrap
 class DotBox(Widget):
@@ -133,35 +135,47 @@ def DynamicDotBox(self, duration=None,
             kp = KeyPress()
 
     """
+    # initialize to None
+    self.db_first = None
+    self.appear_time = None
+    self.color = None
+    self.backcolor = None
+    self.num_dots = None
+    self.pointsize = None
+
     # only go as long as duration (can be unlimited)
-    Wait(duration=duration)
+    with Parallel():
+        # in general do non-blocking
+        NonBlockingFlips(blocking=False, save_log=False)
+        Wait(duration=duration)
     with Meanwhile():
-        # Show the first dots blocking
-        with Parallel():
-            BlockingFlips(blocking=False, save_log=False)
-            db = DotBox(duration=update_interval, **dotbox_args)
-
-        # save its appear_time
-        self.appear_time = db.appear_time
-
-        # save other aspects of dotbox
-        self.color = db.color
-        self.backcolor = db.backcolor
-        self.num_dots = db.num_dots
-        self.pointsize = db.pointsize
-
         # loop until max time with no blocking so other timing is good
-        with Loop():
-            with Parallel():
-                NonBlockingFlips(blocking=False, save_log=False)
-                DotBox(duration=update_interval, save_log=False,
+        with Loop() as l:
+            with If(l.i == 0):
+                # block on the first one
+                with Parallel():
+                    BlockingFlips(blocking=False, save_log=False)
+                    db = DotBox(duration=update_interval,
+                                **dotbox_args)
+                    with Serial():
+                        # make sure we have stuff and then save it
+                        Wait(until=db.appear_time)
+                        self.db_first = db
+                        self.appear_time = db.appear_time
+                        self.color = db.color
+                        self.backcolor = db.backcolor
+                        self.num_dots = db.num_dots
+                        self.pointsize = db.pointsize
+            with Else():
+                # just go with non-blocking
+                DotBox(duration=update_interval,
+                       save_log=False,
                        **dotbox_args)
-
 
 if __name__ == '__main__':
 
     from experiment import Experiment
-    from state import UntilDone, Serial
+    from state import UntilDone
 
     exp = Experiment(background_color="#330000")
 
