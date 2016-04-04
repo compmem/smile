@@ -521,14 +521,12 @@ class State(object):
         ancestor = self._exp._current_state
         while ancestor is not None:
             try:
-                return ancestor._ref_context[self]
+                # this should also find self if we're a clone
+                return ancestor._ref_context[self.__original_state]
             except KeyError:
                 ancestor = ancestor._parent
 
-        # assume we are the clone we were looking for
-        # PBS: Is there a way to know if self is a clone?
-        return self
-        #raise RuntimeError("No current clone of %r found!" % self)
+        raise RuntimeError("No current clone of %r found!" % self)
 
     @property
     def original_builder(self):
@@ -549,11 +547,12 @@ class State(object):
             return self.__issued_refs[name]
         except KeyError:
             # Otherwise, create the Ref, store it, and return it.
-            ref = Ref(self.get_current_attribute_value, "_" + name)
+            ref = Ref(self.get_current_attribute_value, "_" + name,
+                      _parent_state=self)
             self.__issued_refs[name] = ref
             return ref
 
-    def attribute_update_state(self, name, value):
+    def attribute_update_state(self, name, value, index=None):
         """Produce a state that updates an attribute of this state.
         """
         raise NotImplementedError
@@ -809,9 +808,9 @@ class ParentState(State):
         name : string
             The unique name you give this state.
         blocking : boolean (True)
-            If True, this state will prevent a **Parallel** state from ending. If
-            False, this state will be canceled if its **ParallelParent** finishes
-            running. Only relevant if within a **ParallelParent**.
+            If True, this state will prevent a **Parallel** state from ending.
+            If False, this state will be canceled if its **ParallelParent**
+            finishes running. Only relevant if within a **ParallelParent**.
 
     Logged Attributes
     -----------------
@@ -859,12 +858,12 @@ class ParentState(State):
             try:
                 return self.__issued_refs[name]
             except KeyError:
-                ref = Ref(self.get_var, name)
+                ref = Ref(self.get_var, name, _parent_state=self)
                 self.__issued_refs[name] = ref
                 return ref
 
-    def attribute_update_state(self, name, value):
-        state = ParentSet(self, name, value)
+    def attribute_update_state(self, name, value, index=None):
+        state = ParentSet(self, name, value, index=index)
         return state
 
     def get_var(self, name):
@@ -872,10 +871,15 @@ class ParentState(State):
         """
         return self.current_clone._vars[name]
 
-    def set_var(self, name, value):
+    def set_var(self, name, value, index=None):
         """Set a user variable of this ParentState.
         """
-        self.current_clone._vars[name] = value
+        if index is None:
+            self.current_clone._vars[name] = value
+        else:
+            # use the index
+            self.current_clone._vars[name][index] = value
+
         try:
             ref = self.__issued_refs[name]
         except KeyError:
@@ -888,7 +892,8 @@ class ParentState(State):
         Parameters
         ----------
         depth : integer (0)
-            The print depth for trace output. If depth = 1, the Child's Child will be traced.
+            The print depth for trace output. If depth = 1, the Child's
+            Child will be traced.
 
         """
         super(ParentState, self).tron(depth)
@@ -958,13 +963,13 @@ class ParentState(State):
 
     def __enter__(self):
         # push self as current parent
-        if not self._exp is None:
+        if self._exp is not None:
             self._exp._parents.append(self)
         return self
 
     def __exit__(self, type, value, tb):
         # pop self off
-        if not self._exp is None:
+        if self._exp is not None:
             state = self._exp._parents.pop()
 
     def cancel(self, cancel_time):
@@ -975,7 +980,6 @@ class ParentState(State):
         cancel_time : float
             The time you want this state to end, regardless of if it has
             reached its end time.
-
 
         """
         if not self._active:
@@ -990,8 +994,8 @@ class ParentState(State):
 class ParentSet(AutoFinalizeState):
     """State that sets a user attribute value on a ParentState.
     """
-    def __init__(self, state, var_name, value, parent=None, save_log=True,
-                 name=None):
+    def __init__(self, state, var_name, value, index=None, parent=None,
+                 save_log=True, name=None):
         super(ParentSet, self).__init__(parent=parent,
                                         save_log=save_log,
                                         name=name,
@@ -1000,11 +1004,12 @@ class ParentSet(AutoFinalizeState):
         self._state_name = state._name
         self._init_var_name = var_name
         self._init_value = value
+        self._init_index = index
 
-        self._log_attrs.extend(['state_name', 'var_name', 'value'])
+        self._log_attrs.extend(['state_name', 'var_name', 'value', 'index'])
 
     def _enter(self):
-        self.__state.set_var(self._var_name, self._value)
+        self.__state.set_var(self._var_name, self._value, self._index)
         clock.schedule(self.leave)
 
 
@@ -2282,7 +2287,7 @@ class Wait(State):
                                    name=name,
                                    blocking=blocking)
 
-        self.__until = until  #TODO: make sure until is Ref or None
+        self.__until = until  # TODO: make sure until is Ref or None
         self._until_value = None
         self._event_time = {"time": None, "error": None}
 

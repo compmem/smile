@@ -80,6 +80,7 @@ class Ref(object):
         self.func = func
         self.pargs = pargs
         self.use_cache = kwargs.pop("use_cache", True)
+        self._parent_state = kwargs.pop("_parent_state", None)
         self.kwargs = kwargs
 
         # initialize cached values
@@ -185,8 +186,19 @@ class Ref(object):
     # delayed operators...
     def __call__(self, *pargs, **kwargs):
         return Ref(apply, self, pargs, kwargs)
+
+    def __setitem__(self, index, value):
+        if self._parent_state is None:
+            raise AttributeError('Ref must have parent_state to use setitem.')
+        # pull the name from the args
+        name = self.pargs[0]
+        return self._parent_state.attribute_update_state(name,
+                                                         value,
+                                                         index=index)
+
     def __getitem__(self, index):
         return Ref(operator.getitem, self, index)
+
     def __getattr__(self, attr):
         return Ref(getattr, self, attr)
     def __lt__(self, other):

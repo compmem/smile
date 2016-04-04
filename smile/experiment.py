@@ -643,7 +643,8 @@ class Experiment(object):
         self.set_background_color()
 
         # make custom experiment app instance
-        self._app = ExpApp(self)
+        #self._app = ExpApp(self)
+        self._app = None
 
         # set up instance for access throughout code
         self.__class__._last_instance = weakref.ref(self)
@@ -673,12 +674,26 @@ class Experiment(object):
         try:
             return self.__issued_refs[name]
         except KeyError:
-            ref = Ref.getitem(self._vars, name)
+            # ref = Ref.getitem(self._vars, name)
+            ref = Ref(self.get_var, name, _parent_state=self)
             self.__issued_refs[name] = ref
             return ref
 
-    def set_var(self, name, value):
-        self._vars[name] = value
+    def get_var(self, name):
+        """Get a user variable of this ParentState.
+        """
+        return self._vars[name]
+
+    def attribute_update_state(self, name, value, index=None):
+        state = Set(name, value, index=index)
+        return state
+
+    def set_var(self, name, value, index=None):
+        if index is None:
+            self._vars[name] = value
+        else:
+            self._vars[name][index] = value
+
         try:
             ref = self.__issued_refs[name]
         except KeyError:
@@ -781,7 +796,8 @@ class Experiment(object):
 
     @property
     def screen(self):
-        return self._app.screen
+        return Ref.getattr(self, '_app').screen
+        # return self._app.screen
 
     @property
     def subject(self):
@@ -794,6 +810,22 @@ class Experiment(object):
     @property
     def info(self):
         return self._info
+
+    def start(self):
+        # open all the logs
+        # (this will call begin_log for entire state machine)
+        self._root_state.begin_log()
+
+        # clone the root state in prep for starting the state machine
+        self._root_executor = self._root_state._clone(None)
+
+        # start it up
+        self._root_executor.enter(clock.now() + 0.25)
+
+    def finish(self):
+        # clean up logs if we made it here
+        self._root_state.end_log(self._csv)
+        self.close_state_loggers(self._csv)
 
     def run(self, trace=False):
         self._current_state = None
@@ -808,10 +840,12 @@ class Experiment(object):
         self._root_executor = self._root_state._clone(None)
         try:
             # start the first state (that's the root state)
-            #self._root_executor.enter(clock.now() + 1.0)
+            # self._root_executor.enter(clock.now() + 0.25)
 
             # kivy main loop
+            self._app = ExpApp(self)
             self._app.run()
+
         except:
             # clean up the logs
             self._root_state.end_log(self._csv)
@@ -853,7 +887,8 @@ class Set(AutoFinalizeState):
     name : string, optional, default = None
         The unique name you give this state.
     """
-    def __init__(self, var_name, value, parent=None, save_log=True, name=None):
+    def __init__(self, var_name, value, index=None,
+                 parent=None, save_log=True, name=None):
         # init the parent class
         super(Set, self).__init__(parent=parent,
                                   save_log=save_log,
@@ -861,11 +896,12 @@ class Set(AutoFinalizeState):
                                   duration=0.0)
         self._init_var_name = var_name
         self._init_value = value
+        self._init_index = index
 
-        self._log_attrs.extend(['var_name', 'value'])
+        self._log_attrs.extend(['var_name', 'value', 'index'])
 
     def _enter(self):
-        self._exp.set_var(self._var_name, self._value)
+        self._exp.set_var(self._var_name, self._value, self._index)
         clock.schedule(self.leave)
         self._started = True
         self._ended = True

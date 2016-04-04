@@ -547,21 +547,21 @@ class WidgetState(VisualState):
                 else:
                     return super(WidgetState, self).get_attribute_ref(name)
             if isinstance(props, str):
-                ref = Ref(self.get_current_param, props)
+                ref = Ref(self.get_current_param, props, _parent_state=self)
             elif isinstance(props, tuple):
                 # must make this a Ref to tuple or there is a weakref error
                 prop_tuple = [Ref(self.get_current_param, prop) for
                               prop in props]
-                ref = Ref(tuple, prop_tuple)
+                ref = Ref(tuple, prop_tuple, _parent_state=self)
                 #ref = prop_tuple
             else:
                 raise RuntimeError("Bad value for 'props': %r" % props)
             self.__issued_refs[name] = ref
             return ref
 
-    def attribute_update_state(self, name, value):
+    def attribute_update_state(self, name, value, index=None):
         if name in self.__widget_param_names + ['rotate', 'rotate_origin']:
-            return UpdateWidgetUntimed(self, name, value)
+            return UpdateWidgetUntimed(self, name, value, index)
         else:
             raise AttributeError("%r is not a property of this widget (%r)." %
                                  (name, self))
@@ -896,8 +896,8 @@ class WidgetState(VisualState):
 
 
 class UpdateWidgetUntimed(CallbackState):
-    def __init__(self, target, prop_name, prop_value, parent=None,
-                 save_log=True, name=None, blocking=True):
+    def __init__(self, target, prop_name, prop_value, prop_index=None,
+                 parent=None, save_log=True, name=None, blocking=True):
         super(UpdateWidgetUntimed, self).__init__(duration=0.0,
                                                   parent=parent,
                                                   save_log=save_log,
@@ -907,16 +907,33 @@ class UpdateWidgetUntimed(CallbackState):
         self._widget = target._name
         self._init_prop_name = prop_name
         self._init_prop_value = prop_value
-        self._log_attrs.extend(['widget', 'prop_name', 'prop_value'])
+        self._init_prop_index = prop_index
+        self._log_attrs.extend(['widget', 'prop_name', 'prop_value',
+                                'prop_index'])
 
     def _enter(self):
         super(UpdateWidgetUntimed, self)._enter()
         self.__target_clone = self.__target.current_clone
 
     def _callback(self):
-        self.__target_clone.live_change(**self.__target_clone.transform_params(
+        # set the param
+        if self._prop_index is None:
+            # set the value from what was passed in
+            full_value = self._prop_value
+        else:
+            # get the current param value
+            full_value = self.__target.get_attribute_ref(self._prop_name).eval()
+
+            # set the index with the value
+            full_value[self._prop_index] = self._prop_value
+
+        # update the widget
+        params = self.__target_clone.transform_params(
             self.__target_clone.apply_aliases(
-                {self._prop_name: self._prop_value})))
+                {self._prop_name: full_value}))
+
+        # do the live_change
+        self.__target_clone.live_change(**params)
 
 
 class UpdateWidget(VisualState):
