@@ -9,7 +9,6 @@
 
 from video import WidgetState, BlockingFlips, NonBlockingFlips
 from state import Wait, Meanwhile, Parallel, Loop, Subroutine
-from state import Serial, If, Else
 from ref import jitter
 
 from kivy.uix.widget import Widget
@@ -37,7 +36,7 @@ class DotBox(Widget):
     """
     color = ListProperty([1, 1, 1, 1])
     backcolor = ListProperty([0, 0, 0, 0])
-    num_dots = NumericProperty(10)
+    num_dots = NumericProperty(10, force_dispatch=True)
     pointsize = NumericProperty(5)
 
     def __init__(self, **kwargs):
@@ -75,12 +74,6 @@ class DotBox(Widget):
                   self.height-(self.pointsize*2))
         points = [bases[i % 2]+scales[i % 2]*loc
                   for i, loc in enumerate(self._locs)]
-        # points = [[random.randint(int(self.x+self.pointsize),
-        #                           int(self.x+self.width-self.pointsize)),
-        #            random.randint(int(self.y+self.pointsize),
-        #                           int(self.y+self.height-self.pointsize))]
-        #           for i in xrange(self.num_dots)]
-        # points = [item for sublist in points for item in sublist]
 
         # draw them
         self.canvas.clear()
@@ -115,6 +108,9 @@ def DynamicDotBox(self, duration=None,
     dotbox_args : kwargs
         See the DotBox for any kwargs options to control the DotBox
 
+    Note: You can access the dotbox via the `db` attribute of the
+    subroutine.
+
     Examples
     --------
     Display a dynamic dot box with 40 dots for 3 seconds:
@@ -134,48 +130,24 @@ def DynamicDotBox(self, duration=None,
         with UntilDone():
             kp = KeyPress()
 
-    """
-    # initialize to None
-    self.db_first = None
-    self.appear_time = None
-    self.color = None
-    self.backcolor = None
-    self.num_dots = None
-    self.pointsize = None
+        Log(appear_time=ddb1.db.appear_time)
 
-    # only go as long as duration (can be unlimited)
+    """
+    # show the dotbox
     with Parallel():
-        # in general do non-blocking
-        NonBlockingFlips(blocking=False, save_log=False)
-        Wait(duration=duration)
+        db = DotBox(duration=duration, **dotbox_args)
+        self.db = db
     with Meanwhile():
-        # loop until max time with no blocking so other timing is good
-        with Loop() as l:
-            with If(l.i == 0):
-                # block on the first one
-                with Parallel():
-                    BlockingFlips(blocking=False, save_log=False)
-                    db = DotBox(duration=update_interval,
-                                **dotbox_args)
-                    with Serial():
-                        # make sure we have stuff and then save it
-                        Wait(until=db.appear_time)
-                        self.db_first = db
-                        self.appear_time = db.appear_time
-                        self.color = db.color
-                        self.backcolor = db.backcolor
-                        self.num_dots = db.num_dots
-                        self.pointsize = db.pointsize
-            with Else():
-                # just go with non-blocking
-                DotBox(duration=update_interval,
-                       save_log=False,
-                       **dotbox_args)
+        # redraw the dots
+        with Loop():
+            Wait(duration=update_interval)
+            db.update(save_log=False, **dotbox_args)
+
 
 if __name__ == '__main__':
 
     from experiment import Experiment
-    from state import UntilDone
+    from state import UntilDone, Serial
 
     exp = Experiment(background_color="#330000")
 
