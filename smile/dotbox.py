@@ -9,6 +9,7 @@
 
 from video import WidgetState, BlockingFlips, NonBlockingFlips
 from state import Wait, Meanwhile, Parallel, Loop, Subroutine
+from state import If, Else
 from ref import jitter
 
 from kivy.uix.widget import Widget
@@ -36,7 +37,8 @@ class DotBox(Widget):
     """
     color = ListProperty([1, 1, 1, 1])
     backcolor = ListProperty([0, 0, 0, 0])
-    num_dots = NumericProperty(10, force_dispatch=True)
+    #num_dots = NumericProperty(10, force_dispatch=True)
+    num_dots = NumericProperty(10)
     pointsize = NumericProperty(5)
 
     def __init__(self, **kwargs):
@@ -139,9 +141,16 @@ def DynamicDotBox(self, duration=None,
         self.db = db
     with Meanwhile():
         # redraw the dots
-        with Loop():
+        self.start_dots = db.num_dots
+        with Loop() as l:
             Wait(duration=update_interval)
-            db.update(save_log=False, **dotbox_args)
+            # hack to make 1.8 work
+            with If((l.i % 2)==0):
+                self.ndots = self.start_dots + .01
+            with Else():
+                self.ndots = self.start_dots
+            #db.update(save_log=False, **dotbox_args)
+            db.update(save_log=False, num_dots=self.ndots)
 
 
 if __name__ == '__main__':
