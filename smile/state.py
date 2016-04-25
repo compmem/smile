@@ -743,6 +743,21 @@ class State(object):
             # Oops!  We already ended.  Just revise the end time.
             self._end_time = cancel_time
 
+        if self.__tracing:
+            # print trace line if tracing...
+            call_time = cancel_time - self._exp._root_executor._start_time
+            call_duration = clock.now() - cancel_time
+            if self._end_time is None:
+                 self.print_trace_msg(
+                    "CANCEL time=%fs, duration=%fs, perpetual" %
+                    (call_time, call_duration))
+            else:
+                end_time = (self._end_time -
+                            self._exp._root_executor._start_time)
+                self.print_trace_msg(
+                    "CANCEL time=%fs, duration=%fs, end_time=%fs" %
+                    (call_time, call_duration, end_time))
+
     def save_log(self):
         """Write a record to the state log for the current execution of the
         state.
@@ -1533,20 +1548,21 @@ class SubroutineState(Serial):
 class If(SequentialState):
     """The way you do branching paths in a state machine.
 
-    Parent state to implement conditional branching. **If** state is used in lieu
-    of a traditional Python if statement. The SMILE **If** state will create a
-    position linked list of *conditionals* and *states*.  It will then loop
-    through the conditions, and when it finds a conditional that evaluates to
-    True, it runs the corresponding state. The last *conditional* in the
-    list is always a True boolean, which then corresponds to an **Else** state
-    that you can define in your experiment.
+    Parent state to implement conditional branching. **If** state is
+    used in lieu of a traditional Python if statement. The SMILE
+    **If** state will create a position linked list of *conditionals*
+    and *states*.  It will then loop through the conditions, and when
+    it finds a conditional that evaluates to True, it runs the
+    corresponding state. The last *conditional* in the list is always
+    a True boolean, which then corresponds to an **Else** state that
+    you can define in your experiment.
 
     Under the hood, the If state will create 2 Serial states when it
-    initializes. During experimental run time, it decides which state to
-    actually run. If the next state is an Elif state then it will add itself to
-    the possible states to run of the If state. If the next state is an Else
-    state, then it will overwrite the Serial Else state that the If state
-    creates at initialization.
+    initializes. During experimental run time, it decides which state
+    to actually run. If the next state is an Elif state then it will
+    add itself to the possible states to run of the If state. If the
+    next state is an Else state, then it will overwrite the Serial
+    Else state that the If state creates at initialization.
 
     Parameters
     ----------
@@ -1612,6 +1628,7 @@ class If(SequentialState):
     of **conditionals** and **states**. When you call `with Else():` you are
     adding to the children of the default **false_state**, which only runs if
     all the other conditionals evaluate to *False*.
+
     """
     def __init__(self, conditional, true_state=None, false_state=None,
                  parent=None, save_log=True, name=None, blocking=True):
