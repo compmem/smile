@@ -20,7 +20,8 @@ def update_dict(dict1, dict2):
     dict1.update(dict2)
     return dict1
 
-
+def csv2loq(filename):
+    csv_reader =
 
 @Subroutine
 def Questionnaire(self,
