@@ -3,7 +3,7 @@ from state import Loop, Parallel, If, Elif, Else, Serial, Func, UntilDone, Log, 
 from ref import Ref
 from experiment import Set, Experiment
 import kivy.uix.scrollview
-
+import csv
 ScrollView = WidgetState.wrap(kivy.uix.scrollview.ScrollView)
 
 def_text_input_height = 30
@@ -21,7 +21,37 @@ def update_dict(dict1, dict2):
     return dict1
 
 def csv2loq(filename):
-    csv_reader =
+    reader = csv.DictReader(open("yoyo.csv", "r"))
+    loq = []
+    try:
+        nt =reader.next()
+    except:
+        nt ={'type': None, "ans":None, "question":None}
+    while(nt['type'] != None):
+        temp = {"question":nt['question'],"type":nt['type'],"ans":[],}
+        if (nt['type'] == "CA") or (nt['type'] == "LI") or (nt['type'] == "MC") or (nt['type'] == "CT"):
+            temp['ans'] += [nt['ans']]
+            nt = reader.next()
+            while((nt['type'] == "") and (nt['ans'] != None)):
+                temp['ans'] += [nt['ans']]
+                try:
+                    nt = reader.next()
+                except:
+                    nt ={'type': None, "ans":None, "question":None}
+        elif nt['type'] == "TI":
+            temp['multiline'] = int(nt['multiline'])
+            try:
+                nt = reader.next()
+            except:
+                nt ={'type': None, "ans":None, "question":None}
+        elif nt['type'] == "TITLE":
+            try:
+                nt = reader.next()
+            except:
+                nt ={'type': None, "ans":None, "question":None}
+        loq += [temp]
+
+    return loq
 
 @Subroutine
 def Questionnaire(self,
@@ -605,7 +635,7 @@ if __name__ == "__main__":
             'group_id':'choose_question_one'}]
 
     exp = Experiment(resolution=(600,500))
-    tt = Questionnaire(loq = bob, height = exp.screen.height, width = exp.screen.width,
+    tt = Questionnaire(loq = Ref(csv2loq, "yoyo.csv"), height = exp.screen.height, width = exp.screen.width,
          x = 0, y=0,)
     Log(tt.results)
     exp.run()

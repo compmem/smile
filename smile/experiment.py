@@ -590,10 +590,10 @@ class Experiment(object):
     screen : Screen
         Used to gain access to the size, shape, and location of variables like
         **center_x**, **height**, and **size** on the screen.
-    subject : string
+    subj : string
         The subject number/name given in the command line via `-s name` or set
         during experimental build time.
-    subject_dir : string
+    subj_dir : string
         string to where to save this subject's data. By default, it will be
         "data\subject_name"
     info : list
