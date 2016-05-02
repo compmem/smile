@@ -21,7 +21,7 @@ def update_dict(dict1, dict2):
     return dict1
 
 def csv2loq(filename):
-    reader = csv.DictReader(open("yoyo.csv", "r"))
+    reader = csv.DictReader(open(filename, "r"))
     loq = []
     try:
         nt =reader.next()
