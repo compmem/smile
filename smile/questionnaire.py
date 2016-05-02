@@ -21,6 +21,51 @@ def update_dict(dict1, dict2):
     return dict1
 
 def csv2loq(filename):
+    """A function that allows the Experimenter to bring in a list of questions from a CSV.
+
+    From the CSV, you can pull in a list of questions.  This CSV has to be formatted
+    correctly or it will not produce the list of questions that you want.
+
+    The first line of the csv are 4 columns, *question*, *ans*, *type*, and *multiline*.
+    In the type column, you must put the type of question that you want to display.
+
+    TITLE : DISPLAYING A TITLE
+        A choice that allows you to display a title to a participant.
+
+    CA : MULTIPLE CHOICE Choose All That Apply
+        A multiple choice question where more than one answer can be chosen.
+
+    TI : Text Input
+        This kind of question is a Text input question. With the addtion of a
+        multi-line key, you are able to dictate how many lines the Text Input
+        Widget is tall.
+
+    MC : MULTIPLE CHOICE Choose One
+        A multiple choice question Where the participant can only pick one
+        answer.
+
+    CT : Continuum Answer
+        A question that displays a slider as the answer. The slider allows for
+        up to 3 labels to display above it to indicate what each the min, max,
+        and middle positions represent to the participant.
+
+    LI : Likert
+        A likert scale presented to the participant. 2 to 10 Choices,
+        horizontally below the question. This type of question can be used to
+        display answers horizontally, but answers may overlap if the strings are
+        too long, or if the width of the Questionnaire is too small. Always test
+        to see if the likert scale is displaying how you want it to before
+        administering this questionnaire on any participants.
+
+    For every type of question that requires more than one value in the *ans*
+    catagory, you need extra rows in your csv to represent them. The first row
+    of each question will have all the columns that it needs filled, but for all
+    the extra values needed in *ans*, you need new rows that only have values in
+    the *ans* column. See yoyo.csv as an example as to what this would look
+    like. Also, see the Docstring for *Questionnaire* for what types of questions
+    that you need extra *ans* values for.
+
+    """
     reader = csv.DictReader(open(filename, "r"))
     loq = []
     try:
@@ -103,6 +148,11 @@ def Questionnaire(self,
     *type* you pass in a string representing the type of question that you want
     to display.
 
+    TITLE : DISPLAYING A TITLE
+        A choice that allows you to display a title to a participant.
+        "type" : "TITLE"
+        question : string
+            String representing the Title you want to display.
 
     CA : MULTIPLE CHOICE Choose All That Apply
         A multiple choice question where more than one answer can be chosen.
