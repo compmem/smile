@@ -732,11 +732,12 @@ class State(object):
             self._end_time = cancel_time
             clock.schedule(self.leave)
             clock.schedule(self.finalize)
-        elif not self._ended:
-            if self._end_time is None:
-                self._end_time = cancel_time
-            elif cancel_time < self._end_time:
-                self._unschedule_end()
+        elif not self._ended and self._end_time is None:
+            self._end_time = cancel_time
+            self._schedule_end()
+        elif not self._ended and cancel_time < self._end_time:
+            self._unschedule_end()
+            self._end_time = cancel_time
             self._schedule_end()
         elif self._ended and cancel_time < self._end_time:
             # Oops!  We already ended.  Just revise the end time.
@@ -747,7 +748,7 @@ class State(object):
             call_time = cancel_time - self._exp._root_executor._start_time
             call_duration = clock.now() - cancel_time
             if self._end_time is None:
-                 self.print_trace_msg(
+                self.print_trace_msg(
                     "CANCEL time=%fs, duration=%fs, perpetual" %
                     (call_time, call_duration))
             else:
