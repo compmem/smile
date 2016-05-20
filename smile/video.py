@@ -282,6 +282,13 @@ class VisualState(State):
         self.__disappear_video = None
         self.unshow()
 
+    def cancel(self, cancel_time):
+        if self._appear_time == NotAvailable:
+            self._appear_time = None
+        if self._disappear_time == NotAvailable:
+            self._disappear_time = None
+        super(VisualState, self).cancel(cancel_time)
+
 
 class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never clears?
     """ Sets the BackgroundColor for a duration.
@@ -937,7 +944,7 @@ class UpdateWidgetUntimed(CallbackState):
 
 
 class UpdateWidget(VisualState):
-    """ A state used to change a states parameters in Experimental Run Time.
+    """ A state used to change widget parameters in Experimental Run Time.
 
     You call this state in your experiment if you want to change the parameters
     of a widget in experimental runtime. You can change anything that is a

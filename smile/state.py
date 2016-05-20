@@ -208,7 +208,7 @@ class State(object):
         self._start_time = None
         self._end_time = None
 
-        # Stared and ended flags for the state.  These indicate whether the
+        # Started and ended flags for the state.  These indicate whether the
         # user-facing effect of the state has begun and ended, respectively.
         # This is used to determine what should be done for cancellation.
         self._started = False
@@ -732,12 +732,11 @@ class State(object):
             self._end_time = cancel_time
             clock.schedule(self.leave)
             clock.schedule(self.finalize)
-        elif not self._ended and self._end_time is None:
-            self._end_time = cancel_time
-            self._schedule_end()
-        elif not self._ended and cancel_time < self._end_time:
-            self._unschedule_end()
-            self._end_time = cancel_time
+        elif not self._ended:
+            if self._end_time is None:
+                self._end_time = cancel_time
+            elif cancel_time < self._end_time:
+                self._unschedule_end()
             self._schedule_end()
         elif self._ended and cancel_time < self._end_time:
             # Oops!  We already ended.  Just revise the end time.
@@ -941,7 +940,7 @@ class ParentState(State):
         """Add a state to this state's list of children, removing it from any
         prior parent.
         """
-        if not child._parent is None:
+        if child._parent is not None:
             child._parent._children.remove(child)
         child._parent = self
         self._children.append(child)
@@ -1341,7 +1340,8 @@ class SequentialState(ParentState):
             self.__current_child = (
                 self.__child_iterator.next()._clone(self))
             # schedule the child based on the current start time
-            clock.schedule(partial(self.__current_child.enter, self._start_time))
+            clock.schedule(partial(self.__current_child.enter,
+                                   self._start_time))
         except StopIteration:
             # if there are no children, we're done and can leave
             self._end_time = self._start_time

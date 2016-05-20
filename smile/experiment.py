@@ -543,6 +543,12 @@ class ExpApp(App):
         new_video = _VideoChange(update_cb, flip_time, flip_time_cb)
         for n, video in enumerate(self.video_queue):
             if video.flip_time > flip_time:
+                if self.pending_flip_time == video.flip_time:
+                    # can't insert before already prepared pending flip
+                    # set flip_time to pending_flip_time
+                    flip_time = self.pending_flip_time
+                    new_video.flip_time = self.pending_flip_time
+                    continue
                 self.video_queue.insert(n, new_video)
                 break
         else:
