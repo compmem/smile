@@ -108,10 +108,10 @@ a **Subroutine** is defined with the python `def` followed by the name of the
 Subroutine. In SMILE, it is proper practice to name any state with the first
 letter of every word a capital letter.
 
-Below is an example on how to define a **Subroutine** that displays a :py:class:`~smile.video.Label`
+The following is an example on how to define a **Subroutine** that displays a :py:class:`~smile.video.Label`
 that will display a number that counts up from a passed in minimum number.
 
-In the subroutine file (`test_sub.py`), first import all of SMILE's common states.
+In the subroutine file (`test_sub.py`), first import all of SMILE's common states:
 
 .. code-block:: python
 
@@ -119,7 +119,7 @@ In the subroutine file (`test_sub.py`), first import all of SMILE's common state
 
 *Be advised, the above line does not always give every necessary state for an experiment.*
 
-Next, the definition line needs to be written for the subroutine.
+Next, the definition line needs to be written for the subroutine:
 
 .. code-block:: python
 
@@ -133,7 +133,7 @@ First, notice the `@Subroutine`. This allows *CountUpFrom* to be a subclass of
 
     Please note the *self* as the first argument passed into a subroutine. If self is not passed, SMILE will throw an error. Please remember to pass in *self* as the first parameter when defining a subroutine.
 
-Now we can write state machine code for the **Subroutine**.
+Now we can write state machine code for the **Subroutine**:
 
 .. code-block:: python
 
@@ -163,8 +163,9 @@ will initialize it to `minVal` during :ref:`Experimental Runtime <run_build_time
 Anything initialized with the `self.` will be able to be accessed from outside of
 the **Subroutine**.  If the above Subroutine is used as an example, the
  **Subroutine** as `cup = CountUpFrom()` can be initialized and `cup.counter`
-can be called to get at the value of the counter. Below is an example of calling this
-subroutine during an actual experiment.
+can be called to get at the value of the counter.
+
+The following is an example of calling this subroutine during an actual experiment:
 
 .. code-block:: python
 
@@ -243,7 +244,7 @@ In *DotBox* several different parameters are needed to be passed into the
 
 - pointsize : How big to draw the dots, pointsize by pointsize squares in pixels
 
-Next, the '__init__' method is declared for our 'DotBox' widget.
+Next, the '__init__' method is declared for our 'DotBox' widget:
 
 .. code-block:: python
 
@@ -271,7 +272,7 @@ method callback that might want to run if any of those attributes change.
 An example of this is if, in SMILE, an :py:class:`~smile.video.UpdateWidget'
 state is created where it updates a **DotBox** attribute, e.g. `num_dots` attribute.
 The attribute change will cause Kivy to callback the corresponding function
-attached with `.bind()`. Now the functions can be defined.
+attached with `.bind()`. Now the functions can be defined:
 
 .. code-block:: python
 
@@ -424,7 +425,7 @@ Like it is stated in :ref:`Build Time VS Run Time <run_build_time>`, in order to
 set a variable in SMILE during **RT**, the `exp.variable_name` syntax must be used.
 In this section, the results of calling 'exp.variable_name' in SMILE will be examined.
 
-Below is a sample experiment where `exp.display_me` is set to a string.
+The following is a sample experiment where `exp.display_me` is set to a string:
 
 .. code-block:: python
 
@@ -542,7 +543,8 @@ A **NonBlockingFlip** is used when the timing of visual stimulus isn't the most
 important. If SMILE is forced into this mode, timing of input can be made much
 more accurate, like mouse and keyboard. SMILE can be forced into NonBlockingFlips
 by putting this state in parallel with what is desired to run in NonBlockingFlip Mode.
-Below is a mini example of such a **Parallel**
+
+The following is a mini example of such a **Parallel**:
 
 .. code-block:: python
 
@@ -553,7 +555,9 @@ Below is a mini example of such a **Parallel**
 
 A **BlockingFlip** is used when the timing of screen appearance takes priority
 over when the timing of inputs occur. Using this mode, the changes in `exp._last_flip`
-can be :py:class:`~smile.state.Record`. An example of this is as follows:
+can be :py:class:`~smile.state.Record`.
+
+An example of this is as follows:
 
 .. code-block:: python
 
