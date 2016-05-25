@@ -6,7 +6,7 @@ Saving your Data into SLOG Files
 ================================
 
 In SMILE, each state will produce what is called a *.slog* file by default.
-This file is a specially compressed file comprised of all the important data
+This file is a specially compressed file composed of all the important data
 associated with the state.  It not only logs every parameter, but also
 all of the variables listed in the *Logged Attributes* section of the
 docstrings. In most cases, every state will save out 2 rows of data to the

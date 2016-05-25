@@ -56,17 +56,17 @@ is used to clean up the state sometime after the state has run *.leave()*.
 The Flow States of SMILE
 ========================
 One of the basic types of SMILE states are the **Flow** states.  **Flow**
-states are states that control the flow of your experiment.
+states are states that control the flow of the experiment.
 
 Serial State
 ------------
 
 A :py:class:`~smile.state.Serial` state is a state that has children, and runs its children one after
 the other. All states defined between the lines `exp = Experiment()` and
-`exp.run()` in your experiment will exist as children of a *Serial* state. Once
+`exp.run()` in an experiment will exist as children of a *Serial* state. Once
 one state `.leave()`'s, the :py:class:`~smile.state.Serial` state will call the next state's
 `.enter()` method. Like any flow state, the use of the `with` pythonic keyword
-is required and makes your code look clean and readable.  Below is an example
+is required and makes the source code look clean and readable.  Below is an example
 of the *Serial* state.
 
 The following two experiments are equivalent.
@@ -90,7 +90,7 @@ The following two experiments are equivalent.
         Label(text="Third state", duration=2)
     exp.run()
 
-As shown above, the default state of your experiment is a :py:class:`~smile.state.Serial` state in
+As shown above, the default state of an experiment is a :py:class:`~smile.state.Serial` state in
 which all of the states initialized between `exp = Experiment()` and
 `exp.run()` are children of.
 
@@ -100,7 +100,7 @@ Parallel State
 A :py:class:`~smile.state.Parallel` state is a state that has children, and runs those children in
 parallel of each other. That means they run at the same time. The key to a
 *Parallel* state is that it will not end unless all of its children have
-run their `.leave()` function. Once it has no more children running, it will
+run their `.leave()` function. Once it has no more children running, the current state will
 schedule its own `.leave()` call, allowing the next state to run.
 
 The exception to this rule is a parameter called *blocking*. It is a Boolean
@@ -189,12 +189,12 @@ Wait State
 ----------
 
 A :py:class:`~smile.state.Wait` state is a very simple state that has a lot of power behind it. At a
-top level, it allows your experiment to hold up for a *duration* in seconds.
-There are other options you can add to the wait to make it more complicated. The
-*jitter* parameter allows for the *Wait* to pause your experiment for the
+top level, it allows an experiment to hold up for a *duration* in seconds.
+There are other options which can add to the wait to make it more complicated. The
+*jitter* parameter allows for the *Wait* to pause an experiment for the
 *duration* plus a random number between 0 and *jitter* seconds.
 
-The other interesting thing a *Wait* state can do is wait until a conditional
+The unique characteristic a *Wait* state has is the ability to wait until a conditional
 is evaluated to True. The *Wait* will create a :py:class:`~smile.ref.Ref` that will
 *call_back* *Wait* to alert it to a change in value. Once that change evaluates
 to True, the *Wait* state will stop waiting and call its own `.leave()` method.
@@ -202,7 +202,7 @@ to True, the *Wait* state will stop waiting and call its own `.leave()` method.
 An example below outlines how to use all the functionality of *Wait*. This
 example wants a :py:class:`~smile.video.Label` to appear on the screen right after another *Label*
 does. Since the first *Wait* has a jitter, it is impossible to detect how
-long that would be, so we have the second *Wait* wait until lb1 has an
+long that would be, so there resides a second *Wait* wait until lb1 has an
 *appear_time*.
 
 ::
@@ -222,10 +222,10 @@ long that would be, so we have the second *Wait* wait until lb1 has an
 If, ElIf, and Else States
 -------------------------
 
-These 3 states are how SMILE handles branching in your experiment. An :py:class:`~smile.state.If`
-state is all you need to create a conditional branch, but through the use of
-the :py:class:`~smile.state.Elif` and the :py:class:`~smile.state.Else` state, you can create a much more complex experiment
-than if you didn't have to use of conditional states.
+These 3 states are how SMILE handles branching in an experiment. Only a :py:class:`~smile.state.If`
+state is needed to create a branch. Through the use of
+the :py:class:`~smile.state.Elif` and the :py:class:`~smile.state.Else` state, much more complex experiments
+can be created.
 
 The *If* is a parent state that runs all of its children in  serial **if** the
 conditional is evaluated as true during **RT**. Behind the scenes, the *If*
@@ -236,11 +236,11 @@ During **RT**, the experiment will loop through each of the conditionals until
 one of them evaluates to True and then will run the associated *Serial* state.
 
 If the next state after the *If* state is the *Elif* state, then whatever
-conditional is in the *Elif* will be added into the stack of conditionals
+conditional is in the *Elif* state will be added into the stack of conditionals
 within the *If* state. The children of the *Elif* will also be added to the
-appropriate stack. You can do as many *Elif*'s after the *If* state as you need
-to. The last state can be an *Else* state. When you define the children of the
-*Else* state, that *Serial* gets sent into the stack of conditionals and
+appropriate stack. As many *Elif* states as desired can be used after the *If* state
+The last state can be an *Else* state. When the children of the
+*Else* state is defined, the *Serial* state gets sent into the stack of conditionals and
 replaces the True's empty *Serial*.
 
 The following is a 4 option if test.
@@ -266,20 +266,21 @@ The following is a 4 option if test.
 Loop State
 ----------
 
-A :py:class:`~smile.state.Loop` state can handle any kind of looping that you need. The main thing we
-use a *Loop* state for is to loop over a list of dictionaries that contains your
-stimuli. You are also able to create while loops by passing in a *conditional*
-parameter. Lastly, instead of looping over a list of dictionaries, you can
+A :py:class:`~smile.state.Loop` state can handle any kind of looping needed. The
+main use for a *Loop* state is to loop over a list of dictionaries that contain
+stimuli. Loops can also be created by passing in a *conditional* parameter.
+Lastly, instead of looping over a list of dictionaries, *Loop* states can be used to
 loop an exact number of times by passing in a number as a parameter.
 
-When creating a *Loop* state, you must define a variable to access all of the
-information about that loop. You do this by utilizing the pythonic *as*
-keyword. `with Loop(list_of_dic) as trial:` is the line that defines your loop.
-If during your loop you need to access the current iteration of a loop, you
-would need to access `trial.current`. Refer to the :py:class:`~smile.state.Loop`* docstring
+A *Loop* state requires a variable to be defined to access all for the information
+about the loop. This can be performed by utilizing the pythonic *as* keyword.
+`with Loop(list_of_dic) as trial:` is the line that defines the loop. If access
+to the current iteration of a loop is needed, 'trial.current' can be utilized.
+
+Refer to the :py:class:`~smile.state.Loop`* docstring
 for information on how to access the different properties of a *Loop*.
 
-Below I will show examples of all 3 Loops
+Below is an example of all 3 loops.
 
 List of Dictionaries
 
@@ -293,14 +294,14 @@ List of Dictionaries
                    {'stim':"STIM 4", 'dur':1}]
     #Experiment
     exp = Experiment()
-    #The *as* operator allows you to gain access
+    #The *as* operator allows one to gain access
     #to the data inside the *Loop* state
     with Loop(list_of_dic) as trial:
         Label(text=trial.current['stim'], duration=trial.current['dur'])
     exp.run()
 
 
-Loop a number of Times
+Loop a number of times:
 
 ::
 
@@ -311,7 +312,7 @@ Loop a number of Times
         Wait(1)
     exp.run()
 
-Loop while something is True
+Loop while something is true:
 
 ::
 
@@ -332,7 +333,7 @@ The Action States of SMILE
 ==========================
 
 The other basic type of SMILE states are the **Action** states. The Action
-states handle both the input and output in your experiment. The following are
+states handle both the input and output in experiments. The following are
 subclasses of WidgetState.
 
 .. note::
@@ -346,15 +347,13 @@ Label
 -----
 
 :py:class:`~smile.video.Label` is a :py:class:`~smile.video.WidgetState` that displays text on the screen for a *duration*.
-The parameter to interface with its output is called *text*. Whatever string
-you pass into *text*, the label will display on the screen. You can also set
-*text_size*, a tuple that contains (width, height) of the area that your
-text is allow to exist in. This parameter is only useful to set if you are
-displaying a multiple line amount of text on the screen, in which case you
-would pass in (width_of_text, None) so you don't restrict the text in the
-vertical direction.
+The parameter to interface with its output is called *text*. The lable will display
+any string that is passed into *text*. *Text_size* can also be set, which is a tuple
+that contains (width, height) of the area the text resides in. If a goal in an experiment
+is to display multiple lines of text on the screen, this parameter is helpful through passing
+in (width_of_text, None) so the amount of text is not restricted in the vertical direction.
 
-The following is a Label displaying the word "BabaBooie"
+The following is a Label displaying the word "BabaBooie":
 
 ::
 
@@ -367,18 +366,17 @@ Image
 -----
 
 :py:class:`~smile.video.Image` is a :py:class:`~smile.video.WidgetState` that displays an image on the screen for a
-*duration*. The parameter to interface with its output is called *source*. You
-pass in a string path-name to the image you would like to present onto the
-screen. If you would like to present the image at a different size than the
-original, you need to also set the *allow_stretch* parameter to True. This will
-stretch the image to the size of the widget without changing the original
-ratio of width to height.
+*duration*. The parameter to interface with its output is called *source*. A string
+path-name is passed in to the image desired to be presented onto the screen. The *allow_stretch*
+parameter can be set to True if the original image needs to be presented at a different
+size. The *allow_stretch* parameter will stretch the image to the size of the widget
+without changing the original ratio of width to height.
 
-If you would like to make the image stretch to fill the entirety of the widget,
-you need to set *allow_stretch* to True and *keep_ratio* to False.
+By setting *allow_stretch* to True and *keep_ratio* to False the image will stretch
+to fill the entirety of the widget.
 
 Below is an example of an image at the path "test_image.png" to be presented to
-the center of the screen.
+the center of the screen:
 
 ::
 
@@ -391,18 +389,17 @@ Video
 -----
 
 :py:class:`~smile.video.Video` is a :py:class:`~smile.video.WidgetState` that shows a video on the screen for a *duration*.
-The parameter to interface with its output is called *source*. You pass in a
-string path-name to the video you would like to present on the screen. The
-video will play from the beginning for the *duration* of the video. If you would
-like the video to be any size different from the original size, you need to set
-the *allow_stretch* parameter to True. Then the video will attempt to fill the
-size of the *Video* Widget without changing the aspect ratio. If you would like
-to completely fill the *Video* Widget with the video, set the *keep_ratio*
-parameter to False. There is also the *position* parameter which has to be
-between 0 and the *duration* parameter, which tells the video where to start.
+The parameter to interface with its output is called *source*. A string path-name to the video
+can be passed in to present the video on the screen The video will play from the beginning
+for the *duration* of the video. The *allow_stretch* parameter can be set to True if changing
+the video size from the original size is desired. Afterwards, the video will attempt to fill
+the size of the *Video* Widget without changing the aspect ration. Setting the *keep_ratio*
+parameter to False will completely fill the *Video* Widget with the video.There is also the
+*position* parameter which has to be between 0 and the *duration* parameter, which tells
+the video where to start.
 
 Below is an example of playing a video at the path "test_video.mp4" that starts
-4 seconds into the video and plays for the entire duration (duration=None).
+4 seconds into the video and plays for the entire duration (duration=None):
 
 ::
 
@@ -416,7 +413,7 @@ Vertex Instructions
 
 Each **Vertex Instruction** outlined in *video.py* displays a predefined shape
 on the screen for a *duration*. The following are all of the basic Vertex
-Instructions that SMILE implements.
+Instructions that SMILE implements:
 
     - Bezier
 
@@ -436,14 +433,14 @@ Instructions that SMILE implements.
 
 The parameters for each of these vary, but just like any other SMILE state,
 they take the same parameters as the default *State* class. They are Kivy
-widgets wrapped in our *WidgetState* class, so if you need to know how to use
-them or what parameters they take, please refer to the Kivy documentation.
+widgets wrapped in our *WidgetState* class. Kivy documentation can be reffered to
+for understanding how to use them or what parameters they take.
 
 Beep
 ----
 
 :py:class:`~smile.audio.Beep` is a state that plays a beep noise at a set frequency and volume for
-a *duration*. The four parameters you need to set the output of this **Beep**
+a *duration*. The four parameters needed to set the output of this **Beep**
 are *freq*, *volume*, *fadein*, and *fadeout*. *freq* and *volume* are used to
 set the frequency and the volume of the **Beep**. *freq* defaults to 400 Hz
 and *volume* defaults to .5 the max system volume. *fadein* and *fadeout* are
@@ -451,7 +448,7 @@ in seconds and they represent the time it takes to get from 0 to *volume* and
 *volume* to 0 respectively.
 
 Below is an example of a beep at 555hz, for 2 seconds, with no fade in or out,
-and at 50% volume.
+and at 50% volume:
 
 ::
 
@@ -463,26 +460,25 @@ and at 50% volume.
 SoundFile
 ---------
 
-:py:class:`~smile.audio.SoundFile` is a state that plays sound file, like an mp3, for a *duration*
+:py:class:`~smile.audio.SoundFile` is a state that plays a sound file, like an mp3, for a *duration*
 that defaults to the duration of the file. The parameter used to interface
 with the output of this state is *filename*. *filename* is the path name to the
-sound file you would like to play. *volume* is a float from 1 to 0 where 1 is
+sound file saved on the computer. *volume* is a float from 1 to 0 where 1 is
 the max system volume.
 
-If you would like to start the sound file from a point in the file that isn't
-the beginning, you can set the *start* parameter to how many seconds into the
-file you would like to start playing.
+The *start* parameter allows for sound files to begin at the desired point in the audio file.
+By using the *start* parameter, the audio will begin however many seconds into the audio as
+desired.
 
-If you would like to stop playing the sound file at a certain point in the file
-that isn't the original end, you must set the *end* parameter to how ever many
-seconds from the beginning of the sound file you would like it to end. This
-parameter must be greater than the value of *start*.
+The *end* parameter allows for sound files to end before the original end of the audio.
+The *end* parameter must be set to however many seconds from the beginning of the sound file
+it is desired to end at. The parameter must be greater than the value of *start*.
 
-If you would like the sound file to run on a loop for the *duration* of the
-**State**, then you must set the *loop* parameter to True.
+If the *loop* parameter is set to True, the sound file will run on a loop for the
+*duration* of the **State**.
 
 Below is an example of playing a sound file at path "test_sound.mp3" at 50%
-volume for the full duration of the sound file.
+volume for the full duration of the sound file:
 
 ::
 
@@ -495,11 +491,11 @@ RecordSoundFile
 ---------------
 
 :py:class:`~smile.audio.RecordSoundFile` will record any sound coming into a microphone for the
-*duration* of the state. The file you wish to save this sound file into will be
-passed into the *filename* parameter.
+*duration* of the state. The audio recording will be saved to an audio file named
+after what is passed into the *filename* parameter.
 
 Below is an example of recording sound for 10 second while looking at a Label
-that says "PLEASE TALK TO YOUR COMPUTER", and saves it into "new_sound.mp3".
+that says "PLEASE TALK TO YOUR COMPUTER", and saves it into "new_sound.mp3":
 
 ::
 
@@ -516,14 +512,14 @@ Button
 ------
 
 :py:class:`~smile.video.Button` is a visual and an input state that draws a button on the screen
-with optional text in the button for a *duration*. You may also set every button
-to have a *name* that can be reference by :py:class:`~smile.video.ButtonPress` states to determine
-if you pressed the *correct* button. Check out the SMILE tutorial example for
+with optional text in the button for a *duration*. Every button can be set to have
+a *name* that can be reference by :py:class:`~smile.video.ButtonPress` states to determine
+if the *correct* button was pressed. See the SMILE tutorial example for
 *ButtonPress* for more information.
 
 Below is an example of a Form, where a :py:class:`~smile.video.Label` state will
 ask someone to type in an answer to a :py:class:`~smile.video.TextInput`. Then
-they will press the button when they are finished typing.
+they will press the button when they are finished typing:
 
 ::
 
@@ -533,7 +529,7 @@ they will press the button when they are finished typing.
     #Show both the Label and the TextInput at the same time
     #during the experiment
     with Parallel():
-        #Required to show the mouse on the screen during your experiment!
+        #Required to show the mouse on the screen during the experiment!
         MouseCursor()
         Label(text="Yo, Tell me about your day!?!?", center_y=exp.screen.center_y+50)
         TextInput(text="", width=500, height=200)
@@ -548,15 +544,15 @@ they will press the button when they are finished typing.
 ButtonPress
 -----------
 
-:py:class:`~smile.video.ButtonPress` is a parent state, much like :py:class:`~smile.state.Parallel` that will run until
-a button inside of it is pressed. When defining a **ButtonPress** state, you
-can tell it the name of a button inside of it that will be deemed as the
-correct button to press by passing in that string *name* of the correct
-**Button** or **Buttons** into the *correct_resp* parameter. Refer to the
-**ButtonPress** example in the SMILE tutorial document.
+:py:class:`~smile.video.ButtonPress` is a parent state, much like :py:class:`~smile.state.Parallel`, that will run until
+a button inside of it is pressed. When defining a **ButtonPress** state, The name
+of a button inside of the parent state can be designated as the correct button to
+press by passing the string *name* of the correct **Button** or **Buttons** into
+the *correct_resp* parameter. Refer to the **ButtonPress** example in the SMILE
+tutorial document.
 
-Here is an example of choosing between 3 buttons where only one of the buttons
-is the correct button to click.
+The following is an example of choosing between 3 buttons where only one of the buttons
+is the correct button to click:
 
 ::
 
@@ -577,19 +573,19 @@ KeyPress
 --------
 
 :py:class:`~smile.keyboard.KeyPress` is an input state that waits for a keyboard press during its
-*duration*. You are able to pass in a list of strings as parameters that are
-acceptable keyboard buttons into *keys*. You are also able to select a correct
-key by passing in its string name as a parameter to *correct_resp*.
+*duration*. A list of strings can be passed in as parameters that are
+acceptable keyboard buttons into *keys*. a correct key can be selected by passing
+in its string name as a parameter to *correct_resp*.
 
-You are able to access the information about this **KeyPress** state by getting
-the following attributes :
+Access to the information about the **KeyPress** state by can be achieved by using
+the following attributes:
 
     -pressed : a string that is the name of the key that was pressed.
     -press_time : a float value of the time when the key was pressed.
     -correct : a boolean that is whether or not they pressed the correct_resp
     -rt : a float that is the reaction time of the keypress. It is *press_time* - *base_time*.
 
-The following is a keypress example that will show you what key you pressed.
+The following is a keypress example that will identify what keys were pressed.
 
 ::
 
@@ -611,7 +607,7 @@ KeyRecord
 *.slog* file.
 
 The following example will save out a `.slog` file into log_bob.slog after
-recording all of the keypresses during a 10 second period.
+recording all of the keypresses during a 10 second period:
 
 ::
 
@@ -623,20 +619,20 @@ recording all of the keypresses during a 10 second period.
 MouseCursor
 -----------
 
-:py:class:`~smile.mouse.MouseCursor` is a visual state that shows your mouse for its *duration*. In
-order to effectively use **ButtonPress** and **Button** states, you must also use
-**MouseCursor** in parallel. Refer to the **ButtonPress** example in the
+:py:class:`~smile.mouse.MouseCursor` is a visual state that shows the mouse for its *duration*. In
+order to effectively use **ButtonPress** and **Button** states, **MouseCursor**
+in parallel must be used. Refer to the **ButtonPress** example in the
 SMILE tutorial page for more information.
 
-You can also set the cursor image and the offset of the image as parameters
-to this state. Whatever image you have as the passed in filename will be
-presented on the screen instead of your default mouse cursor.
+The cursor image and the offset of the image can also be set as parameters
+to this state. Any image passed in filename will be presented on the screen, replacing
+the default mouse cursor.
 
 The following example is of a mouse cursor that needs to be presented with an
 imaginary image to be displayed as the cursor. Since the imaginary image is
 100 by 100 pixels, and it points to the center of the image, we want the offset
 of the cursor to be (50,50) so that the actual *click* of the mouse is in the
-correct location.
+correct location:
 
 ::
 

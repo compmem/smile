@@ -4,8 +4,8 @@ Full Experiments
 
 Below are a few links to full, recognizable experiments that were coded up in
 SMILE. They include the idea behind the experiment, an explanation of the code,
-and they include a mini-analysis of the data collected. These real world kinds
-of examples will give you a better understanding into exactly how to code a
+and they include a mini-analysis of the data collected. These real world examples
+will provide a better understanding into exactly how to code a
 SMILE experiment in real world conditions, rather than in bite-sized samples of
 code.
 

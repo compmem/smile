@@ -13,7 +13,8 @@ SMILE.
 Hello World, Let's start SMILEing!
 ================================
 
-To start, I'll show you how the simplest *SMILE* experiment is programmed.
+To start, programming simple *SMILE* programs will be examined.
+
 Create a directory called *SmileTest* and add a file named *main.py*
 
 .. code-block:: python
@@ -25,32 +26,29 @@ Create a directory called *SmileTest* and add a file named *main.py*
     Label(text="Hello World, Lets start Smiling!", duration=4)
     exp.run()
 
-Go ahead and run **main.py**. If you do not know how to run a SMILE program,
-please refer to :ref:`Running SMILE <running-smile>` section of our
-:ref:`How To SMILE <how-to-smile>` document. You should see a black screen with
-the words "Hello World, Lets start Smiling!" appearing on the screen for 5
-seconds.  What we have done is create a simple SMILE **experiment**. When we run
-``exp = Experiment()`` we are initializing our experiment and telling out python
-program that we are about to start defining the states of our program.
+Now, run **main.py**. Please refer to :ref:`Running SMILE <running-smile>` section of the
+:ref:`How To SMILE <how-to-smile>` document to understand how to run a SMILE program.
+After running **main.py**, a black screen with the words "Hello World, Lets start
+Smiling!" should appear for 5 seconds.
 
-As said in our :ref:`How To SMILE <how-to-smile>` page, SMILE is a state machine.
-In your SMILE program you are telling the *experiment* what states, in order
-defined, it should run. After you have defined the states that your experiment
-will go through, you add the line ``exp.run()``. This lets the *experiment*
-know that the definition process is complete, and the *experiment* is ready to
-run. In the next step, we will see how stimulus generation and stimulus
+This is a simple SMILE **experiment**. When ``exp = Experiment()`` runs, it
+initializes the experiment and tells python to start defining the states of the program
+
+As stated in :ref:`How To SMILE <how-to-smile>`, SMILE is a state machine. The above
+SMILE program tells the *experiment* what states, in defined order, what states to run.
+After the states have been defined in the experiment, the line ``exp.run()`` lets
+the *experiment* know that the definition process is complete, and the *experiment* is
+ready to run. The next step will examine how stimulus generation and stimulus
 presentation can be separated with ease in this :py:class:`~smile.state.Loop` state example.
 
 Looping over Lists! In Style
 ============================
 
-To start this out, let's define the experiment we are going to create. We are
-going to present a list of predefined words to the participant for 2 seconds
-each and wait 1 second in between each word. Sounds complicated right? Wrong!
-With SMILE, all you need to know is a basic idea of what the timing is in your
-experiment and SMILE will take care of the rest! Create a new directory
-called *exp2* and create a file called *randWord1.py*. In the file, let's define
-the stimulus.
+To start, define the experiment to be created. This experiment is going to present
+a list of predefined words to the participant for two seconds each and wait one second
+in between each word. This can be accomplished simply using SMILE. All that is needed
+is a basic idea of what the timing is in the experiment. Create a new directory called
+*exp2* and create a file called *randWord1.py*. In the file, the stimulus can be defined.
 
 .. code-block:: python
 
@@ -59,9 +57,9 @@ the stimulus.
            'ascertain', 'biggest']
     random.shuffle(words)
 
-Easy. Now we have a list of words that are randomly sorted. From here, we can
-build an experiment that :py:class:`~smile.state.Loop` over the list of words. Let's setup the
-preliminary variables.
+The file has created a list of words that will be randomly sorted when compiled.
+From here, an experiment that :py:class:`~smile.state.Loop` over the list of words
+can be created. What is next needed is to setup the preliminary variables.
 
 .. code-block:: python
 
@@ -75,9 +73,9 @@ preliminary variables.
 
 The default state that your :py:class:`~smile.state.Experiment` runs in is the :py:class:`~smile.state.Serial` state.
 :py:class:`~smile.state.Serial` just means that every other state defined inside of it is run in
-order, first in first out. So every state you define after
-``exp = Experiment()`` will be executed fifo style. Next, we will define a
-staple of every SMILE experiment, our :py:class:`~smile.state.Loop` state.
+order, first in first out. So every state defined after
+``exp = Experiment()`` will be executed fifo style. Next, a staple of every SMILE
+experiment, the :py:class:`~smile.state.Loop` state is needed to be defined.
 
 .. code-block:: python
 
@@ -87,16 +85,16 @@ staple of every SMILE experiment, our :py:class:`~smile.state.Loop` state.
 
     exp.run()
 
-Let's look at what is happening here line by line.
-``with Loop(words) as trial:`` has a lot of stuff going on.  You are able to
-send your list to *Loop* as a prarameter.  This tells SMILE to loop over
-*words*. *Loop* also creates a reference variable, in our case we called it
-*trial*. Trial acts as a link between the experiment building state of the
+
+Now, to examine the on-goings of this experiment line-by-line. The list of words
+to *Loop* as a parameter. This tells SMILE to loop over *words*. *Loop* also creates
+a reference variable. In this instance, the reference variable is called *trial*.
+Trial acts as a link between the experiment building state of the
 experiment, and the running state of the experiment.  Until ``exp.run()`` is
 called, *trial* will not have a value. The next line defines a :py:class:`~smile.video.Label` state
 that displays text for a duration. By default, it displays in the middle of the
 experiment window. Notice ``trial.current``. In order to access the
-numbers from our random list, we need to use ``trial.current`` instead of
+numbers from the random list, ``trial.current`` is used instead of
 ``words[x]``. ``trial.current`` is a way to tell SMILE to access the
 *current* member of the *words* list while looping.
 
@@ -135,18 +133,18 @@ Finished **rand_word_1.py**
 And Now, With User Input!
 =========================
 
-The final step for our basic SMILE tutorial is to add user input and logging.
-Let's define the experiment. Let's say we need to ask the participant to press J
-if the number of letters on the screen is even, and K if the number of letters
-in the word on the screen is odd. We have to say that the participants have
-only 4 seconds to answer. In this tutorial, you will learn how to set up
-our experiment so that when the participant presses a key to answer, the stimulus
-will drop off the screen and start the next iteration of the loop.
+The final step in the SMILE tutorial is to add user input and logging.
+First, define the experiment. The experiment used for this example asks the
+participant to press J if the number of letters on the screen is even, and K if
+the number of letters in the word on the screen is odd. One parameter of the experiment is
+the participants have only 4 seconds to answer. In this tutorial, it will be taught how
+to set up our experiment so that when the participant presses a key to answer, the
+stimulus will drop off the screen and start the next iteration of the loop.
 
-This tutorial will also teach you how to compare **trial.current** comparisons.
+This tutorial will also teach how to compare **trial.current** comparisons.
 Create a directory called *WordRemember* and create a file within the directory
-called *randWord2.py*. First, we will bring over the word list from the
-previous file.  We are going to change it a little bit to make sure that the
+called *randWord2.py*. First step will be to migrate over the word list from the
+previous file.  It will be slightly edited to make sure that the
 experiment will be able to tell what key is the correct key for each trial.
 
 .. code-block:: python
@@ -163,11 +161,11 @@ experiment will be able to tell what key is the correct key for each trial.
     random.shuffle(words)
 
 
-Our list of words is now a list of dictionaries, in which ``words[x]['stimulus']``
-will give us the word and ``words[x]['condtion']`` will give us whether the
-word has an even or an odd length. Like in the last example, the next thing we
-must do is initialize all of our experiment parameters. **key_list** is what
-keys our participant will be pressing later.
+The list of words is now a list of dictionaries, in which ``words[x]['stimulus']``
+will provide the word and ``words[x]['condtion']`` will provide whether the
+word has an even or an odd length. Similar to the last example, the next step
+is to initialize all of our experiment parameters. **key_list** is what
+keys the participant will be pressing later.
 
 .. code-block:: python
 
@@ -180,13 +178,15 @@ keys our participant will be pressing later.
     exp = Experiment()
 
 
-We changed the line ``stimulusDuration=2`` into ``maxResponseTime=4``. Next, we
-are going to setup up our basic loop.
+Notice the line change from ``stimulusDuration=2`` to ``maxResponseTime=4``.
 
-The first thing we need to add to this loop is the ``UntilDone():`` state. An
-:py:class:`~smile.state.UntilDone` state is a state that will run its children in :py:class:`~smile.state.Serial` until
-the state above it has finished. Here is an example before we edit the
-loop.
+The next step entails setting up our basic loop.
+
+The first thing needed to be added to this loop is the ``UntilDone():`` state. An
+:py:class:`~smile.state.UntilDone` state is a state that will run its children in :py:class:`~smile.state.Serial`
+until the state above it has finished.
+
+The following is an example before the loop was edited:
 
 .. code-block:: python
 
@@ -201,7 +201,7 @@ As you can see, The first :py:class:`~smile.video.Label` is on the screen for 5 
 :py:class:`~smile.state.UntilDone` state doesn't end until the second :py:class:`~smile.video.Label` has ran 3 seconds
 and the :py:class:`~smile.state.Wait` has ran 2 seconds.
 
-Now we will implement this state into our loop.
+Now to implement this state into the loop:
 
 .. code-block:: python
 
@@ -213,13 +213,13 @@ Now we will implement this state into our loop.
     exp.run()
 
 
-This displays the current trial's number until you press a key then waits the
-inter-stimulus duration that we set earlier.  This isn't exactly what we want,
-but it is the start we need to fully understand what we are doing. Next we are
-going to edit ``kp = KeyPress(keys=keys)`` to include our response time
-duration. We also need to add in the ability to check and see if they answered
-correct. This will require the use of `trial.current['condition']`, which is a
-listgen value that we set earlier.
+This displays the current trial's number until a key is pressed, then waits the
+inter-stimulus duration that was predefined earlier. Though this is not perfect,
+the example is a start for understanding the ongoings of experiments. The next step
+entails editing ``kp = KeyPress(keys=keys)`` to include the response time
+duration. Also needed is the ability to add a check to see if the participant answered
+correctly. This will require the use of `trial.current['condition']`, which is a
+listgen value set earlier.
 
 .. code-block:: python
 
@@ -232,10 +232,10 @@ listgen value that we set earlier.
 
     exp.run()
 
-The last thing we need to add to this experiment, at the end of the ``Loop()``,
-is the :py:class:`~smile.state.Log`. Wherever you put a :py:class:`~smile.state.Log` state in the experiment, it will
-save out a **.slog** file to a folder called *data* in your experiment
-directory under whatever name you put in the *name* field.
+The last thing needed to complete the experiment is to add, at the end of the ``Loop()``,
+is the :py:class:`~smile.state.Log`. Wherever a :py:class:`~smile.state.Log` state is placed in the experiment,
+it will save out a **.slog** file to a folder called *data* in the experiment
+directory under a predetermined name put in the *name* field.
 
 .. code-block:: python
 
@@ -243,9 +243,9 @@ directory under whatever name you put in the *name* field.
         correct=kp.correct,
         time_to_respond=kp.rt)
 
-With this line, each iteration of the loop in the experiment will save our a
-line into *Loop.slog* all of the values defined in the ``Log()`` call. The loop
-will look like this
+With this line, each iteration of the loop in the experiment will save a
+line into *Loop.slog* containing all of the values defined in the ``Log()`` call.
+The loop will look as follows:
 
 .. code-block:: python
 
@@ -304,24 +304,22 @@ Now you are ready to get SMILEing!
 Special Examples
 ================
 
-This section is designed to help you figure out how to use some of the more
-advanced states and interesting interactions with some of the states in SMILE.
-For more detailed real life examples of experiments, head over to the
+This section is designed to develop techniques on using more
+advanced states and advanced interactions with other states in SMILE.
+For more detailed real life examples of experiments, reference
 :ref:`Full Experiments <full-experiments>` page!
 
 Subroutine
 -----------------------------
 
-This is the tutorial that will teach you how to write your own :py:class:`~smile.subroutine`
-state and highlight its importance.  In SMILE, a :py:class:`~smile.subroutine` state is used
-to compartmentalize a block of states that you are bound to use over and over
-again in different experiments. The one we will go over is a list
-presentation subroutine.
+In this tutorial how to write custom :py:class:`~smile.subroutine` states will be
+examined.  In SMILE, a :py:class:`~smile.subroutine` state is used
+to compartmentalize a block of states that a researcher reuses in different experiments.
+The following example is an overview of a list presentation subroutine
 
-Let's create a new directory called *ListPresentTest* and then create a new file
-in that directory called *list_present.py*.  The first thing we need to do for
-our list presentation subroutine is setup the basic imports and define our
-subroutine.
+First, create a new directory called *ListPresentTest* and then create a new file
+in that directory called *list_present.py*.  Next, we need to do for setup the basic imports and define the
+subroutine for the list presentation subroutine .
 
 .. code-block:: python
 
@@ -338,20 +336,20 @@ subroutine.
 
 
 
-By placing `@Subroutine` above our subroutine definition, we tell the compiler
+By placing `@Subroutine` above the subroutine definition, the compiler is told
 to treat this as a SMILE :py:class:`~smile.subroutine`. The subroutine will eventually present
 a fixation cross, wait, present the stimulus, wait again, and then repeat for
-all of the list items you pass it. Just like calling a function or declaring a
-state, we will call :py:class:`~smile.subroutine` in the body of our experiment and pass in
-those variables in *main_list_present.py*, which we will create later.
+all of the list items it is passed. Just like calling a function or declaring a
+state, call :py:class:`~smile.subroutine` in the body of the experiment and pass in
+the variables in *main_list_present.py*, which will be created later.
 
 .. warning::
     Always have *self* as the first argument when defining a subroutine. If you
     don't, your code will not work as intended.
 
-The cool thing about :py:class:`~smile.subroutine` is that you can access any of the
-variables that you declare into `self` outside of the subroutine, so the first
-thing we are going to do is add a few of these to our subroutine.
+The cool thing about :py:class:`~smile.subroutine` is that any variable declared
+into 'self' can be accessed outside of the subroutine. So first,
+add a few of the following to the subroutine:
 
 .. code-block:: python
 
@@ -364,9 +362,10 @@ thing we are going to do is add a few of these to our subroutine.
                     interOrientDur=.2):
         self.timing = []
 
-The only variable we will need for testing later is an element to hold all of
-our timing information to pass out into the experiment. Next, let's add the
-stimulus loop.
+The only variable needed for testing later is an element to hold all of
+the timing information to pass out into the experiment.
+
+Next, add the stimulus loop:
 
 .. code-block:: python
 
@@ -389,9 +388,9 @@ stimulus loop.
                                 stim_dur=stim.duration,
                                 stimWait_dur=stimWait.duration)]
 
-From here, we have a finished subroutine! We now have to write the
-*mainListPresent.py*. We just need to generate a list of words and pass it into
-our new subroutine.
+At this point the subroutine is finished. The *mainListPresent.py* needs to be written
+next. All that is needed is generation of a list of words to be passed into
+the new subroutine.
 
 Finished **main_list_present.py**
 +++++++++++++++++++++++++++++++++
@@ -456,28 +455,27 @@ Finished **list_present.py**
 ButtonPress
 -----------
 
-This is an example to teach you how to use the state :py:class:`~smile.video.ButtonPress` and how to
-use the :py:class:`~smile.video.MouseCursor` state. This is a simple experiment that allows you to
-click a button on the screen, and then it tells you if you chose the correct
-button.
+In this section, the :py:class:`~smile.video.ButtonPress` state and the
+:py:class:`~smile.video.MouseCursor` state will be examined. The following is a
+simple experient that allows a participant to click a button on the screen and
+then reports if the correct button was chosen.
 
-An important thing to notice about this code is that :py:class:`~smile.video.ButtonPress` acts as a
+Notice that this code, :py:class:`~smile.video.ButtonPress`, acts as a
 :py:class:`~smile.video.Parallel` state. This means that all of the states defined within
-:py:class:`~smile.video.ButtonPress` become its children. The field `correct` that you pass into
-your :py:class:`~smile.video.ButtonPress` takes the *name* of the correct button for the participant
+:py:class:`~smile.video.ButtonPress` become its children. The field `correct` that is passed into
+:py:class:`~smile.video.ButtonPress` takes the *name* of the correct button for the participant
 as a string.
 
-When defining your **Buttons** within your button press, you should set the
-`name` attribute of each to something different.  That way, when reviewing the
-data you get at the end of the experiment, you are able to easily distinguish
-which button the participant pressed.
+When defining **Buttons** within button press, the `name` attribute of each should
+be set to something different.  That way, when reviewing post-experiment
+data, it is easy to distinguish which button the participant pressed.
 
 Another thing that is important to understand about this code is the
 :py:class:`~smile.video.MouseCursor` state.  By default, the experiment hides the mouse cursor. In
-order to allow your participant to see where they are clicking, you must
-include a :py:class:`~smile.video.MouseCursor` state in your :py:class:`~smile.video.ButtonPress` state. If you ever feel
-that your participant needs to use the mouse for the duration of an experiment,
-you are able to call the :py:class:`~smile.video.MouseCursor` state just after you assign your
+order to allow the participant to see where they are clicking, a :py:class:`~smile.video.MouseCursor`
+state must be included in the :py:class:`~smile.video.ButtonPress` state. If the
+participant needs to use the mouse for the duration of an experiment,
+call the :py:class:`~smile.video.MouseCursor` state just after assignment of the
 :py:class:`~smile.experiment.Experiment` variable.
 
 Finished **button_press_example.py**
@@ -504,9 +502,3 @@ Finished **button_press_example.py**
     with Else():
         Label(text='YOU WERE DEAD WRONG', color='RED', duration=1)
     exp.run()
-
-
-
-
-
-
