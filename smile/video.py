@@ -1094,11 +1094,9 @@ class Animate(State):
         first_update_time = self._start_time + self._interval
         clock.schedule(self.update, event_time=first_update_time,
                        repeat_interval=self._interval)
-        clock.schedule(self.leave)
 
     def _unschedule_start(self):
         clock.unschedule(self.update)
-        clock.unschedule(self.leave)
 
     def _enter(self):
         self.__initial_params = None
@@ -1116,6 +1114,10 @@ class Animate(State):
             self.__initial_params = {
                 name: self.__target.get_attribute_ref(name).eval() for
                 name in self.__anim_params.iterkeys()}
+
+            # we can leave now that we have initial params
+            clock.schedule(self.leave)
+
         if self._end_time is not None and now >= self._end_time:
             clock.unschedule(self.update)
             clock.schedule(self.finalize)
