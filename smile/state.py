@@ -2188,18 +2188,15 @@ class _DelayedValueTest(State):
 class Done(AutoFinalizeState):
     """Waits until a state is finished or a ref is evaluated.
 
-    A *Done* state will block the experiment from continuing until a Ref value
-    is filled, or a state is finalized. This is mainly only used when the
-    timing of something like **appear_time** is needed to be logged.
+    A *Done* state will block the experiment from continuing until a 
+    state is finalized. This is mainly only used when the
+    timing of something like **disappear_time** needs to be logged.
 
     Parameters
     ----------
     states : list of states (optional)
         You can pass is a list of states, and if so, the *Done* will
         wait until all of the given states are finished running.
-    kwargs : (keyword = argument)
-        If you pass in a keyword argument, the *Done* state will block
-        until that specific argument is not None.
 
     Example
     -------
@@ -2208,12 +2205,6 @@ class Done(AutoFinalizeState):
 
         lb = Label(text='baba booy', duration=3)
         Done(lb)
-        Log(label_off=lb.disappear_time['time'])
-
-    ::
-
-        lb = Label(text='baba booy', duration=3)
-        Done(lb.disappear_time['time'])
         Log(label_off=lb.disappear_time['time'])
 
     """
