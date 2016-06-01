@@ -1,21 +1,23 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+################################################################################
 #
-#   See the COPYING file distributed along with the smile package for the
-#   copyright and license terms.
+# ordered.py
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# This experiment shows how you can change the position of a Label with
+# slide. slide allows you to change the value of a parameter over a duration.
+#
+#
+################################################################################
 
-# load all the states
+
+# Load all the states
 from smile.common import *
 
-# create an experiment
+# Create an experiment
 exp = Experiment()
 
 Wait(1.0)
 
-# create stims
+# Create stims
 with Parallel():
     stimB = Label(text="B", x=exp.screen.center_x + 25,
                   font_size=64,
@@ -23,8 +25,9 @@ with Parallel():
     stimF = Label(text="F", x=exp.screen.center_x - 25,
                   font_size=64,
                   color='orange')
-with UntilDone():
 
+# Do the above state until the below states leave
+with UntilDone():
     Wait(1.0)
     with Parallel():
         stimB.slide(x=exp.screen.center_x - 25, duration=3.0)
@@ -32,5 +35,6 @@ with UntilDone():
 
 Wait(1.0)
 
+# If this was run in a command line, run the experiment
 if __name__ == '__main__':
     exp.run()

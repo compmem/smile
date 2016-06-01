@@ -1,11 +1,12 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+################################################################################
+# Dynamic Cirlces Example
 #
-#   See the COPYING file distributed along with the smile package for the
-#   copyright and license terms.
+# This example will show you how to use Parallel.insert(), a function that
+# Parallels have that allow you to add states during Experimental Runtime. It
+# also shows you how to use MousePress() and some other Flow States.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+#
+################################################################################
 
 # load all the states
 from smile.common import *
@@ -14,38 +15,40 @@ from smile.experiment import Set
 # create an experiment
 exp = Experiment()
 
-# initial wait
+# Initial wait
 Wait(1.0)
 
-# placeholder for saving inserted circs
+# Placeholder for saving inserted circs
 exp.circs = []
 
 # Accept input for 5 seconds
 Wait(5.)
 with Meanwhile():
-    # put it all in a parallel so we can keep adding stuff
+    # Put it all in a parallel so we can keep adding stuff
     with Parallel() as p:
         # show the cursor
         MouseCursor()
         with Loop() as l:
-            # wait for a mouse press
+            # Wait for a mouse press
             mp = MousePress()
+            # Insert everything within to the Parallel above
             with p.insert() as ins:
-                # add a circle with random color
+                # Add a circle with random color
                 circ = Ellipse(center=mp.pos, color=(jitter(0, 1),
                                                      jitter(0, 1),
                                                      jitter(0, 1)))
-            # Set('circs',
-            #     exp.circs + [ins.first],
-            #     save_log=False)
+            # Add a reference to the last MousePress that happened
+            # to the list of MousePress References
             exp.circs = exp.circs + [ins.first]
 
-# print out the locs we saved
+# Print out the locs we saved
 with Loop(exp.circs, save_log=False) as c:
     Debug(i=c.i,
           center=c.current.center,
           color=c.current.color)
 Wait(1.0)
 
+
+# If this is being run from the command line, run this experiment
 if __name__ == '__main__':
     exp.run()
