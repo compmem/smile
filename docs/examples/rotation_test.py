@@ -1,59 +1,67 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+################################################################################
 #
-#   See the COPYING file distributed along with the smile package for the
-#   copyright and license terms.
+# rotation_test.py
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# This experiment shows off use of the rotate parameter in widget states. It
+# will rotate the contents of a widget a certain number of degrees before
+# displaying it.
+#
+#
+################################################################################
 
-# load all the states
+
+# Load all the states
 from smile.common import *
 
-# create an experiment
+# Create an experiment
 exp = Experiment()
 
 with Parallel():
-    # add the image and rect
+    # Add the Image and Rectangle
     # (with zero alpha so they are not visible)
+    # and start the Image rotated at 359 degrees
     img = Image(source='face-smile.png',
                 color=(1, 1, 1, 0),
                 rotate=359)
     rect = Rectangle(color=('red', 0.0),
                      size=img.size)
 
-    # create some circles on top of each other
+    # Create some circles on top of each other,
+    # this shows that you can use pythonic syntax
+    # to create states
     circs = [Ellipse(color=col, size=(50, 50))
              for col in ['red', 'green', 'blue', 'purple']]
+
+# Do the above state until the below states are finished
 with UntilDone():
     Wait(.5)
     with Parallel():
-        # move the circles out to the side
+        # Move the circles out to the side
         [circs[i].slide(center_x=img.right+offset, duration=2.0)
          for i, offset in enumerate([0, 50, 100, 150])]
     with Parallel():
-        # spin the circles
+        # Spin the circles
         [circs[i].slide(rotate=360, duration=dur)
          for i, dur in enumerate([2.0, 2.5, 3.0, 3.5])]
 
         # have the smile image fade in
         img.slide(rotate=0, duration=4.0, color=(1, 1, 1, 1))
     with Parallel():
-        # fade out and spin back the circles
+        # Fade out and spin back the circles
         [circs[i].slide(rotate=0, duration=dur, color=(0, 0, 0, 0))
          for i, dur in enumerate([3.5, 3.0, 2.5, 2.0])]
 
-        # fade in the rectangle
+        # Fade in the rectangle
         rect.slide(color=('red', .3), duration=2)
 
-    # show that you can simply set the rotate_origin
+    # Show that you can simply set the rotate_origin
     rect.rotate_origin = rect.left_bottom
     img.rotate_origin = img.center
 
-    # and slide the origin
+    # And slide the origin
     rect.slide(rotate_origin=rect.center, duration=2.0, rotate=90)
 
-    # rotate the image and rect
+    # Rotate the image and rect
     with Parallel():
         img.slide(rotate=360, duration=4.0, center=rect.left_bottom)
         with Serial():
@@ -71,7 +79,7 @@ with UntilDone():
     img.rotate = 0
     Wait(2.0)
 
-# show two rectangles with different rotation props
+# Show two rectangles with different rotation props
 with Parallel():
     r1 = Rectangle(left_bottom=exp.screen.center,
                    rotate=45,
@@ -84,7 +92,7 @@ with Parallel():
                    size=(200, 100),
                    color=('blue', .5))
 with UntilDone():
-    # show where we're heading
+    # Show where we're heading
     Wait(.5)
     r1.rotate_origin = r1.right_top
     Wait(1.)
@@ -97,6 +105,6 @@ with UntilDone():
     Wait(1.0)
     Debug(lb=r1.left_bottom, rt=r1.right_top, ro=r1.rotate_origin)
 
-
+# If this was run in a command line, run the experiment
 if __name__ == '__main__':
     exp.run()
