@@ -47,9 +47,11 @@ from clock import clock
 from log import LogWriter, log2csv
 from video import normalize_color_spec
 
-FLIP_TIME_MARGIN = .002 # increase this if we're missing flips
+FLIP_TIME_MARGIN = 0.002  # increase this if we're missing flips
+IDLE_USLEEP = 250         # USLEEP During idle
 
-def event_time(time, time_error=0.0):  #TODO: make this a class!
+
+def event_time(time, time_error=0.0):  # TODO: make this a class!
     return {'time': time, 'error': time_error}
 
 
@@ -346,7 +348,7 @@ class ExpApp(App):
                                    triple=me.is_triple_tap,
                                    event_time=self.event_time)
         elif etype == "update":
-            self.mouse_pos = tuple(int(round(x)) for x in  me.pos)
+            self.mouse_pos = tuple(int(round(x)) for x in me.pos)
             self.mouse_pos_ref.dep_changed()
             self.current_touch = me
             self._trigger_callback("MOTION", pos=me.pos,
@@ -463,11 +465,10 @@ class ExpApp(App):
                 #   2) Forcing a blocking flip_interval
                 #   OR
                 #   3) We have a specific flip callback request and we
-                #      are not forcing  a non-blocking flip
-                if (self.pending_flip_time >
+                #      are not forcing a non-blocking flip
+                if (self.pending_flip_time >=
                     (self.last_flip['time'] +
-                     self.flip_interval +
-                     FLIP_TIME_MARGIN)) and \
+                     self.flip_interval)) and \
                    (self.force_blocking_flip or
                     (len(flip_time_callbacks) and
                      not self.force_nonblocking_flip)):
@@ -502,7 +503,7 @@ class ExpApp(App):
                 self.stop()
 
         # give time to other threads
-        clock.usleep(250)
+        clock.usleep(IDLE_USLEEP)
 
     def blocking_flip(self):
         # TODO: use sync events instead!
