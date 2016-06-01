@@ -152,7 +152,8 @@ class Beep(Wait):
 
     """
     def __init__(self, duration=None, freq=400, fadein=0.05, fadeout=0.05,
-                 volume=0.5, parent=None, save_log=True, name=None, blocking=True):
+                 volume=0.5, parent=None, save_log=True,
+                 name=None, blocking=True):
         super(Beep, self).__init__(parent=parent,
                                    duration=duration,
                                    save_log=save_log,
@@ -164,17 +165,19 @@ class Beep(Wait):
         self._init_fadeout = fadeout
         self._init_volume = volume
         self._sound_start_time = None
+        self._sound_stop_time = None
         self.__fader = None
         self.__sine = None
 
         # set the log attrs
         self.log_attrs.extend(['freq', 'volume', 'fadein', 'fadeout',
-                               'sound_start_time'])
+                               'sound_start_time', 'sound_stop_time'])
 
     def _enter(self):
         super(Beep, self)._enter()
         default_init_audio_server()
         self._sound_start_time = None
+        self._sound_stop_time = None
         if self._start_time == self._end_time:
             self.__fader = None
             self.__sine = None
@@ -196,6 +199,7 @@ class Beep(Wait):
     def _stop_sound(self):
         if self.__fader is not None:
             self.__fader.stop()
+            self._sound_stop_time = clock.now()
             self.__fader = None
             self.__sine = None
 
@@ -288,15 +292,17 @@ class SoundFile(Wait):
         self._init_stop = stop
         self._init_loop = loop
         self._sound_start_time = None
+        self._sound_stop_time = None
 
         # set the log attrs
         self.log_attrs.extend(['filename', 'volume', 'start', 'stop', 'loop',
-                               'sound_start_time'])
+                               'sound_start_time', 'sound_stop_time'])
 
     def _enter(self):
         super(SoundFile, self)._enter()
         default_init_audio_server()
         self._sound_start_time = None
+        self._sound_stop_time = None
 
         # init the sound table (two steps to get mono in both speakers)
         sndtab = pyo.SndTable(initchnls=_pyo_server.getNchnls())
@@ -329,6 +335,7 @@ class SoundFile(Wait):
     def _stop_sound(self):
         if self.__snd is not None:
             self.__snd.stop()
+            self._sound_stop_time = clock.now()
             self.__snd = None
 
     def cancel(self, cancel_time):
@@ -405,12 +412,15 @@ class RecordSoundFile(Wait):
 
         self._init_filename = filename
         self._rec_start = None
+        self._rec_stop = None
         self.__rec = None
 
         # set the log attrs
-        self.log_attrs.extend(['filename', 'rec_start'])
+        self.log_attrs.extend(['filename', 'rec_start', 'rec_stop'])
 
     def _enter(self):
+        self._rec_start = None
+        self._rec_stop = None
         super(RecordSoundFile, self)._enter()
         default_init_audio_server()
         if self._filename is None:
@@ -432,6 +442,7 @@ class RecordSoundFile(Wait):
     def _stop_recording(self):
         if self.__rec is not None:
             self.__rec.stop()
+            self._rec_stop = clock.now()
             self.__rec = None
 
     def cancel(self, cancel_time):
