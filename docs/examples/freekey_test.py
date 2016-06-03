@@ -8,7 +8,7 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 
-# Load all the states
+# Load the common states
 from smile.common import *
 
 # Create the experiment

@@ -7,11 +7,12 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-# load all the states
+
+# Load the common states
 from smile.common import *
 from smile.experiment import Set
 
-# create an experiment
+# Create an experiment
 exp = Experiment()
 
 # Initial wait
