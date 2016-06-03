@@ -1,13 +1,11 @@
-################################################################################
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
-# timing_test.py
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
 #
-# This is what was used to show that SMILE's timing was showing up correctly in
-# the logs. We showed flashes on the screen at varrying speeds, anything below
-# the framerate in duration would be shown at the framerate.
-#
-#
-################################################################################
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 
 # Load all the states

@@ -1,13 +1,11 @@
-################################################################################
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
-# meta_exp.py
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
 #
-# This experiment shows how, in SMILE, you are able to display the code of your
-# experiment, in your experiment, next to an Image of a Smiley face! So very
-# meta!
-#
-#
-################################################################################
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 
 # Load all the states

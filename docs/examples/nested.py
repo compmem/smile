@@ -1,12 +1,11 @@
-################################################################################
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
-# nested.py
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
 #
-# This experiment shows an example of how nested Flow States can change the way
-# your experiment can run.
-#
-#
-################################################################################
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 
 # load all the states

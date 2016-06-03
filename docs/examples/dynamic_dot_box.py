@@ -1,13 +1,11 @@
-################################################################################
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
-# dynamic_dot_box.py
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
 #
-# This experiment was to show how to test the DynamicDotBox WidgetState. A
-# DynamicDotBox will show the same number of dots every time, but will randomly
-# generate the position of each dot every screen interval.
-#
-#
-################################################################################
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 
 # Load all the states

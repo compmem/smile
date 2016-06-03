@@ -1,18 +1,11 @@
-################################################################################
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
-# smile_turn.py
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
 #
-# In this experiment we show you a different way to spin things in
-# rotation_test.py You are able to spin a whole Scatter layout, and anything
-# inside it aswell.
-#
-# NOTE : If you put a button inside a scatter layout, or if you are trying to
-# idenfity weather or not a mouse is within a rotated widget inside a scatter
-# plot, it will not work correctly. ScatterLayout will rotate the image before
-# it is drawn to the buffer, but not change the postion or rotation of the
-# widgets themselves.
-#
-################################################################################
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # Load all the states
 from smile.common import *

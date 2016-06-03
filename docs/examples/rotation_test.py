@@ -1,13 +1,11 @@
-################################################################################
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
-# rotation_test.py
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
 #
-# This experiment shows off use of the rotate parameter in widget states. It
-# will rotate the contents of a widget a certain number of degrees before
-# displaying it.
-#
-#
-################################################################################
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 
 # Load all the states

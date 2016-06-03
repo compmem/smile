@@ -1,11 +1,11 @@
-################################################################################
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
-# freekey_test.py
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
 #
-# This experiment demonstrates how to use the FreeKey subroutine from freekey.py
-#
-#
-################################################################################
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 
 # Load all the states
