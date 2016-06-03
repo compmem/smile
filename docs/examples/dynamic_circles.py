@@ -1,12 +1,11 @@
-################################################################################
-# Dynamic Cirlces Example
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
-# This example will show you how to use Parallel.insert(), a function that
-# Parallels have that allow you to add states during Experimental Runtime. It
-# also shows you how to use MousePress() and some other Flow States.
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
 #
-#
-################################################################################
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # load all the states
 from smile.common import *
