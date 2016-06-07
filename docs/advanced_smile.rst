@@ -166,7 +166,7 @@ Now we can write state machine code for the **Subroutine**:
             Label(text=Ref(str,self.counter), duration=.2)
 .. warning::
 
-    When writting a Subroutine, you can only use SMILE States. A Subroutine will only run any general pythonic code ONCE when the Subroutine is first built during Experimental Build Time. It is best practice to only use SMILE states, sets, and gets during in a Subroutine.
+    When writting a Subroutine, you can only use SMILE States. A Subroutine will only run any general pythonic code ONCE when the Subroutine is first built during Experimental Build Time. It is best practice to only use SMILE states, sets, and gets during in a Subroutine. If you need to run some kind of complex function in order to run your subroutine, use the **Func** state to run a function during Experimental Run Time.
 
 Notice `self.counter`, it creates a :py:class:`~smile.state.Set`
 state that will set a new attribute to the **Subroutine** called `counter` and
