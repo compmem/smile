@@ -112,7 +112,7 @@ letter of every word a capital letter.
 
 .. note::
 
-    Please note that Subroutines should only be used as self contained snipits of state-machine. Only write a subroutine if the section of state-machine is self-contained and you don't have to manipulate anything inside of it. At most, you would only need to record the resaults from it.
+    Please note that Subroutines should only be used as self contained snipits of state-machine. Only write a subroutine if the section of state-machine you are trying to replicate would rely only on the parameters passed into it. You should never try to change the value of a parameter inside the Subroutine from outside the Subroutine. However, you have read-only access to any variable set using the **self** reference explained below. If you would like to have access to the height of a Label inside your subroutine outside your subroutine, you must set **self** variable to the Height of your Label during Experimental Build Time.
 
 The following is an example on how to define a **Subroutine** that displays a :py:class:`~smile.video.Label`
 that will display a number that counts up from a passed in minimum number.
@@ -123,7 +123,9 @@ In the subroutine file (`test_sub.py`), first import all of SMILE's common state
 
     from smile.common import *
 
-*Be advised, the above line does not always give every necessary state for an experiment.*
+.. warning::
+
+    Be advised, the above line does not always give every necessary state for an experiment, just the States that are available on every platform.
 
 Next, the definition line needs to be written for the subroutine:
 
@@ -162,6 +164,9 @@ Now we can write state machine code for the **Subroutine**:
             # to apply the str() function to self.counter during
             # Experimental Runtime instead of Buildtime
             Label(text=Ref(str,self.counter), duration=.2)
+.. warning::
+
+    When writting a Subroutine, you can only use SMILE States. A Subroutine will only run any general pythonic code ONCE when the Subroutine is first built during Experimental Build Time. It is best practice to only use SMILE states, sets, and gets during in a Subroutine.
 
 Notice `self.counter`, it creates a :py:class:`~smile.state.Set`
 state that will set a new attribute to the **Subroutine** called `counter` and
