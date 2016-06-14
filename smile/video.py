@@ -1269,30 +1269,53 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
     website to check the available file types. This state ends when the
     video is over.
 
-    Paramters
-    ---------
-    parent : ParentState
+    WidgetState Paramters
+    ---------------------
+    duration : float (optional, default = None)
+        The duration of this state, or how long you want the video to play. If
+        the *duration* is less than the duration of the file, than the video
+        will stop playing before done. If the *duration* is more than the file's
+        duration, than the video will stop on the last frame and will display
+        that frame until the *duration* is over.
+    parent : ParentState (optional)
         The parent of this state, if None, it will be set automatically
-    save_log : boolean
+    save_log : boolean (optinal, default = True)
         If True, this state will save out all of the Logged Attributes.
-    name : string
+    name : string (optinal)
         The unique name to this state.
     blocking : boolean (optional, default = True)
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
         running. Only relevent if within a *ParallelParent*.
-    source : string
+
+    Kivy Parameters and Properties
+    ------------------------------
+    Below is the docstring attached to the Kivy widget that this WidgetState is
+    based on. Any of the parameters listed below are able to be used by this
+    WidgetState and can be passed into it the same way any other parameter can.
+    Any of the internal properties that are readable by this Kivy Widget are
+    readable during Experimental Run Time.
+
+    source : string (Parameter)
         Filename or source of your video file.
+    allow_strech : boolean (Parameter, optional, default = False)
+        If True, the normalized image size will be maximized to fit in the image
+        box. Otherwise, if the box is too tall, the image will not be stretched
+        more than 1:1 pixels.
+    keep_ratio : boolean (Parameter, optional, default = True)
+        If False along with allow_stretch being True, the normalized image size
+        will be maximized to fit in the image box and ignores the aspect ratio
+        of the image. Otherwise, if the box is too tall, the image will not be
+        stretched more than 1:1 pixels.
+    volume : float (Parameter, optional, default = 1.0)
+        Volume of the video, in the range 0-1. 1 means full volume, 0 means
+        mute.
+    position : float (Property)
+        Position of the video between 0 and duration. The position defaults to
+        -1 and is set to a real position when the video is loaded.
 
-    Widget Parameters
-    -----------------
-    This state has all the same widget parameters has WidgetState. For an idea
-    as to what should also be passed into this state, please refer back to the
-    WidgetState Documentation. Below are parameters that are exclusive to this
-    widget.
-
-    allow_stretch : boolean
-        If True, the video will be stretched to fit the widget's size.
+    For other parameters or properties that this Widget might have, refer to the
+    Kivy documentation for 'kivy.uix.image. <https://kivy.org/docs/api-kivy.uix.Video.html>'_
 
     """
     def _set_widget_defaults(self):
@@ -1363,19 +1386,41 @@ class Image(WidgetState.wrap(kivy.uix.image.Image)):
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
         running. Only relevent if within a *ParallelParent*.
-    source : string
-        Filename or source of your image file.
 
-    Widget Parameters
-    -----------------
-    This state has all the same widget parameters has WidgetState. For an idea
-    as to what should also be passed into this state, please refer back to the
-    WidgetState Documentation. Below are parameters that are exclusive to this
-    widget.
+    Kivy Parameters and Properties
+    ------------------------------
+    Below is the docstring attached to the Kivy widget that this WidgetState is
+    based on. Any of the parameters listed below are able to be used by this
+    WidgetState and can be passed into it the same way any other parameter can.
+    Any of the internal properties that are readable by this Kivy Widget are
+    readable during Experimental Run Time.
 
-    allow_stretch : boolean
-        If True, the image will fill the space that the size of the Image
-        WidgetState takes up.
+    source : string (Parameter)
+        Filename or source of your video file.
+    allow_strech : boolean (Parameter, optional, default = False)
+        If True, the normalized image size will be maximized to fit in the image
+        box. Otherwise, if the box is too tall, the image will not be stretched
+        more than 1:1 pixels.
+    keep_ratio : boolean (Parameter, optional, default = True)
+        If False along with allow_stretch being True, the normalized image size
+        will be maximized to fit in the image box and ignores the aspect ratio
+        of the image. Otherwise, if the box is too tall, the image will not be
+        stretched more than 1:1 pixels.
+    anim_loop : integer (Parameter, optional, default = 0)
+        Number of loops to play then stop animating a nonstatic image like a
+        gif. 0 means keep animating.
+    anim_delay : float (Parameter, optional, default = .25 (meaning 4 FPS))
+        Delay the animation if the image is sequenced (like an animated gif). If
+        anim_delay is set to -1, the animation will be stopped.
+    color : list (Parameter, optional, default = [1.0, 1.0, 1.0, 1.0])
+        Image color, in the format (r, g, b, a). This attribute can be used to
+        ‘tint’ an image. Be careful: if the source image is not gray/white, the
+        color will not really work as expected.
+    image_ratio : list (Property)
+        Ratio of the image (width / float(height).
+
+    For other parameters or properties that this Widget might have, refer to the
+    Kivy documentation for 'kivy.uix.image. <https://kivy.org/docs/api-kivy.uix.image.html>'_
 
     """
     def _set_widget_defaults(self):
@@ -1394,8 +1439,6 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
 
     Parameters
     ----------
-    text : string
-        The string of text that you would like to present
     duration : float
         A float value in seconds that this image lasts for.
     parent : ParentState
@@ -1409,9 +1452,47 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
         False, this state will be canceled if its *ParallelParent* finishes
         running. Only relevent if within a *ParallelParent*.
 
-    Widget Parameters
-    -----------------
-    bold : boolean
+    Kivy Parameters and Properties
+    ------------------------------
+    Below is the docstring attached to the Kivy widget that this WidgetState is
+    based on. Any of the parameters listed below are able to be used by this
+    WidgetState and can be passed into it the same way any other parameter can.
+    Any of the internal properties that are readable by this Kivy Widget are
+    readable during Experimental Run Time.
+
+    text : string (Parameter)
+        The string of text that you would like to present
+    bold : boolean (Parameter, optional, default = False)
+        Indicates use of the bold version of your font.
+    italic : boolean (Parameter, optional, default = False)
+        Indicates use of the italic version of your font.
+    color : boolean (Parameter, optional, default = [1.0, 1.0, 1.0, 1.0])
+        Text color, in the format (r, g, b, a).
+    font_name : string (Parameter, optional, default = "Roboto")
+        Filename of the font to use. The path can be absolute or relative.
+        Relative paths are resolved by the resource_find() function.
+    font_size : integer (Parameter, optional, default = 15)
+        Font size of the text, in pixels.
+    max_lines : integer (Parameter, optional, default = 0)
+        Maximum number of lines to use, defaults to 0, which means unlimited.
+        Please note that shorten take over this property. (with shorten, the
+        text is always one line.)
+    outline_color : list (Parameter, optional, default = [1.0, 1.0, 1.0])
+        The color of the text outline, in the (r, g, b) format.
+    outline_width : intger (Parameter, optional, default = None)
+        Width in pixels for the outline around the text. No outline will be
+        rendered if the value is None.
+
+
+
+
+
+
+
+
+
+
+
     """
     def _set_widget_defaults(self):
         # we need to update the texture now
