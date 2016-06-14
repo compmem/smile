@@ -1195,24 +1195,7 @@ vertex_instructions = [
 for instr in vertex_instructions:
     exec("%s = WidgetState.wrap(vertex_instruction_widget(kivy.graphics.%s))" %
          (instr, instr))
-#widget_docs = {
-#    "Button" : {"__doc__": """
-#                           """,
-#                "__init__" : },
-#    "Slider" : {"__doc__": ,
-#                "__init__" : },
-#    "TextInput" : {"__doc__": ,
-#                "__init__" : },
-#    "ToggleButton" : {"__doc__": ,
-#                "__init__" : },
-#    "ProgressBar" : {"__doc__": ,
-#                "__init__" : }
-#}
 
-
-# handle kivy window loading bug
-# override the sp, which loads a Window to call dpi2px
-# TODO: make this conditional on actually running
 def _sp(value):
     return float(value)
 _sp_save = kivy.metrics.sp
@@ -1246,6 +1229,219 @@ for widget in widgets:
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
 
+Button.__doc__ == """
+A **WidgetState** that shows a button in the window.
+
+Use this state when you would like to show a button on the screen. This State
+will display a button that can be clicked by a mouse cursor. When used in
+conjunction with the **ButtonPress** state, you can create multiple buttons, all
+with different colors, text, or even images.
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+background_color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
+    Background color, in the format (r, g, b, a).
+
+    This acts as a multiplier to the texture colour. The default texture is
+    grey, so just setting the background color will give a darker result. To set
+    a plain color, set the background_normal to ''.
+background_disabled_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/button_disabled_pressed")
+    Background image of the button used for the default graphical representation
+    when the button is disabled and pressed.
+background_disabled_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/button_disabled")
+    Background image of the button used for the default graphical representation
+    when the button is disabled and not pressed.
+background_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/button_pressed")
+    Background image of the button used for the default graphical representation
+    when the button is pressed.
+background_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/button")
+    Background image of the button used for the default graphical representation
+    when the button is not pressed.
+border : list (Parameter, optional, default=[16, 16, 16, 16])
+    Border used for BorderImage graphics instruction. Used with
+    background_normal and background_down. Can be used for custom backgrounds.
+
+    It must be a list of four values: (top, right, bottom, left). Read the
+    BorderImage instruction for more information about how to use it.
+
+See **Label** for other Kivy Parameters. Most parameters that can be passed into
+**Label** can be passed into Button.
+
+See **ButtonPress** for an example on how to use buttons.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.image. <https://kivy.org/docs/api-kivy.uix.button.html>'_
+"""
+
+Slider.__doc__ = """A **WidgetState** to display a Slider style input.
+
+This state will display a varying size Slider that can be used in conjunction
+with a **MouseCursor** to record a continuum input for your experiment.
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+max : integer (Parameter, optional, default=100)
+    Maximum value allowed for *value*.
+min : integer (Parameter, optional, default=0)
+    Minimum value allowed for *value*.
+orientation : string (Parameter, optional, default="horizontal")
+    Orientation of the slider. Can take a value of ‘vertical’ or ‘horizontal’.
+padding : integer (Parameter, optional, default=16)
+    Padding of the slider. The padding is used for graphical representation and
+    interaction. It prevents the cursor from going out of the bounds of the
+    slider bounding box.
+
+    By default, padding is 16sp. The range of the slider is reduced from
+    padding*2 on the screen. It allows drawing the default cursor of 32sp width
+    without having the cursor go out of the widget.
+range : list (Property)
+    Range of the slider in the format (minimum value, maximum value).
+step : float (Parameter, optional, default=1)
+    Step size of the slider.
+
+    Determines the size of each interval or step the slider takes between min
+    and max. If the value range can’t be evenly divisible by step the last step
+    will be capped by slider.max
+value : float (Property)
+    Current value used for the slider.
+value_normalized : float (Property)
+    Normalized value inside the range (min/max) to 0-1 range.
+value_pos : float (Property)
+    Position of the internal cursor, based on the normalized value.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.image. <https://kivy.org/docs/api-kivy.uix.slider.html>'_
+
+
+"""
+
+TextInput.__doc__ = """A **WidgetState** that will display a box for typing text.
+
+With this **WidgetState**, you can display a box that allows participants to
+enter text. This text box can be of any size on the screen, be single or multi
+line, and even restrict the kinds of characters that can be typed into it.
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+
+
+"""
+
+ToggleButton.__doc__ = """
+
+"""
+
+ProgressBar.__doc__ = """
+
+"""
+
+CodeInput.__doc__ = """
+
+
+"""
+
+CheckBox.__doc__ = """
+
+"""
+
+Camera.__doc__ = """
+
+"""
+
+
+
+
+
+
+
+
+
+
 import kivy.uix.rst
 RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
 
@@ -1269,8 +1465,8 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
     website to check the available file types. This state ends when the
     video is over.
 
-    WidgetState Paramters
-    ---------------------
+    Paramters
+    ---------
     duration : float (optional, default = None)
         The duration of this state, or how long you want the video to play. If
         the *duration* is less than the duration of the file, than the video
@@ -1287,6 +1483,13 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
         running. Only relevent if within a *ParallelParent*.
+
+    Positional Parameters
+    ---------------------
+    All **WidgetState** States have the ability to set the positional variables
+    as parameters when building the states. Please see **WidgetState** for the
+    positional paramters you can set.
+
 
     Kivy Parameters and Properties
     ------------------------------
@@ -1452,6 +1655,12 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
         False, this state will be canceled if its *ParallelParent* finishes
         running. Only relevent if within a *ParallelParent*.
 
+    Positional Parameters
+    ---------------------
+    All **WidgetState** States have the ability to set the positional variables
+    as parameters when building the states. Please see **WidgetState** for the
+    positional paramters you can set.
+
     Kivy Parameters and Properties
     ------------------------------
     Below is the docstring attached to the Kivy widget that this WidgetState is
@@ -1477,21 +1686,77 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
         Maximum number of lines to use, defaults to 0, which means unlimited.
         Please note that shorten take over this property. (with shorten, the
         text is always one line.)
-    outline_color : list (Parameter, optional, default = [1.0, 1.0, 1.0])
-        The color of the text outline, in the (r, g, b) format.
-    outline_width : intger (Parameter, optional, default = None)
-        Width in pixels for the outline around the text. No outline will be
-        rendered if the value is None.
+    padding : list (Parameter, optional, default=[0,0])
+        Padding of the text in the format (padding_x, padding_y)
+    padding_x : integer (Parameter, optional, default=0)
+        Horizontal padding of the text inside the widget box.
+    padding_y : integer (Parameter, optional, default=0)
+        Vertical padding of the text inside the widget box.
+    shorten : boolean (Paremter, optional, default=False)
+        Indicates whether the label should attempt to shorten its textual
+        contents as much as possible if a text_size is given. Setting this to
+        True without an appropriately set text_size will lead to unexpected
+        results.
 
+        shorten_from and split_str control the direction from which the text is
+        split, as well as where in the text we are allowed to split.
+    shorten_from : string (Parameter, optional, default="center")
+        The side from which we should shorten the text from, can be "left", "
+        right", or "center".
 
+        For example, if left, the ellipsis will appear towards the left side and
+        we will display as much text starting from the right as possible.
+        Similar to shorten, this option only applies when text_size [0] is not
+        None, In this case, the string is shortened to fit within the specified
+        width.
+    split_str : string (Parameter, optional, default="")
+        The string used to split the text while shortening the string when
+        shorten is True.
 
+        For example, if it’s a space, the string will be broken into words and
+        as many whole words that can fit into a single line will be displayed.
+        If shorten_from is the empty string, ‘’, we split on every character
+        fitting as much text as possible into the line.
+    strip : boolean (Parameter, optional, default=False)
+        Whether leading and trailing spaces and newlines should be stripped from
+        each displayed line. If True, every line will start at the right or left
+        edge, depending on halign. If halign is justify it is implicitly True.
+    text_size : list (Parameter, optional, default=[Nonce, None])
+        By default, the label is not constrained to any bounding box. You can
+        set the size constraint of the label with this property. The text will
+        autoflow into the constrains. So although the font size will not be
+        reduced, the text will be arranged to fit into the box as best as
+        possible, with any text still outside the box clipped.
 
+        This sets and clips texture_size to text_size if not None.
 
+        For example, whatever your current widget size is, if you want the label
+        to be created in a box with width=200 and unlimited height:
 
+            Label(text='Very big big line', text_size=(200, None))
+    texture : object (Property)
+        Texture object of the text. The text is rendered automatically when a
+        property changes. The OpenGL texture created in this operation is stored
+        in this property. You can use this texture for any graphics elements.
 
+        Depending on the texture creation, the value will be a Texture or
+        TextureRegion object.
+    texture_size : list (Property)
+        Texture size of the text. The size is determined by the font size and
+        text. If text_size is [None, None], the texture will be the size
+        required to fit the text, otherwise it’s clipped to fit text_size.
 
+        When text_size is [None, None], one can bind to texture_size and rescale
+        it proportionally to fit the size of the label in order to make the text
+        fit maximally in the label.
+    unicode_errors : string (Parameter, optional, default="replace")
+        How to handle unicode decode errors. Can be ‘strict’, ‘replace’ or
+        ‘ignore’.
+    valign : string (Parameter, optional, default="bottom")
+        Vertical alignment of the text. Can be "bottom", "middle", or "top"
 
-
+    For other parameters or properties that this Widget might have, refer to the
+    Kivy documentation for 'kivy.uix.image. <https://kivy.org/docs/api-kivy.uix.lable.html>'_
 
     """
     def _set_widget_defaults(self):
