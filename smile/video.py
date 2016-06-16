@@ -2307,39 +2307,707 @@ For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.FloatLayout. <https://kivy.org/docs/api-kivy.uix.floatlayout.html>'_
 
 """
-RelativeLayout.__doc__ = """
+RelativeLayout.__doc__ = """A **WidgetState** Layout where its children are positioned realitive to itself.
+
+In this layout, all of the **WidgetStates** that are children of it use the
+position of this layout as (0, 0). Also if you update the position of this
+layout, the positions of the **WidgetStates** within will also be updated
+automatically.
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+pos : list (Parameter, optional, default=[screen.width/2, screen.height/2])
+    Position of the layout in format (x,y). If you pass in any of the
+    positional parameters of a WidgetState, like center_x or center_y, this
+    widget will fill in pos automatically.
+size : list (Parameter, optional, default=[50, 50])
+    Size of the layout in format (width, height). If you pass in any of the
+    positional parameters of a WidgetState, like width or height, this
+    widget will fill in size automatically.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.RelativeLayout. <https://kivy.org/docs/api-kivy.uix.relativelayout.html>'_
 
 """
-GridLayout.__doc__ = """
+GridLayout.__doc__ = """A **WidgetState** that arranges children in a matrix.
+
+This layout takes the available size of the layout, and splits it evenly between
+its children based on the number of columns and rows that are set in the
+parameters of the layout.
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+pos : list (Parameter, optional, default=[screen.width/2, screen.height/2])
+    Position of the layout in format (x,y). If you pass in any of the
+    positional parameters of a WidgetState, like center_x or center_y, this
+    widget will fill in pos automatically.
+size : list (Parameter, optional, default=[50, 50])
+    Size of the layout in format (width, height). If you pass in any of the
+    positional parameters of a WidgetState, like width or height, this
+    widget will fill in size automatically.
+rows : integer (Parameter, optional, default=0)
+    Number of rows in the grid.
+row_default_height : integer (Parameter, optional, default=0)
+    Default minimum size to use for a height.
+row_force_default : boolean (Parameter, optional, default=False)
+    If True, ignore the height and size_hint_y of the child and use the default
+    row height.
+row_minimum : dictionary (Parameter, optional, default={})
+    Dict of minimum height for each row. The dictionary keys are the row
+    numbers, e.g. 0, 1, 2...
+cols : integer (Parameter, optional, default=0)
+    Number of columns in the grid.
+col_default_width : integer (Parameter, optional, default=0)
+    Default minimum size to use for a column.
+col_force_default : boolean (Parameter, optional, default=False)
+    If True, ignore the width and size_hint_x of the child and use the default
+    column width.
+col_minimum : dictionary (Parameter, optional, default={})
+    Dict of minimum width for each column. The dictionary keys are the column
+    numbers, e.g. 0, 1, 2...
+minimum_height : integer (Property)
+    Automatically computed minimum height needed to contain all children.
+minimum_width : integer (Property)
+    Automatically computed minimum width needed to contain all children.
+minimum_size : list (Property)
+    Automatically computed minimum size needed to contain all children.
+padding : list (Parameter, optional, default=[0, 0, 0, 0])
+    Padding between the widget box and its children, in pixels: [padding_left,
+    padding_top, padding_right, padding_bottom].
+
+    padding also accepts a two argument form [padding_horizontal,
+    padding_vertical] and a one argument form [padding].
+spacing : integer (Parameter, optional, default=0)
+    Spacing between children, in pixels.
+
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.GridLayout. <https://kivy.org/docs/api-kivy.uix.gridlayout.html>'_
+
 
 """
-PageLayout.__doc__ = """
+PageLayout.__doc__ = """A **WidgetState** used to create a paged layout.
+
+Use this **WidgetState** to when you want to create a set of pages that can be
+*swiped* around. When used in conjuction with other layouts, each layout will be
+a different page.
+
+Example
+-------
+
+::
+
+    from smile.common import *
+
+    exp = Experiment()
+
+    with PageLayout(size=exp.screen.size) as pg:
+        with RelativeLayout():
+            Label(text="bob", x=20, y=20, font_size=100)
+        with GridLayout(rows=2):
+            Button(text="ROWS : 2")
+            Button(text="ROWS : 2")
+            Button(text="ROWS : 2")
+            Button(text="ROWS : 2")
+            Button(text="ROWS : 2")
+        with RelativeLayout(size=pg.size, x=0, y=0):
+            Rectangle(size=pg.size)
+            with GridLayout(cols=3):
+                Button(text="COLS : 3")
+                Button(text="COLS : 3")
+                Button(text="COLS : 3")
+                Button(text="COLS : 3")
+                Button(text="COLS : 3")
+
+    with Meanwhile():
+        MouseCursor()
+    exp.run()
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+pos : list (Parameter, optional, default=[screen.width/2, screen.height/2])
+    Position of the layout in format (x,y). If you pass in any of the
+    positional parameters of a WidgetState, like center_x or center_y, this
+    widget will fill in pos automatically.
+size : list (Parameter, optional, default=[50, 50])
+    Size of the layout in format (width, height). If you pass in any of the
+    positional parameters of a WidgetState, like width or height, this
+    widget will fill in size automatically.
+border : integer (Parameter, optional, default=50)
+    The width of the border around the current page used to display the
+    previous/next page swipe areas when needed.
+page : integer (Property)
+    The currently displayed page.
+swipe_threshold : float (Parameter, optional, default=0.5)
+    The thresold used to trigger swipes as percentage of the widget size.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.PageLayout. <https://kivy.org/docs/api-kivy.uix.pagelayout.html>'_
 
 """
-ScatterLayout.__doc__ = """
+ScatterLayout.__doc__ = """A **WidgetState** that allows for rotation, translation, and scalling.
+
+Use this **WidgetState** when you want to be able to use clicks and drags to
+control and adjust the size, rotation, or postion of its children.
+
+Example
+-------
+
+::
+
+    from smile.common import *
+
+    exp = Experiment()
+
+    with ScatterLayout(size=exp.screen.size,scale=5) as sc:
+        Rectangle()
+    with Meanwhile():
+        MouseCursor()
+    with Meanwhile():
+        with Loop() as l:
+            sc.update(rotation=l.i)
+            Wait(.2)
+    exp.run()
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+pos : list (Parameter, optional, default=[screen.width/2, screen.height/2])
+    Position of the layout in format (x,y). If you pass in any of the
+    positional parameters of a WidgetState, like center_x or center_y, this
+    widget will fill in pos automatically.
+size : list (Parameter, optional, default=[50, 50])
+    Size of the layout in format (width, height). If you pass in any of the
+    positional parameters of a WidgetState, like width or height, this
+    widget will fill in size automatically.
+bbox : list (Property)
+    Bounding box of the widget in parent space: ((x, y), (w, h))
+do_rotation : boolean (Parameter, optional, default=True)
+    Allow roation.
+do_scale : boolean (Parameter, optional, default=True)
+    Allow scaling.
+do_translation_x : boolean (Parameter, optional, default=True)
+    Allow translation on the X axis.
+do_translation_y : boolean (Parameter, optional, default=True)
+    Allow translation on the Y axis.
+rotation : float (Parameter, optional, default=0.0)
+    Current rotation of the layout.
+scale : float (Parameter, optional, default=1.0)
+    Current scale of the layout.
+scale_max : float (Parameter, optional, default=1x10^20)
+    Maximum scaling factor allowed.
+scale_min : float (Parameter, optional, default=0.01)
+    Minimum scaling factor allowed.
+transform : matrix (Parameter, optional, default=The identity matrix)
+    Transformation matrix.
+transform_inv : matrix (Parameter, optional, default=The identity matrix)
+    Inverse of the transformation matrix.
+translation_touches : integer (Parameter, optional, default=1)
+    Determine whether translation was triggered by a single or multiple touches.
+    This only has effect when do_translation = True.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.ScatterLayout. <https://kivy.org/docs/api-kivy.uix.scatterlayout.html>'_
 
 """
-StackLayout.__doc__ = """
+StackLayout.__doc__ = """A **WidgetState** that arranges its children to make them fit.
+
+Use this layout to stack child states vertically or horizontally to the best of
+the ability of the layout give its size. The invididual children do not have to
+be the same size in this layout.
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+pos : list (Parameter, optional, default=[screen.width/2, screen.height/2])
+    Position of the layout in format (x,y). If you pass in any of the
+    positional parameters of a WidgetState, like center_x or center_y, this
+    widget will fill in pos automatically.
+size : list (Parameter, optional, default=[50, 50])
+    Size of the layout in format (width, height). If you pass in any of the
+    positional parameters of a WidgetState, like width or height, this
+    widget will fill in size automatically.
+minimum_height : integer (Parameter, optional, default=0)
+    Minimum height needed to contain all children. It is automatically set by
+    the layout.
+minimum_width : integer (Parameter, optional, default=0)
+    Minimum width needed to contain all children. It is automatically set by the
+    layout.
+minimum_size : list (Parameter, optional, default=[0, 0])
+    Minimum size needed to contain all children. It is automatically set by the
+    layout.
+orientation : string (Parameter, optional, default=‘lr-tb’)
+    Orientation of the layout. Valid orientations are ‘lr-tb’, ‘tb-lr’,
+    ‘rl-tb’, ‘tb-rl’, ‘lr-bt’, ‘bt-lr’, ‘rl-bt’ and ‘bt-rl’.
+padding : list (Parameter, optional, default=[0, 0, 0, 0])
+    Padding between the widget box and its children, in pixels: [padding_left,
+    padding_top, padding_right, padding_bottom].
+
+    padding also accepts a two argument form [padding_horizontal,
+    padding_vertical] and a one argument form [padding].
+spacing : integer (Parameter, optional, default=0)
+    Spacing between children, in pixels.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.StackLayout. <https://kivy.org/docs/api-kivy.uix.stacklayout.html>'_
 
 """
-ScrollView.__doc__ = """
+ScrollView.__doc__ = """A **WidgetState** for scrollable/pannable viewing.
+
+Use this layout if you would like to scroll through an area that is bigger than
+the experiment window. You can set the ability to scroll horizontally and
+vertically, and change some of the properties of the bar that dictates the
+scroll position.
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+pos : list (Parameter, optional, default=[screen.width/2, screen.height/2])
+    Position of the layout in format (x,y). If you pass in any of the
+    positional parameters of a WidgetState, like center_x or center_y, this
+    widget will fill in pos automatically.
+size : list (Parameter, optional, default=[50, 50])
+    Size of the layout in format (width, height). If you pass in any of the
+    positional parameters of a WidgetState, like width or height, this
+    widget will fill in size automatically.
+do_scroll_x : boolean (Parameter, optional, default=True)
+    Allow scroll on X axis.
+do_scroll_y : boolean (Parameter, optional, default=True)
+    Allow scroll on X axis.
+bar_color : list (Parameter, optional, default=[0.7, 0.7, 0.7, 0.9])
+    Color of horizontal / vertical scroll bar, in RGBA format.
+bar_inactive_color : list (Parameter, optional, default=[0.7, 0.7, 0.7, 0.2])
+    Color of horizontal / vertical scroll bar (in RGBA format), when no scroll
+    is happening.
+bar_margin : integer (Parameter, optional, default=0)
+    Margin between the bottom / right side of the scrollview when drawing the
+    horizontal / vertical scroll bar.
+bar_pos : list (Parameter, optional, default=["bottom", "right"])
+    Which side of the scroll view to place each of the bars on.
+    (bar_pos_x, bar_pos_y)
+bar_pos_x : string (Parameter, optional, default="bottom")
+    Which side of the ScrollView the horizontal scroll bar should go on.
+    Possible values are ‘top’ and ‘bottom’.
+bar_box_y : string (Parameter, optional, default="right")
+    Which side of the ScrollView the vertical scroll bar should go on. Possible
+    values are ‘left’ and ‘right’.
+bar_width : integer (Parameter, optional, default=2)
+    Width of the horizontal / vertical scroll bar. The width is interpreted as a
+    height for the horizontal bar.
+hbar : list (Property)
+    Return a tuple of (position, size) of the horizontal scrolling bar.
+
+    The position and size are normalized between 0-1, and represent a percentage
+    of the current scrollview height. This property is used internally for
+    drawing the little horizontal bar when you’re scrolling.
+scroll_distance : integer (Parameter, optional, default=20)
+    Distance to move before scrolling the ScrollView, in pixels. As soon as the
+    distance has been traveled, the ScrollView will start to scroll, and no
+    touch event will go to children. It is advisable that you base this value on
+    the dpi of your target device’s screen.
+scroll_timeout : integer (Parameter, optional, default=55)
+    Timeout allowed to trigger the scroll_distance, in milliseconds. If the user
+    has not moved scroll_distance within the timeout, the scrolling will be
+    disabled, and the touch event will go to the children.
+scroll_type : list (Parameter, optional, default=[‘content’])
+    Sets the type of scrolling to use for the content of the scrollview.
+    Available options are: [‘content’], [‘bars’], [‘bars’, ‘content’].
+scroll_wheel_distance : integer (Parameter, optional, default=20)
+    Distance to move when scrolling with a mouse wheel in pixels. It is
+    advisable that you base this value on the dpi of your target device’s
+    screen.
+scroll_x : float (Property)
+    X scrolling value, between 0 and 1. If 0, the content’s left side will touch
+    the left side of the ScrollView. If 1, the content’s right side will touch
+    the right side.
+scroll_y : float (Property)
+    Y scrolling value, between 0 and 1. If 0, the content’s bottom side will
+    touch the bottom side of the ScrollView. If 1, the content’s top side will
+    touch the top side.
+vbar : list (Property)
+    Return a tuple of (position, size) of the vertical scrolling bar.
+
+    The position and size are normalized between 0-1, and represent a percentage
+    of the current scrollview height. This property is used internally for
+    drawing the little vertical bar when you’re scrolling.
+viewport_size : integer (Property)
+    (internal) Size of the internal viewport. This is the size of your only
+    child in the scrollview.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.ScrollLayout. <https://kivy.org/docs/api-kivy.uix.Scrolllayout.html>'_
+
 
 """
-
-
-
-
-
-
-
 
 
 import kivy.uix.rst
 RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
 
+RstDocument.__doc__="""A **WidgetState** for displaying RST documents.
+
+This **WidgetState** allows you to control the colors, fonts, and functions as
+a **ScrollView**. See **ScrollView** for other parameters you can use in this
+**WidgetState**.
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+pos : list (Parameter, optional, default=[screen.width/2, screen.height/2])
+    Position of the layout in format (x,y). If you pass in any of the
+    positional parameters of a WidgetState, like center_x or center_y, this
+    widget will fill in pos automatically.
+size : list (Parameter, optional, default=[50, 50])
+    Size of the layout in format (width, height). If you pass in any of the
+    positional parameters of a WidgetState, like width or height, this
+    widget will fill in size automatically.
+text : string (Parameter, optional, default=None)
+    RST markup text of the document.
+title : string (Property)
+    Title of the current document. Read-only
+source : string (Parameter, optional, default="")
+    Filename of the RST document.
+background_color : string (Parameter, optional, default='e5e6e9ff')
+    Specifies the background_color to be used for the RstDocument.
+base_font_size : integer (Parameter, optional, default=31)
+        Font size for the biggest title. All other font sizes are
+        derived from this.
+colors : dictionary (Parameter, optional, default listed below)
+    Dictionary of all the colors used in the RST rendering.
+
+    Defaults
+
+       - 'paragraph' : '202020ff'
+       - 'link' : 'ce5c00ff
+       - 'bullet' : '000000ff'
+       - 'background' : 'e5e6e9ff'
+       - 'title' : '204a87ff'
+document_root : string (Parameter, optional, default=None)
+    Root path where :doc: will search for rst documents. If no path is given, it
+    will use the directory of the first loaded source file.
+show_errors : boolean (Parameter, optional, default=False)
+    Indicate whether RST parsers errors should be shown on the screen or not.
+source_encoding : string (Parameter, optional, default='utf-8')
+    Encoding to be used for the source file.
+source_error : string (Parameter, optional, default="strict"
+    Error handling to be used while encoding the source file. Can be one of
+    ‘strict’, ‘ignore’, ‘replace’, ‘xmlcharrefreplace’ or ‘backslashreplac’.
+title : string (Property)
+    Title of the current document. Read-only.
+toctrees : dictionary (Property)
+    Toctree of all loaded or preloaded documents. This dictionary is filled when
+    a rst document is explicitly loaded or where preload() has been called.
+
+    If the document has no filename, e.g. when the document is loaded from a
+    text file, the key will be ‘’.
+underline_color : string (Parameter, optional, default=‘204a9699’)
+    Underline color of the titles, expressed in html color notation.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.rst. <https://kivy.org/docs/api-kivy.uix.rst.html>'_
+
+
+
+"""
+
 import kivy.uix.filechooser
 FileChooserListView = WidgetState.wrap(kivy.uix.filechooser.FileChooserListView)
 
+FileChooserListView.__doc__="""A **WidgetState** that displays and selects files and directories.
+
+Only used in the spash screen of SMILE, this state is useful if you are trying
+to design your own splash screen.
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+pos : list (Parameter, optional, default=[screen.width/2, screen.height/2])
+    Position of the layout in format (x,y). If you pass in any of the
+    positional parameters of a WidgetState, like center_x or center_y, this
+    widget will fill in pos automatically.
+size : list (Parameter, optional, default=[50, 50])
+    Size of the layout in format (width, height). If you pass in any of the
+    positional parameters of a WidgetState, like width or height, this
+    widget will fill in size automatically.
+dirselect : boolean (Parameter, optional, default=False)
+    Determines whether directories are valid selections or not.
+file_econdings : list (Parameter, optional, default=[‘utf-8’, ‘latin1’, ‘cp1252’])
+    Possible encodings for decoding a filename to unicode. In the case that the
+    user has a non-ascii filename, undecodable without knowing it’s initial
+    encoding, we have no other choice than to guess it.
+
+    Please note that if you encounter an issue because of a missing encoding
+    here, we’ll be glad to add it to this list.
+file_system : object (Parameter, optional, default=FileSystemLocal())
+    The file system object used to access the file system. This should be a
+    subclass of FileSystemAbstract.
+files : list (Property)
+    The list of files in the directory specified by path after applying the
+    filters. Read-only.
+filter_dirs : boolean (Parameter, optional, default=False)
+    Indicates whether filters should also apply to directories.
+filters : list (Parameter, optional, default=[])
+    filters specifies the filters to be applied to the files in the directory.
+    filters is a ListProperty and defaults to []. This is equivalent to ‘*’ i.e.
+    nothing is filtered.
+
+    The filters are not reset when the path changes. You need to do that
+    yourself if desired.
+
+    There are two kinds of filters: patterns and callbacks. Patterns are strings
+    that match the file name patteres. Use '*' to match all files, or '*.png' to
+    only match png files. You can also use a sequence of characters to match any
+    files with that sequence in it.
+
+    callbacks are just a function that takes the folder and the file as the
+    parameters, in that order. If you write a callback function, it must take
+    2 parameters and return True to indicate a match, and False to indicate
+    otherwise.
+layout : object (Property)
+    Reference to the layout widget instance.
+multiselect : boolean (Parameter, optional, default=False)
+    Determines whether the user is able to select multiple files or not.
+path : string (Parameter, optional, defaults to current working directory)
+    It specifies the path on the filesystem that this controller should refer
+    to.
+rootpath : string (Parameter, optional, default=None)
+    Root path to use instead of the system root path. If set, it will not show a
+    ”..” directory to go up to the root path. For example, if you set rootpath
+    to /users/foo, the user will be unable to go to /users or to any other
+    directory not starting with /users/foo.
+selection : list (Property)
+    Contains the list of files that are currently selected.
+show_hidden : boolean (Parameter, optional, default=False)
+    Determines whether hidden files and folders should be shown.
+sort_func : object (Parameter, optional, defaults to a function returning alphanumerically named folders first.)
+    Provides a function to be called with a list of filenames as the first
+    argument and the filesystem implementation as the second argument. It
+    returns a list of filenames sorted for display in the view.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.filechooser. <https://kivy.org/docs/api-kivy.uix.filechooser.html>'_
+
+
+"""
 
 # set the sp function back
 kivy.metrics.sp = _sp_save
