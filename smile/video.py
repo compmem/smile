@@ -1285,8 +1285,8 @@ vertices : list (Parameter)
 indices : list (Parameter)
     List of indices in the format (i1, i2, i3...).
 mode : string (Parameter, optional, default="points")
-    Mode of the vbo. Can be one of ‘points’, ‘line_strip’, ‘line_loop’,
-    ‘lines’, ‘triangles’, ‘triangle_strip’ or ‘triangle_fan’.
+    Mode of the vbo. Can be one of "points", "line_strip", "line_loop",
+    "lines", "triangles", "triangle_strip" or "triangle_fan".
 fmt : list (Property)
     The format for vertices, by default, each vertex is described by 2D
     coordinates (x, y) and 2D texture coordinate (u, v). Each element of the
@@ -1296,13 +1296,13 @@ fmt : list (Property)
 
     which will allow mapping vertex data to the glsl instructions.
 
-        [(b’v_pos’, 2, b’float’), (b’v_tc’, 2, b’float’),]
+        [(b"v_pos", 2, b"float"), (b"v_tc", 2, b"float"),]
 
     will allow using
 
         attribute vec2 v_pos; attribute vec2 v_tc;
 
-    in glsl’s vertex shader.
+    in glsl's vertex shader.
 color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     The color of this mesh in (r, g, b, a) format.
 
@@ -1644,7 +1644,7 @@ background_color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
 
     This acts as a multiplier to the texture colour. The default texture is
     grey, so just setting the background color will give a darker result. To set
-    a plain color, set the background_normal to ''.
+    a plain color, set the background_normal to "".
 background_disabled_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/button_disabled_pressed")
     Background image of the button used for the default graphical representation
     when the button is disabled and pressed.
@@ -1664,9 +1664,9 @@ border : list (Parameter, optional, default=[16, 16, 16, 16])
     It must be a list of four values: (top, right, bottom, left). Read the
     BorderImage instruction for more information about how to use it.
 state : string (Property)
-    The state of the button, must be one of ‘normal’ or ‘down’. The state is
-    ‘down’ only when the button is currently touched/clicked, otherwise its
-    ‘normal’.
+    The state of the button, must be one of "normal" or "down". The state is
+    "down" only when the button is currently touched/clicked, otherwise its
+    "normal".
 
 See **Label** for other Kivy Parameters. Most parameters that can be passed into
 **Label** can be passed into Button.
@@ -1717,7 +1717,7 @@ max : integer (Parameter, optional, default=100)
 min : integer (Parameter, optional, default=0)
     Minimum value allowed for *value*.
 orientation : string (Parameter, optional, default="horizontal")
-    Orientation of the slider. Can take a value of ‘vertical’ or ‘horizontal’.
+    Orientation of the slider. Can take a value of "vertical" or "horizontal".
 padding : integer (Parameter, optional, default=16)
     Padding of the slider. The padding is used for graphical representation and
     interaction. It prevents the cursor from going out of the bounds of the
@@ -1732,7 +1732,7 @@ step : float (Parameter, optional, default=1)
     Step size of the slider.
 
     Determines the size of each interval or step the slider takes between min
-    and max. If the value range can’t be evenly divisible by step the last step
+    and max. If the value range can't be evenly divisible by step the last step
     will be capped by slider.max
 value : float (Property)
     Current value used for the slider.
@@ -1789,18 +1789,18 @@ allow_copy : boolean (Parameter, optional, default=True)
     Decides whether to allow copying the text.
 auto_indent : boolean (Parameter, optional, default=False)
     Automatically indent multiline text.
-background_active : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/textinput_active’)
-    Background image of the TextInput when it’s in focus.
+background_active : string (Parameter, optional, default="atlas://data/images/defaulttheme/textinput_active")
+    Background image of the TextInput when it's in focus.
 background_color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     Current color of the background, in (r, g, b, a) format.
 foreground_color : list (Parameter, optional, default=[0.0, 0.0, 0.0, 1.0])
     Current color of the foreground, in (r, g, b, a) format.
 disabled_foreground_color : list (Parameter, optional, default=[0.0, 0.0, 0.0, 0;5])
     Current color of the foreground when disabled, in (r, g, b, a) format.
-background_disabled_normal : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/textinput_disabled’)
+background_disabled_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/textinput_disabled")
     Background image of the TextInput when disabled.
-background_normal : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/textinput’)
-    Background image of the TextInput when it’s not in focus.
+background_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/textinput")
+    Background image of the TextInput when it's not in focus.
 border : list (Parameter, optional, default=[4.0, 4.0, 4.0, 4.0])
     Border used for BorderImage graphics instruction. Used with
     background_normal and background_active. Can be used for a custom
@@ -1826,22 +1826,22 @@ font_name : string (Parameter, optional, default="Roboto")
     Filename of the font to use. The path can be absolute or relative.
 font_size : integer (Parameter, optional, default=10)
     Font size of the text in pixels.
-handle_image_left : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/selector_left’)
+handle_image_left : string (Parameter, optional, default="atlas://data/images/defaulttheme/selector_left")
     Image used to display the Left handle on the TextInput for selection.
-handle_image_middle : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/selector_middle’)
+handle_image_middle : string (Parameter, optional, default="atlas://data/images/defaulttheme/selector_middle")
     Image used to display the middle handle on the TextInput for cursor
     positioning.
-handle_image_right : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/selector_right’)
+handle_image_right : string (Parameter, optional, default="atlas://data/images/defaulttheme/selector_right")
     Image used to display the Right handle on the TextInput for selection.
 hint_text : string (Parameter, optional, default="")
-    Hint text of the widget, shown if text is ‘’.
+    Hint text of the widget, shown if text is "".
 hint_text_color : list (Parameter, optional, default=[0.5, 0.5, 0.5, 1.0])
     Current color of the hint_text text, in (r, g, b, a) format.
 input_filter : object (Parameter, optional, default=None)
     Filters the input according to the specified mode, if not None. If None, no
-    filtering is applied. Can be one of None, ‘int’ (string), or
-    ‘float’ (string), or a callable. If it is ‘int’, it will only accept
-    numbers. If it is ‘float’ it will also accept a single period. Finally, if
+    filtering is applied. Can be one of None, "int" (string), or
+    "float" (string), or a callable. If it is "int", it will only accept
+    numbers. If it is "float" it will also accept a single period. Finally, if
     it is a callable it will be called with two parameter; the string to be
     added and a bool indicating whether the string is a result of undo (True).
     The callable should return a new substring that will be used instead.
@@ -1854,7 +1854,7 @@ minimum_height : integer (Property, read-only)
     Minimum height of the content inside the TextInput.
 multiline : boolean (Parameter, optional, default=True)
     If True, the widget will be able show multiple lines of text. If False, the
-    “enter” keypress will defocus the textinput instead of adding a new line.
+    "enter" keypress will defocus the textinput instead of adding a new line.
 padding : list (Parameter, optional, default=[6, 6, 6, 6])
     Padding of the text: [padding_left, padding_top,
     padding_right, padding_bottom].
@@ -1893,7 +1893,7 @@ tab_width : integer (Parameter, optional, default=4)
     widget. You can set a lower or higher value.
 use_bubble : boolean (Parameter, optional, default=True on Mobile OS's, and False on Desktop OS's)
     Indicates whether the cut/copy/paste bubble is used.
-use_handles : boolean (Parameter, optional, default=True on mobile OS’s, False on desktop OS’s)
+use_handles : boolean (Parameter, optional, default=True on mobile OS's, False on desktop OS's)
     Indicates whether the selection handles are displayed.
 write_tab : boolean (Parameter, optional, default=True)
     Whether the tab key should move focus to the next widget or if it should
@@ -1943,11 +1943,11 @@ Any of the internal properties that are readable by this Kivy Widget are
 readable during Experimental Run Time.
 
 state : string (Parameter, optional, default="normal")
-    When you touch/click it, the state toggles between ‘normal’ and ‘down’
-    (as opposed to a Button that is only ‘down’ as long as it is pressed).
+    When you touch/click it, the state toggles between "normal" and "down"
+    (as opposed to a Button that is only "down" as long as it is pressed).
 group : string (Parameter, optional, default="")
     Toggle buttons can also be grouped to make radio buttons - only one button
-    in a group can be in a ‘down’ state. The group name can be a string or any
+    in a group can be in a "down" state. The group name can be a string or any
     other hashable Python object.
 
 See smile.video.Button for all the other parameters and properties that can be
@@ -2062,28 +2062,28 @@ group, the images take on the look of check boxes.
 
 active : boolean (Parameter, optional, default=False)
     Indicates if the switch is active or inactive.
-background_checkbox_disabled_down : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/checkbox_disabled_on’)
+background_checkbox_disabled_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_disabled_on")
     Background image of the checkbox used for the default graphical
     representation when the checkbox is disabled and active.
-background_checkbox_disabled_normal : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/checkbox_disabled_off’)
+background_checkbox_disabled_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_disabled_off")
     Background image of the checkbox used for the default graphical
     representation when the checkbox is disabled and not active.
-background_checkbox_down : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/checkbox_on’)
+background_checkbox_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_on")
     Background image of the checkbox used for the default graphical
     representation when the checkbox is active.
-background_checkbox_normal : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/checkbox_off’)
-    Background image of the checkbox used for the default graphical r
-    epresentation when the checkbox is not active.
-background_radio_disabled_down : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/checkbox_radio_disabled_on’)
+background_checkbox_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_off")
+    Background image of the checkbox used for the default graphical
+    representation when the checkbox is not active.
+background_radio_disabled_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_radio_disabled_on")
     Background image of the radio button used for the default graphical
     representation when the radio button is disabled and active.
-background_radio_disabled_normal : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/checkbox_radio_disabled_off’)
+background_radio_disabled_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_radio_disabled_off")
     Background image of the radio button used for the default graphical
     representation when the radio button is disabled and not active.
-background_radio_down : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/checkbox_radio_on’)
+background_radio_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_radio_on")
     Background image of the radio button used for the default graphical
     representation when the radio button is active.
-background_radio_normal : string (Parameter, optional, default=‘atlas://data/images/defaulttheme/checkbox_radio_off’)
+background_radio_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_radio_off")
     Background image of the radio button used for the default graphical
     representation when the radio button is not active.
 color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
@@ -2674,9 +2674,9 @@ minimum_width : integer (Parameter, optional, default=0)
 minimum_size : list (Parameter, optional, default=[0, 0])
     Minimum size needed to contain all children. It is automatically set by the
     layout.
-orientation : string (Parameter, optional, default=‘lr-tb’)
-    Orientation of the layout. Valid orientations are ‘lr-tb’, ‘tb-lr’,
-    ‘rl-tb’, ‘tb-rl’, ‘lr-bt’, ‘bt-lr’, ‘rl-bt’ and ‘bt-rl’.
+orientation : string (Parameter, optional, default="lr-tb")
+    Orientation of the layout. Valid orientations are "lr-tb", "tb-lr",
+    "rl-tb", "tb-rl", "lr-bt", "bt-lr", "rl-bt" and "bt-rl".
 padding : list (Parameter, optional, default=[0, 0, 0, 0])
     Padding between the widget box and its children, in pixels: [padding_left,
     padding_top, padding_right, padding_bottom].
@@ -2752,10 +2752,10 @@ bar_pos : list (Parameter, optional, default=["bottom", "right"])
     (bar_pos_x, bar_pos_y)
 bar_pos_x : string (Parameter, optional, default="bottom")
     Which side of the ScrollView the horizontal scroll bar should go on.
-    Possible values are ‘top’ and ‘bottom’.
+    Possible values are "top" and "bottom".
 bar_box_y : string (Parameter, optional, default="right")
     Which side of the ScrollView the vertical scroll bar should go on. Possible
-    values are ‘left’ and ‘right’.
+    values are "left" and "right".
 bar_width : integer (Parameter, optional, default=2)
     Width of the horizontal / vertical scroll bar. The width is interpreted as a
     height for the horizontal bar.
@@ -2764,37 +2764,37 @@ hbar : list (Property)
 
     The position and size are normalized between 0-1, and represent a percentage
     of the current scrollview height. This property is used internally for
-    drawing the little horizontal bar when you’re scrolling.
+    drawing the little horizontal bar when you're scrolling.
 scroll_distance : integer (Parameter, optional, default=20)
     Distance to move before scrolling the ScrollView, in pixels. As soon as the
     distance has been traveled, the ScrollView will start to scroll, and no
     touch event will go to children. It is advisable that you base this value on
-    the dpi of your target device’s screen.
+    the dpi of your target device's screen.
 scroll_timeout : integer (Parameter, optional, default=55)
     Timeout allowed to trigger the scroll_distance, in milliseconds. If the user
     has not moved scroll_distance within the timeout, the scrolling will be
     disabled, and the touch event will go to the children.
-scroll_type : list (Parameter, optional, default=[‘content’])
+scroll_type : list (Parameter, optional, default=["content"])
     Sets the type of scrolling to use for the content of the scrollview.
-    Available options are: [‘content’], [‘bars’], [‘bars’, ‘content’].
+    Available options are: ["content"], ["bars"], ["bars", "content"].
 scroll_wheel_distance : integer (Parameter, optional, default=20)
     Distance to move when scrolling with a mouse wheel in pixels. It is
-    advisable that you base this value on the dpi of your target device’s
+    advisable that you base this value on the dpi of your target device's
     screen.
 scroll_x : float (Property)
-    X scrolling value, between 0 and 1. If 0, the content’s left side will touch
-    the left side of the ScrollView. If 1, the content’s right side will touch
+    X scrolling value, between 0 and 1. If 0, the content's left side will touch
+    the left side of the ScrollView. If 1, the content's right side will touch
     the right side.
 scroll_y : float (Property)
-    Y scrolling value, between 0 and 1. If 0, the content’s bottom side will
-    touch the bottom side of the ScrollView. If 1, the content’s top side will
+    Y scrolling value, between 0 and 1. If 0, the content's bottom side will
+    touch the bottom side of the ScrollView. If 1, the content's top side will
     touch the top side.
 vbar : list (Property)
     Return a tuple of (position, size) of the vertical scrolling bar.
 
     The position and size are normalized between 0-1, and represent a percentage
     of the current scrollview height. This property is used internally for
-    drawing the little vertical bar when you’re scrolling.
+    drawing the little vertical bar when you're scrolling.
 viewport_size : integer (Property)
     (internal) Size of the internal viewport. This is the size of your only
     child in the scrollview.
@@ -2859,7 +2859,7 @@ title : string (Property)
     Title of the current document. Read-only
 source : string (Parameter, optional, default="")
     Filename of the RST document.
-background_color : string (Parameter, optional, default='e5e6e9ff')
+background_color : string (Parameter, optional, default="e5e6e9ff")
     Specifies the background_color to be used for the RstDocument.
 base_font_size : integer (Parameter, optional, default=31)
         Font size for the biggest title. All other font sizes are
@@ -2869,21 +2869,21 @@ colors : dictionary (Parameter, optional, default listed below)
 
     Defaults
 
-       - 'paragraph' : '202020ff'
-       - 'link' : 'ce5c00ff
-       - 'bullet' : '000000ff'
-       - 'background' : 'e5e6e9ff'
-       - 'title' : '204a87ff'
+       - "paragraph" : "202020ff"
+       - "link" : "ce5c00ff
+       - "bullet" : "000000ff"
+       - "background" : "e5e6e9ff"
+       - "title" : "204a87ff"
 document_root : string (Parameter, optional, default=None)
     Root path where :doc: will search for rst documents. If no path is given, it
     will use the directory of the first loaded source file.
 show_errors : boolean (Parameter, optional, default=False)
     Indicate whether RST parsers errors should be shown on the screen or not.
-source_encoding : string (Parameter, optional, default='utf-8')
+source_encoding : string (Parameter, optional, default="utf-8")
     Encoding to be used for the source file.
 source_error : string (Parameter, optional, default="strict"
     Error handling to be used while encoding the source file. Can be one of
-    ‘strict’, ‘ignore’, ‘replace’, ‘xmlcharrefreplace’ or ‘backslashreplac’.
+    "strict", "ignore", "replace", "xmlcharrefreplace" or "backslashreplac".
 title : string (Property)
     Title of the current document. Read-only.
 toctrees : dictionary (Property)
@@ -2891,8 +2891,8 @@ toctrees : dictionary (Property)
     a rst document is explicitly loaded or where preload() has been called.
 
     If the document has no filename, e.g. when the document is loaded from a
-    text file, the key will be ‘’.
-underline_color : string (Parameter, optional, default=‘204a9699’)
+    text file, the key will be "".
+underline_color : string (Parameter, optional, default="204a9699")
     Underline color of the titles, expressed in html color notation.
 
 For other parameters or properties that this Widget might have, refer to the
@@ -2950,13 +2950,13 @@ size : list (Parameter, optional, default=[50, 50])
     widget will fill in size automatically.
 dirselect : boolean (Parameter, optional, default=False)
     Determines whether directories are valid selections or not.
-file_econdings : list (Parameter, optional, default=[‘utf-8’, ‘latin1’, ‘cp1252’])
+file_econdings : list (Parameter, optional, default=["utf-8", "latin1", "cp1252"])
     Possible encodings for decoding a filename to unicode. In the case that the
-    user has a non-ascii filename, undecodable without knowing it’s initial
+    user has a non-ascii filename, undecodable without knowing it's initial
     encoding, we have no other choice than to guess it.
 
     Please note that if you encounter an issue because of a missing encoding
-    here, we’ll be glad to add it to this list.
+    here, we'll be glad to add it to this list.
 file_system : object (Parameter, optional, default=FileSystemLocal())
     The file system object used to access the file system. This should be a
     subclass of FileSystemAbstract.
@@ -2967,14 +2967,14 @@ filter_dirs : boolean (Parameter, optional, default=False)
     Indicates whether filters should also apply to directories.
 filters : list (Parameter, optional, default=[])
     filters specifies the filters to be applied to the files in the directory.
-    filters is a ListProperty and defaults to []. This is equivalent to ‘*’ i.e.
+    filters is a ListProperty and defaults to []. This is equivalent to "*" i.e.
     nothing is filtered.
 
     The filters are not reset when the path changes. You need to do that
     yourself if desired.
 
     There are two kinds of filters: patterns and callbacks. Patterns are strings
-    that match the file name patteres. Use '*' to match all files, or '*.png' to
+    that match the file name patteres. Use "*" to match all files, or "*.png" to
     only match png files. You can also use a sequence of characters to match any
     files with that sequence in it.
 
@@ -2991,7 +2991,7 @@ path : string (Parameter, optional, defaults to current working directory)
     to.
 rootpath : string (Parameter, optional, default=None)
     Root path to use instead of the system root path. If set, it will not show a
-    ”..” directory to go up to the root path. For example, if you set rootpath
+    ".." directory to go up to the root path. For example, if you set rootpath
     to /users/foo, the user will be unable to go to /users or to any other
     directory not starting with /users/foo.
 selection : list (Property)
@@ -3177,7 +3177,7 @@ class Image(WidgetState.wrap(kivy.uix.image.Image)):
         anim_delay is set to -1, the animation will be stopped.
     color : list (Parameter, optional, default = [1.0, 1.0, 1.0, 1.0])
         Image color, in the format (r, g, b, a). This attribute can be used to
-        ‘tint’ an image. Be careful: if the source image is not gray/white, the
+        "tint" an image. Be careful: if the source image is not gray/white, the
         color will not really work as expected.
     image_ratio : list (Property)
         Ratio of the image (width / float(height).
@@ -3273,9 +3273,9 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
         The string used to split the text while shortening the string when
         shorten is True.
 
-        For example, if it’s a space, the string will be broken into words and
+        For example, if it's a space, the string will be broken into words and
         as many whole words that can fit into a single line will be displayed.
-        If shorten_from is the empty string, ‘’, we split on every character
+        If shorten_from is the empty string, "", we split on every character
         fitting as much text as possible into the line.
     strip : boolean (Parameter, optional, default=False)
         Whether leading and trailing spaces and newlines should be stripped from
@@ -3293,7 +3293,8 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
         For example, whatever your current widget size is, if you want the label
         to be created in a box with width=200 and unlimited height:
 
-            Label(text='Very big big line', text_size=(200, None))
+            Label(text="Very big big line", text_size=(200, None))
+
     texture : object (Property)
         Texture object of the text. The text is rendered automatically when a
         property changes. The OpenGL texture created in this operation is stored
@@ -3304,14 +3305,14 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
     texture_size : list (Property)
         Texture size of the text. The size is determined by the font size and
         text. If text_size is [None, None], the texture will be the size
-        required to fit the text, otherwise it’s clipped to fit text_size.
+        required to fit the text, otherwise it's clipped to fit text_size.
 
         When text_size is [None, None], one can bind to texture_size and rescale
         it proportionally to fit the size of the label in order to make the text
         fit maximally in the label.
     unicode_errors : string (Parameter, optional, default="replace")
-        How to handle unicode decode errors. Can be ‘strict’, ‘replace’ or
-        ‘ignore’.
+        How to handle unicode decode errors. Can be "strict", "replace" or
+        "ignore".
     valign : string (Parameter, optional, default="bottom")
         Vertical alignment of the text. Can be "bottom", "middle", or "top"
 
@@ -3355,7 +3356,7 @@ class ButtonPress(CallbackState):
         press.
     base_time : float
         The time at which you would like to base the timing of this state
-        off of. Defaults to self.appear_time['time'].
+        off of. Defaults to self.appear_time["time"].
     duration : float (optional)
         The duration of the state in seconds, if no duration is set, it
         will last forever.
@@ -3398,14 +3399,14 @@ class ButtonPress(CallbackState):
 
     ::
 
-        with ButtonPress(correct_resp='chA', duration=4) as bp:
+        with ButtonPress(correct_resp="chA", duration=4) as bp:
             MouseCursor()
-            a = Button(name='chA', text='Choice A',
+            a = Button(name="chA", text="Choice A",
                        center_x=exp.screen.center_x/3)
 
-            b = Button(name='chB', text='Choice B')
+            b = Button(name="chB", text="Choice B")
 
-            c = Button(name='chC', text='Choice C',
+            c = Button(name="chC", text="Choice C",
                        center_x=exp.screen.center_x*3/2)
 
     """
