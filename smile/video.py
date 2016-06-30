@@ -1183,7 +1183,7 @@ WSP_doc_addition = """Logged Attributes
 -----------------
 All parameters above are available to be accessed and
 manipulated within the experiment code, and will be automatically
-recorded in the state-specific log. Refer to State class
+recorded in the state-specific log. Refer to WidgetState class
 docstring for additional logged parameters.
 
 appear_time : dictionary
