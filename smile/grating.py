@@ -1,5 +1,3 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
@@ -65,6 +63,7 @@ class Grating(Widget):
                   size=self._update_texture)
         self._update_texture()
 
+    #Performs the calculation for the mask
     def _calc_mask(self, rx, ry):
         dx = rx - (self.width/2)   # horizontal center of Grating
         dy = ry - (self.height/2)  # vertical center of Grating
@@ -74,14 +73,14 @@ class Grating(Widget):
         ux = radius * math.cos(t)
         uy = radius * math.sin(t)
         #Gaussian Gabor stimuli calculations
-        if self.envelope[0] == 'g' or self.envelope[0] == 'G':
+        if self.envelope[0].lower() == 'g':
             transparency = math.exp(-0.5 * (ux / (self.std_dev*3)) ** 2 - 0.5 *
                          (uy / (self.std_dev*3)) ** 2)
         #Linear Gabor stimuli calculations
-        elif self.envelope[0] == 'l' or self.envelope[0] == 'L':
+        elif self.envelope[0].lower() == 'l':
             transparency = max(0, (0.5 * self.width - radius) / (0.5 * self.width))
         #Circular Gabor stimuli calculations
-        elif self.envelope[0] == 'c' or self.envelope[0] == 'C':
+        elif self.envelope[0].lower() == 'c':
             if (radius > 0.5 * self.width):
                 transparency = 0.0
             else:
@@ -92,6 +91,7 @@ class Grating(Widget):
         #Return
         return 0, 0, 0, transparency
 
+    #Performs the calculation for the grating behind the mask
     def _calc_color(self, x):
         #Creation of the sin wave for the grating texture
         amp = 0.5 + 0.5 * math.sin((x*math.pi/180) * self.frequency + self.phase)
@@ -218,13 +218,6 @@ if __name__ == '__main__':
 
     exp = Experiment(background_color="#4F33FF")
 
-    g = Grating(width=500, height=500, envelope='Circular', frequency=50,
-                std_dev=50, phase=9.0, color_one='orange', color_two='blue')
-    with UntilDone():
-        KeyPress()
-        g.update(bottom=exp.screen.center)
-        KeyPress()
-
     g = Grating(width=1000, height=1000, envelope='linear', frequency=20,
                 std_dev=10, phase=3.0, color_one='red', color_two='yellow')
     with UntilDone():
@@ -270,6 +263,5 @@ if __name__ == '__main__':
             with Serial():
                 Wait(2.0)
                 lbl.slide(top=g.bottom, duration=4.)
-
 
     exp.run(trace=False)
