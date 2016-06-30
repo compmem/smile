@@ -1179,6 +1179,23 @@ def vertex_instruction_widget(instr_cls, name=None):
 
     return type(name, (kivy.uix.widget.Widget,), dict_)
 
+WSP_doc_addition = """Logged Attributes
+-----------------
+All parameters above are available to be accessed and
+manipulated within the experiment code, and will be automatically
+recorded in the state-specific log. Refer to State class
+docstring for additional logged parameters.
+
+appear_time : dictionary
+    The keys are *time* and *error*. Where *time* refers to the time the
+    visual stimulus appeared on the screen, and *error* refers to the
+    maximum error in calculating the appear time of the stimulus.
+disappear_time : dictionary
+    The keys are *time* and *error*. Where *time* refers to the time the
+    visual stimulus disappeared from the screen, and *error* refers to the
+    maximum error in calculating the disappear time of the stimulus.
+    """
+
 
 vertex_instructions = [
     "Bezier",
@@ -1566,6 +1583,12 @@ For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.graphics.Ellipse. <https://kivy.org/docs/api-kivy.graphics.html?highlight=ellipse#kivy.graphics.Ellipse>'_
 
 """
+for instr in vertex_instructions:
+    exec("%s.__doc__ = %s.__doc__ + WSP_doc_addition" %
+         (instr, instr))
+
+
+
 
 
 def _sp(value):
@@ -1601,7 +1624,7 @@ for widget in widgets:
     exec("%s = WidgetState.wrap(%s.%s)" %
          (widget, modname, widget))
 
-Button.__doc__ == """
+Button.__doc__ = """
 A **WidgetState** that shows a button in the window.
 
 Use this state when you would like to show a button on the screen. This State
@@ -2805,6 +2828,12 @@ Kivy documentation for 'kivy.uix.ScrollLayout. <https://kivy.org/docs/api-kivy.u
 
 """
 
+for widget in widgets:
+    exec("print %s.__doc__" % widget)
+    exec("%s.__doc__ = %s.__doc__ + WSP_doc_addition" %
+         (widget, widget))
+
+
 
 import kivy.uix.rst
 RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
@@ -3521,7 +3550,6 @@ if __name__ == '__main__':
     from contextlib import nested
 
     exp = Experiment(background_color="#330000")
-
     Wait(2.0)
 
     Video(source="test_video.mp4", duration=4.0)
