@@ -478,7 +478,12 @@ class WidgetState(VisualState):
         (x + width, (y + height) / 2)
     opacity : float (optional)
         Float between 0 and 1.  The opacity of the widget and its children.
-
+    rotate : float (optional)
+        Degree of rotation. Only rotates the image of the WidgetState that is
+        drawn to the screen, not the actual widget itself.
+    rotate_origin : list (optional)
+        For now, this parameter is ignored. The rotate_origin is defaulted to
+        the center of a widget. Will be fixed in later releases.
 
     """
     layout_stack = []
