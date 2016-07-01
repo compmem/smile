@@ -44,8 +44,10 @@ class Grating(Widget):
     phase : float
         the phase shift of the sin wave
     std_dev : integer
-        the standard deviation of sin wave
-
+        the standard deviation of the Gaussian mask controlling the size of the
+        mask. Larger values create a larger grating on screen due to greater
+        transparency and smaller values create smaller grating on screen due to
+        less transparency.
     """
 
     envelope = StringProperty('g')

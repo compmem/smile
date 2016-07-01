@@ -6,34 +6,44 @@ Here is the definition of our *Grating*:
 .. code-block:: python
 
 
-  @WidgetState.wrap
-  class Grating(Widget):
-      """Display a Grating
-      *Only renders square sized grating textures*
+    @WidgetState.wrap
+    class Grating(Widget):
+        """Creates a Gabor filter by generating a grating that is masked by either
+        a Gaussian, linear, or circular mask. Due to the limitations of Kivy, this
+        widget and only create square textures.
 
-      Parameters
-      ----------
-      color_one : list
-          rgba the Grating will oscillate between
-      color_two : list
-          rgba the Grating will oscillate between
-      envelope : string
-          type of Grating to be generated
-      frequency : float
-          frequency of sign wave of Grating
-      phase : float
-          the phase shift of the sin wave
-      std_dev : integer
-          the standard deviation of sin wave
+        Parameters
+        ----------
+        color_one : list
+            first rgb color(each value between zero to one) which the grating will
+            oscillate between
+        color_two : list
+            first rgb color(each value between zero to one) which the grating will
+            oscillate between
+        envelope : string
+            type of Grating to be generated
+            - Gaussian: creates a circular, Gaussian algorithm-based mask which becomes
+                        more transparent the more distant from the center
+            - Linear: creates a circular, linear algorithm-based mask which becomes
+                      more transparent the more distant from the center
+            - Circular: creates a circular mask which has no blending to the background
+        frequency : float
+            frequency of sine wave of Grating
+        phase : float
+            the phase shift of the sin wave
+        std_dev : integer
+            the standard deviation of the Gaussian mask controlling the size of the
+            mask. Larger values create a larger grating on screen due to greater
+            transparency and smaller values create smaller grating on screen due to
+            less transparency.
+        """
 
-      """
-
-      envelope = StringProperty('g')
-      frequency = NumericProperty(20)
-      std_dev = NumericProperty(None)
-      phase = NumericProperty(0.0)
-      color_one = ListProperty([1., 1., 1., 1.])
-      color_two = ListProperty([0., 0., 0., 1.])
+        envelope = StringProperty('g')
+        frequency = NumericProperty(20)
+        std_dev = NumericProperty(None)
+        phase = NumericProperty(0.0)
+        color_one = ListProperty([1., 1., 1.])
+        color_two = ListProperty([0., 0., 0.])
 
 In *Grating* several different parameters are needed to be passed into the
 `__init__` method in order to create different kinds of Gabor filters.
@@ -44,7 +54,8 @@ In *Grating* several different parameters are needed to be passed into the
 - frequency : An integer value that controls the frequency of the grating's wave
 
 - std_dev : An integer value that controls the size of the standard deviation of
-            the mask. (The larger the value, the more transparent the mask will be)
+            the Gaussian mask. (The larger the value, the more transparent the
+            mask will be)
 
 - phase : a float value that controls the phase shift of the grating's wave
 
@@ -58,24 +69,24 @@ Next, the '__init__' method is declared for the 'Grating' widget:
 
 .. code-block:: python
 
-  def __init__(self, **kwargs):
-      super(type(self), self).__init__(**kwargs)
+    def __init__(self, **kwargs):
+        super(type(self), self).__init__(**kwargs)
 
-      if self.std_dev is None:
-          self.std_dev = (self.width/2) * 0.1
+        if self.std_dev is None:
+            self.std_dev = (self.width/2) * 0.1
 
-      self._texture = None
-      self._mask_texture = None
+        self._texture = None
+        self._mask_texture = None
 
-      self.bind(envelope=self._update_texture,
-                std_dev=self._update_texture,
-                phase=self._update_texture,
-                color_one=self._update_texture,
-                color_two=self._update_texture,
-                frequency=self._update_texture,
-                pos=self._update,
-                size=self._update_texture)
-      self._update_texture()
+        self.bind(envelope=self._update_texture,
+                  std_dev=self._update_texture,
+                  phase=self._update_texture,
+                  color_one=self._update_texture,
+                  color_two=self._update_texture,
+                  frequency=self._update_texture,
+                  pos=self._update,
+                  size=self._update_texture)
+        self._update_texture()
 
 The `.bind()` method will bind each different attribute of the Gabor filter to a
 method callback that might want to run if any of those attributes change.
@@ -87,19 +98,14 @@ stimuli, to increase speed and efficiency of the code. Now the functions can be 
 
 .. code-block:: python
 
-    #Performs the calculation for the mask
     def _calc_mask(self, rx, ry):
-        dx = rx - (self.width/2)   # horizontal center of Grating
-        dy = ry - (self.height/2)  # vertical center of Grating
-
-        t = math.atan2(dy, dx)
+        dx = rx - (self.width/2.)   # horizontal center of Grating
+        dy = ry - (self.height/2.)  # vertical center of Grating
         radius = math.sqrt(dx ** 2 + dy ** 2)
-        ux = radius * math.cos(t)
-        uy = radius * math.sin(t)
         #Gaussian Gabor stimuli calculations
         if self.envelope[0].lower() == 'g':
-            transparency = math.exp(-0.5 * (ux / (self.std_dev*3)) ** 2 - 0.5 *
-                         (uy / (self.std_dev*3)) ** 2)
+            transparency = math.exp(-0.5 * (dy / (self.std_dev*3)) ** 2 - 0.5 *
+                                    (dx / (self.std_dev*3)) ** 2)
         #Linear Gabor stimuli calculations
         elif self.envelope[0].lower() == 'l':
             transparency = max(0, (0.5 * self.width - radius) / (0.5 * self.width))
@@ -115,7 +121,10 @@ stimuli, to increase speed and efficiency of the code. Now the functions can be 
         #Return
         return 0, 0, 0, transparency
 
-    #Performs the calculation for the grating behind the mask
+    '''Performs the calculation for the grating behind the mask
+    This works by creating one period of a sin wave, then using tex_coords,
+    a repeat function not residing in this function to fill the rectangle with
+    the grating'''
     def _calc_color(self, x):
         #Creation of the sin wave for the grating texture
         amp = 0.5 + 0.5 * math.sin((x*math.pi/180) * self.frequency + self.phase)
@@ -124,7 +133,7 @@ stimuli, to increase speed and efficiency of the code. Now the functions can be 
                 (self.color_one[1] * amp + self.color_two[1] * (1.0 - amp)),
                 (self.color_one[2] * amp + self.color_two[2] * (1.0 - amp))]
 
-    #Updates textures by calling update functions
+    '''Updates textures by calling update functions'''
     def _update_texture(self, *pargs):
         self._update_grating()
         if self._mask_texture is None or \
@@ -135,7 +144,11 @@ stimuli, to increase speed and efficiency of the code. Now the functions can be 
             self._prev_std_dev = self.std_dev
         self._update()
 
-    #Updates the drawling of the textures on screen
+    '''Updates the drawling of the textures on screen
+    The function mirror repeats the mask 3 times in the top left, top right
+    and bottom left quadrant to increase efficiency. Also it repeats the sin wave,
+    created in the  _calc_color function to fill the rectangle with the sin wave
+    based grating.'''
     def _update(self, *pargs):
         # clear (or else we get gratings all over)
         self.canvas.clear()
@@ -164,7 +177,9 @@ stimuli, to increase speed and efficiency of the code. Now the functions can be 
         with self.canvas.after:
             Callback(self._reset_blend_func)
 
-    #Update grating variables
+    '''Update grating variables
+    The function calls the _calc_color function to create the grating texture which
+    is layered behind the mask.'''
     def _update_grating(self, *args):
         # calculate the num needed for period
         self._period = int(round(360./self.frequency))
@@ -188,7 +203,9 @@ stimuli, to increase speed and efficiency of the code. Now the functions can be 
         self._texture.wrap = 'repeat'
         BindTexture(texture=self._texture, index=0)
 
-    #Update Mask variables
+    '''Update Mask variables
+    The function calls the mask creating function. Also, it stores masks in a cache,
+    for later use to increase function efficiency.'''
     def _update_mask(self, *args):
         #creation of texture, half the width and height, will be reflected to
         #completely cover the grating texture
@@ -222,40 +239,6 @@ stimuli, to increase speed and efficiency of the code. Now the functions can be 
         self._mask_texture.mag_filter = 'nearest'
         BindTexture(texture=self._mask_texture, index=1)
 
-      #Update Mask variables
-      def _update_mask(self, *args):
-          #creation of texture, half the width and height, will be reflected to
-          #completely cover the grating texture
-          self._mask_texture = Texture.create(size=(self.width/2, self.height/2),
-                                              colorfmt='rgba')
-
-          # generate a unique mask id for cache lookup
-          mask_id = 'e%s_w%d_h%d'%(self.envelope, self.width, self.height)
-          global _mask_cache
-
-          try:
-              # see if we've already created this mask
-              mask_arr = _mask_cache[mask_id]
-          except KeyError:
-              # set mask (this is the slow part)
-              mask_buf = list(chain.from_iterable([self._calc_mask(rx, ry)
-                                                   for rx in range(self.width/2)
-                                                   for ry in range(self.height/2)]))
-              # turn into an array
-              mask_arr = array('f', mask_buf)
-
-              # add it to the cache
-              _mask_cache[mask_id] = mask_arr
-
-          # blit it
-          self._mask_texture.blit_buffer(mask_arr, colorfmt='rgba',
-                                         bufferfmt='float')
-          #mask is mirrored and repeated
-          self._mask_texture.wrap = 'mirrored_repeat'
-          #mask is set to foremost texture
-          self._mask_texture.mag_filter = 'nearest'
-          BindTexture(texture=self._mask_texture, index=1)
-
 The *Grating* widget works step-wise to create a Gabor filter. First, it creates
 a grating based on the '_calc_color' function. The function creates an oscillating
 grating between two chosen colors(using color_one and color_two variables), or the default
@@ -269,9 +252,9 @@ background. These variables are setting the envelope to 'gaussian' or 'linear'.
 The other variable, 'circular', when set to envelope, makes a circular mask overlay
 with no fading/blending to the background. The characteristics of the mask can be
 changed with the std_dev variable. This numeric value, when increased, causes the
-Gaussian/Linear/Circular mask becomes larger, causing more of the masked grating 
+Gaussian mask becomes larger, causing more of the masked grating
 to be revealed due to the increase in transparency. Conversely, when the std_dev
-variable is set to smaller numeric values, the Gaussian/Linear/Circular mask
+variable is set to smaller numeric values, the Gaussian mask
 becomes smaller, causing more of the masked grating to be revealed due to the
 decrease in transparency. The default value for the std_dev variable is half of
 the width of the passed width value multiplied by 0.1. This value was chosen
@@ -285,13 +268,13 @@ The *Grating* widget also uses special openGL functionality. The last two functi
 of the class control how the alpha values of the mask interact with the program.
 .. code-block:: python
 
-    #Controller for the Gabor blending to the background color
-    #glBlendFunc(starting RGBA values, desired RGBA values)
+    '''Controller for the Gabor blending to the background color
+    glBlendFunc(starting RGBA values, desired RGBA values)'''
     def _set_blend_func(self, instruction):
         glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA)
 
-    #Reset of the Gabor blending properties for creation of new stimuli
-    #glBlendFunc(starting RGBA values, desired RGBA values)
+    '''Reset of the Gabor blending properties for creation of new stimuli
+    glBlendFunc(starting RGBA values, desired RGBA values)'''
     def _reset_blend_func(self, instruction):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
