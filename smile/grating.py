@@ -20,19 +20,27 @@ _mask_cache = {}
 
 @WidgetState.wrap
 class Grating(Widget):
-    """Display a Grating
-    *Only renders square sized grating textures*
+    """Creates a Gabor filter by generating a grating that is masked by either
+    a Gaussian, linear, or circular mask. Due to the limitations of Kivy, this
+    widget and only create square textures.
 
     Parameters
     ----------
     color_one : list
-        rgba the Grating will oscillate between
+        first rgb color(each value between zero to one) which the grating will
+        oscillate between
     color_two : list
-        rgba the Grating will oscillate between
+        first rgb color(each value between zero to one) which the grating will
+        oscillate between
     envelope : string
         type of Grating to be generated
+        - Gaussian: creates a circular, Gaussian algorithm-based mask which becomes
+                    more transparent the more distant from the center
+        - Linear: creates a circular, linear algorithm-based mask which becomes
+                  more transparent the more distant from the center
+        - Circular: creates a circular mask which has no blending to the background
     frequency : float
-        frequency of sign wave of Grating
+        frequency of sine wave of Grating
     phase : float
         the phase shift of the sin wave
     std_dev : integer
@@ -66,7 +74,9 @@ class Grating(Widget):
                   size=self._update_texture)
         self._update_texture()
 
-    #Performs the calculation for the mask
+    '''Performs the calculation for the mask either Gaussian, linear, or circular.
+    The function creates the bottom left quadrant of the mask, then mirrors and
+    repeats the texture 3 times in the top left, top right, and bottom left quadrants'''
     def _calc_mask(self, rx, ry):
         dx = rx - (self.width/2.)   # horizontal center of Grating
         dy = ry - (self.height/2.)  # vertical center of Grating
@@ -90,7 +100,10 @@ class Grating(Widget):
         #Return
         return 0, 0, 0, transparency
 
-    #Performs the calculation for the grating behind the mask
+    '''Performs the calculation for the grating behind the mask
+    This works by creating one period of a sin wave, then using tex_coords,
+    a repeat function not residing in this function to fill the rectangle with
+    the grating'''
     def _calc_color(self, x):
         #Creation of the sin wave for the grating texture
         amp = 0.5 + 0.5 * math.sin((x*math.pi/180) * self.frequency + self.phase)
@@ -99,7 +112,7 @@ class Grating(Widget):
                 (self.color_one[1] * amp + self.color_two[1] * (1.0 - amp)),
                 (self.color_one[2] * amp + self.color_two[2] * (1.0 - amp))]
 
-    #Updates textures by calling update functions
+    '''Updates textures by calling update functions'''
     def _update_texture(self, *pargs):
         self._update_grating()
         if self._mask_texture is None or \
@@ -110,7 +123,11 @@ class Grating(Widget):
             self._prev_std_dev = self.std_dev
         self._update()
 
-    #Updates the drawling of the textures on screen
+    '''Updates the drawling of the textures on screen
+    The function mirror repeats the mask 3 times in the top left, top right
+    and bottom left quadrant to increase efficiency. Also it repeats the sin wave,
+    created in the  _calc_color function to fill the rectangle with the sin wave
+    based grating.'''
     def _update(self, *pargs):
         # clear (or else we get gratings all over)
         self.canvas.clear()
@@ -139,7 +156,9 @@ class Grating(Widget):
         with self.canvas.after:
             Callback(self._reset_blend_func)
 
-    #Update grating variables
+    '''Update grating variables
+    The function calls the _calc_color function to create the grating texture which
+    is layered behind the mask.'''
     def _update_grating(self, *args):
         # calculate the num needed for period
         self._period = int(round(360./self.frequency))
@@ -163,7 +182,9 @@ class Grating(Widget):
         self._texture.wrap = 'repeat'
         BindTexture(texture=self._texture, index=0)
 
-    #Update Mask variables
+    '''Update Mask variables
+    The function calls the mask creating function. Also, it stores masks in a cache,
+    for later use to increase function efficiency.'''
     def _update_mask(self, *args):
         #creation of texture, half the width and height, will be reflected to
         #completely cover the grating texture
@@ -197,13 +218,13 @@ class Grating(Widget):
         self._mask_texture.mag_filter = 'nearest'
         BindTexture(texture=self._mask_texture, index=1)
 
-    #Controller for the Gabor blending to the background color
-    #glBlendFunc(starting RGBA values, desired RGBA values)
+    '''Controller for the Gabor blending to the background color
+    glBlendFunc(starting RGBA values, desired RGBA values)'''
     def _set_blend_func(self, instruction):
         glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA)
 
-    #Reset of the Gabor blending properties for creation of new stimuli
-    #glBlendFunc(starting RGBA values, desired RGBA values)
+    '''Reset of the Gabor blending properties for creation of new stimuli
+    glBlendFunc(starting RGBA values, desired RGBA values)'''
     def _reset_blend_func(self, instruction):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 

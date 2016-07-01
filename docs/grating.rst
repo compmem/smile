@@ -269,10 +269,17 @@ background. These variables are setting the envelope to 'gaussian' or 'linear'.
 The other variable, 'circular', when set to envelope, makes a circular mask overlay
 with no fading/blending to the background. The characteristics of the mask can be
 changed with the std_dev variable. This numeric value, when increased, causes the
-mask to increase in size, making the background grating texture appear larger on
-screen. Conversely, when the std_dev variable is set to smaller numeric values, the
-grating will appear smaller on screen. The default value for the std_dev variable is
-set at 20.
+Gaussian/Linear/Circular mask becomes larger, causing more of the masked grating 
+to be revealed due to the increase in transparency. Conversely, when the std_dev
+variable is set to smaller numeric values, the Gaussian/Linear/Circular mask
+becomes smaller, causing more of the masked grating to be revealed due to the
+decrease in transparency. The default value for the std_dev variable is half of
+the width of the passed width value multiplied by 0.1. This value was chosen
+as default because the mask is created in the bottom left fourth quadrant then mirrored
+repeated three times to the top left, top right, and bottom right, creating an entire
+mask. Being so, the width value is divided by 2 to give the radius. The 0.1 multiplied
+value was used because it yields an complete opacity at borders of the Gabor filter
+and the background, creating an ideal blending to the background.
 
 The *Grating* widget also uses special openGL functionality. The last two functions
 of the class control how the alpha values of the mask interact with the program.
@@ -345,7 +352,7 @@ Grating(width=500, height=500, envelope='gaussian', phase=1.5, frequency=10,
         std_dev=10, color_one='green', color_two='red')
 This is the same parameters as the above example except the colors have changed.
 The colors can either be set by changing 3 list values between zero and one or
-by using plain English color terms. Also, the std_dev has been set to a smaller
+by using plain English color names as strings. Also, the std_dev has been set to a smaller
 value, making the grating smaller due to the mask being smaller:
 
 .. image:: _static/red_green_smaller_std_dev.png
