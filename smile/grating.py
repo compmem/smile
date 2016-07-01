@@ -42,13 +42,16 @@ class Grating(Widget):
 
     envelope = StringProperty('g')
     frequency = NumericProperty(20)
-    std_dev = NumericProperty(20)
+    std_dev = NumericProperty(None)
     phase = NumericProperty(0.0)
     color_one = ListProperty([1., 1., 1.])
     color_two = ListProperty([0., 0., 0.])
 
     def __init__(self, **kwargs):
         super(type(self), self).__init__(**kwargs)
+
+        if self.std_dev is None:
+            self.std_dev = (self.width/2) * 0.1
 
         self._texture = None
         self._mask_texture = None
@@ -65,17 +68,13 @@ class Grating(Widget):
 
     #Performs the calculation for the mask
     def _calc_mask(self, rx, ry):
-        dx = rx - (self.width/2)   # horizontal center of Grating
-        dy = ry - (self.height/2)  # vertical center of Grating
-
-        t = math.atan2(dy, dx)
+        dx = rx - (self.width/2.)   # horizontal center of Grating
+        dy = ry - (self.height/2.)  # vertical center of Grating
         radius = math.sqrt(dx ** 2 + dy ** 2)
-        ux = radius * math.cos(t)
-        uy = radius * math.sin(t)
         #Gaussian Gabor stimuli calculations
         if self.envelope[0].lower() == 'g':
-            transparency = math.exp(-0.5 * (ux / (self.std_dev*3)) ** 2 - 0.5 *
-                         (uy / (self.std_dev*3)) ** 2)
+            transparency = math.exp(-0.5 * (dy / (self.std_dev*3)) ** 2 - 0.5 *
+                                    (dx / (self.std_dev*3)) ** 2)
         #Linear Gabor stimuli calculations
         elif self.envelope[0].lower() == 'l':
             transparency = max(0, (0.5 * self.width - radius) / (0.5 * self.width))
@@ -218,30 +217,29 @@ if __name__ == '__main__':
 
     exp = Experiment(background_color="#4F33FF")
 
-    g = Grating(width=1000, height=1000, envelope='linear', frequency=20,
-                std_dev=10, phase=3.0, color_one='red', color_two='yellow')
+    g = Grating(width=250, height=250)
     with UntilDone():
         KeyPress()
         g.update(bottom=exp.screen.center)
         KeyPress()
 
-    g = Grating(width=200, height=200, envelope='Gaussian', frequency=75,
-                std_dev=7, phase=11.0, color_one='blue', color_two='red')
+    g = Grating(width=500, height=500, envelope='Gaussian', frequency=75,
+                phase=11.0, color_one='blue', color_two='red')
     with UntilDone():
         KeyPress()
         g.update(bottom=exp.screen.center)
         KeyPress()
 
     with Parallel():
-        g = Grating(width=256, height=256, frequency=20,
-                  std_dev=10,
+        g = Grating(width=256, height=256, frequency=20,envelope='Gaussian',
+                  std_dev=5,
                   color_one='green', color_two='orange')
         lbl = Label(text='Grating!', bottom=g.top)
     with UntilDone():
         # kp = KeyPress()
         with Parallel():
-            g.slide(phase=-8*math.pi, #frequency=10.,
-                    #bottom=exp.screen.bottom,
+            g.slide(phase=-8*math.pi, frequency=10.,
+                    bottom=exp.screen.bottom,
                     duration=6.)
             g.slide(rotate=90, duration=2.0)
             with Serial():
@@ -249,7 +247,7 @@ if __name__ == '__main__':
                 lbl.slide(top=g.bottom, duration=4.)
 
     with Parallel():
-        g = Grating(width=256, height=256, frequency=10,
+        g = Grating(width=1000, height=1000, frequency=10, envelope='Gaussian',
                   std_dev=10,
                   color_one='blue', color_two='red')
         lbl = Label(text='Grating!', bottom=g.top)
@@ -257,7 +255,7 @@ if __name__ == '__main__':
         kp = KeyPress()
         with Parallel():
             g.slide(phase=-8*math.pi, frequency=10.,
-                    bottom=exp.screen.bottom,
+                    left=exp.screen.left,
                     duration=6.)
             g.slide(rotate=90, duration=2.0)
             with Serial():

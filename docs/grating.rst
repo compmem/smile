@@ -30,7 +30,7 @@ Here is the definition of our *Grating*:
 
       envelope = StringProperty('g')
       frequency = NumericProperty(20)
-      std_dev = NumericProperty(20)
+      std_dev = NumericProperty(None)
       phase = NumericProperty(0.0)
       color_one = ListProperty([1., 1., 1., 1.])
       color_two = ListProperty([0., 0., 0., 1.])
@@ -60,6 +60,9 @@ Next, the '__init__' method is declared for the 'Grating' widget:
 
   def __init__(self, **kwargs):
       super(type(self), self).__init__(**kwargs)
+
+      if self.std_dev is None:
+          self.std_dev = (self.width/2) * 0.1
 
       self._texture = None
       self._mask_texture = None
