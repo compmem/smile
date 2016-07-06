@@ -2834,7 +2834,6 @@ Kivy documentation for 'kivy.uix.ScrollLayout. <https://kivy.org/docs/api-kivy.u
 """
 
 for widget in widgets:
-    exec("print %s.__doc__" % widget)
     exec("%s.__doc__ = %s.__doc__ + WSP_doc_addition" %
          (widget, widget))
 
