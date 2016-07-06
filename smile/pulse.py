@@ -72,8 +72,8 @@ class Pulse(State):
     def __init__(self, code=15, width=0.010, port=0,
                  parent=None, save_log=True, name=None):
         # init the parent class
-        super(Pulse, self).__init__(parent=parent, 
-                                    duration=0, 
+        super(Pulse, self).__init__(parent=parent,
+                                    duration=0,
                                     save_log=save_log,
                                     name=name)
         # handle the values that could require initialization
@@ -236,9 +236,9 @@ def JitteredPulses(self, code=1, width=0.010, port=0,
 
 
 if __name__ == '__main__':
-    from experiment import Experiment, Set, Get
-    from state import Meanwhile, Wait, Loop, Log, Debug
-    
+    from experiment import Experiment
+    from state import Meanwhile, Debug
+
     # set up default experiment
     exp = Experiment()
 
@@ -260,4 +260,3 @@ if __name__ == '__main__':
 
     # run the exp
     exp.run(trace=False)
-    
