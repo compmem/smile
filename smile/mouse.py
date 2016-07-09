@@ -222,8 +222,8 @@ class MousePress(CallbackState):
     A *MousePress* state will tell your experiment to record the buttons
     pressed, but not show the cursor. By default, your cursor is hidden and
     doesn't send any feedback to your experiment. You call *MousePress* like
-    you would call *KeyPress* in that you can tell it what buttons are
-    valid input, and what the correct input is.
+    you would call *KeyPress* in that you can tell it what buttons are valid
+    input, and what the correct input is.
 
 
     Parameters

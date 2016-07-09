@@ -1,11 +1,11 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # import main modules
 import sys
@@ -23,22 +23,19 @@ from kivy.app import App
 from kivy.uix.floatlayout import FloatLayout
 from kivy.lang import Builder
 from kivy.logger import Logger
-from kivy.base import EventLoop # this is actually our event loop
+from kivy.base import EventLoop  # this is actually our event loop
 from kivy.core.window import Window
 from kivy.graphics.opengl import (
-    glEnableVertexAttribArray,
     glVertexAttribPointer,
     glVertexAttrib4f,
     glDrawArrays,
-    glDisableVertexAttribArray,
     glFinish,
     GL_INT,
     GL_FALSE,
     GL_POINTS)
+from kivy.utils import platform
 import kivy.clock
 _kivy_clock = kivy.clock.Clock
-
-from kivy.utils import platform
 
 # local imports
 from state import Serial, AutoFinalizeState
@@ -47,8 +44,8 @@ from clock import clock
 from log import LogWriter, log2csv
 from video import normalize_color_spec
 
-FLIP_TIME_MARGIN = 0.002  # increase this if we're missing flips
-IDLE_USLEEP = 250         # USLEEP During idle
+FLIP_TIME_MARGIN = 0.002     # increase this if we're missing flips
+IDLE_USLEEP = 250            # USLEEP During idle
 
 
 def event_time(time, time_error=0.0):  # TODO: make this a class!
@@ -57,6 +54,7 @@ def event_time(time, time_error=0.0):  # TODO: make this a class!
 
 class _VideoChange(object):
     """Container for a change to the graphics tree."""
+
     def __init__(self, update_cb, flip_time, flip_time_cb):
         self.update_cb = update_cb
         self.flip_time = flip_time
@@ -66,10 +64,16 @@ class _VideoChange(object):
 
 
 class Screen(object):
-    """Provides references to screen properties.
+    """Provides references to screen/app properties.
 
     Properties
     ----------
+    last_flip : event_time
+        Time of last flip updating the screen
+    mouse_pos : tuple
+        Location of the mouse on the screen
+    mouse_button : string
+        What mouse button is pressed
     width : integer
     height : integer
     size : tuple
@@ -108,20 +112,72 @@ class Screen(object):
         self.left_bottom = (self.left, self.bottom)
 
     """
-    def __init__(self, app):
-        self.__app = app
+
+    def __init__(self):
+        # set up the values of interest and their refs
+        self._width = 0.0
+        self._width_ref = Ref.getattr(self, "_width")
+        self._height = 0.0
+        self._height_ref = Ref.getattr(self, "_height")
+        self._last_flip = event_time(0.0, 0.0)
+        self._last_flip_ref = Ref.getattr(self, "_last_flip")
+        self._mouse_pos = (0, 0)
+        self._mouse_pos_ref = Ref.getattr(self, "_mouse_pos")
+        self._mouse_button = None
+        self._mouse_button_ref = Ref.getattr(self, "_mouse_button")
+        self._keys_down = set()
+        self._issued_key_refs = weakref.WeakValueDictionary()
 
     @property
     def last_flip(self):
-        return self.__app.last_flip_ref
+        return self._last_flip_ref
+
+    def _set_last_flip(self, etime):
+        self._last_flip = etime
+        self._last_flip_ref.dep_changed()
+
+    @property
+    def mouse_pos(self):
+        return self._mouse_pos_ref
+
+    def _set_mouse_pos(self, mouse_pos):
+        self._mouse_pos = mouse_pos
+        self._mouse_pos_ref.dep_changed()
+
+    @property
+    def mouse_button(self):
+        return self._mouse_button_ref
+
+    def _set_mouse_button(self, mouse_button):
+        self._mouse_button = mouse_button
+        self._mouse_button_ref.dep_changed()
+
+    def _is_key_down(self, name):
+        return name.upper() in self._keys_down
+
+    def _get_key_ref(self, name):
+        try:
+            return self._issued_key_refs[name]
+        except KeyError:
+            ref = Ref(self._is_key_down, name)
+            self._issued_key_refs[name] = ref
+            return ref
 
     @property
     def width(self):
-        return self.__app.width_ref
+        return self._width_ref
+
+    def _set_width(self, width):
+        self._width = width
+        self._width_ref.dep_changed()
 
     @property
     def height(self):
-        return self.__app.height_ref
+        return self._height_ref
+
+    def _set_height(self, height):
+        self._height = height
+        self._height_ref.dep_changed()
 
     @property
     def size(self):
@@ -199,30 +255,16 @@ class ExpApp(App):
     """Kivy app associated with the experiment.
 
     Not instantiated by the end user."""
+
     def __init__(self, exp):
         super(ExpApp, self).__init__()
         self.exp = exp
         self.callbacks = {}
         self.pending_flip_time = None
         self.video_queue = []
-        self.keys_down = set()
-        self.issued_key_refs = weakref.WeakValueDictionary()
-        self.mouse_pos = (None, None)
-        self.mouse_pos_ref = Ref.getattr(self, "mouse_pos")
-        self.mouse_button = None
-        self.mouse_button_ref = Ref.getattr(self, "mouse_button")
-        self.width_ref = Ref.getattr(Window, "width")
-        self.height_ref = Ref.getattr(Window, "height")
-        self.last_flip = event_time(0.0, 0.0)
-        self.last_flip_ref = Ref.getattr(self, "last_flip")
         self.force_blocking_flip = False
         self.force_nonblocking_flip = False
-        self.__screen = Screen(self)
-        self.flip_interval = 1/60.  # default to 60 Hz
-
-    @property
-    def screen(self):
-        return self.__screen
+        self.flip_interval = 1 / 60.  # default to 60 Hz
 
     def add_callback(self, event_name, func):
         self.callbacks.setdefault(event_name, []).append(func)
@@ -265,6 +307,10 @@ class ExpApp(App):
         # get start of event loop
         EventLoop.bind(on_start=self._on_start)
 
+        # set width and height
+        self.exp._screen._set_width(Window.width)
+        self.exp._screen._set_height(Window.height)
+
         return self.wid
 
     def _on_start(self, *pargs):
@@ -278,8 +324,8 @@ class ExpApp(App):
 
     def _on_resize(self, *pargs):
         # handle the resize
-        self.width_ref.dep_changed()
-        self.height_ref.dep_changed()
+        self.exp._screen._set_width(Window.width)
+        self.exp._screen._set_height(Window.height)
 
         # second half of OSX fullscreen hack that may no longer be needed
         if platform in ('macosx',) and Window.fullscreen and \
@@ -291,25 +337,14 @@ class ExpApp(App):
         # we need a redraw here
         EventLoop.window.dispatch('on_flip')
 
-    def is_key_down(self, name):
-        return name.upper() in self.keys_down
-
-    def get_key_ref(self, name):
-        try:
-            return self.issued_key_refs[name]
-        except KeyError:
-            ref = Ref(self.is_key_down, name)
-            self.issued_key_refs[name] = ref
-            return ref
-
     def _on_key_down(self, keyboard, keycode, text, modifiers):
         if keycode[0] == 27 and "shift" in modifiers:
             self.stop()
             return
         name = keycode[1].upper()
-        self.keys_down.add(name)
+        self.exp.screen._keys_down.add(name)
         try:
-            self.issued_key_refs[name].dep_changed()
+            self.exp.screen._issued_key_refs[name].dep_changed()
         except KeyError:
             pass
         self._trigger_callback("KEY_DOWN", keycode, text, modifiers,
@@ -317,17 +352,16 @@ class ExpApp(App):
 
     def _on_key_up(self, keyboard, keycode):
         name = keycode[1].upper()
-        self.keys_down.discard(name)
+        self.exp.screen._keys_down.discard(name)
         try:
-            self.issued_key_refs[name].dep_changed()
+            self.exp.screen._issued_key_refs[name].dep_changed()
         except KeyError:
             pass
         self._trigger_callback("KEY_UP", keycode, self.event_time)
 
     def _on_mouse_pos(self, window, pos):
         if self.current_touch is None:
-            self.mouse_pos = tuple(pos)
-            self.mouse_pos_ref.dep_changed()
+            self.exp._screen._set_mouse_pos(tuple(pos))
             self._trigger_callback("MOTION", pos=pos, button=None,
                                    newly_pressed=False,
                                    double=False, triple=False,
@@ -336,30 +370,29 @@ class ExpApp(App):
     def _on_motion(self, window, etype, me):
         if etype == "begin":
             try:
-                self.mouse_button = me.button
+                button = me.button
+                self.exp._screen._set_mouse_button(button)
             except AttributeError:
-                self.mouse_button = None
-            self.mouse_button_ref.dep_changed()
+                self.exp._screen._set_mouse_button(None)
             self.current_touch = me
             self._trigger_callback("MOTION", pos=me.pos,
-                                   button=self.mouse_button,
+                                   button=self.exp._screen._mouse_button,
                                    newly_pressed=True,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
                                    event_time=self.event_time)
         elif etype == "update":
-            self.mouse_pos = tuple(int(round(x)) for x in me.pos)
-            self.mouse_pos_ref.dep_changed()
+            self.exp._screen._set_mouse_pos(tuple(int(round(x))
+                                                  for x in me.pos))
             self.current_touch = me
             self._trigger_callback("MOTION", pos=me.pos,
-                                   button=self.mouse_button,
+                                   button=self.exp._screen._mouse_button,
                                    newly_pressed=False,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
                                    event_time=self.event_time)
         else:
-            self.mouse_button = None
-            self.mouse_button_ref.dep_changed()
+            self.exp._screen._set_mouse_button(None)
             self.current_touch = None
             self._trigger_callback("MOTION", pos=me.pos, button=None,
                                    newly_pressed=False,
@@ -408,6 +441,7 @@ class ExpApp(App):
 
         # do a kivy tick if we're going to be drawing or enough time
         # has passed (see above)
+        # but only tick and draw once before a flip
         do_kivy_tick = ready_for_kivy_tick or need_draw
         if do_kivy_tick:
             # tick the kivy clock
@@ -460,35 +494,28 @@ class ExpApp(App):
             if need_flip:
                 # test if blocking or non-blocking flip
                 # do a blocking if:
-                # 1) The pending flip is outside a single flip interval
-                # AND
-                #   2) Forcing a blocking flip_interval
+                # 1) Forcing a blocking flip_interval
                 #   OR
-                #   3) We have a specific flip callback request and we
+                # 2) We have a specific flip callback request and we
                 #      are not forcing a non-blocking flip
-                if (self.pending_flip_time >=
-                    (self.last_flip['time'] +
-                     self.flip_interval)) and \
-                   (self.force_blocking_flip or
-                    (len(flip_time_callbacks) and
-                     not self.force_nonblocking_flip)):
+                if self.force_blocking_flip or \
+                   (len(flip_time_callbacks) and
+                        not self.force_nonblocking_flip):
                     # print "BLOCKING FLIP!"
                     self.blocking_flip()
-                    # for cb in flip_time_callbacks:
-                    #     cb(self.last_flip)
                 else:
-                    # non-blicking flip
+                    # non-blocking flip
                     # print "FLIP!"
                     EventLoop.window.dispatch('on_flip')
                     self.last_flip = event_time(clock.now(), 0.0)
 
                 # still may need to update flip_time_callbacks
-                # even though they will be wrong
+                # even though they may be wrong for non-blocking flips
                 for cb in flip_time_callbacks:
                     cb(self.last_flip)
 
                 # tell refs that last_flip updated
-                self.last_flip_ref.dep_changed()
+                self.exp._screen._set_last_flip(self.last_flip)
 
                 # no longer pending flip
                 self.pending_flip_time = None
@@ -508,13 +535,17 @@ class ExpApp(App):
     def blocking_flip(self):
         # TODO: use sync events instead!
         EventLoop.window.dispatch('on_flip')
-        # glEnableVertexAttribArray(0)  # kivy has this enabled already
+
+        # draw a transparent point
         glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
                               "\x00\x00\x00\x0a\x00\x00\x00\x0a")  # Position
         glVertexAttrib4f(3, 0.0, 0.0, 0.0, 0.0)  # Color
         glDrawArrays(GL_POINTS, 0, 1)
-        # glDisableVertexAttribArray(0)  # kivy needs this to stay enabled
+
+        # wait for flip and point to draw
         glFinish()
+
+        # record the time immediately
         self.last_flip = event_time(clock.now(), 0.0)
         return self.last_flip
 
@@ -531,7 +562,7 @@ class ExpApp(App):
             last_time = cur_time
 
             # add in sleep of something definitely less than the refresh rate
-            clock.usleep(5000)  # 5ms for 200Hz
+            clock.usleep(2000)  # 2ms for 500Hz
 
         # take the mean and return
         self.flip_interval = diffs / count
@@ -570,27 +601,30 @@ class ExpApp(App):
 class Experiment(object):
     """The base for a SMILE state-machine.
 
-    An *Experiment* is the object that needs to be defined when you are ready
-    to start building your smile experiment. This is also the class that you
-    save all of your experimental run time variables into. Experiment also gives
-    you access to things like screen size, resolution, and frame-rate during
-    experimental run time.
+    An *Experiment* is the object that needs to be defined when you
+    are ready to start building your smile experiment. This is also
+    the class that you save all of your experimental run time
+    variables into. Experiment also gives you access to things like
+    screen size, resolution, and frame-rate during experimental run
+    time.
 
-    When you have all of your smile code written, the last line you need to add
-    to your experiment is `exp.run()`. This will run all of the smile code that
-    was written between `exp=Experiment()` and `exp.run()`.  Once all of the
-    SMILE code is finished, the .py will continue passed `exp.run()` and run
-    any code you might want to run after an experiment.
+    When you have all of your smile code written, the last line you
+    need to add to your experiment is `exp.run()`. This will run all
+    of the smile code that was written between `exp=Experiment()` and
+    `exp.run()`.  Once all of the SMILE code is finished, the .py will
+    continue passed `exp.run()` and run any code you might want to run
+    after an experiment.
 
     Parameters
     ----------
     fullscreen : boolean (default = True)
         Set to False if you would like to not run in full-screen.
     resolution : tuple
-        A tuple of integers that define the size of the experiment window.
+        A tuple of integers that define the size of the experiment
+        window.
     background_color : string (default = 'BLACK')
-        If given a string color name, see colors in video.py, the background of
-        the window will be set to that color
+        If given a string color name, see colors in video.py, the
+        background of the window will be set to that color
 
     Properties
     ----------
@@ -603,18 +637,19 @@ class Experiment(object):
     subject_dir : string
         string to where to save this subject's data. By default, it will be
         "data\subject_name"
-    info : list
+    info : string
         The info for the arguments you pass into the Experiment at
         initialization.
 
     Example
     -------
-    You always want to call `exp = Experiment()` before you type your SMILE
-    code. However, you do not want to put this line at the top of your .py.
-    Another thing you need to use your newly created *Experiment* variable is
-    to **set** and **get** variables during experimental run time. You are able
-    to add and set new attributes to your *Experiment* variable that will not
-    be evaluated until experimental run time.
+    You always want to call `exp = Experiment()` before you type your
+    SMILE code. However, you do not want to put this line at the top
+    of your .py.  Another thing you need to use your newly created
+    *Experiment* variable is to **set** and **get** variables during
+    experimental run time. You are able to add and set new attributes
+    to your *Experiment* variable that will not be evaluated until
+    experimental run time.
 
     ::
 
@@ -628,10 +663,12 @@ class Experiment(object):
     This example will set SavedVariable to 10, add the numbers 0 through 9 to
     it, and then end the experiment.  At the end, exp.SavedVariable will be
     equal to 55.
+
     """
+
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
-        #global Window
+        # global Window
         self._process_args()
 
         # handle fullscreen and resolution before Window is imported
@@ -650,7 +687,8 @@ class Experiment(object):
         self.set_background_color()
 
         # make custom experiment app instance
-        #self._app = ExpApp(self)
+        # self._app = ExpApp(self)
+        self._screen = Screen()
         self._app = None
 
         # set up instance for access throughout code
@@ -754,12 +792,12 @@ class Experiment(object):
         """
         Construct a unique filename for a data file in the log directory.  The
         filename will incorporate the specified 'title' string and it will have
-        extension specified with 'ext' (without the dot, if not None).  The
-        filename will also incorporate a time-stamp and a number to disambiguate
-        data files with the same title, extension, and time-stamp.  The filename
-        is not a file path.  The filename will be distinct from all filenames
-        previously returned from this method even if a file of that name has
-        not yet been created in the log directory.
+        extension specified with 'ext' (without the dot, if not None). The
+        filename will also incorporate a time-stamp and a number to
+        disambiguate data files with the same title, extension, and time-stamp.
+        The filename is not a file path.  The filename will be distinct from
+        all filenames previously returned from this method even if a file of
+        that name has not yet been created in the log directory.
 
         Returns the new filename.
         """
@@ -778,7 +816,8 @@ class Experiment(object):
                     return os.path.join(self._subj_dir, filename)
             else:
                 raise RuntimeError(
-                    "Too many data files with the same title, extension, and timestamp!")
+                    "Too many data files with the same title, extension, and \
+                    timestamp!")
 
     def setup_state_logger(self, state_class_name):
         if state_class_name in self._state_loggers:
@@ -803,8 +842,7 @@ class Experiment(object):
 
     @property
     def screen(self):
-        return Ref.getattr(self, '_app').screen
-        # return self._app.screen
+        return self._screen
 
     @property
     def subject(self):
@@ -894,6 +932,7 @@ class Set(AutoFinalizeState):
     name : string, optional, default = None
         The unique name you give this state.
     """
+
     def __init__(self, var_name, value, index=None,
                  parent=None, save_log=True, name=None):
         # init the parent class
@@ -916,6 +955,6 @@ class Set(AutoFinalizeState):
 
 if __name__ == '__main__':
     # can't run inside this file
-    #exp = Experiment(fullscreen=False, pyglet_vsync=False)
-    #exp.run()
+    # exp = Experiment(fullscreen=False, pyglet_vsync=False)
+    # exp.run()
     pass

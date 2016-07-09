@@ -139,8 +139,8 @@ class Pulse(State):
                 self._pport.setData(self._code_num)
                 end_time = clock.now()
             except:  # eventually figure out which errors to catch
-                sys.stderr.write("\nWARNING: The parallel module could not send pulses,\n" +
-                                 "\tso no sync pulsing will be generated.\n\n")
+                sys.stderr.write("\nWARNING: The parallel module could not send\
+                 pulses,\n" + "\tso no sync pulsing will be generated.\n\n")
                 have_parallel = False
                 self._pport = None
                 self._pulse_on = None

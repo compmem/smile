@@ -77,7 +77,8 @@ class StateBuilder(object):
                 state.override_instantiation_context()
                 return
             except NotImplementedError:
-                raise AttributeError("State does not support attribute setting!")
+                raise AttributeError("State does not support \
+                attribute setting!")
 
         # First, set the attribute value as normal.
         super(StateBuilder, self).__setattr__(name, value)
@@ -2060,8 +2061,8 @@ class Log(AutoFinalizeState):
     within a *Loop* state, it will write a row to the .slog for each iteration
     of the loop.
 
-    Paramters
-    ---------
+    Parameters
+    ----------
     log_dict : dictionary (optional)
         Use case for this parameter is to pass in `trial.current`, as long
         as `trial.current` is a dictionary. This will save out all of the

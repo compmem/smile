@@ -101,7 +101,7 @@ def write_wavefile(f, samples, nframes=None, nchannels=2,
 
     w = wave.open(f, 'w')
     w.setparams((nchannels, sampwidth, framerate,
-                nframes, 'NONE', 'not compressed'))
+                 nframes, 'NONE', 'not compressed'))
 
     max_amplitude = float(int((2 ** (sampwidth * 8)) / 2) - 1)
 

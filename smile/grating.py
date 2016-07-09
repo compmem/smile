@@ -15,15 +15,19 @@ from kivy.graphics.opengl import GL_ONE_MINUS_DST_ALPHA
 from array import array
 import math
 from itertools import chain
+
+
 # cache so we don't regenerate masks
 _mask_cache = {}
 
 
 @WidgetState.wrap
 class Grating(Widget):
-    """Creates a Gabor filter by generating a grating that is masked by either
-    a Gaussian, linear, or circular mask. Due to the limitations of Kivy, this
-    widget and only create square textures.
+    """Creates a masked grating.
+
+    The grating can be masked by either a Gaussian, linear, or
+    circular mask. Due to the limitations of Kivy, this widget can
+    only create square textures.
 
     Parameters
     ----------
@@ -50,14 +54,15 @@ class Grating(Widget):
         mask. Larger values create a larger grating on screen due to greater
         transparency and smaller values create smaller grating on screen due to
         less transparency.
+
     """
 
     envelope = StringProperty('g')
     frequency = NumericProperty(20)
     std_dev = NumericProperty(None)
     phase = NumericProperty(0.0)
-    color_one = ListProperty([1., 1., 1.])
-    color_two = ListProperty([0., 0., 0.])
+    color_one = ListProperty([1., 1., 1., 1.])
+    color_two = ListProperty([0., 0., 0., 0.])
 
     def __init__(self, **kwargs):
         super(type(self), self).__init__(**kwargs)
@@ -89,8 +94,8 @@ class Grating(Widget):
         radius = math.sqrt(dx ** 2 + dy ** 2)
         # Gaussian Gabor stimuli calculations
         if self.envelope[0].lower() == 'g':
-            transparency = math.exp(-0.5 * (dy / (self.std_dev * 3)) ** 2 - 0.5 *
-                                    (dx / (self.std_dev * 3)) ** 2)
+            transparency = math.exp(-0.5 * (dy / (self.std_dev * 3)) ** 2 -
+                                    0.5 * (dx / (self.std_dev * 3)) ** 2)
         # Linear Gabor stimuli calculations
         elif self.envelope[0].lower() == 'l':
             transparency = \
@@ -114,7 +119,9 @@ class Grating(Widget):
 
     def _calc_color(self, x):
         # Creation of the sin wave for the grating texture
-        amp = 0.5 + 0.5 * math.sin((x * math.pi / 180) * self.frequency + self.phase)
+        amp = \
+            0.5 + 0.5 * \
+            math.sin((x * math.pi / 180) * self.frequency + self.phase)
         # RGB color return
         return [(self.color_one[0] * amp + self.color_two[0] * (1.0 - amp)),
                 (self.color_one[1] * amp + self.color_two[1] * (1.0 - amp)),
@@ -200,11 +207,12 @@ class Grating(Widget):
     def _update_mask(self, *args):
         # creation of texture, half the width and height, will be reflected to
         # completely cover the grating texture
-        self._mask_texture = Texture.create(size=(self.width / 2, self.height / 2),
+        self._mask_texture = Texture.create(size=(self.width/2, self.height/2),
                                             colorfmt='rgba')
 
         # generate a unique mask id for cache lookup
-        mask_id = 'e%s_w%d_h%d' % (self.envelope, self.width, self.height)
+        mask_id = 'e%s_w%d_h%d' % (self.envelope[0].lower(),
+                                   self.width, self.height)
         global _mask_cache
 
         try:
@@ -214,8 +222,8 @@ class Grating(Widget):
             # set mask (this is the slow part)
             mask_buf = \
                 list(chain.from_iterable([self._calc_mask(rx, ry)
-                                          for rx in range(self.width / 2)
-                                          for ry in range(self.height / 2)]))
+                                         for rx in range(self.width/2)
+                                         for ry in range(self.height/2)]))
             # turn into an array
             mask_arr = array('f', mask_buf)
 
