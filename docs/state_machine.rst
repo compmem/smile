@@ -46,53 +46,53 @@ Build Time V.S. Run Time
 ========================
 
 The difference between **BT** and **RT** is the most important concept to
-understand when learning to SMILE. The SMILE code that you type out in your
-experiment is being run before the experiment even starts. There are 2 lines of
+understand when learning to SMILE. The SMILE code that is typed out in the
+experiment is being run before the experiment starts. There are 2 lines of
 code that designate the start of **BT** and then the start of **RT**. Those
 lines are `exp = Experiment()` and `exp.run()` respectively.
 
-`exp = Experiment()` initializes your instance of an :py:class:`~smile.experiment.Experiment`. All calls to a
-state must take place after this line in your code! Once this line is run,
-**BT** starts.  **BT**, or Experimental Build Time, is the section of your
-code that sets up how your experiment will run.
+`exp = Experiment()` initializes the instance of an :py:class:`~smile.experiment.Experiment`. All calls to a
+state must take place after this line in the code! Once this line is run,
+**BT** starts.  **BT**, or Experimental Build Time, is the section of the
+code that sets up how the experiment will run.
 
 .. note::
 
     Any functions called in **BT** will not be run during **RT** unless run
     through the proper channel. See *Calling functions in RT*.
 
-During Experimental Build Time, you are setting up all of the states in your
+During Experimental Build Time, the states are being set up in the
 experiment by passing in the information they would need to run correctly.
-Primarily these information are things like *duration* and *pos* or *x* and *y*
-coordinates. Other information your states might need is the kind of stimulus
-they are presenting. Typically, we store stimulus information in a list of
-dictionaries to be looped over in a SMILE :py:class:`~smile.state.Loop` state, where each key of the
+Primarily the information consists of characteristics like *duration* and *pos* or *x* and
+*y* coordinates. Other information the states might need is the kind of stimulus
+they are presenting. Typically, a list of dictionaries to be looped over in a
+SMILE :py:class:`~smile.state.Loop` state store stimulus information, where each key of the
 dictionary is a different piece of stimulus information that was generated
 during the List Generation step.
 
-In building your experiment, you may need access to a variable that isn't
-available until the experiment is actually running. As an example, imagine that
-you would like to create a :py:class:`~smile.video.Label` just 200 pixels to the left of the screen
-center. The screen property of Experiment won't be initialized until
-`exp.run()`, so we need a way to give :py:class:`~smile.video.Label` a placeholder variable that
+In building an experiment, access to a variable that isn't available until the
+experiment is running may be needed. As an example, imagine that a :py:class:`~smile.video.Label`
+just 200 pixels to the left of the screen center is created. The screen property
+of Experiment won't be initialized until `exp.run()`, so there is a need to give
+:py:class:`~smile.video.Label` a placeholder variable that
 points to `exp.screen.center_x - 200`. In order to do that, SMILE creates a
-**reference**. Our reference to `exp.screen.center_x - 200` will be evaluated
-during **RT**, making sure that our :py:class:`~smile.video.Label` has all of the information it needs
-to run correctly.
+**reference**. The reference to `exp.screen.center_x - 200` will be evaluated
+during **RT**, making sure that the :py:class:`~smile.video.Label` has all of the information
+it needs to run correctly.
 
 During **RT** any calls to any functions that aren't the setting up of a state
-will not be run during **RT**. In SMILE, if you would like a function to run
-during **RT**, you need to utilize the :py:class:`~smile.state.Func` state. The :py:class:`~smile.state.Func` state will
-create a call to a function and run that call at the correct place in the
-experiment during **RT**.
+will not be run during **RT**. In SMILE, if it is desired to create a function to run
+during **RT**, the :py:class:`~smile.state.Func` state needs to be utilized.
+The :py:class:`~smile.state.Func` state will create a call to a function and run
+that call at the correct place in the experiment during **RT**.
 
-Another thing to look out for when programming your experiment is the setting
-and using of variables in **BT**. You cannot set a local variable in between
-`exp = Experiment()` and `exp.run()` and expect it to actually set during
-**RT**.  In order to *set* and *get* local variables during **RT**, you must
-*set* and *get* them through your local :py:class:`~smile.experiment.Experiment` variable. Just like
-setting any other variable, you just use the equal sign. The only difference is
-you must add `exp.` to the beginning of your variable name. If you do this, it
+Another thing to look out for when programming the experiment is the setting
+and using of variables in **BT**. A local variable in between
+`exp = Experiment()` and `exp.run()` cannot be set and expected to actually set during
+**RT**.  In order to *set* and *get* local variables during **RT**, *set* and *get*
+must be used through the local :py:class:`~smile.experiment.Experiment` variable. Just like
+setting any other variable, the equal sign is used. The only difference is
+ `exp.` must be added to the beginning of the variable name. Doing this
 creates a :py:class:`~smile.experiment.Set` in SMILE that will run in **RT**.  An example is as
 follows.
 
@@ -108,10 +108,10 @@ section of **Advanced SMILEing**
 What are References?
 ====================
 
-The second most important things to understand about SMILE is how References
-work. The definition of a SMILE reference is a variable whose value is to be
-evaluated later. Without the *Reference* we would not be able to separate the
-Experimental Build Time and Experimental Run Time as easily. A :py:class:`~smile.ref.Ref` is a
+The second most important feature to understand about SMILE is how References
+work. A SMILE reference is defined as a variable whose value is to be
+evaluated later. Without *References,* Experimental Build Time and Experimental
+ Run Time could not be separated easily. A :py:class:`~smile.ref.Ref` is a
 class that holds any kind of value from a function call and parameters to an
 expression of several variables like `fu + bar - coocoo`. In relation to
 expressions, References are recursive. Every Reference has a method called
@@ -120,35 +120,37 @@ expression. If one part of the expression is a Reference, then that Reference
 will be recursively evaluated as well. If the Reference is to a list of values,
 each value in the list will be evaluated. Same with any other list.
 
-Another interesting thing a Reference can do is create a Reference object that
-contains a conditional expression to be evaluated later. These are important
-when building SMILE :py:class:`~smile.state.If` states. Say for instance you would like to present
-"CONGRATS" if they answered in less than 3 seconds, but otherwise present
-"NO GOOD BRO". You would need to rely on a Referenced conditional statement,
+References can also create a Reference object that contains a conditional
+expression to be evaluated later. These are important when building
+SMILE :py:class:`~smile.state.If` states. Say for instance the experimenter
+would like to present "CONGRATS" on screen if the participant responded in less
+than three seconds, and "FAILURE" if the participant took longer than three seconds
+to respond. The experimenter would need to rely on a Referenced conditional statement,
 where `Ref.cond(cond, true_val, false_val)` can return any kind of object if
 true or false. For an example, check the :py:class:`~smile.ref.Ref.cond` docstring.
 
 References will also generate a list of their dependencies. For recursive
 structures like References, there is a chance that they won't be able to be
 evaluated. This will only happen if one of the dependencies is a
-:py:class:`~smile.ref.NotAvailable` object. :py:class:`~smile.ref.NotAvailable` is the default value of a Reference
-that isn't ready to be evaluated. During :py:class:`~smile.ref.Ref.eval`, if one of the dependencies
-are :py:class:`~smile.ref.NotAvailable` your experiment will raise a :py:class:`~smile.ref.NotAvailableError`. If you
-run into one of these errors while coding your experiment, the easiest way to
-fix it is to create a :py:class:`~smile.state.Done` state.
+:py:class:`~smile.ref.NotAvailable` object. :py:class:`~smile.ref.NotAvailable`
+is the default value of a Reference that isn't ready to be evaluated.
+During :py:class:`~smile.ref.Ref.eval`, if one of the dependencies is
+:py:class:`~smile.ref.NotAvailable` the experiment will raise a
+:py:class:`~smile.ref.NotAvailableError`. If one of these errors occurs
+in the experiment, the easiest way to fix it is to create a
+:py:class:`~smile.state.Done` state.
 
-A :py:class:`~smile.state.Done` state is a fancy state that will wait until the value of a reference
+A :py:class:`~smile.state.Done` state is a unique state that will wait until the value of a reference
 is made available.
 
 .. warning::
 
-    This state is not for regular use. Only use it if you encounter a
-    NotAvailableError. If you misuse the *Done* state, your experiment will
+    This state is not for regular use. It should only be used when encountering
+    the NotAvailableError. Misuse of the *Done* state, the experiment will
     have hang-ups in the framerate or running of the experiment.
 
-You shouldn't run into *NotAvaiableError*'s unless you are trying to time
+*NotAvaiableError* should not occur unless you are trying to time
 a state based off the disappear time of something.
 
 For more information about :py:class:`~smile.ref.Ref` and :py:class:`~smile.state.Func`
 please see :ref:`Preforming Functions and Operations in RT <func_ref_def>`
-
