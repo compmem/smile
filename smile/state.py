@@ -1,11 +1,11 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from contextlib import contextmanager
 from functools import partial
@@ -18,7 +18,7 @@ import os.path
 import kivy_overrides
 import ref
 from ref import Ref, val, NotAvailable, NotAvailableError
-#from utils import rindex, get_class_name
+# from utils import rindex, get_class_name
 from log import LogWriter, log2csv
 from clock import clock
 
@@ -77,7 +77,8 @@ class StateBuilder(object):
                 state.override_instantiation_context()
                 return
             except NotImplementedError:
-                raise AttributeError("State does not support attribute setting!")
+                raise AttributeError("State does not support \
+                attribute setting!")
 
         # First, set the attribute value as normal.
         super(StateBuilder, self).__setattr__(name, value)
@@ -97,6 +98,7 @@ class StateBuilder(object):
 
         # return that plus the log attribute names
         return lst + self._log_attrs
+
 
 class StateClass(type):
     """A metaclass for States that creates a StateBuilder class for each State
@@ -701,7 +703,7 @@ class State(object):
             call_time = self._leave_time - self._exp._root_executor._start_time
             call_duration = clock.now() - self._leave_time
             if self._end_time is None:
-                 self.print_trace_msg(
+                self.print_trace_msg(
                     "LEAVE time=%fs, duration=%fs, perpetual" %
                     (call_time, call_duration))
             else:
@@ -764,9 +766,9 @@ class State(object):
         """
         self._exp.write_to_state_log(
             type(self).__name__,
-            {name : getattr(self, "_" + name) for name in self._log_attrs})
+            {name: getattr(self, "_" + name) for name in self._log_attrs})
 
-    def finalize(self):  #TODO: call a _finalize method?
+    def finalize(self):  # TODO: call a _finalize method?
         """Deactivate the state and perform any state logging.
         """
         if not self._active:
@@ -1283,6 +1285,7 @@ def Meanwhile(name=None, blocking=True):
     # set the new serial as non-blocking
     p._children[1]._blocking = False
 
+
 @contextmanager
 def UntilDone(name=None, blocking=True):
     """A context state used to run a previous state till its children are finished
@@ -1437,10 +1440,10 @@ class Serial(SequentialState):
     These examples will display 3 labels in serial and then the experiment will
     end.
 
-    Another example that would be helpful is to use Serial within a **Parallel**
-    state.  Say you want 2 sequences of states to run at the same time. The
-    easiest way to accomplish this is to use 2 Serial states within a Parallel
-    state.
+    Another example that would be helpful is to use Serial within a
+    **Parallel** state.  Say you want 2 sequences of states to run at the same
+    time. The easiest way to accomplish this is to use 2 Serial states within
+    a Parallel state.
 
     ::
 
@@ -1494,15 +1497,15 @@ class Subroutine(object):
                 self.mult_temp = self.mult_temp*mult
 
     This will create a **Subroutine** that your experiment can call. The
-    **Subroutine** will then run during experimental runtime just like any other
-    state. The call would look something like what follows.
+    **Subroutine** will then run during experimental runtime just like any
+    other state. The call would look something like what follows.
 
     ::
 
         Example_Subroutine(num_loop=15, input=200, mult=7)
 
-    And just like that, the Example_Subroutine is added to the **ParentState's**
-    children.
+    And just like that, the Example_Subroutine is added to the
+    **ParentState's** children.
     """
     def __init__(self, func):
         self._func = func
@@ -1521,7 +1524,7 @@ class Subroutine(object):
                 @contextmanager
                 def context():
                     with state:
-                        with contextmanager(lambda : retval)():
+                        with contextmanager(lambda: retval)():
                             yield state
                 result = context()
             else:
@@ -1638,7 +1641,8 @@ class If(SequentialState):
         super(If, self).__init__(parent=parent, save_log=save_log, name=name,
                                  blocking=blocking)
 
-        # save a list of conds to be evaluated (last one always True, acts as the Else)
+        # save a list of conds to be evaluated
+        # (last one always True, acts as the Else)
         self._init_cond = [conditional, True]
         self._outcome_index = None
         self.__true_state = true_state
@@ -1650,8 +1654,10 @@ class If(SequentialState):
         else:
             # create the true state
             self.__true_state = Serial(parent=self, name="IF BODY")
-            self.__true_state._instantiation_filename = self._instantiation_filename
-            self.__true_state._instantiation_lineno = self._instantiation_lineno
+            self.__true_state._instantiation_filename = \
+                self._instantiation_filename
+            self.__true_state._instantiation_lineno = \
+                self._instantiation_lineno
 
         # process the false state similarly
         if self.__false_state:
@@ -1659,8 +1665,10 @@ class If(SequentialState):
         else:
             # create the false state
             self.__false_state = Serial(parent=self, name="DO NOTHING")
-            self.__false_state._instantiation_filename = self._instantiation_filename
-            self.__false_state._instantiation_lineno = self._instantiation_lineno
+            self.__false_state._instantiation_filename = \
+                self._instantiation_filename
+            self.__false_state._instantiation_lineno = \
+                self._instantiation_lineno
 
         # save the out_states
         self._out_states = [self.__true_state, self.__false_state]
@@ -1674,7 +1682,7 @@ class If(SequentialState):
 
     def __enter__(self):
         # push self.__true_state as current parent
-        if not self._exp is None:
+        if self._exp is not None:
             self._exp._parents.append(self.__true_state)
         return self
 
@@ -1743,7 +1751,8 @@ def Else(name="ELSE BODY"):
 
 
 class Loop(SequentialState):
-    """A * Loop* state that is used to do any kind of repeated section of state-machine.
+    """A * Loop* state that is used to do any kind of repeated section of
+       state-machine.
 
     A *Loop* can be setup to run like the python **for**, **while**, or
     **do while** depending on what parameters you send into it.
@@ -1851,7 +1860,8 @@ class Loop(SequentialState):
         self._current = NotAvailable
 
         self.__body_state = Serial(parent=self, name="LOOP BODY")
-        self.__body_state._instantiation_filename = self._instantiation_filename
+        self.__body_state._instantiation_filename = \
+            self._instantiation_filename
         self.__body_state._instantiation_lineno = self._instantiation_lineno
         self.__current_child = None
         self.__cancel_time = None
@@ -1893,7 +1903,7 @@ class Loop(SequentialState):
 
     def __enter__(self):
         # push self.__body_state as current parent
-        if not self._exp is None:
+        if self._exp is not None:
             self._exp._parents.append(self.__body_state)
         return self
 
@@ -2188,7 +2198,7 @@ class _DelayedValueTest(State):
 class Done(AutoFinalizeState):
     """Waits until a state is finished or a ref is evaluated.
 
-    A *Done* state will block the experiment from continuing until a 
+    A *Done* state will block the experiment from continuing until a
     state is finalized. This is mainly only used when the
     timing of something like **disappear_time** needs to be logged.
 
@@ -2222,8 +2232,8 @@ class Done(AutoFinalizeState):
 
     def _enter(self):
         clones = [state.current_clone for state in self.__states]
-        self.__some_active = Ref(lambda : any(state._active for
-                                              state in clones))
+        self.__some_active = Ref(lambda: any(state._active for
+                                             state in clones))
         for state in clones:
             state._add_finalize_callback(self.__some_active.dep_changed)
         self.__some_active.add_change_callback(self._check)
@@ -2660,7 +2670,7 @@ if __name__ == '__main__':
 
     exp = Experiment()
 
-    #with UntilDone():
+    # with UntilDone():
     #    Wait(5.0)
     with Meanwhile():
         with Loop():
@@ -2673,7 +2683,7 @@ if __name__ == '__main__':
         Log(a=1, b=2, c=loop.i, name="aaa")
     Log({"q": loop.i, "w": loop.i}, x=4, y=2, z=1, name="bbb")
     Log([{"q": loop.i, "w": n} for n in xrange(5)], x=4, y=2, z=1, name="ccc")
-    #Log("sdfsd")  # This should cause an error
+    # Log("sdfsd")  # This should cause an error
 
     exp.for_the_thing = 3
     dtt = DoTheThing(3, 4, name="first")
@@ -2695,10 +2705,12 @@ if __name__ == '__main__':
     with Parallel():
         with Serial():
             Wait(2.0)
-            Func(lambda: None)  # force variable assignment to wait until correct time
+            # force variable assignment to wait until correct time
+            Func(lambda: None)
             exp.bar = True
             Wait(2.0)
-            Func(lambda: None)  # force variable assignment to wait until correct time
+            # force variable assignment to wait until correct time
+            Func(lambda: None)
             exp.bar = False
             Wait(1.0)
         When(exp.bar, Debug(name="when test"))
@@ -2710,8 +2722,8 @@ if __name__ == '__main__':
             Wait(0.5)
             Debug(name="non-blocking test")
 
-    exp.foo=1
-    Record(foo=exp.foo)#, name="rectest")
+    exp.foo = 1
+    Record(foo=exp.foo)  # , name="rectest")
     with UntilDone():
         Debug(name="FOO!")
         Wait(1.0)
@@ -2740,7 +2752,7 @@ if __name__ == '__main__':
             Debug(name="FOO!")
         with Serial():
             Debug(name="FOO!!!")
-            Wait(until=exp.foo==5, name="wait until")
+            Wait(until=exp.foo == 5, name="wait until")
             Debug(name="foo=5!")
 
     with Loop(10) as loop:
@@ -2761,7 +2773,7 @@ if __name__ == '__main__':
         with Loop(block, shuffle=True) as trial:
             Debug(current_val=trial.current['val'])
             Wait(1.0)
-            If(trial.current['val']==block[-1],
+            If(trial.current['val'] == block[-1],
                Wait(2.0))
         with If(outer.i >= 3):
             exp.not_done = False
@@ -2770,9 +2782,8 @@ if __name__ == '__main__':
     with Loop(block) as trial:
         Debug(current=trial.current)
         Wait(1.0)
-        If(trial.current==block[-1],
+        If(trial.current == block[-1],
            Wait(2.))
-
 
     If(True,
        Debug(name="True"),
@@ -2782,7 +2793,7 @@ if __name__ == '__main__':
        Debug(name="True"),
        Debug(name="False"))
     Wait(2.0)
-    If(False, Debug(name="ACK!!!")) # won't do anything
+    If(False, Debug(name="ACK!!!"))  # won't do anything
     Debug(name="two")
     Wait(3.0)
     with Parallel():
@@ -2792,7 +2803,7 @@ if __name__ == '__main__':
         Debug(name='four')
     Wait(2.0)
 
-    block = [{'text':'a'},{'text':'b'},{'text':'c'}]
+    block = [{'text': 'a'}, {'text': 'b'}, {'text': 'c'}]
     with Loop(block) as trial:
         Debug(current_text=trial.current['text'])
         Wait(1.0)

@@ -163,7 +163,7 @@ class MovingDots(Widget):
         self.height = self.radius*2
 
         # determine distribution of dots
-        #for i in range(0, )
+        # for i in range(0, )
         num_coh = int(round(self.num_dots * self.coherence))
         num_rand = self.num_dots - num_coh
 
