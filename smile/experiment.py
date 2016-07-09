@@ -65,7 +65,6 @@ class _VideoChange(object):
 
 class Screen(object):
     """Provides references to screen/app properties.
-
     Properties
     ----------
     last_flip : event_time
@@ -110,12 +109,8 @@ class Screen(object):
         self.left_top = (self.left, self.top)
     left_bottom : tuple
         self.left_bottom = (self.left, self.bottom)
-
     """
-<<<<<<< HEAD
 
-=======
->>>>>>> compmem/master
     def __init__(self):
         # set up the values of interest and their refs
         self._width = 0.0
@@ -256,7 +251,6 @@ class Screen(object):
 
 class ExpApp(App):
     """Kivy app associated with the experiment.
-
     Not instantiated by the end user."""
 
     def __init__(self, exp):
@@ -267,11 +261,7 @@ class ExpApp(App):
         self.video_queue = []
         self.force_blocking_flip = False
         self.force_nonblocking_flip = False
-<<<<<<< HEAD
         self.flip_interval = 1 / 60.  # default to 60 Hz
-=======
-        self.flip_interval = 1/60.  # default to 60 Hz
->>>>>>> compmem/master
 
     def add_callback(self, event_name, func):
         self.callbacks.setdefault(event_name, []).append(func)
@@ -507,11 +497,7 @@ class ExpApp(App):
                 #      are not forcing a non-blocking flip
                 if self.force_blocking_flip or \
                    (len(flip_time_callbacks) and
-<<<<<<< HEAD
                         not self.force_nonblocking_flip):
-=======
-                    not self.force_nonblocking_flip):
->>>>>>> compmem/master
                     # print "BLOCKING FLIP!"
                     self.blocking_flip()
                 else:
@@ -611,21 +597,18 @@ class ExpApp(App):
 
 class Experiment(object):
     """The base for a SMILE state-machine.
-
     An *Experiment* is the object that needs to be defined when you
     are ready to start building your smile experiment. This is also
     the class that you save all of your experimental run time
     variables into. Experiment also gives you access to things like
     screen size, resolution, and frame-rate during experimental run
     time.
-
     When you have all of your smile code written, the last line you
     need to add to your experiment is `exp.run()`. This will run all
     of the smile code that was written between `exp=Experiment()` and
     `exp.run()`.  Once all of the SMILE code is finished, the .py will
     continue passed `exp.run()` and run any code you might want to run
     after an experiment.
-
     Parameters
     ----------
     fullscreen : boolean (default = True)
@@ -636,7 +619,6 @@ class Experiment(object):
     background_color : string (default = 'BLACK')
         If given a string color name, see colors in video.py, the
         background of the window will be set to that color
-
     Properties
     ----------
     screen : Screen
@@ -651,7 +633,6 @@ class Experiment(object):
     info : string
         The info for the arguments you pass into the Experiment at
         initialization.
-
     Example
     -------
     You always want to call `exp = Experiment()` before you type your
@@ -661,20 +642,16 @@ class Experiment(object):
     experimental run time. You are able to add and set new attributes
     to your *Experiment* variable that will not be evaluated until
     experimental run time.
-
     ::
-
         exp = Experiment()
         exp.SavedVariable = 10
         with Loop(10) as trial:
             exp.SavedVariable += trial.i
         Label(text=exp.SavedVariable, duration=3)
         exp.run()
-
     This example will set SavedVariable to 10, add the numbers 0 through 9 to
     it, and then end the experiment.  At the end, exp.SavedVariable will be
     equal to 55.
-
     """
 
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
@@ -698,11 +675,7 @@ class Experiment(object):
         self.set_background_color()
 
         # make custom experiment app instance
-<<<<<<< HEAD
         # self._app = ExpApp(self)
-=======
-        #self._app = ExpApp(self)
->>>>>>> compmem/master
         self._screen = Screen()
         self._app = None
 
@@ -807,13 +780,12 @@ class Experiment(object):
         """
         Construct a unique filename for a data file in the log directory.  The
         filename will incorporate the specified 'title' string and it will have
-        extension specified with 'ext' (without the dot, if not None). The
+        extension specified with 'ext' (without the dot, if not None).  The
         filename will also incorporate a time-stamp and a number to
         disambiguate data files with the same title, extension, and time-stamp.
         The filename is not a file path.  The filename will be distinct from
         all filenames previously returned from this method even if a file of
         that name has not yet been created in the log directory.
-
         Returns the new filename.
         """
         if use_timestamp:
@@ -831,8 +803,7 @@ class Experiment(object):
                     return os.path.join(self._subj_dir, filename)
             else:
                 raise RuntimeError(
-                    "Too many data files with the same title, extension, and \
-                    timestamp!")
+                    "Too many data files with the same title, extension, and timestamp!")
 
     def setup_state_logger(self, state_class_name):
         if state_class_name in self._state_loggers:
@@ -925,13 +896,11 @@ class Experiment(object):
 
 class Set(AutoFinalizeState):
     """How to set a variable during Experimental Runtime.
-
     Whenever you ask SMILE to set an `exp.` variable, SMILE will create a
     Set state. The same way you can set using `exp.` you can with Set. On
     enter(), a Set state will call the Experiment method `set_var` which
     checks to see if the variable was created, creates it if not, and then
     fills it with the value passed into the Set state.
-
     Parameters
     ----------
     var_name : string
