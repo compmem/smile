@@ -2051,8 +2051,8 @@ class Log(AutoFinalizeState):
     within a *Loop* state, it will write a row to the .slog for each iteration
     of the loop.
 
-    Paramters
-    ---------
+    Parameters
+    ----------
     log_dict : dictionary (optional)
         Use case for this parameter is to pass in `trial.current`, as long
         as `trial.current` is a dictionary. This will save out all of the
