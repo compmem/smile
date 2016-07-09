@@ -1,18 +1,18 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import sys
 try:
     import parallel
     have_parallel = True
 except ImportError:
-    sys.stderr.write("\nWARNING: The parallel module could not load,\n" + 
+    sys.stderr.write("\nWARNING: The parallel module could not load,\n" +
                      "\tso no sync pulsing will be generated.\n\n")
     have_parallel = False
 
@@ -69,6 +69,7 @@ class Pulse(State):
     on both the presentation machine and the EEG apparatus.
 
     """
+
     def __init__(self, code=15, width=0.010, port=0,
                  parent=None, save_log=True, name=None):
         # init the parent class
@@ -138,7 +139,7 @@ class Pulse(State):
                 self._pport.setData(self._code_num)
                 end_time = clock.now()
             except:  # eventually figure out which errors to catch
-                sys.stderr.write("\nWARNING: The parallel module could not send pulses,\n" + 
+                sys.stderr.write("\nWARNING: The parallel module could not send pulses,\n" +
                                  "\tso no sync pulsing will be generated.\n\n")
                 have_parallel = False
                 self._pport = None
@@ -150,8 +151,8 @@ class Pulse(State):
                 return
 
             # set the pulse time
-            time_err = (end_time - start_time)/2.
-            self._pulse_on = event_time(start_time+time_err,
+            time_err = (end_time - start_time) / 2.
+            self._pulse_on = event_time(start_time + time_err,
                                         time_err)
 
             # schedule leaving (as soon as this method is done)
@@ -161,7 +162,7 @@ class Pulse(State):
             if self._width > 0.0:
                 # we're gonna turn off ourselves
                 clock.schedule(self._pulse_off_callback,
-                               event_time=self._pulse_on['time']+self._width)
+                               event_time=self._pulse_on['time'] + self._width)
             else:
                 # we're gonna leave it
                 self._pulse_off = None
@@ -191,8 +192,8 @@ class Pulse(State):
         self._pport = None
 
         # set the pulse time
-        time_err = (end_time - start_time)/2.
-        self._pulse_off = event_time(start_time+time_err,
+        time_err = (end_time - start_time) / 2.
+        self._pulse_off = event_time(start_time + time_err,
                                      time_err)
 
         # let's schedule finalizing

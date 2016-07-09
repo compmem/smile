@@ -4,14 +4,18 @@ import kivy.clock
 _get_time = kivy.clock._default_time
 _kivy_clock = kivy.clock.Clock
 
+
 class _ClockEvent(object):
+
     def __init__(self, clock, func, event_time, repeat_interval):
         self.clock = clock
         self.func = func
         self.event_time = event_time
         self.repeat_interval = repeat_interval
 
+
 class Clock(object):
+
     def __init__(self):
         self._events = []
 
@@ -19,7 +23,7 @@ class Clock(object):
         return _get_time()
 
     def tick(self):
-        #TODO: limit time spent in each tick?
+        # TODO: limit time spent in each tick?
         now = self.now()
         while len(self._events):
             event = self._events[0]

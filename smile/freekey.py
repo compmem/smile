@@ -1,5 +1,5 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
@@ -16,9 +16,10 @@ from clock import clock
 from video import Label
 
 # set the allowable keys (A-Z)
-asciiplus = [str(unichr(i)) for i in range(65,65+26)]
-asciiplus += ['ENTER','BACKSPACE','SPACEBAR']
-asciiplus += ['%d'%i for i in range(10)]
+asciiplus = [str(unichr(i)) for i in range(65, 65 + 26)]
+asciiplus += ['ENTER', 'BACKSPACE', 'SPACEBAR']
+asciiplus += ['%d' % i for i in range(10)]
+
 
 @Subroutine
 def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
@@ -67,7 +68,7 @@ def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
     """
     # I'd like the lbl to be up until the below is done. How?
     # is it just that I would cancel it at the end here?
-    #lbl = Label(text=txt, font_size=40)
+    # lbl = Label(text=txt, font_size=40)
     self.claim_child(lbl)
     with UntilDone():
 
@@ -93,9 +94,9 @@ def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
             self.base_time = base_time
         with Else():
             # make sure it's available
-            #Debug(fk_on_screen=lbl.on_screen)
+            # Debug(fk_on_screen=lbl.on_screen)
             Wait(until=lbl.on_screen)
-            #Debug(fk_on_screen=lbl.on_screen)
+            # Debug(fk_on_screen=lbl.on_screen)
 
             # use the label's appear time
             self.base_time = lbl.appear_time['time']
@@ -180,12 +181,12 @@ if __name__ == '__main__':
 
     Wait(.5)
 
-    fk = FreeKey(Label(text='XXXXXX',font_size=40), max_resp=1)
+    fk = FreeKey(Label(text='XXXXXX', font_size=40), max_resp=1)
     Debug(responses=fk.responses)
 
     Label(text='Done', font_size=32, duration=2.0)
 
-    fk2 = FreeKey(Label(text='??????',font_size=30))
+    fk2 = FreeKey(Label(text='??????', font_size=30))
     Debug(responses=fk2.responses)
 
     Wait(1.0)
