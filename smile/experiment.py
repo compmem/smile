@@ -112,7 +112,10 @@ class Screen(object):
         self.left_bottom = (self.left, self.bottom)
 
     """
+<<<<<<< HEAD
 
+=======
+>>>>>>> compmem/master
     def __init__(self):
         # set up the values of interest and their refs
         self._width = 0.0
@@ -264,7 +267,11 @@ class ExpApp(App):
         self.video_queue = []
         self.force_blocking_flip = False
         self.force_nonblocking_flip = False
+<<<<<<< HEAD
         self.flip_interval = 1 / 60.  # default to 60 Hz
+=======
+        self.flip_interval = 1/60.  # default to 60 Hz
+>>>>>>> compmem/master
 
     def add_callback(self, event_name, func):
         self.callbacks.setdefault(event_name, []).append(func)
@@ -500,7 +507,11 @@ class ExpApp(App):
                 #      are not forcing a non-blocking flip
                 if self.force_blocking_flip or \
                    (len(flip_time_callbacks) and
+<<<<<<< HEAD
                         not self.force_nonblocking_flip):
+=======
+                    not self.force_nonblocking_flip):
+>>>>>>> compmem/master
                     # print "BLOCKING FLIP!"
                     self.blocking_flip()
                 else:
@@ -687,7 +698,11 @@ class Experiment(object):
         self.set_background_color()
 
         # make custom experiment app instance
+<<<<<<< HEAD
         # self._app = ExpApp(self)
+=======
+        #self._app = ExpApp(self)
+>>>>>>> compmem/master
         self._screen = Screen()
         self._app = None
 
