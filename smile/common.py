@@ -76,6 +76,8 @@ from video import (
     BlockingFlips,
     NonBlockingFlips)
 from dotbox import DotBox, DynamicDotBox
+from moving_dots import MovingDots
+from grating import Grating
 from ref import Ref, val, jitter, shuffle
 #from smile.audio import Beep, SoundFile, RecordSoundFile
 from freekey import FreeKey

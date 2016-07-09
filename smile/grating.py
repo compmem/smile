@@ -15,14 +15,19 @@ from kivy.graphics.opengl import GL_ONE_MINUS_DST_ALPHA
 from array import array
 import math
 from itertools import chain
+
+
 # cache so we don't regenerate masks
 _mask_cache = {}
 
+
 @WidgetState.wrap
 class Grating(Widget):
-    """Creates a Gabor filter by generating a grating that is masked by either
-    a Gaussian, linear, or circular mask. Due to the limitations of Kivy, this
-    widget and only create square textures.
+    """Creates a masked grating.
+
+    The grating can be masked by either a Gaussian, linear, or
+    circular mask. Due to the limitations of Kivy, this widget can
+    only create square textures.
 
     Parameters
     ----------
@@ -48,14 +53,15 @@ class Grating(Widget):
         mask. Larger values create a larger grating on screen due to greater
         transparency and smaller values create smaller grating on screen due to
         less transparency.
+
     """
 
     envelope = StringProperty('g')
     frequency = NumericProperty(20)
     std_dev = NumericProperty(None)
     phase = NumericProperty(0.0)
-    color_one = ListProperty([1., 1., 1.])
-    color_two = ListProperty([0., 0., 0.])
+    color_one = ListProperty([1., 1., 1., 1.])
+    color_two = ListProperty([0., 0., 0., 0.])
 
     def __init__(self, **kwargs):
         super(type(self), self).__init__(**kwargs)
@@ -194,7 +200,8 @@ class Grating(Widget):
                                             colorfmt='rgba')
 
         # generate a unique mask id for cache lookup
-        mask_id = 'e%s_w%d_h%d'%(self.envelope, self.width, self.height)
+        mask_id = 'e%s_w%d_h%d' % (self.envelope[0].lower(),
+                                   self.width, self.height)
         global _mask_cache
 
         try:
