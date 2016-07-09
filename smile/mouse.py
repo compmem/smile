@@ -17,7 +17,6 @@ from kivy.core.image import Image
 
 from state import CallbackState, Record
 from ref import Ref, val, NotAvailable
-from clock import clock
 from experiment import Experiment
 from video import VisualState
 
@@ -55,7 +54,7 @@ def MouseWithin(widget):
     participant that they did the correct thing.
 
     """
-    pos = Experiment._last_instance()._app.mouse_pos_ref
+    pos = Experiment._last_instance().screen.mouse_pos
     return ((pos[0] >= widget.x) & (pos[1] >= widget.y) &
             (pos[0] <= widget.right) & (pos[1] <= widget.top))
 
@@ -63,12 +62,13 @@ def MouseWithin(widget):
 def MousePos(widget=None):
     """Returns the position of the mouse.
 
-    If given a widget, this function will return the position of the mouse in
-    reference to the position of the widget. If widget is set to None, then
-    this function will return the mouse position in relation to the experiment
-    window. """
-    pos = Experiment._last_instance()._app.mouse_pos_ref
-    #pos = Ref.getattr(Experiment._last_instance()._app, "mouse_pos_ref")
+    If given a widget, this function will return the position of the
+    mouse in reference to the position of the widget. If widget is set
+    to None, then this function will return the mouse position in
+    relation to the experiment window.
+
+    """
+    pos = Experiment._last_instance().screen.mouse_pos
     if widget is None:
         return pos
     else:
@@ -80,11 +80,13 @@ def MousePos(widget=None):
 def MouseButton(widget=None):
     """Returns a Reference to the next mouse button to be pressed.
 
-    If given a widget, it will only return the mouse button pressed if it was pressed
-    while the mouse was within the widget. If not given a widget, it will return a
-    reference to the next button to be pressed on the mouse.  """
-    button = Experiment._last_instance()._app.mouse_button_ref
-    #button = Ref.getattr(Experiment._last_instance()._app, "mouse_button_ref")
+    If given a widget, it will only return the mouse button pressed if
+    it was pressed while the mouse was within the widget. If not given
+    a widget, it will return a reference to the next button to be
+    pressed on the mouse.
+
+    """
+    button = Experiment._last_instance().screen.mouse_button
     if widget is None:
         return button
     else:
@@ -94,10 +96,9 @@ def MouseButton(widget=None):
 def MouseRecord(widget=None, name="MouseRecord"):
     """Returns a reference to a record about the next mouse press.
 
-    This function returns a *Record* that contains information about the button pressed
-    and the position of the click of the mouse. It also logs this information into a .slog
-    file.
-
+    This function returns a *Record* that contains information about
+    the button pressed and the position of the click of the mouse. It
+    also logs this information into a .slog file.
 
     """
     rec = Record(pos=MousePos(widget), button=MouseButton(widget), name=name)
@@ -148,6 +149,7 @@ class MouseCursor(VisualState):
 
     """
     stack = []
+
     def __init__(self, filename=None, offset=None, duration=None, parent=None,
                  save_log=True, name=None, blocking=True):
         super(MouseCursor, self).__init__(parent=parent,
@@ -172,7 +174,7 @@ class MouseCursor(VisualState):
 
     def _enter(self):
         super(MouseCursor, self)._enter()
-        self.__pos_ref = self._exp._app.mouse_pos_ref
+        self.__pos_ref = self._exp.screen.mouse_pos
         texture = Image(self._filename).texture
         self.__instruction = kivy.graphics.Rectangle(texture=texture,
                                                      size=texture.size)
@@ -217,11 +219,12 @@ class MouseCursor(VisualState):
 class MousePress(CallbackState):
     """A state used to track the pressing of a mouse button.
 
-    A *MousePress* state will tell your experiment to record the buttons
-    pressed, but not show the cursor. By default, your cursor is hidden and
-    doesn't send any feedback to your experiment. You call *MousePress* like you
-    would call *KeyPress* in that you can tell it what buttons are valid input,
-    and what the correct input is.
+    A *MousePress* state will tell your experiment to record the
+    buttons pressed, but not show the cursor. By default, your cursor
+    is hidden and doesn't send any feedback to your experiment. You
+    call *MousePress* like you would call *KeyPress* in that you can
+    tell it what buttons are valid input, and what the correct input
+    is.
 
 
     Parameters
@@ -274,6 +277,7 @@ class MousePress(CallbackState):
         **press_time** - **base_time**
     pos : tuple
         A tuple, (x, y), that is the position of the mouse button press.
+
     """
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
                  widget=None, duration=None, parent=None, save_log=True,

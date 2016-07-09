@@ -27,7 +27,7 @@ def Key(name):
 
     """
     exp = Experiment._last_instance()
-    return exp._app.get_key_ref(name.upper())
+    return exp.screen._get_key_ref(name.upper())
 
 
 class KeyState(CallbackState):
