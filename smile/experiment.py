@@ -25,8 +25,14 @@ from kivy.lang import Builder
 from kivy.logger import Logger
 from kivy.base import EventLoop  # this is actually our event loop
 from kivy.core.window import Window
-from kivy.graphics.opengl import glFinish
-from kivy.graphics import Point, Color
+from kivy.graphics.opengl import (
+    glVertexAttribPointer,
+    glVertexAttrib4f,
+    glDrawArrays,
+    glFinish,
+    GL_INT,
+    GL_FALSE,
+    GL_POINTS)
 from kivy.utils import platform
 import kivy.clock
 _kivy_clock = kivy.clock.Clock
@@ -528,9 +534,10 @@ class ExpApp(App):
         EventLoop.window.dispatch('on_flip')
 
         # draw a transparent point
-        with self.wid.canvas:
-            Color(0, 0, 0, 0)
-            Point(points=[10, 10], pointsize=1)
+        glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
+                              "\x00\x00\x00\x0a\x00\x00\x00\x0a")  # Position
+        glVertexAttrib4f(3, 0.0, 0.0, 0.0, 0.0)  # Color
+        glDrawArrays(GL_POINTS, 0, 1)
 
         # wait for flip and point to draw
         glFinish()
