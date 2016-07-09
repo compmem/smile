@@ -459,6 +459,9 @@ if __name__ == '__main__':
     exp = Experiment()
 
     Wait(1.0)
+    with Loop([440, 500, 600, 880]) as l:
+        Beep(freq=l.current, volume=0.4, duration=1.0)
+
     Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
     Beep(freq=880, volume=0.1, duration=1.0)
     with Parallel():
