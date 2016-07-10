@@ -11,7 +11,6 @@ import operator
 import os
 
 import kivy_overrides
-from kivy.core.window import Window
 import kivy.graphics
 from kivy.core.image import Image
 
@@ -188,14 +187,14 @@ class MouseCursor(VisualState):
         MouseCursor.stack.append(self)
 
     def _add_to_canvas(self):
-        Window.canvas.after.add(self.__color_instruction)
-        Window.canvas.after.add(self.__instruction)
+        self._exp._app._Window.canvas.after.add(self.__color_instruction)
+        self._exp._app._Window.canvas.after.add(self.__instruction)
         self.__pos_ref.add_change_callback(self._update_position)
         self._update_position()
 
     def _remove_from_canvas(self):
-        Window.canvas.after.remove(self.__color_instruction)
-        Window.canvas.after.remove(self.__instruction)
+        self._exp._app._Window.canvas.after.remove(self.__color_instruction)
+        self._exp._app._Window.canvas.after.remove(self.__instruction)
         self.__pos_ref.remove_change_callback(self._update_position)
 
     def _update_position(self):
