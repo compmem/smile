@@ -2,6 +2,7 @@ from smile.common import *
 
 # Standard Demographics Logging
 
+
 @Subroutine
 def Demographics(self):
     buttons = []
@@ -46,7 +47,10 @@ def Demographics(self):
                                         group='sex'))
 
         # Hispanic Or Latino
-        lbHis = Label(text='Are you Hispanic or Latino? (Having origins in Cuban, Mecian, Puerto Rican, South or Central American, or other Spanish culture, regardless of race.)',
+        lbHis = Label(text=('Are you Hispanic or Latino? (Having origins in '
+                            'Cuban, Mecian, Puerto Rican, South or Central '
+                            'American, or other Spanish culture, regardless '
+                            'of race.)'),
                       left=rc.left+50, top=lbSex.bottom-40,
                       text_size=(rc.width*.75, None))
         with ButtonPress() as bp2:
@@ -67,7 +71,7 @@ def Demographics(self):
         # Racial Origin
         lbRace = Label(text='Racial Origin (Mark all that apply)',
                        left=rc.left+50, top=lbHis.bottom-80)
-        #Black African-American
+        # Black African-American
         buttons3.append(ToggleButton(name='black_or_aftican-american',
                                      left=rc.left+50,
                                      top=lbRace.bottom-20,
@@ -131,15 +135,15 @@ def Demographics(self):
         Log(name='demographics',
             subj_id=self._exp.subject,
             age=txi1.text,
-            male=buttons[0].state=='down',
-            female=buttons[1].state=='down',
-            other=buttons[2].state=='down',
-            latino=buttons2[0].state=='down',
-            non_latino=buttons2[1].state=='down',
-            black_african_american=buttons3[0].state=='down',
-            middle_eastern=buttons3[1].state=='down',
-            north_african=buttons3[2].state=='down',
-            asian=buttons3[3].state=='down',
-            white=buttons3[4].state=='down',
-            native_american=buttons3[5].state=='down',
-            native_hawaiian_or_islander=buttons3[6].state=='down',)
+            male=buttons[0].state == 'down',
+            female=buttons[1].state == 'down',
+            other=buttons[2].state == 'down',
+            latino=buttons2[0].state == 'down',
+            non_latino=buttons2[1].state == 'down',
+            black_african_american=buttons3[0].state == 'down',
+            middle_eastern=buttons3[1].state == 'down',
+            north_african=buttons3[2].state == 'down',
+            asian=buttons3[3].state == 'down',
+            white=buttons3[4].state == 'down',
+            native_american=buttons3[5].state == 'down',
+            native_hawaiian_or_islander=buttons3[6].state == 'down',)

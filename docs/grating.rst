@@ -45,7 +45,7 @@ Here is the definition of our *Grating*:
         color_one = ListProperty([1., 1., 1.])
         color_two = ListProperty([0., 0., 0.])
 
-In *Grating* several different parameters are needed to be passed into the
+In *Grating*, several different parameters can be passed into the
 `__init__` method in order to create different kinds of Gabor filters.
 
 - envelope : A string that instructs the program to create a Gaussian, linear, or

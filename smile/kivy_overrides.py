@@ -82,12 +82,17 @@ if kivy.__version__ not in EXACT_KIVY_VERSIONS:
 
 # provide custom event loop
 import kivy.base
+
+
 class SmileEventLoop(kivy.base.EventLoopBase):
+
     def __init__(self):
         super(SmileEventLoop, self).__init__()
         self._idle_callback = None
+
     def set_idle_callback(self, callback):
         self._idle_callback = callback
+
     def idle(self):
         if self._idle_callback:
             self._idle_callback(self)

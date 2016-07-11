@@ -1,11 +1,11 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import operator
 import os
@@ -22,22 +22,17 @@ from video import VisualState
 
 def MouseWithin(widget):
     """An easy shortcut to wait for a mouse to be within a widget.
-
     This function returns True if the mouse position is within a given widget.
     When used in conjunction with the *Wait* state, it can wait until the mouse
     is within a widget.
-
     Parameters
     ----------
     widget : Kivy Widget (Any WidgetState)
         This parameter is whatever widget you would like to check and see if
         the mouse is within it.
-
     Example
     -------
-
     ::
-
         rec = Rectangle(height=10, width=10, color='RED')
         with UntilDone():
             with Parallel():
@@ -47,11 +42,9 @@ def MouseWithin(widget):
                     Label(text='You got the cursor into the square!',
                           color='GREEN', center_y=exp.screen.center_y/2,
                           duration=5)
-
     This example will draw a rectangle and wait until you put the cursor within
     the rectangle. Once that happens, a *Label* will appear telling the
     participant that they did the correct thing.
-
     """
     pos = Experiment._last_instance().screen.mouse_pos
     return ((pos[0] >= widget.x) & (pos[1] >= widget.y) &
@@ -60,12 +53,10 @@ def MouseWithin(widget):
 
 def MousePos(widget=None):
     """Returns the position of the mouse.
-
     If given a widget, this function will return the position of the
     mouse in reference to the position of the widget. If widget is set
     to None, then this function will return the mouse position in
     relation to the experiment window.
-
     """
     pos = Experiment._last_instance().screen.mouse_pos
     if widget is None:
@@ -78,12 +69,10 @@ def MousePos(widget=None):
 
 def MouseButton(widget=None):
     """Returns a Reference to the next mouse button to be pressed.
-
     If given a widget, it will only return the mouse button pressed if
     it was pressed while the mouse was within the widget. If not given
     a widget, it will return a reference to the next button to be
     pressed on the mouse.
-
     """
     button = Experiment._last_instance().screen.mouse_button
     if widget is None:
@@ -94,11 +83,9 @@ def MouseButton(widget=None):
 
 def MouseRecord(widget=None, name="MouseRecord"):
     """Returns a reference to a record about the next mouse press.
-
     This function returns a *Record* that contains information about
     the button pressed and the position of the click of the mouse. It
     also logs this information into a .slog file.
-
     """
     rec = Record(pos=MousePos(widget), button=MouseButton(widget), name=name)
     rec.override_instantiation_context()
@@ -107,11 +94,9 @@ def MouseRecord(widget=None, name="MouseRecord"):
 
 class MouseCursor(VisualState):
     """ A state that shows your mouse cursor for a duration.
-
     A *MouseCursor* state will tell your experiment to show your cursor. By
     default, your cursor is hidden and doesn't send any feedback to your
     experiment.
-
     Parameters
     ----------
     filename : string, optional
@@ -138,14 +123,12 @@ class MouseCursor(VisualState):
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
         running. Only relevant if within a *ParallelParent*.
-
     Logged Attributes
     -----------------
     All parameters above and below are available to be accessed and
     manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
     docstring for additional logged parameters.
-
     """
     stack = []
 
@@ -217,15 +200,12 @@ class MouseCursor(VisualState):
 
 class MousePress(CallbackState):
     """A state used to track the pressing of a mouse button.
-
     A *MousePress* state will tell your experiment to record the
     buttons pressed, but not show the cursor. By default, your cursor
     is hidden and doesn't send any feedback to your experiment. You
     call *MousePress* like you would call *KeyPress* in that you can
     tell it what buttons are valid input, and what the correct input
     is.
-
-
     Parameters
     ----------
     buttons : list (optional)
@@ -264,7 +244,6 @@ class MousePress(CallbackState):
     manipulated within the experiment code, and will be automatically
     recorded in the state-specific log. Refer to State class
     docstring for additional logged parameters.
-
     pressed : string
         The name of the button they pressed.
     press_time : float
@@ -276,7 +255,6 @@ class MousePress(CallbackState):
         **press_time** - **base_time**
     pos : tuple
         A tuple, (x, y), that is the position of the mouse button press.
-
     """
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
                  widget=None, duration=None, parent=None, save_log=True,
@@ -378,7 +356,7 @@ if __name__ == '__main__':
     exp = Experiment()
 
     with Meanwhile():
-        #Record(pos=MousePos(), button=MouseButton())
+        # Record(pos=MousePos(), button=MouseButton())
         with Parallel():
             MouseRecord()
             MouseCursor()
@@ -389,13 +367,13 @@ if __name__ == '__main__':
     Debug(name='Mouse Press Test')
 
     exp.last_pressed = ''
-    with Loop(conditional=(exp.last_pressed!='RIGHT')):
-        kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')
+    with Loop(conditional=(exp.last_pressed != 'RIGHT')):
+        kp = MousePress(buttons=['LEFT', 'RIGHT'], correct_resp='RIGHT')
         Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
         exp.last_pressed = kp.pressed
         Log(pressed=kp.pressed, rt=kp.rt)
 
-    kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')
+    kp = MousePress(buttons=['LEFT', 'RIGHT'], correct_resp='RIGHT')
     Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
     Wait(1.0)
 
