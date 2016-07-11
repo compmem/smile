@@ -803,7 +803,8 @@ class Experiment(object):
                     return os.path.join(self._subj_dir, filename)
             else:
                 raise RuntimeError(
-                    "Too many data files with the same title, extension, and timestamp!")
+                    "Too many data files with the same title, "
+                    "extension, and timestamp!")
 
     def setup_state_logger(self, state_class_name):
         if state_class_name in self._state_loggers:
