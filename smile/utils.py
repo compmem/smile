@@ -17,9 +17,10 @@ from StringIO import StringIO
 
 def rindex(lst, item):
     try:
-        return dropwhile(lambda x: lst[x] != item, reversed(xrange(len(lst)))).next()
+        return dropwhile(lambda x: lst[x] != item,
+                         reversed(xrange(len(lst)))).next()
     except StopIteration:
-        raise ValueError, "rindex(lst, item): item not in list"
+        raise ValueError("rindex(lst, item): item not in list")
 
 
 def get_class_name(obj):
@@ -88,7 +89,8 @@ def compute_samples(channels, nsamples=None):
     essentially it creates a sequence of the sum of each function in the
     channel at each sample in the file for each channel.
     '''
-    return islice(izip(*(imap(sum, izip(*channel)) for channel in channels)), nsamples)
+    return islice(izip(*(imap(sum, izip(*channel)) for channel in channels)),
+                  nsamples)
 
 
 def write_wavefile(f, samples, nframes=None, nchannels=2,

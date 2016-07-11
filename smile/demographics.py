@@ -47,7 +47,10 @@ def Demographics(self):
                                         group='sex'))
 
         # Hispanic Or Latino
-        lbHis = Label(text='Are you Hispanic or Latino? (Having origins in Cuban, Mecian, Puerto Rican, South or Central American, or other Spanish culture, regardless of race.)',
+        lbHis = Label(text=('Are you Hispanic or Latino? (Having origins in '
+                            'Cuban, Mecian, Puerto Rican, South or Central '
+                            'American, or other Spanish culture, regardless '
+                            'of race.)'),
                       left=rc.left+50, top=lbSex.bottom-40,
                       text_size=(rc.width*.75, None))
         with ButtonPress() as bp2:
