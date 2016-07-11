@@ -8,7 +8,6 @@
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # import main modules
-import sys
 import os
 import weakref
 import time
@@ -18,40 +17,23 @@ import threading
 import kivy_overrides
 import kivy
 import kivy.base
-from kivy.config import Config
-from kivy.app import App
-from kivy.uix.floatlayout import FloatLayout
-from kivy.lang import Builder
-from kivy.logger import Logger
-from kivy.base import EventLoop  # this is actually our event loop
-from kivy.core.window import Window
-from kivy.graphics.opengl import (
-    glVertexAttribPointer,
-    glVertexAttrib4f,
-    glDrawArrays,
-    glFinish,
-    GL_INT,
-    GL_FALSE,
-    GL_POINTS)
-from kivy.utils import platform
 import kivy.clock
-_kivy_clock = kivy.clock.Clock
 
 # local imports
 from state import Serial, AutoFinalizeState
-from ref import val, Ref
+from ref import Ref
 from clock import clock
 from log import LogWriter, log2csv
-from video import normalize_color_spec
 
-FLIP_TIME_MARGIN = 0.002     # increase this if we're missing flips
-IDLE_USLEEP = 250            # USLEEP During idle
+
+_kivy_clock = kivy.clock.Clock
 
 
 def event_time(time, time_error=0.0):  # TODO: make this a class!
     return {'time': time, 'error': time_error}
 
 
+<<<<<<< HEAD
 class _VideoChange(object):
     """Container for a change to the graphics tree."""
 
@@ -63,6 +45,8 @@ class _VideoChange(object):
         self.flipped = False
 
 
+=======
+>>>>>>> compmem/master
 class Screen(object):
     """Provides references to screen/app properties.
     Properties
@@ -249,6 +233,7 @@ class Screen(object):
         return (self.right, self.top)
 
 
+<<<<<<< HEAD
 class ExpApp(App):
     """Kivy app associated with the experiment.
     Not instantiated by the end user."""
@@ -595,6 +580,8 @@ class ExpApp(App):
         Window.screenshot(filename)
 
 
+=======
+>>>>>>> compmem/master
 class Experiment(object):
     """The base for a SMILE state-machine.
     An *Experiment* is the object that needs to be defined when you
@@ -624,10 +611,10 @@ class Experiment(object):
     screen : Screen
         Used to gain access to the size, shape, and location of variables like
         **center_x**, **height**, and **size** on the screen.
-    subject : string
+    subj : string
         The subject number/name given in the command line via `-s name` or set
         during experimental build time.
-    subject_dir : string
+    subj_dir : string
         string to where to save this subject's data. By default, it will be
         "data\subject_name"
     info : string
@@ -656,7 +643,10 @@ class Experiment(object):
 
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
+<<<<<<< HEAD
         # global Window
+=======
+>>>>>>> compmem/master
         self._process_args()
 
         # handle fullscreen and resolution before Window is imported
@@ -664,15 +654,8 @@ class Experiment(object):
             self._fullscreen = fullscreen
         self._resolution = self._resolution or resolution
 
-        # set fullscreen and resolution
-        if self._fullscreen is not None:
-            Window.fullscreen = self._fullscreen
-        if self._resolution is not None:
-            Window.system_size = self._resolution
-
         # process background color
         self._background_color = background_color
-        self.set_background_color()
 
         # make custom experiment app instance
         # self._app = ExpApp(self)
@@ -695,13 +678,6 @@ class Experiment(object):
         self._reserved_data_filenames = set(os.listdir(self._subj_dir))
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
-
-    def set_background_color(self, color=None):
-        if color is None:
-            if self._background_color is None:
-                return
-            color = self._background_color
-        Window.clearcolor = normalize_color_spec(color)
 
     def get_var_ref(self, name):
         try:
@@ -874,7 +850,8 @@ class Experiment(object):
             # self._root_executor.enter(clock.now() + 0.25)
 
             # kivy main loop
-            self._app = ExpApp(self)
+            from main import SmileApp
+            self._app = SmileApp(self)
             self._app.run()
 
         except:

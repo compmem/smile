@@ -219,7 +219,7 @@ class MovingDots(Widget):
 if __name__ == '__main__':
 
     from experiment import Experiment
-    from state import UntilDone, Wait, Loop
+    from state import UntilDone, Meanwhile, Wait, Loop
     from keyboard import KeyPress
 
     exp = Experiment(background_color=("purple", .3))
@@ -230,6 +230,8 @@ if __name__ == '__main__':
         g = MovingDots(direction=trial.current)
         with UntilDone():
             KeyPress()
+            with Meanwhile():
+                g.slide(color='red', duration=4.0)
         Wait(.25)
 
     exp.run(trace=False)

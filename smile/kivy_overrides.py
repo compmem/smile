@@ -1,7 +1,8 @@
 import sys
 import argparse
 
-if any([name.startswith("kivy") for name in sys.modules.keys() if
+if "kivy_overrides" not in sys.modules.keys() and \
+   any([name.startswith("kivy") for name in sys.modules.keys() if
         name != "kivy_overrides"]):
     raise ImportError("smile must be imported before kivy")
 
@@ -15,6 +16,9 @@ parser = argparse.ArgumentParser(description='Run a SMILE experiment.')
 parser.add_argument("-s", "--subject",
                     help="unique subject id",
                     default='test000')
+parser.add_argument("-e", "--experiment",
+                    help="experiment file",
+                    default='')
 parser.add_argument("-f", "--fullscreen",
                     help="disable fullscreen",
                     action='store_true')
@@ -95,10 +99,11 @@ class SmileEventLoop(kivy.base.EventLoopBase):
 
         # don't loop if we don't have listeners !
         if len(self.event_listeners) == 0:
-            Logger.error('Base: No event listeners have been created')
-            Logger.error('Base: Application will leave')
+            kivy.base.Logger.error('Base: No event listeners have been created')
+            kivy.base.Logger.error('Base: Application will leave')
             self.exit()
             return False
 
         return self.quit
+
 kivy.base.EventLoop = SmileEventLoop()
