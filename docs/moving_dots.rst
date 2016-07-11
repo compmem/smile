@@ -29,7 +29,7 @@ class MovingDots(Widget):
         Range around the mean speed.
     coherence : float
         Proportion of dots going in a coherent direction.
-        1-coherence will go in random directions.
+        0.-coherence will go in random directions.
     direction : float
         Mean direction of the coherent dots in degrees.
     direction_variance : float
