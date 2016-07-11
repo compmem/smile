@@ -23,7 +23,9 @@ Create a directory called *SmileTest* and add a file named *main.py*
     from smile.common import *
 
     exp = Experiment()
+
     Label(text="Hello World, Lets start Smiling!", duration=4)
+
     exp.run()
 
 Now, run **main.py**. Please refer to :ref:`Running SMILE <running-smile>` section of the
@@ -55,6 +57,7 @@ is a basic idea of what the timing is in the experiment. Create a new directory 
     words=['plank', 'dear', 'adopter',
            'initial', 'pull', 'complicated',
            'ascertain', 'biggest']
+
     random.shuffle(words)
 
 The file has created a list of words that will be randomly sorted when compiled.
@@ -65,6 +68,7 @@ can be created. What is next needed is to setup the preliminary variables.
 
     #Needed Parameters of the Experiment
     interStimulusDuration=1
+
     stimulusDuration=2
 
     #We are ready to start building the Experiment!
@@ -80,7 +84,9 @@ experiment, the :py:class:`~smile.state.Loop` state is needed to be defined.
 .. code-block:: python
 
     with Loop(words) as trial:
+
         Label(text=trial.current, duration=stimulusDuration)
+
         Wait(interStimulusDuration)
 
     exp.run()
@@ -116,16 +122,20 @@ Finished **rand_word_1.py**
     words = ['plank', 'dear', 'adopter',
              'initial', 'pull', 'complicated',
              'ascertain', 'biggest']
+
     random.shuffle(words)
 
     #Needed Parameters of the Experiment
     interStimulusDuration=1
+
     stimulusDuration=2
 
     #We are ready to start building the Experiment!
     exp = Experiment()
     with Loop(words) as trial:
+
         Label(text=trial.current, duration=stimulusDuration)
+
         Wait(interStimulusDuration)
 
     exp.run()
@@ -153,11 +163,17 @@ experiment will be able to tell what key is the correct key for each trial.
     words = ['plank', 'dear', 'thopter',
              'initial', 'pull', 'complicated',
              'ascertain', 'biggest']
+
     temp = []
+
     for i in range(len(words)):
+
         condition = len(words[i])%2
+
         temp.append({'stimulus':words[i], 'condition':key_dic[condition]})
+
     words = temp
+
     random.shuffle(words)
 
 
@@ -171,6 +187,7 @@ keys the participant will be pressing later.
 
     #Needed Parameters of the Experiment
     interStimulusDuration=1
+
     maxResponseTime=4
 
 
@@ -192,8 +209,11 @@ The following is an example before the loop was edited:
 
     ###########EXAMPLE, NOT PART OF EXPERIMENT#########
     Label(text='Im on the screen for at most 5 seconds')
+
     with UntilDone():
+
         Label(text='Im On the screen for 3 seconds!', duration=3)
+
         Wait(2)
 
 
@@ -206,10 +226,14 @@ Now to implement this state into the loop:
 .. code-block:: python
 
     with Loop(words) as trial:
+
         Label(text=trial.current['stimulus'])
+
         with UntilDone():
             kp = KeyPress(keys=key_dic)
+
         Wait(interStimulusDuration)
+
     exp.run()
 
 
@@ -224,10 +248,14 @@ listgen value set earlier.
 .. code-block:: python
 
     with Loop(words) as trial:
+
         Label(text=trial.current['stimulus'])
+
         with UntilDone():
+
             kp = KeyPress(keys=key_dic, duration=maxResponseTime,
                           correct_resp=trial.current['condition'])
+
         Wait(interStimulusDuration)
 
     exp.run()
@@ -250,11 +278,16 @@ The loop will look as follows:
 .. code-block:: python
 
     with Loop(words) as trial:
+
         Label(text=trial.current['stimulus'])
+
         with UntilDone():
+
             kp = KeyPress(keys=key_dic, duration=maxResponseTime,
                           correct_resp=trial.current['condition'])
+
         Wait(interStimulusDuration)
+
         Log(name='Loop',
             correct=kp.correct,
             time_to_respond=kp.rt)
@@ -360,6 +393,7 @@ add a few of the following to the subroutine:
                     onStimDur=1,
                     fixDur=1,
                     interOrientDur=.2):
+
         self.timing = []
 
 The only variable needed for testing later is an element to hold all of
@@ -376,12 +410,19 @@ Next, add the stimulus loop:
                     onStimDur=1,
                     fixDur=1,
                     interOrientDur=.2):
+
         self.timing = []
+
         with Loop(listOfWords) as trial:
+
             fix = Label(text='+', duration=fixDur)
+
             oriWait = Wait(interOrientDur)
+
             stim = Label(text=trial.current, duration=onStimDur)
+
             stimWait = Wait(interStimDur)
+
             self.timing += [Ref(dict,
                                 fix_dur=fix.duration,
                                 oriWait_dur=oriWait.duration,
@@ -490,15 +531,24 @@ Finished **button_press_example.py**
 
     #From here you can see setup for a ButtonPress state.
     with ButtonPress(correct_resp='left', duration=5) as bp:
-        MouseCursor()S
+        MouseCursor()
+
         Button(name='left', text='left', left=exp.screen.left,
                bottom=exp.screen.bottom)
+
         Button(name='right', text='right', right=exp.screen.right,
                bottom=exp.screen.bottom)
+
         Label(text='PRESS THE LEFT BUTTON FOR A CORRECT ANSWER!')
+
     Wait(.2)
+
     with If(bp.correct):
+
         Label(text='YOU PICKED CORRECT', color='GREEN', duration=1)
+
     with Else():
+
         Label(text='YOU WERE DEAD WRONG', color='RED', duration=1)
+
     exp.run()

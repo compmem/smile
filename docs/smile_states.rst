@@ -71,23 +71,34 @@ of the *Serial* state.
 
 The following two experiments are equivalent.
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     Label(text="First state", duration=2)
+
     Label(text="Second state", duration=2)
+
     Label(text="Third state", duration=2)
+
     exp.run()
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     with Serial():
+
         Label(text="First state", duration=2)
+
         Label(text="Second state", duration=2)
+
         Label(text="Third state", duration=2)
+
     exp.run()
 
 As shown above, the default state of an experiment is a :py:class:`~smile.state.Serial` state in
@@ -113,16 +124,22 @@ will have their `.cancel()` method called to allow the *Parallel* state to end.
 An example below has 3 :py:class:`~smile.video.Label` states that will disappear from the screen at
 the same time, despite having 3 different durations.
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     with Parallel():
+
         Label(text='This one is in the middle', duration=3)
+
         Label(text='This is on top', duration=5, blocking=False,
               center_y=exp.screen.center_y+100)
+
         Label(text='This is on the bottom', duration=10, blocking=False,
               center_y=exp.screen.center_y-100)
+
     exp.run()
 
 Because the second and third *Label* in the above example are *non-blocking*,
@@ -148,13 +165,18 @@ run until they leave, or until the experiment is over.
 The following example shows how to use a *Meanwhile* to create an instructions
 screen that waits for a keypress to continue.
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     KeyPress()
+
     with Meanwhile():
+
         Label(text="THESE ARE YOUR INSTRUCTIONS, PRESS ENTER")
+
     exp.run()
 
 As soon as the :py:class:`~smile.keyboard.KeyPress` state ends, the :py:class:`~smile.video.Label` will disappear off the screen
@@ -176,13 +198,18 @@ run until they leave. Then, the experiment will end.
 The following example shows how to use an *UntilDone* to create an instructions
 screen that waits for a keypress to continue.
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     Label(text="THESE ARE YOUR INSTRUCTIONS, PRESS ENTER")
+
     with UntilDone():
+
         KeyPress()
+
     exp.run()
 
 Wait State
@@ -205,18 +232,27 @@ does. Since the first *Wait* has a jitter, it is impossible to detect how
 long that would be, so there resides a second *Wait* wait until lb1 has an
 *appear_time*.
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     with Parallel():
+
         with Serial():
+
             Wait(duration=3, jitter=2)
+
             lb16 = Label(text="Im on the screen now", duration=2)
+
         with Serial():
+
             Wait(until=lb1.appear_time['time']!=None)
+
             lb2 = Label(text="Me Too!", duration=2,
                         center_y=exp.screen.center_y-100)
+
     exp.run()
 
 If, ElIf, and Else States
@@ -245,21 +281,34 @@ replaces the True's empty *Serial*.
 
 The following is a 4 option if test.
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     Label(text='PRESS A KEY')
+
     with UntilDone():
+
         kp = KeyPress()
+
     with If(kp.pressed == "SPACE"):
+
         Label(text="YOU PRESSED SPACE", duration=3)
+
     with Elif(kp.pressed == "J"):
+
         Label(text="YOU PRESSED THE J KEY", duration=3)
+
     with Elif(kp.pressed == "F"):
+
         Label(text="YOU PRESSED THE K KEY", duration=3)
+
     with Else():
+
         Label(text="I DONT KNOW WHAT YOU PRESSED", duration=3)
+
     exp.run()
 
 
@@ -284,48 +333,65 @@ Below is an example of all 3 loops.
 
 List of Dictionaries
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     #List Gen
     list_of_dic = [{'stim':"STIM 1", 'dur':3},
                    {'stim':"STIM 2", 'dur':2},
                    {'stim':"STIM 3", 'dur':5},
                    {'stim':"STIM 4", 'dur':1}]
-    #Experiment
+
+    # Initialize the Experiment
     exp = Experiment()
-    #The *as* operator allows one to gain access
-    #to the data inside the *Loop* state
+
+    # The *as* operator allows one to gain access
+    # to the data inside the *Loop* state
     with Loop(list_of_dic) as trial:
+
         Label(text=trial.current['stim'], duration=trial.current['dur'])
+
     exp.run()
 
 
 Loop a number of times:
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     with Loop(10):
-        Label(text='this will show up 10 times!', duration=1)
+
+        Label(text='This will show up 10 times!', duration=1)
+
         Wait(1)
+
     exp.run()
 
 Loop while something is true:
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     exp.test = 0
-    #Never use *and* or *or* always use *&* and *|* when dealing
-    #with references. Conditional References only work with
-    #absolute operators, not *and* or *or*
+
+    # Never use *and* or *or* always use *&* and *|* when dealing
+    # with references. Conditional References only work with
+    # absolute operators, not *and* or *or*
     with Loop(conditional = (exp.test < 10)):
-        Label(text='this will show up 10 times!', duration=1)
+
+        Label(text='This will show up 10 times!', duration=1)
+
         Wait(1)
+
         exp.test = exp.test + 1
+
     exp.run()
 
 
@@ -343,6 +409,76 @@ subclasses of WidgetState.
     website. For all of the parameters that every single WidgetState shares,
     refer to the WidgetState Doctring.
 
+Debug
+-----
+
+:py:class:`~smile.state.Debug` is a :py:class:`~smile.state.State` that is
+primarily used to print out the values of references to the command line. This
+**State** should not be used as a replacement for **print** during experimental
+runtime. It should only be used to print the current values of references during
+the experimental runtime.
+
+You can give a **Debug** state a *name* to distinguish it from other **Debugs**
+that you might be running. **Debugs** work on with keyword arguments. Below is
+an example for how to properly use the **Debug** state and the sample output
+that it produces.
+
+.. code-block:: python
+
+    from smile.common import *
+
+    exp = Experiment()
+
+    lbl = Label(text="Hello, World", duration=2)
+
+    Wait(until=lbl.disappear_time)
+
+    Debug(name="Label appear debug", appear=lbl.appear_time['time'],
+          disappear=lbl.disappear_time['time'])
+
+    exp.run()
+
+And it would output
+
+::
+
+    DEBUG (file: 'debug_example.py', line: 7, name: Label appear debug) - lag=0.012901s
+        appear: 1468255447.360574
+        disappear: 1468255449.359951
+
+
+Func
+----
+
+:py:class:`~smile.state.Func` is a :py:class:`~smile.state.State` that can run a
+function during Experimental Runtime. The first argument is always the name of
+the function and the rest of the arguments are the arguments that are sent to
+the function. You can pass in parameters to the **Func** state the same way you
+would pass them into the function you are wanting to run during experimental
+runtime. In order to access the return value of the function passed in, you need
+to access the *.result* attribute of the **Func** state.
+
+The following is an exmaple on how to run a predefined function during
+experimental runtime.
+
+.. code-block:: python
+
+    from smile import *
+
+    def pre_func(i):
+
+        return i * 50.7777
+
+    exp = Experiment()
+
+    with Loop(100) as lp:
+
+        rtrn = Func(lp.i)
+
+        Debug(i = rtrn.result)
+
+    exp.run()
+
 Label
 -----
 
@@ -355,11 +491,14 @@ in (width_of_text, None) so the amount of text is not restricted in the vertical
 
 The following is a Label displaying the word "BabaBooie":
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
-    Label(text="BabaBooie", duration=2, text_size=(500,None))
+
+    Label(text="Hello, World", duration=2, text_size=(500,None))
+
     exp.run()
 
 Image
@@ -378,11 +517,14 @@ to fill the entirety of the widget.
 Below is an example of an image at the path "test_image.png" to be presented to
 the center of the screen:
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     Image(source="test_image.png", duration=3)
+
     exp.run()
 
 Video
@@ -401,11 +543,14 @@ the video where to start.
 Below is an example of playing a video at the path "test_video.mp4" that starts
 4 seconds into the video and plays for the entire duration (duration=None):
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     Video(source="test_video.mp4", position=4)
+
     exp.run()
 
 Vertex Instructions
@@ -450,11 +595,14 @@ in seconds and they represent the time it takes to get from 0 to *volume* and
 Below is an example of a beep at 555hz, for 2 seconds, with no fade in or out,
 and at 50% volume:
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     Beep(freq=555, volume=0.5, duration=2)
+
     exp.run()
 
 SoundFile
@@ -480,11 +628,14 @@ If the *loop* parameter is set to True, the sound file will run on a loop for th
 Below is an example of playing a sound file at path "test_sound.mp3" at 50%
 volume for the full duration of the sound file:
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     SoundFile(source="test_sound.mp3", volume=0.5)
+
     exp.run()
 
 RecordSoundFile
@@ -497,15 +648,20 @@ after what is passed into the *filename* parameter.
 Below is an example of recording sound for 10 second while looking at a Label
 that says "PLEASE TALK TO YOUR COMPUTER", and saves it into "new_sound.mp3":
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     Label(text="PLEASE TALK TO YOUR COMPUTER")
-    #UntilDone to cancel the label after the sound file
-    #is done recording.
+
+    # UntilDone to cancel the label after the sound file
+    # is done recording.
     with UntilDone():
+
         RecordSoundFile(filename="new_sound.mp3", duration = 10)
+
     exp.run()
 
 Button
@@ -521,23 +677,35 @@ Below is an example of a Form, where a :py:class:`~smile.video.Label` state will
 ask someone to type in an answer to a :py:class:`~smile.video.TextInput`. Then
 they will press the button when they are finished typing:
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     from smile.video import TextInput
+
     exp = Experiment()
-    #Show both the Label and the TextInput at the same time
-    #during the experiment
+
+    # Show both the Label and the TextInput at the same time
+    # during the experiment
     with Parallel():
-        #Required to show the mouse on the screen during the experiment!
+
+        # Required to show the mouse on the screen during the experiment!
         MouseCursor()
-        Label(text="Yo, Tell me about your day!?!?", center_y=exp.screen.center_y+50)
+
+        Label(text="Hello, Tell me about your day!", center_y=exp.screen.center_y+50)
+
         TextInput(text="", width=500, height=200)
-    #When the button is pressed, the Button state ends, causing
-    #The parallel to cancel all of its children, the Label and the
-    #TextInput
+
+    # When the button is pressed, the Button state ends, causing
+    # the parallel to cancel all of its children, the Label and the
+    # TextInput
     with UntilDone():
-        Button(text="Enter")
+
+        # A ButtonPress will end whenever one of its child buttons
+        # is pressed.
+        with ButtonPress():
+            Button(text="Enter")
+
     exp.run()
 
 
@@ -554,18 +722,28 @@ tutorial document.
 The following is an example of choosing between 3 buttons where only one of the buttons
 is the correct button to click:
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
+    # A ButtonPress will end whenever one of its child buttons
+    # is pressed.
     with ButtonPress(correct_resp=['First_Choice']) as bp:
-        #Required to do anything with buttons.
+
+        # Required to do anything with buttons.
         MouseCursor()
+
         Label(text="Choose WISELY young WEESLY")
-        #Define both buttons, naming them both unique things
+
+        # Define both buttons, naming them both unique things
         Button(name="First_Choice",text="LEFT CHOICE", center_x=exp.screen.center_x-200)
+
         Button(name="Second_Choice",text="RIGHT CHOICE", center_x=exp.screen.center_x+200)
+
     Label(text=bp.pressed, duration=2)
+
     exp.run()
 
 
@@ -587,16 +765,21 @@ the following attributes:
 
 The following is a keypress example that will identify what keys were pressed.
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     with Loop(10):
-        #Wait until any key is pressed
+
+        # Wait until any key is pressed
         kp = KeyPress()
-        #Even though kp.pressed is a reference, you are able
-        #to concatenate strings together
+
+        # Even though kp.pressed is a reference, you are able
+        # to concatenate strings together
         Label(text="You Pressed :" + kp.pressed, duration = 2)
+
     exp.run()
 
 KeyRecord
@@ -609,11 +792,14 @@ KeyRecord
 The following example will save out a `.slog` file into log_bob.slog after
 recording all of the keypresses during a 10 second period:
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     KeyRecord(name="Bob", duration = 10)
+
     exp.run()
 
 MouseCursor
@@ -634,11 +820,14 @@ imaginary image to be displayed as the cursor. Since the imaginary image is
 of the cursor to be (50,50) so that the actual *click* of the mouse is in the
 correct location:
 
-::
+.. code-block:: python
 
     from smile.common import *
+
     exp = experiment()
+
     MouseCursor(duration = 10, filename="mouse_test_pointer.png", offset=(50,50))
+
     exp.run()
 
 For more useful mouse tutorials, see the **Mouse Stuff** section of the Tutorial
