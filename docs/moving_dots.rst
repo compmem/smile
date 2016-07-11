@@ -270,15 +270,15 @@ widget gets larger, the color changed to blue, and the dots became larger:
     :align: center
 
 MovingDots(radius=500, color=[.5, 0., 1.], scale=10.0, speed=200,
-           speed_variance=100, lifespan=10, num_dots=500, coherence=1.)
+           speed_variance=100, lifespan=0.02, num_dots=500, coherence=1.)
 This is the same parameters as the above example except the speed has increase,
 the speed_variance has been set so some dots move faster or slower than the mean,
-the number of dots has increased to 500, the lifespan has increased to 10, and
+the number of dots has increased to 500, the lifespan has decreased to 0.02, and
 the coherence is 1. making all of the dots move in the same direction to the right:
 
 .. image:: _static/scale_color_radius_speed_coherence_number_moving_dots.png
-    :width: 1210
-    :height: 1080
+    :width: 1156
+    :height: 1126
     :align: center
 
 *See moving_dots.py for complete Gabor filter creation code.*
