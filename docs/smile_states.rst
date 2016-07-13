@@ -78,9 +78,7 @@ The following two experiments are equivalent.
     exp = Experiment()
 
     Label(text="First state", duration=2)
-
     Label(text="Second state", duration=2)
-
     Label(text="Third state", duration=2)
 
     exp.run()
@@ -92,11 +90,8 @@ The following two experiments are equivalent.
     exp = Experiment()
 
     with Serial():
-
         Label(text="First state", duration=2)
-
         Label(text="Second state", duration=2)
-
         Label(text="Third state", duration=2)
 
     exp.run()
@@ -131,12 +126,9 @@ the same time, despite having 3 different durations.
     exp = Experiment()
 
     with Parallel():
-
         Label(text='This one is in the middle', duration=3)
-
         Label(text='This is on top', duration=5, blocking=False,
               center_y=exp.screen.center_y+100)
-
         Label(text='This is on the bottom', duration=10, blocking=False,
               center_y=exp.screen.center_y-100)
 
@@ -172,9 +164,7 @@ screen that waits for a keypress to continue.
     exp = Experiment()
 
     KeyPress()
-
     with Meanwhile():
-
         Label(text="THESE ARE YOUR INSTRUCTIONS, PRESS ENTER")
 
     exp.run()
@@ -205,9 +195,7 @@ screen that waits for a keypress to continue.
     exp = Experiment()
 
     Label(text="THESE ARE YOUR INSTRUCTIONS, PRESS ENTER")
-
     with UntilDone():
-
         KeyPress()
 
     exp.run()
@@ -239,17 +227,11 @@ long that would be, so there resides a second *Wait* wait until lb1 has an
     exp = Experiment()
 
     with Parallel():
-
         with Serial():
-
             Wait(duration=3, jitter=2)
-
             lb16 = Label(text="Im on the screen now", duration=2)
-
         with Serial():
-
             Wait(until=lb1.appear_time['time']!=None)
-
             lb2 = Label(text="Me Too!", duration=2,
                         center_y=exp.screen.center_y-100)
 
@@ -288,25 +270,19 @@ The following is a 4 option if test.
     exp = Experiment()
 
     Label(text='PRESS A KEY')
-
     with UntilDone():
-
         kp = KeyPress()
 
-    with If(kp.pressed == "SPACE"):
-
+    with If(kp.pressed == "SPACEBAR"):
         Label(text="YOU PRESSED SPACE", duration=3)
 
     with Elif(kp.pressed == "J"):
-
         Label(text="YOU PRESSED THE J KEY", duration=3)
 
     with Elif(kp.pressed == "F"):
-
         Label(text="YOU PRESSED THE K KEY", duration=3)
 
     with Else():
-
         Label(text="I DONT KNOW WHAT YOU PRESSED", duration=3)
 
     exp.run()
@@ -349,7 +325,6 @@ List of Dictionaries
     # The *as* operator allows one to gain access
     # to the data inside the *Loop* state
     with Loop(list_of_dic) as trial:
-
         Label(text=trial.current['stim'], duration=trial.current['dur'])
 
     exp.run()
@@ -364,9 +339,7 @@ Loop a number of times:
     exp = Experiment()
 
     with Loop(10):
-
         Label(text='This will show up 10 times!', duration=1)
-
         Wait(1)
 
     exp.run()
@@ -385,11 +358,8 @@ Loop while something is true:
     # with references. Conditional References only work with
     # absolute operators, not *and* or *or*
     with Loop(conditional = (exp.test < 10)):
-
         Label(text='This will show up 10 times!', duration=1)
-
         Wait(1)
-
         exp.test = exp.test + 1
 
     exp.run()
@@ -430,9 +400,7 @@ that it produces.
     exp = Experiment()
 
     lbl = Label(text="Hello, World", duration=2)
-
     Wait(until=lbl.disappear_time)
-
     Debug(name="Label appear debug", appear=lbl.appear_time['time'],
           disappear=lbl.disappear_time['time'])
 
@@ -466,15 +434,12 @@ experimental runtime.
     from smile import *
 
     def pre_func(i):
-
         return i * 50.7777
 
     exp = Experiment()
 
     with Loop(100) as lp:
-
         rtrn = Func(lp.i)
-
         Debug(i = rtrn.result)
 
     exp.run()
@@ -655,11 +620,9 @@ that says "PLEASE TALK TO YOUR COMPUTER", and saves it into "new_sound.mp3":
     exp = Experiment()
 
     Label(text="PLEASE TALK TO YOUR COMPUTER")
-
     # UntilDone to cancel the label after the sound file
     # is done recording.
     with UntilDone():
-
         RecordSoundFile(filename="new_sound.mp3", duration = 10)
 
     exp.run()
@@ -688,19 +651,15 @@ they will press the button when they are finished typing:
     # Show both the Label and the TextInput at the same time
     # during the experiment
     with Parallel():
-
         # Required to show the mouse on the screen during the experiment!
         MouseCursor()
-
         Label(text="Hello, Tell me about your day!", center_y=exp.screen.center_y+50)
-
         TextInput(text="", width=500, height=200)
 
     # When the button is pressed, the Button state ends, causing
     # the parallel to cancel all of its children, the Label and the
     # TextInput
     with UntilDone():
-
         # A ButtonPress will end whenever one of its child buttons
         # is pressed.
         with ButtonPress():
@@ -731,17 +690,12 @@ is the correct button to click:
     # A ButtonPress will end whenever one of its child buttons
     # is pressed.
     with ButtonPress(correct_resp=['First_Choice']) as bp:
-
         # Required to do anything with buttons.
         MouseCursor()
-
         Label(text="Choose WISELY young WEESLY")
-
         # Define both buttons, naming them both unique things
         Button(name="First_Choice",text="LEFT CHOICE", center_x=exp.screen.center_x-200)
-
         Button(name="Second_Choice",text="RIGHT CHOICE", center_x=exp.screen.center_x+200)
-
     Label(text=bp.pressed, duration=2)
 
     exp.run()
@@ -772,10 +726,8 @@ The following is a keypress example that will identify what keys were pressed.
     exp = Experiment()
 
     with Loop(10):
-
         # Wait until any key is pressed
         kp = KeyPress()
-
         # Even though kp.pressed is a reference, you are able
         # to concatenate strings together
         Label(text="You Pressed :" + kp.pressed, duration = 2)

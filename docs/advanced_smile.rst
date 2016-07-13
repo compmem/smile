@@ -42,10 +42,8 @@ to the left or right, above or below, of each other. An example of this is as fo
     exp = Experiment()
 
     with Parallel():
-
         lb1 = Label(text="I AM NEAR THE BOTTOM", right=exp.screen.right - 200,
                     bottom=exp.screen.bottom, duration=5)
-
         lb2 = Label(text="I AM ABOVE THE OTHER LABEL", right=lb1.right,
                     bottom=lb1.top + 400, duration=5)
 
@@ -150,14 +148,11 @@ Now we can write state machine code for the **Subroutine**:
         # After this line, self.counter is a reference object
         # that can be reference anywhere else in this subroutine.
         self.counter = minVal
-
         # Define the Loop, loop 100 times
         with Loop(100):
-
             # Apply the plus-equals operator to
             # self.counter to add 5
             self.counter += 5
-
             # Display the reference self.counter in
             # string form. Ref(str, self.counter) is required
             # to apply the str() function to self.counter during
@@ -185,7 +180,6 @@ The following is an example of calling this subroutine during an actual experime
 
     # Just like writing any other state declaration
     cuf = CountUpFrom(10)
-
     # Print out the value of the counter in CountUpFrom
     # To the command line
     Debug(name="Count Up Stuff", end_counter=cuf.counter)
@@ -239,11 +233,8 @@ Here is the definition of our *DotBox*:
 
         # Define the widget Parameters for Kivy
         color = ListProperty([1, 1, 1, 1])
-
         backcolor = ListProperty([0, 0, 0, 0])
-
         num_dots = NumericProperty(10)
-
         pointsize = NumericProperty(5)
 
 In *DotBox* several different parameters are needed to be passed into the
@@ -293,54 +284,42 @@ attached with `.bind()`. Now the functions can be defined:
 
     # Update self._color.rgba
     def _update_color(self, *pargs):
-
         self._color.rgba = self.color
 
     # Update self._backcolor.rgba
     def _update_backcolor(self, *pargs):
-
         self._backcolor.rgba = self.backcolor
 
     # Update the locations of the dots, then
     # Call self._update() to redraw
     def _update_locs(self, *pargs):
-
         self._locs = [random.random()
                       for i in xrange(int(self.num_dots)*2)]
-
         self._update()
 
     # Update the size of all of the dots
     def _update_pointsize(self, *pargs):
-
         self._points.pointsize = self.pointsize
 
     # Draw the points onto the Kivy Canvas
     def _update(self, *pargs):
-
         # calc new point locations
         bases = (self.x+self.pointsize, self.y+self.pointsize)
-
         scales = (self.width-(self.pointsize*2),
                   self.height-(self.pointsize*2))
-
         points = [bases[i % 2]+scales[i % 2]*loc
                   for i, loc in enumerate(self._locs)]
 
         # draw them
         self.canvas.clear()
         with self.canvas:
-
             # set the back color
             self._backcolor = Color(*self.backcolor)
-
             # draw the background
             Rectangle(size=self.size,
                       pos=self.pos)
-
             # set the color
             self._color = Color(*self.color)
-
             # draw the points
             self._points = Point(points=points, pointsize=self.pointsize)
 
@@ -452,7 +431,6 @@ The following is a sample experiment where `exp.display_me` is set to a string:
     exp = Experiment()
 
     exp.display_me = "LETS DISPLAY THIS SECRET MESSAGE"
-
     Label(text=exp.display_me)
 
     exp.run()
@@ -472,7 +450,6 @@ an example of what the experiment would look like if the 3rd line is changed:
     exp = Experiment()
 
     Set(var_name="display_me", value="LETS DISPLAY THIS SECRET MESSAGE")
-
     Label(text=exp.display_me)
 
     exp.run()
@@ -511,7 +488,6 @@ creating a **Ref** to call 'str()'.
 .. code-block:: python
 
     with Loop(100) as lp:
-
         #This Ref is a delayed function call to str where
         #one of the parameters is a reference. Ref also
         #takes care of evaluating references.
@@ -531,9 +507,7 @@ the **Func** state must be accessed.
     #gen_stim is a predefined function that generates
     #that stimulus
     with Loop(10) as lp:
-
         stim = Func(gen_stim, length=lp.i)
-
         DisplayStim(stim.result, duration=5)
 
 .. note::
@@ -578,11 +552,8 @@ The following is a mini example of such a **Parallel**:
 .. code-block:: python
 
     with Parallel() as p:
-
         NonBlockingFlip()
-
         Label(text="PRESS NOW!!!")
-
         kp = KeyPress()
 
 A **BlockingFlip** is used when the timing of screen appearance takes priority
@@ -594,11 +565,8 @@ An example of this is as follows:
 .. code-block:: python
 
     with Parallel():
-
         BlockingFlip()
-
         vd = Video(source="test_vid.mp4")
-
         Record(name="video_record", flip=exp._last_flip)
 
 

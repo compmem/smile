@@ -1081,10 +1081,8 @@ class Parallel(ParentState):
         with Parallel():
 
             Label(text="I will remain here the longest!", duration=3)
-
             Label(text="My duration will be cut short.", duration=5,
                   center_x=exp.screen.center_x+200, blocking=False)
-
             Label(text="I will disappear first!", duration=2,
                   center_x=exp.screen.center_x-200)
 
@@ -1277,9 +1275,7 @@ def Meanwhile(name=None, blocking=True):
     ::
 
         Wait(3)
-
         with Meanwhile():
-
             Label(text='On the screen for 3 seconds, the Wait's Duration')
 
     This Example will display the *Label* for as long as the state previous to
@@ -1314,11 +1310,8 @@ def UntilDone(name=None, blocking=True):
     ::
 
         Label(text='On the screen for 6 seconds, the 2 Waits' duration')
-
         with UntilDone():
-
             Wait(3)
-
             Wait(3)
 
     In this example, the *Label* will display for 6 seconds, which is the time
@@ -1443,9 +1436,7 @@ class Serial(SequentialState):
         exp = Experiment()
 
         Label(text='Hello,', duration=1)
-
         Label(text='Hello, W', duration=1)
-
         Label(text='Hello, World', duration=1)
 
         exp.run()
@@ -1455,11 +1446,8 @@ class Serial(SequentialState):
         exp = Experiment()
 
         with Serial():
-
             Label(text='Hello,', duration=1)
-
             Label(text='Hello, W', duration=1)
-
             Label(text='Hello, World', duration=1)
 
         exp.run()
@@ -1477,26 +1465,18 @@ class Serial(SequentialState):
         exp = Experiment()
 
         with Parallel():
-
             with Serial():
-
                 Label(text='Im on the Left!', duration=2,
                       center_x=exp.screen.center_x-400)
-
                 Wait(2)
-
                 Label(text='Now Im on the Left again!!!', duration=2,
                       center_x=exp.screen.center_x-400)
 
             with Serial():
-
                 Wait(2)
-
                 Label(text='Now Im on the Right!', duration=2,
                       center_x=exp.screen.center_x+400)
-
                 Wait(2)
-
                 Label(text='Now Im on the Right again!!!', duration=2,
                       center_x=exp.screen.center_x400)
 
@@ -1531,11 +1511,8 @@ class Subroutine(object):
                                mult=2):
 
             self.mult_temp = input
-
             with Loop(num_loop):
-
                 Label(text=self.mult_temp, duration=3)
-
                 self.mult_temp = self.mult_temp*mult
 
     This will create a **Subroutine** that your experiment can call. The
@@ -1658,24 +1635,17 @@ class If(SequentialState):
 
         with If(trial.current['condition1'] == 0 &
                 trial.current['condition2'] == 2):
-
             Label(text=trial.current['stim'],
                   color=trial.current['color1'], duration=3)
-
         with Elif(trial.current['condition1'] == 1 &
                   trial.current['condition2'] == 0):
-
             Label(text=trial.current['stim'],
                   color=trial.current['color2'], duration=3)
-
         with Elif(trial.current['condition1'] == 1 &
                   trial.current['condition2'] == 0):
-
             Label(text=trial.current['stim'],
                   color=trial.current['color3'], duration=3)
-
         with Else():
-
             Label(text='No conditionals were true!', color='RED', duration=3)
 
     When we call `with Elif():` we are adding to the *If* state's internal list
@@ -1866,10 +1836,8 @@ class Loop(SequentialState):
         with Loop(words) as trial:
 
             with Parallel():
-
                 Label(text=trial.current['name'], duration=3,
                       center_x=exp.screen.center_x/2)
-
                 Label(text=trial.current['food'], duration=3,
                       center_x=exp.screen.center_x*3/2)
 
@@ -1879,9 +1847,7 @@ class Loop(SequentialState):
     ::
 
         X = 15
-
         with Loop(X) as trial:
-
             Label(text=trial.i, duration=1)
 
     The following is an example of a **while** kind of *Loop*. All you have to
@@ -1890,12 +1856,10 @@ class Loop(SequentialState):
     ::
 
         exp.X = 15
-
         with Loop(conditional = exp.X < 20):
-
             Label(text=exp.X, duration=3)
-
             exp.X += 1
+
     """
     def __init__(self, iterable=None, shuffle=False, conditional=True,
                  parent=None, save_log=True, name=None, blocking=True):
@@ -2001,9 +1965,7 @@ class Record(State):
     ::
 
         with Parallel():
-
             vd = Video(source='test_video.mp4')
-
             Record(name='flips', blocking=False,
                    flip_time=exp.screen.last_flip['time'])
 
@@ -2153,26 +2115,20 @@ class Log(AutoFinalizeState):
                  {'name':'emily',  'food':'pizza'}]
 
         with Loop(words) as trial:
-
             with Parallel():
-
                 Label(text=trial.current['name'],
                       center_x=exp.screen.center_x/2)
-
                 Label(text=trial.current['food'],
                       center_x=exp.screen.center_x*3/2)
-
                 Label(text='Press J if the person should like the food,
                             Press K if the person shouldn't like the food.',
                       center_y=exp.screen.center_y/2)
-
             with UntilDone():
-
                 kp = KeyPress(keys=['F', 'J'], duration=3)
-
             Log(trial.current,
                 key_reaction_time=kp.rt
                 key_pressed=kp.pressed)
+
         exp.run()
 
     This example will save out 4 columns to a .slog, **log_dict_name**,
@@ -2283,9 +2239,7 @@ class Done(AutoFinalizeState):
     ::
 
         lb = Label(text='Hello, World', duration=3)
-
         Done(lb)
-
         Log(label_off=lb.disappear_time['time'])
 
     """
@@ -2374,17 +2328,11 @@ class Wait(State):
         exp = Experiment()
 
         with Parallel():
-
             with Serial():
-
                 Wait(duration=3, jitter=2)
-
                 lb16 = Label(text="Im on the screen now", duration=2)
-
             with Serial():
-
                 Wait(until=lb1.appear_time['time']!=None)
-
                 lb2 = Label(text="Me Too!", duration=2,
                             center_y=exp.screen.center_y-100)
 
@@ -2638,15 +2586,11 @@ class Func(CallbackState):
     ::
 
         def add_num(input, additive):
-
             input += additive
-
             return input
 
         Y = 15
-
         X = Func(add_num, input=Y, additive=5)
-
         Label(text=Ref(str, X.result), duration=2)
 
     This example will add 5 to `exp.X`. Very simple, but without using the
@@ -2706,9 +2650,7 @@ class Debug(CallbackState):
         exp = Experiment()
 
         lbl = Label(text="Hello, World", duration=2)
-
         Wait(until=lbl.disappear_time)
-
         Debug(name="Label appear debug", appear=lbl.appear_time['time'],
               disappear=lbl.disappear_time['time'])
 

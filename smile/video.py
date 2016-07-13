@@ -1097,15 +1097,13 @@ class Animate(State):
                       color=(1.0, 1.0, 0.0), name="Pacman")
 
         with UntilDone():
-
             with Parallel(name="Pacman motion"):
-
                 ellipse.slide(left=exp.screen.right, duration=8.0, name="Pacman travel")
-
                 ellipse.animate(
                     angle_start=lambda t, initial: initial + (cos(t * 8) + 1) * 22.5,
                     angle_end=lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
                     duration=8.0, name="Pacman gobble")
+
         exp.run()
 
     This example will show a blue box, and after waiting 2 seconds it will
@@ -2524,41 +2522,24 @@ Example
     exp = Experiment()
 
     with PageLayout(size=exp.screen.size) as pg:
-
         with RelativeLayout():
-
             Label(text="bob", x=20, y=20, font_size=100)
-
         with GridLayout(rows=2):
-
             Button(text="ROWS : 2")
-
             Button(text="ROWS : 2")
-
             Button(text="ROWS : 2")
-
             Button(text="ROWS : 2")
-
             Button(text="ROWS : 2")
 
         with RelativeLayout(size=pg.size, x=0, y=0):
-
             Rectangle(size=pg.size)
-
             with GridLayout(cols=3):
-
                 Button(text="COLS : 3")
-
                 Button(text="COLS : 3")
-
                 Button(text="COLS : 3")
-
                 Button(text="COLS : 3")
-
                 Button(text="COLS : 3")
-
     with Meanwhile():
-
         MouseCursor()
 
     exp.run()
@@ -2628,19 +2609,12 @@ Example
     exp = Experiment()
 
     with ScatterLayout(size=exp.screen.size,scale=5) as sc:
-
         Rectangle()
-
     with Meanwhile():
-
         MouseCursor()
-
     with Meanwhile():
-
         with Loop() as l:
-
             sc.update(rotation=l.i)
-
             Wait(.2)
 
     exp.run()
@@ -3494,14 +3468,10 @@ class ButtonPress(CallbackState):
     ::
 
         with ButtonPress(correct_resp="chA", duration=4) as bp:
-
             MouseCursor()
-
             a = Button(name="chA", text="Choice A",
                        center_x=exp.screen.center_x/3)
-
             b = Button(name="chB", text="Choice B")
-
             c = Button(name="chC", text="Choice C",
                        center_x=exp.screen.center_x*3/2)
 
