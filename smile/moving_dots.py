@@ -22,12 +22,6 @@ def random_variance(base, variance):
 
 
 class Dot(object):
-    '''
-    When called, a Dot instance is created with radius, scale, color,
-    direction, direction_variance, speed, speed_variance, lifespan,
-    lifespan_variance are all instance variables. The class also provides
-    update functionality to control the changing x, y coordinates through time.
-    '''
     def __init__(self, radius=100, scale=1.0,
                  color=[1.0, 1.0, 1.0, 1.0],
                  direction=0, direction_variance=0.0,
@@ -48,7 +42,6 @@ class Dot(object):
         # call reset to initialize the dot loc and dir
         self.reset()
 
-    # Updates the coordinates of the Dot throughout lifetime
     def update(self, passed_time):
         # update the lifetime
         self.current_time += passed_time
@@ -72,10 +65,14 @@ class Dot(object):
         # return x and y
         return self.x, self.y
 
-    # respawns Dot in random location after lifespan expires or Dot leaves
-    # given holding circle.
     def reset(self):
         # determine new location
+        '''
+        rad = random_variance(0, self.radius)
+        loc_angle = random_variance(0, 2*math.pi)
+        self.x = (rad * math.cos(loc_angle))
+        self.y = (rad * math.sin(loc_angle))
+        '''
         t = 2 * math.pi * random.random()
         u = random.random()+random.random()
         if u > 1:
@@ -123,7 +120,7 @@ class MovingDots(Widget):
         Range around the mean speed.
     coherence : float
         Proportion of dots going in a coherent direction.
-        0.-coherence will go in random directions.
+        1-coherence will go in random directions.
     direction : float
         Mean direction of the coherent dots in degrees.
     direction_variance : float
@@ -166,7 +163,7 @@ class MovingDots(Widget):
         self.height = self.radius*2
 
         # determine distribution of dots
-        # for i in range(0, )
+        #for i in range(0, )
         num_coh = int(round(self.num_dots * self.coherence))
         num_rand = self.num_dots - num_coh
 
@@ -198,7 +195,6 @@ class MovingDots(Widget):
 
         Clock.schedule_once(self._update, self.update_interval)
 
-    # controls the drawling of the Dots in their respected location
     def _update(self, dt):
         # advance time and locs for all dots
         bases = (self.x + self.scale, self.y+self.scale)
@@ -223,7 +219,7 @@ class MovingDots(Widget):
 if __name__ == '__main__':
 
     from experiment import Experiment
-    from state import UntilDone, Wait, Loop
+    from state import UntilDone, Meanwhile, Wait, Loop
     from keyboard import KeyPress
 
     exp = Experiment(background_color=("purple", .3))
@@ -234,6 +230,8 @@ if __name__ == '__main__':
         g = MovingDots(direction=trial.current)
         with UntilDone():
             KeyPress()
+            with Meanwhile():
+                g.slide(color='red', duration=4.0)
         Wait(.25)
 
     exp.run(trace=False)
