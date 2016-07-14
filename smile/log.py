@@ -1,18 +1,17 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# ex: set sts=4 ts=4 sw=4 et:
-# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 
 import cPickle
 import gzip
 import csv
 import os
-
 
 class LogWriter(object):
     """An object that handles the writing of .slog files.
@@ -67,7 +66,6 @@ class LogReader(object):
     append_columns : dict
         Additional columns to add to each record.
     """
-
     def __init__(self, filename, unwrap=False, **append_columns):
         # set the file
         self._file = gzip.open(filename, "rb")
@@ -119,11 +117,11 @@ def _unwrap(d, prefix=''):
     new_item = {}
     for k in d:
         # add prefix
-        key = prefix + k
+        key = prefix+k
 
         # see if dict
         if isinstance(d[k], dict):
-            new_item.update(_unwrap(d[k], prefix=key + '_'))
+            new_item.update(_unwrap(d[k], prefix=key+'_'))
             continue
 
         # see if tuple/list
@@ -132,7 +130,7 @@ def _unwrap(d, prefix=''):
             tdict = {}
             for j in range(len(d[k])):
                 tdict[str(j)] = d[k][j]
-            new_item.update(_unwrap(tdict, prefix=key + '_'))
+            new_item.update(_unwrap(tdict, prefix=key+'_'))
             continue
 
         # just add it in

@@ -1,11 +1,11 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# ex: set sts=4 ts=4 sw=4 et:
-# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from video import WidgetState, BlockingFlips, NonBlockingFlips
 from state import Wait, Meanwhile, Parallel, Loop, Subroutine
@@ -37,7 +37,7 @@ class DotBox(Widget):
     """
     color = ListProperty([1, 1, 1, 1])
     backcolor = ListProperty([0, 0, 0, 0])
-    # num_dots = NumericProperty(10, force_dispatch=True)
+    #num_dots = NumericProperty(10, force_dispatch=True)
     num_dots = NumericProperty(10)
     pointsize = NumericProperty(5)
 
@@ -63,7 +63,7 @@ class DotBox(Widget):
 
     def _update_locs(self, *pargs):
         self._locs = [random.random()
-                      for i in xrange(int(self.num_dots) * 2)]
+                      for i in xrange(int(self.num_dots)*2)]
         self._update()
 
     def _update_pointsize(self, *pargs):
@@ -71,10 +71,10 @@ class DotBox(Widget):
 
     def _update(self, *pargs):
         # calc new point locations
-        bases = (self.x + self.pointsize, self.y + self.pointsize)
-        scales = (self.width - (self.pointsize * 2),
-                  self.height - (self.pointsize * 2))
-        points = [bases[i % 2] + scales[i % 2] * loc
+        bases = (self.x+self.pointsize, self.y+self.pointsize)
+        scales = (self.width-(self.pointsize*2),
+                  self.height-(self.pointsize*2))
+        points = [bases[i % 2]+scales[i % 2]*loc
                   for i, loc in enumerate(self._locs)]
 
         # draw them
@@ -96,7 +96,7 @@ class DotBox(Widget):
 
 @Subroutine
 def DynamicDotBox(self, duration=None,
-                  update_interval=jitter(1 / 20., (1 / 10.) - (1 / 20.)),
+                  update_interval=jitter(1/20., (1/10.)-(1/20.)),
                   **dotbox_args):
     """Display random dots that update at an interval.
 
@@ -145,11 +145,11 @@ def DynamicDotBox(self, duration=None,
         with Loop() as l:
             Wait(duration=update_interval)
             # hack to make 1.8 work
-            with If((l.i % 2) == 0):
+            with If((l.i % 2)==0):
                 self.ndots = self.start_dots + .01
             with Else():
                 self.ndots = self.start_dots
-            # db.update(save_log=False, **dotbox_args)
+            #db.update(save_log=False, **dotbox_args)
             db.update(save_log=False, num_dots=self.ndots)
 
 
@@ -186,3 +186,4 @@ if __name__ == '__main__':
 
     Wait(2.0)
     exp.run(trace=False)
+
