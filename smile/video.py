@@ -333,7 +333,7 @@ class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never 
 
     def show(self):
         BackgroundColor.layers.append(self)
-        self._exp.set_background_color(self._color)
+        self._exp._app.set_background_color(self._color)
 
     def unshow(self):
         if BackgroundColor.layers[-1] is self:
@@ -342,7 +342,7 @@ class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never 
                 color = BackgroundColor.layers[-1]._color
             except IndexError:
                 color = None
-            self._exp.set_background_color(color)
+            self._exp._app.set_background_color(color)
         else:
             BackgroundColor.layers.remove(self)
 
