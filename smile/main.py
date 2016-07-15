@@ -181,11 +181,24 @@ class SmileApp(App):
 
     def _on_motion(self, window, etype, me):
         if etype == "begin":
+            # set the pos
+            w, h = Window._get_effective_size()
+            me.scale_for_screen(w, h, rotation=Window._rotation,
+                                smode=Window.softinput_mode,
+                                kheight=Window.keyboard_height)
+            self.exp._screen._set_mouse_pos(tuple(int(round(x))
+                                                  for x in me.pos))
+
+            # set the button
             try:
                 button = me.button
                 self.exp._screen._set_mouse_button(button)
             except AttributeError:
-                self.exp._screen._set_mouse_button(None)
+                if me.is_touch:
+                    # pretend that a touch event is a left button press
+                    self.exp._screen._set_mouse_button('left')
+                else:
+                    self.exp._screen._set_mouse_button(None)
             self.current_touch = me
             self._trigger_callback("MOTION", pos=me.pos,
                                    button=self.exp._screen._mouse_button,
@@ -205,6 +218,8 @@ class SmileApp(App):
                                    event_time=self.event_time)
         else:
             self.exp._screen._set_mouse_button(None)
+            self.exp._screen._set_mouse_pos(tuple(int(round(x))
+                                                  for x in me.pos))
             self.current_touch = None
             self._trigger_callback("MOTION", pos=me.pos, button=None,
                                    newly_pressed=False,
