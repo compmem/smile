@@ -307,7 +307,7 @@ def val(obj):
         else:
             return obj
     except NotAvailableError:
-        raise NotAvailableError("val(%r) produced NotAvailable result" % obj)
+        raise NotAvailableError("val(%r) produced NotAvailable result" % repr(obj))
 
 
 def iter_deps(obj):
