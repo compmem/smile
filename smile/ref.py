@@ -309,6 +309,7 @@ def val(obj):
     except NotAvailableError:
         raise NotAvailableError("val(%r) produced NotAvailable result" % obj)
 
+
 def iter_deps(obj):
     """Generator to find all Ref dependencies of an object."""
     if isinstance(obj, Ref):

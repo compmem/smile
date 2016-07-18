@@ -811,7 +811,7 @@ class WidgetState(VisualState):
         ----------
         interval : float
             A frequency value. If not set, it is None, Animate will update at
-            the same interval as the frame-rate.  You cannot set interval to any
+            the same interval as the frame-rate. You cannot set interval to any
             number faster than the frame-rate.
         duration : float
             A duration, in seconds, that the Animate state will animate the
