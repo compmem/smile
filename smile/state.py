@@ -1283,6 +1283,7 @@ def Meanwhile(name=None, blocking=True):
     # set the new serial as non-blocking
     p._children[1]._blocking = False
 
+
 @contextmanager
 def UntilDone(name=None, blocking=True):
     """A context state used to run a previous state till its children are finished
@@ -1743,7 +1744,7 @@ def Else(name="ELSE BODY"):
 
 
 class Loop(SequentialState):
-    """A * Loop* state that is used to do any kind of repeated section of state-machine.
+    """Repeat section of state-machine.
 
     A *Loop* can be setup to run like the python **for**, **while**, or
     **do while** depending on what parameters you send into it.
@@ -2343,6 +2344,7 @@ class Wait(State):
     def schedule_check_until(self):
         """Setup until condition.
         """
+        self.claim_exceptions()
         self._started = True
         try:
             self._until_value = self.__until.eval()
@@ -2356,6 +2358,7 @@ class Wait(State):
     def check_until(self):
         """Callback to process a change to the until value.
         """
+        self.claim_exceptions()
         try:
             self._until_value = self.__until.eval()
         except NotAvailableError:
