@@ -20,7 +20,7 @@ from clock import clock
 import kivy.metrics
 import kivy.graphics
 import kivy.uix.widget
-from kivy.properties import ObjectProperty, ListProperty
+from kivy.properties import Property, ObjectProperty, ListProperty
 import kivy.clock
 _kivy_clock = kivy.clock.Clock
 
@@ -397,6 +397,15 @@ class NonBlockingFlips(VisualState):
         self._exp._app.force_nonblocking_flip = len(NonBlockingFlips.layers) > 0
 
 
+def _get_widget_props(widget_class):
+    props = []
+    for k in dir(widget_class):
+        attr = getattr(widget_class, k, None)
+        if isinstance(attr, Property):
+            props.append(k)
+    return props
+
+
 class WidgetState(VisualState):
     """A *WidgetState* is used to wrap Kivy widgets into SMILE classes
 
@@ -504,9 +513,11 @@ class WidgetState(VisualState):
     def wrap(cls, widget_class, name=None):
         if name is None:
             name = widget_class.__name__
+
         def __init__(self, *pargs, **kwargs):
             cls.__init__(self, widget_class, *pargs, **kwargs)
-        return type(name, (cls,), {"__init__" : __init__})
+
+        return type(name, (cls,), {"__init__": __init__})
 
     def __init__(self, widget_class, duration=None, parent=None, save_log=True,
                  name=None, blocking=True, index=0, layout=None,
@@ -518,7 +529,7 @@ class WidgetState(VisualState):
                                           blocking=blocking)
 
         self.__issued_refs = weakref.WeakValueDictionary()
-        self.__widget_param_names = widget_class().properties().keys()
+        self.__widget_param_names = _get_widget_props(widget_class)
         self.__widget_class = widget_class
         self._init_index = index
         self._init_rotate = rotate
@@ -554,7 +565,8 @@ class WidgetState(VisualState):
             try:
                 props = WidgetState.property_aliases[name]
             except KeyError:
-                if name in self.__widget_param_names + ['rotate', 'rotate_origin']:
+                if name in self.__widget_param_names + ['rotate',
+                                                        'rotate_origin']:
                     props = name
                 else:
                     return super(WidgetState, self).get_attribute_ref(name)
