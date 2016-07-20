@@ -182,7 +182,11 @@ class SmileApp(App):
     def _on_motion(self, window, etype, me):
         if etype == "begin":
             # set the pos
-            w, h = Window._get_effective_size()
+            try:
+                w, h = Window._get_effective_size()
+            except AttributeError:
+                w, h = (Window.width, Window.height)
+
             me.scale_for_screen(w, h, rotation=Window._rotation,
                                 smode=Window.softinput_mode,
                                 kheight=Window.keyboard_height)
