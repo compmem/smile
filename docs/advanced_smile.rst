@@ -38,6 +38,7 @@ to the left or right, above or below, of each other. An example of this is as fo
     :linenos:
 
     from smile.common import *
+
     exp = Experiment()
 
     with Parallel():
@@ -45,6 +46,7 @@ to the left or right, above or below, of each other. An example of this is as fo
                     bottom=exp.screen.bottom, duration=5)
         lb2 = Label(text="I AM ABOVE THE OTHER LABEL", right=lb1.right,
                     bottom=lb1.top + 400, duration=5)
+
     exp.run()
 
 In the above example, the *right* attribute of the visual
@@ -140,6 +142,7 @@ Now we can write state machine code for the **Subroutine**:
     from smile.common import *
     @Subroutine
     def CountUpFrom(self, minVal):
+
         # Initialize counter, Creates a Set state
         # and sets the variable at Experimental Runtime.
         # After this line, self.counter is a reference object
@@ -170,16 +173,17 @@ The following is an example of calling this subroutine during an actual experime
 .. code-block:: python
 
     from smile.common import *
+
     from countup import CountUpFrom
 
     exp = Experiment()
 
     # Just like writing any other state declaration
     cuf = CountUpFrom(10)
-
     # Print out the value of the counter in CountUpFrom
     # To the command line
     Debug(name="Count Up Stuff", end_counter=cuf.counter)
+
     exp.run()
 
 
@@ -253,7 +257,9 @@ Next, the '__init__' method is declared for our 'DotBox' widget:
 
         # Initialize variables for Kivy
         self._color = None
+
         self._backcolor = None
+
         self._points = None
 
         # Bind the variables to the widget
@@ -309,14 +315,11 @@ attached with `.bind()`. Now the functions can be defined:
         with self.canvas:
             # set the back color
             self._backcolor = Color(*self.backcolor)
-
             # draw the background
             Rectangle(size=self.size,
                       pos=self.pos)
-
             # set the color
             self._color = Color(*self.color)
-
             # draw the points
             self._points = Point(points=points, pointsize=self.pointsize)
 
@@ -393,12 +396,6 @@ dotbox.py in Full
                       self.height-(self.pointsize*2))
             points = [bases[i % 2]+scales[i % 2]*loc
                       for i, loc in enumerate(self._locs)]
-            # points = [[random.randint(int(self.x+self.pointsize),
-            #                           int(self.x+self.width-self.pointsize)),
-            #            random.randint(int(self.y+self.pointsize),
-            #                           int(self.y+self.height-self.pointsize))]
-            #           for i in xrange(self.num_dots)]
-            # points = [item for sublist in points for item in sublist]
 
             # draw them
             self.canvas.clear()
@@ -430,9 +427,12 @@ The following is a sample experiment where `exp.display_me` is set to a string:
 .. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     exp.display_me = "LETS DISPLAY THIS SECRET MESSAGE"
     Label(text=exp.display_me)
+
     exp.run()
 
 This is a very simple experiment. It must be understood that `exp.display_me = "LETS DISPLAY THIS SECRET MESSAGE"`
@@ -446,9 +446,12 @@ an example of what the experiment would look like if the 3rd line is changed:
 .. code-block:: python
 
     from smile.common import *
+
     exp = Experiment()
+
     Set(var_name="display_me", value="LETS DISPLAY THIS SECRET MESSAGE")
     Label(text=exp.display_me)
+
     exp.run()
 
 Both sample experiments run the exact same way, but the only difference is how
@@ -470,7 +473,7 @@ functions or methods without using the proper SMILE syntax will run in **BT**
 and not **RT**. In order to run a function or method, a :py:class:`~smile.ref.Ref`
 or a :py:class:`~smile.state.Func` is needed to be used. As stated in
  :ref:`The Reference Section <ref_def>` of the state machine document, a **Ref**
-  is a delayed function call.
+ is a delayed function call.
 
 **When it is desired to pass in the return value of a function to a SMILE state
 as a parameter, it is appropriate use** **Ref**. The first parameter for a **Ref**

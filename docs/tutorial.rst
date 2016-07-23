@@ -23,7 +23,9 @@ Create a directory called *SmileTest* and add a file named *main.py*
     from smile.common import *
 
     exp = Experiment()
+
     Label(text="Hello World, Lets start Smiling!", duration=4)
+
     exp.run()
 
 Now, run **main.py**. Please refer to :ref:`Running SMILE <running-smile>` section of the
@@ -55,6 +57,7 @@ is a basic idea of what the timing is in the experiment. Create a new directory 
     words=['plank', 'dear', 'adopter',
            'initial', 'pull', 'complicated',
            'ascertain', 'biggest']
+
     random.shuffle(words)
 
 The file has created a list of words that will be randomly sorted when compiled.
@@ -153,6 +156,7 @@ experiment will be able to tell what key is the correct key for each trial.
     words = ['plank', 'dear', 'thopter',
              'initial', 'pull', 'complicated',
              'ascertain', 'biggest']
+
     temp = []
     for i in range(len(words)):
         condition = len(words[i])%2
@@ -210,6 +214,7 @@ Now to implement this state into the loop:
         with UntilDone():
             kp = KeyPress(keys=key_dic)
         Wait(interStimulusDuration)
+
     exp.run()
 
 
@@ -224,10 +229,14 @@ listgen value set earlier.
 .. code-block:: python
 
     with Loop(words) as trial:
+
         Label(text=trial.current['stimulus'])
+
         with UntilDone():
+
             kp = KeyPress(keys=key_dic, duration=maxResponseTime,
                           correct_resp=trial.current['condition'])
+
         Wait(interStimulusDuration)
 
     exp.run()
@@ -255,6 +264,7 @@ The loop will look as follows:
             kp = KeyPress(keys=key_dic, duration=maxResponseTime,
                           correct_resp=trial.current['condition'])
         Wait(interStimulusDuration)
+
         Log(name='Loop',
             correct=kp.correct,
             time_to_respond=kp.rt)
@@ -360,6 +370,7 @@ add a few of the following to the subroutine:
                     onStimDur=1,
                     fixDur=1,
                     interOrientDur=.2):
+
         self.timing = []
 
 The only variable needed for testing later is an element to hold all of
@@ -377,6 +388,7 @@ Next, add the stimulus loop:
                     fixDur=1,
                     interOrientDur=.2):
         self.timing = []
+
         with Loop(listOfWords) as trial:
             fix = Label(text='+', duration=fixDur)
             oriWait = Wait(interOrientDur)
@@ -490,7 +502,7 @@ Finished **button_press_example.py**
 
     #From here you can see setup for a ButtonPress state.
     with ButtonPress(correct_resp='left', duration=5) as bp:
-        MouseCursor()S
+        MouseCursor()
         Button(name='left', text='left', left=exp.screen.left,
                bottom=exp.screen.bottom)
         Button(name='right', text='right', right=exp.screen.right,
@@ -501,4 +513,5 @@ Finished **button_press_example.py**
         Label(text='YOU PICKED CORRECT', color='GREEN', duration=1)
     with Else():
         Label(text='YOU WERE DEAD WRONG', color='RED', duration=1)
+
     exp.run()

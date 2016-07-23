@@ -318,6 +318,7 @@ class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never 
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
         running. Only relevent if within a *ParallelParent*.
+
     """
     layers = []
 
@@ -797,6 +798,7 @@ class WidgetState(VisualState):
         Returns
         -------
         UpdateWidget(self, parent, save_log, name, blocking, **kwargs)
+
         """
         ud = UpdateWidget(self,
                           parent=parent,
@@ -1084,11 +1086,25 @@ class Animate(State):
 
     ::
 
+        from smile.common import *
+        from math import cos
+
         exp = Experiment()
-        rn = Rectangle(color="BLUE", duration = 6)
+
+        ellipse = Ellipse(right=exp.screen.left,
+                      center_y=exp.screen.center_y, width=25, height=25,
+                      angle_start=90.0, angle_end=460.0,
+                      color=(1.0, 1.0, 0.0), name="Pacman")
+
         with UntilDone():
-            Wait(2)
-            Animate(rn, duration=3, color="GREEN")
+            with Parallel(name="Pacman motion"):
+                ellipse.slide(left=exp.screen.right, duration=8.0, name="Pacman travel")
+                ellipse.animate(
+                    angle_start=lambda t, initial: initial + (cos(t * 8) + 1) * 22.5,
+                    angle_end=lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
+                    duration=8.0, name="Pacman gobble")
+
+        exp.run()
 
     This example will show a blue box, and after waiting 2 seconds it will
     gradually change the color of the box to green over the course of 3
@@ -1211,6 +1227,7 @@ disappear_time : dictionary
     The keys are *time* and *error*. Where *time* refers to the time the
     visual stimulus disappeared from the screen, and *error* refers to the
     maximum error in calculating the disappear time of the stimulus.
+
     """
 
 
@@ -1547,6 +1564,7 @@ Any of the internal properties that are readable by this Kivy Widget are
 readable during Experimental Run Time.
 
 border : list (Parameter, optional, default=[])
+
 """
 Ellipse.__doc__ = """A **WidgetState** that produces a 2D ellipse.
 
@@ -1714,7 +1732,10 @@ See **Label** for other Kivy Parameters. Most parameters that can be passed into
 See **ButtonPress** for an example on how to use buttons.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.button. <https://kivy.org/docs/api-kivy.uix.button.html>'_
+
+Kivy documentation for 'kivy.uix.button.
+<https://kivy.org/docs/api-kivy.uix.button.html>'_
+
 """
 
 Slider.__doc__ = """A **WidgetState** to display a Slider style input.
@@ -1783,7 +1804,6 @@ value_pos : float (Property)
 
 For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.slider. <https://kivy.org/docs/api-kivy.uix.slider.html>'_
-
 
 """
 
@@ -1941,7 +1961,9 @@ write_tab : boolean (Parameter, optional, default=True)
     focus will move to the next widget.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.textinput. <https://kivy.org/docs/api-kivy.uix.textinput.html>'_
+Kivy documentation for 'kivy.uix.textinput.
+<https://kivy.org/docs/api-kivy.uix.textinput.html>'_
+
 """
 
 ToggleButton.__doc__ = """A **WidgetState** that toggles on and off.
@@ -1994,7 +2016,9 @@ See smile.video.Button for all the other parameters and properties that can be
 used by this state.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.togglebutton. <https://kivy.org/docs/api-kivy.uix.togglebutton.html>'_
+Kivy documentation for 'kivy.uix.togglebutton.
+<https://kivy.org/docs/api-kivy.uix.togglebutton.html>'_
+
 """
 
 ProgressBar.__doc__ = """A **WidgetState** used to visualize progress.
@@ -2040,7 +2064,9 @@ value_normalized : float (Property)
     Normalized value inside the range 0-1.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.progressbar. <https://kivy.org/docs/api-kivy.uix.progressbar.html>'_
+Kivy documentation for 'kivy.uix.progressbar.
+<https://kivy.org/docs/api-kivy.uix.progressbar.html>'_
+
 """
 
 CodeInput.__doc__ = """A **WidgetState** that is an editable box.
@@ -2135,7 +2161,6 @@ color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
 
 For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.checkbox. <https://kivy.org/docs/api-kivy.uix.checkbox.html>'_
-
 
 """
 
@@ -2480,7 +2505,6 @@ spacing : integer (Parameter, optional, default=0)
 For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.GridLayout. <https://kivy.org/docs/api-kivy.uix.gridlayout.html>'_
 
-
 """
 PageLayout.__doc__ = """A **WidgetState** used to create a paged layout.
 
@@ -2506,6 +2530,7 @@ Example
             Button(text="ROWS : 2")
             Button(text="ROWS : 2")
             Button(text="ROWS : 2")
+
         with RelativeLayout(size=pg.size, x=0, y=0):
             Rectangle(size=pg.size)
             with GridLayout(cols=3):
@@ -2514,9 +2539,9 @@ Example
                 Button(text="COLS : 3")
                 Button(text="COLS : 3")
                 Button(text="COLS : 3")
-
     with Meanwhile():
         MouseCursor()
+
     exp.run()
 
 Parameters
@@ -2591,6 +2616,7 @@ Example
         with Loop() as l:
             sc.update(rotation=l.i)
             Wait(.2)
+
     exp.run()
 
 Parameters
@@ -2842,7 +2868,6 @@ viewport_size : integer (Property)
 For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.ScrollLayout. <https://kivy.org/docs/api-kivy.uix.Scrolllayout.html>'_
 
-
 """
 
 for widget in widgets:
@@ -2919,6 +2944,7 @@ colors : dictionary (Parameter, optional, default listed below)
        - "bullet" : "000000ff"
        - "background" : "e5e6e9ff"
        - "title" : "204a87ff"
+
 document_root : string (Parameter, optional, default=None)
     Root path where :doc: will search for rst documents. If no path is given, it
     will use the directory of the first loaded source file.
@@ -2942,8 +2968,6 @@ underline_color : string (Parameter, optional, default="204a9699")
 
 For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.rst. <https://kivy.org/docs/api-kivy.uix.rst.html>'_
-
-
 
 """
 
@@ -3050,7 +3074,6 @@ sort_func : object (Parameter, optional, defaults to a function returning alphan
 
 For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.filechooser. <https://kivy.org/docs/api-kivy.uix.filechooser.html>'_
-
 
 """
 
@@ -3448,9 +3471,7 @@ class ButtonPress(CallbackState):
             MouseCursor()
             a = Button(name="chA", text="Choice A",
                        center_x=exp.screen.center_x/3)
-
             b = Button(name="chB", text="Choice B")
-
             c = Button(name="chC", text="Choice C",
                        center_x=exp.screen.center_x*3/2)
 

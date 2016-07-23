@@ -96,7 +96,7 @@ setting any other variable, the equal sign is used. The only difference is
 creates a :py:class:`~smile.experiment.Set` in SMILE that will run in **RT**.  An example is as
 follows.
 
-::
+.. code-block:: python
 
     exp.variableName = lbl.appear_time['time']
 
@@ -113,7 +113,7 @@ work. A SMILE reference is defined as a variable whose value is to be
 evaluated later. Without *References,* Experimental Build Time and Experimental
  Run Time could not be separated easily. A :py:class:`~smile.ref.Ref` is a
 class that holds any kind of value from a function call and parameters to an
-expression of several variables like `fu + bar - coocoo`. In relation to
+expression of several variables like `jubba + bubba - tubba`. In relation to
 expressions, References are recursive. Every Reference has a method called
 :py:func:`~smile.ref.Ref.eval` which will attempt to evaluate the value of each part of the
 expression. If one part of the expression is a Reference, then that Reference
@@ -127,7 +127,10 @@ would like to present "CONGRATS" on screen if the participant responded in less
 than three seconds, and "FAILURE" if the participant took longer than three seconds
 to respond. The experimenter would need to rely on a Referenced conditional statement,
 where `Ref.cond(cond, true_val, false_val)` can return any kind of object if
-true or false. For an example, check the :py:class:`~smile.ref.Ref.cond` docstring.
+true or false. Say you want to display "jubba" if a participant presses "J" and
+"bubba" if the participant presses "K". SMILE allows you to use *cond* to do
+this in 1 line rather than use an **If** state. For the above example, please
+see the :py:class:`~smile.ref.Ref` docstring.
 
 References will also generate a list of their dependencies. For recursive
 structures like References, there is a chance that they won't be able to be

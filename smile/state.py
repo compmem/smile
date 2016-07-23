@@ -33,10 +33,12 @@ class StateConstructionError(RuntimeError):
 class StateBuilder(object):
     """A Mixin class that gives States Ref-based attribute access for state
     machine construction.
+
     """
     def _clone(self, parent):
         """Return an inactive copy of this state builder as an instance of its
         state class with the specified parent.
+
         """
         # Make a shallow copy of self.
         state_class = type(self)._state_class
@@ -534,6 +536,7 @@ class State(object):
 
     def get_current_attribute_value(self, name):
         """Get the value of an attribute from the current clone of this state.
+
         """
         # Return the named attribute from the current clone.
         return getattr(self.current_clone, name)
@@ -554,6 +557,7 @@ class State(object):
 
     def attribute_update_state(self, name, value, index=None):
         """Produce a state that updates an attribute of this state.
+
         """
         raise NotImplementedError
 
@@ -572,6 +576,7 @@ class State(object):
     def _enter(self):
         """Custom method to call at enter time.  Optionally overridden in
         subclasses.
+
         """
         pass
 
@@ -584,6 +589,7 @@ class State(object):
         ----------
         start_time : float
             When the state will start, some time in the future.
+
         """
         # set trace
         self.claim_exceptions()
@@ -1071,12 +1077,15 @@ class Parallel(ParentState):
     ::
 
         exp = Experiment()
+
         with Parallel():
+
             Label(text="I will remain here the longest!", duration=3)
             Label(text="My duration will be cut short.", duration=5,
                   center_x=exp.screen.center_x+200, blocking=False)
             Label(text="I will disappear first!", duration=2,
                   center_x=exp.screen.center_x-200)
+
         exp.run()
 
 
@@ -1217,6 +1226,7 @@ class StateHandle(object):
 def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
     """States added in this context will be added to a Serial which is in
     Parallel with the state preceding this call.
+
     """
     # get the exp reference
     from experiment import Experiment
@@ -1276,6 +1286,7 @@ def Meanwhile(name=None, blocking=True):
     Under the hood, this state is creating a ParallelWithPrevious state. Then,
     it sets the previous state as blocking and the rest of the states are set
     to non-blocking.
+
     """
     with _ParallelWithPrevious(name=name, parallel_name="MEANWHILE",
                                blocking=blocking) as p:
@@ -1311,6 +1322,7 @@ def UntilDone(name=None, blocking=True):
     Under the hood, this state is creating a ParallelWithPrevious state. Then,
     it sets the previous state as non-blocking and the rest of the states are
     set to blocking.
+
     """
     with _ParallelWithPrevious(name=name, parallel_name="UNTILDONE",
                                blocking=blocking) as p:
@@ -1324,6 +1336,7 @@ class SequentialState(ParentState):
 
     This state takes children, like the Parent state, but on *enter* it clones
     all of the children and schedules them in the correct sequential order.
+
     """
     def __init__(self, children=None, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -1421,18 +1434,22 @@ class Serial(SequentialState):
     ::
 
         exp = Experiment()
-        Label(text='BOBABOOY', duration=1)
-        Label(text='BOBABOOOOOOOOY', duration=1)
-        Label(text='BOBABOOOOOOOOOOOOOOOOOOOOOOOY', duration=1)
+
+        Label(text='Hello,', duration=1)
+        Label(text='Hello, W', duration=1)
+        Label(text='Hello, World', duration=1)
+
         exp.run()
 
     ::
 
         exp = Experiment()
+
         with Serial():
-            Label(text='BOBABOOY', duration=1)
-            Label(text='BOBABOOOOOOOOY', duration=1)
-            Label(text='BOBABOOOOOOOOOOOOOOOOOOOOOOOY', duration=1)
+            Label(text='Hello,', duration=1)
+            Label(text='Hello, W', duration=1)
+            Label(text='Hello, World', duration=1)
+
         exp.run()
 
     These examples will display 3 labels in serial and then the experiment will
@@ -1446,6 +1463,7 @@ class Serial(SequentialState):
     ::
 
         exp = Experiment()
+
         with Parallel():
             with Serial():
                 Label(text='Im on the Left!', duration=2,
@@ -1453,6 +1471,7 @@ class Serial(SequentialState):
                 Wait(2)
                 Label(text='Now Im on the Left again!!!', duration=2,
                       center_x=exp.screen.center_x-400)
+
             with Serial():
                 Wait(2)
                 Label(text='Now Im on the Right!', duration=2,
@@ -1460,6 +1479,7 @@ class Serial(SequentialState):
                 Wait(2)
                 Label(text='Now Im on the Right again!!!', duration=2,
                       center_x=exp.screen.center_x400)
+
         exp.run()
 
     This example will take turns displaying Labels on either side of the
@@ -1489,6 +1509,7 @@ class Subroutine(object):
                                num_loop=10,
                                input=0,
                                mult=2):
+
             self.mult_temp = input
             with Loop(num_loop):
                 Label(text=self.mult_temp, duration=3)
@@ -1535,6 +1556,7 @@ class Subroutine(object):
 
 class SubroutineState(Serial):
     """Serial-like state at the top-level of a deployment of a Subroutine.
+
     """
     def __init__(self, subroutine, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -1810,7 +1832,9 @@ class Loop(SequentialState):
                  {'name':'chelsea','food':'dooughnut'},
                  {'name':'dinese', 'food':'corn'},
                  {'name':'emily',  'food':'pizza'}]
+
         with Loop(words) as trial:
+
             with Parallel():
                 Label(text=trial.current['name'], duration=3,
                       center_x=exp.screen.center_x/2)
@@ -1835,6 +1859,7 @@ class Loop(SequentialState):
         with Loop(conditional = exp.X < 20):
             Label(text=exp.X, duration=3)
             exp.X += 1
+
     """
     def __init__(self, iterable=None, shuffle=False, conditional=True,
                  parent=None, save_log=True, name=None, blocking=True):
@@ -2070,6 +2095,7 @@ class Log(AutoFinalizeState):
         `keyword = variable_name` and *Log* will log the value of
         **variable_name** into a column called **keyword**.
 
+    Example
     -------
     This is an example of using *Log* in a *Loop*. Refer to the individual
     state's Doc Strings if something doesn't make sense, because this example
@@ -2077,12 +2103,17 @@ class Log(AutoFinalizeState):
 
     ::
 
+        from smile.common import *
+
+        exp = Experiment()
+
         words = [{'name':'bob',    'food':'pringle'},
                  {'name':'tom',    'food':'prune'},
                  {'name':'paul',   'food':'potato'},
                  {'name':'chelsea','food':'dooughnut'},
                  {'name':'dinese', 'food':'corn'},
                  {'name':'emily',  'food':'pizza'}]
+
         with Loop(words) as trial:
             with Parallel():
                 Label(text=trial.current['name'],
@@ -2097,6 +2128,8 @@ class Log(AutoFinalizeState):
             Log(trial.current,
                 key_reaction_time=kp.rt
                 key_pressed=kp.pressed)
+
+        exp.run()
 
     This example will save out 4 columns to a .slog, **log_dict_name**,
     **log_dict_food**, **key_reaction_time**, and **key_pressed**.
@@ -2162,6 +2195,7 @@ class Log(AutoFinalizeState):
 
 class _DelayedValueTest(State):
     """Internal class for testing the Done state.
+
     """
     def __init__(self, delay, value, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -2204,7 +2238,7 @@ class Done(AutoFinalizeState):
 
     ::
 
-        lb = Label(text='baba booy', duration=3)
+        lb = Label(text='Hello, World', duration=3)
         Done(lb)
         Log(label_off=lb.disappear_time['time'])
 
@@ -2283,6 +2317,26 @@ class Wait(State):
         A reference to the *until*.  This will be evaluated at a later time.
         Once the state is finalized, the value of the until will be logged
         here.
+
+    Example
+    -------
+
+    ::
+
+        from smile.common import *
+
+        exp = Experiment()
+
+        with Parallel():
+            with Serial():
+                Wait(duration=3, jitter=2)
+                lb16 = Label(text="Im on the screen now", duration=2)
+            with Serial():
+                Wait(until=lb1.appear_time['time']!=None)
+                lb2 = Label(text="Me Too!", duration=2,
+                            center_y=exp.screen.center_y-100)
+
+        exp.run()
 
     """
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
@@ -2423,8 +2477,6 @@ class ResetClock(AutoFinalizeState):
         The unique name given to this state.
     blocking : boolean
 
-
-
     """
     def __init__(self, new_time=None, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -2528,10 +2580,6 @@ class Func(CallbackState):
         A reference to the return value of this function, to be evaluated at
         experimental run time.
 
-    Return
-    ------
-    This state will return anything the called function will return.
-
     Example
     -------
 
@@ -2574,8 +2622,10 @@ class Func(CallbackState):
 class Debug(CallbackState):
     """Used to send debug messages to the console during experimental run time.
 
-    A *Debug* state will print out the variables and the value of
-    those variables during experiment run time to the command prompt.
+    You can give a **Debug** state a *name* to distinguish it from other
+    **Debugs** that you might be running. **Debugs** work on with keyword
+    arguments. Below is an example for how to properly use the **Debug** state
+    and the sample output that it produces.
 
     Parameters
     ----------
@@ -2595,8 +2645,16 @@ class Debug(CallbackState):
 
     ::
 
-        lb = Label(text='baba booy', duration=3)
-        Debug(dis_time=lb.disappear_time['time'], lab_text=lb.text)
+        from smile.common import *
+
+        exp = Experiment()
+
+        lbl = Label(text="Hello, World", duration=2)
+        Wait(until=lbl.disappear_time)
+        Debug(name="Label appear debug", appear=lbl.appear_time['time'],
+              disappear=lbl.disappear_time['time'])
+
+        exp.run()
 
 
     """

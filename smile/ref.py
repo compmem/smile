@@ -65,11 +65,15 @@ class Ref(object):
         exp = Experiment()
 
         with Loop(10) as looper:
+
             with Parallel():
+
                 rec = Rectangle(width=176*(looper.i + 1), height=222,
                                 color='BROWN', duration=1)
-                Label(text="The width of the rectangle is " + Ref(str, rec.width), duration=1,
-                      center_x=exp.screen.center_x/2)
+
+                Label(text= \
+                    "The width of the rectangle is " + Ref(str, rec.width),
+                      duration=1,
         exp.run()
 
 
@@ -120,6 +124,52 @@ class Ref(object):
 
     @staticmethod
     def cond(cond, true_val, false_val):
+        """**cond** allows you to evaluate a conditional during Experimental Runtime.
+
+        **cond** creates a Ref that will evaluate to the *true_val* if the passed
+        in conditional evaluates to true, and *false_val* if false. It allows
+        you do create parameters for different states that can vary without
+        using an **If** state.
+
+        Parameters
+        ----------
+        cond : boolean
+            A boolean that contains only absolute conditionals like *|* and *&*
+            intead of *or* or *and* respectively.
+        true_val : object
+            Any return value that you would like the created Ref to return if
+            *cond* evaluates to true. It can be any object.
+        false_val : object
+            Any return value that you would like the created Ref to return if
+            *cond* evaluates to false. It can be any object.
+
+        Returns
+        -------
+        **cond** returns a ref with that will evaluate to either the *true_val* or
+        *false_val* depending on the *cond* parameter.
+
+        Example
+        -------
+        from smile.common import *
+        from smile.ref import Ref
+
+        exp = Experiment()
+
+        with Loop():
+
+            Label(text= "K FOR BUBBA, J FOR JUBBA")
+
+            with UntilDone():
+
+                kp = KeyPress(keys=['K','J'])
+
+            Label(text=Ref.cond(kp.pressed=='J', true_val='JUBBA',
+                  false_val="BUBBA"), duration=1.0)
+
+        exp.run()
+
+        """
+
         return Ref(lambda cnd, tv, fv: (tv if cnd else fv),
                    cond, true_val, false_val)
 
