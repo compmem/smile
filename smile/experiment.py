@@ -82,6 +82,7 @@ class Screen(object):
         self.left_bottom = (self.left, self.bottom)
 
     """
+
     def __init__(self):
         # set up the values of interest and their refs
         self._width = 0.0
@@ -287,6 +288,7 @@ class Experiment(object):
     equal to 55.
 
     """
+
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
         self._process_args()
@@ -300,7 +302,7 @@ class Experiment(object):
         self._background_color = background_color
 
         # make custom experiment app instance
-        #self._app = ExpApp(self)
+        # self._app = ExpApp(self)
         self._screen = Screen()
         self._app = None
 
@@ -399,11 +401,11 @@ class Experiment(object):
         Construct a unique filename for a data file in the log directory.  The
         filename will incorporate the specified 'title' string and it will have
         extension specified with 'ext' (without the dot, if not None).  The
-        filename will also incorporate a time-stamp and a number to disambiguate
-        data files with the same title, extension, and time-stamp.  The filename
-        is not a file path.  The filename will be distinct from all filenames
-        previously returned from this method even if a file of that name has
-        not yet been created in the log directory.
+        filename will also incorporate a time-stamp and a number to
+        disambiguate data files with the same title, extension, and time-stamp.
+        The filename is not a file path.  The filename will be distinct from
+        all filenames previously returned from this method even if a file of
+        that name has not yet been created in the log directory.
 
         Returns the new filename.
         """
@@ -422,7 +424,8 @@ class Experiment(object):
                     return os.path.join(self._subj_dir, filename)
             else:
                 raise RuntimeError(
-                    "Too many data files with the same title, extension, and timestamp!")
+                    "Too many data files with the same title"
+                    ", extension, and timestamp!")
 
     def setup_state_logger(self, state_class_name):
         if state_class_name in self._state_loggers:
@@ -538,6 +541,7 @@ class Set(AutoFinalizeState):
     name : string, optional, default = None
         The unique name you give this state.
     """
+
     def __init__(self, var_name, value, index=None,
                  parent=None, save_log=True, name=None):
         # init the parent class
@@ -560,6 +564,6 @@ class Set(AutoFinalizeState):
 
 if __name__ == '__main__':
     # can't run inside this file
-    #exp = Experiment(fullscreen=False, pyglet_vsync=False)
-    #exp.run()
+    # exp = Experiment(fullscreen=False, pyglet_vsync=False)
+    # exp.run()
     pass

@@ -44,6 +44,7 @@ IDLE_USLEEP = 250            # USLEEP During idle
 
 class _VideoChange(object):
     """Container for a change to the graphics tree."""
+
     def __init__(self, update_cb, flip_time, flip_time_cb):
         self.update_cb = update_cb
         self.flip_time = flip_time
@@ -56,6 +57,7 @@ class SmileApp(App):
     """Kivy app associated with the experiment.
 
     Not instantiated by the end user."""
+
     def __init__(self, exp=None):
         super(SmileApp, self).__init__()
         self.exp = exp
@@ -64,7 +66,7 @@ class SmileApp(App):
         self.video_queue = []
         self.force_blocking_flip = False
         self.force_nonblocking_flip = False
-        self.flip_interval = 1/60.  # default to 60 Hz
+        self.flip_interval = 1 / 60.  # default to 60 Hz
 
         # make Window avail to exp
         self._Window = Window
@@ -331,7 +333,7 @@ class SmileApp(App):
                 #      are not forcing a non-blocking flip
                 if self.force_blocking_flip or \
                    (len(flip_time_callbacks) and
-                    not self.force_nonblocking_flip):
+                        not self.force_nonblocking_flip):
                     # print "BLOCKING FLIP!"
                     self.blocking_flip()
                 else:
@@ -447,21 +449,21 @@ class SmileApp(App):
             os.chdir(nwd)
 
         # execute the file
-        #print nwd, expfile
-        #import kivy.base
-        #EL = kivy.base.EventLoop
+        # print nwd, expfile
+        # import kivy.base
+        # EL = kivy.base.EventLoop
         import imp
         m = imp.load_source(expfile[:-3], expfile)
-        #m = __import__(expfile[:-3])
-        #f, filename, desc = imp.find_module(expfile[:-3],['.'])
-        #print f, filename, desc
-        #m = imp.load_module(expfile[:-3], f, filename, desc)
-        #print m['exp']
-        #m = globals()
+        # m = __import__(expfile[:-3])
+        # f, filename, desc = imp.find_module(expfile[:-3],['.'])
+        # print f, filename, desc
+        # m = imp.load_module(expfile[:-3], f, filename, desc)
+        # print m['exp']
+        # m = globals()
         # l = locals()
         print m.exp
         # print l
-        #execfile(expfile, m)
+        # execfile(expfile, m)
 
         # kivy.base.EventLoop = EL
 
@@ -471,14 +473,15 @@ class SmileApp(App):
         #     exec(code, global_vars, local_vars)
 
         # return the exp
-        #exp = Experiment._last_instance()
+        # exp = Experiment._last_instance()
         # if exp and isinstance(Experiment, exp):
         #     return exp
         # else:
-        #     raise ValueError("The provided file does not have an Experiment instance.")
-        
+        #     raise ValueError("The provided file does not "
+        #                      "have an Experiment instance.")
+
         return m.exp
-        #return m['exp']
+        # return m['exp']
 
     def run_exp(self, exp=None, filename=None):
         # handle exp
@@ -502,7 +505,7 @@ class SmileApp(App):
 
         # run the exp
         self.exp.start()
-        #exp._root_executor.enter(clock.now() + 0.25)
+        # exp._root_executor.enter(clock.now() + 0.25)
 
     def start(self):
         # start the app in a try/except to clean up properly
