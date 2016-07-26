@@ -1,11 +1,11 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import os.path
 
@@ -285,15 +285,15 @@ if __name__ == '__main__':
     Debug(name='Key Press Test')
 
     exp.last_pressed = ''
-    with Loop(conditional=(exp.last_pressed!='K')):
-        kp = KeyPress(keys=['J','K'], correct_resp='K')
+    with Loop(conditional=(exp.last_pressed != 'K')):
+        kp = KeyPress(keys=['J', 'K'], correct_resp='K')
         Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
         exp.last_pressed = kp.pressed
         Log(pressed=kp.pressed, rt=kp.rt)
 
     KeyRecord()
     with UntilDone():
-        kp = KeyPress(keys=['J','K'], correct_resp='K')
+        kp = KeyPress(keys=['J', 'K'], correct_resp='K')
         Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
         Wait(1.0)
 
@@ -306,4 +306,3 @@ if __name__ == '__main__':
         Wait(1.0)
 
     exp.run()
-

@@ -161,7 +161,6 @@ class _MovingDotsWidget(Widget):
         # not currently running
         self._active = False
 
-
     def start(self):
         Clock.schedule_once(self._update, self.update_interval)
         self._active = True
@@ -197,6 +196,7 @@ class _MovingDotsWidget(Widget):
     @property
     def refresh_rate(self):
         return 1.0 / self._dt_avg
+
 
 class MovingDots(WidgetState.wrap(_MovingDotsWidget)):
     """
