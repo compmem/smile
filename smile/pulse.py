@@ -25,7 +25,7 @@ class ParallelInterface(object):
 
         Depending on what module you use to send sync pulsing, the addressing
         system will be different. For example, Inpout32 uses a binary address
-        system i.e. 0xD010. parallel for Linux for exapmle uses a port system,
+        system i.e. 0xD010. parallel for Linux for example uses a port system,
         and simply putting the address as an integer like 0 or 1 will allow
         it to work.
 
@@ -50,13 +50,12 @@ if sys.platform.startswith('linux'):
                 self._port.setData(data)
 
         PI = LinuxP
-        have_parallel = True
     except:
         # If the import fails, let them know that
         # pyparallel didn't load properly.
         sys.stderr.write("\nWARNING: The parallel module pyparallel could not load,\n" +
                          "\tso no sync pulsing will be generated.\n\n")
-        have_parallel = False
+        PI = None
 elif sys.platform.startswith('win'):
     # If Windows, try Inpout32, right now, required to be in the
     # same folder as the experiment.
@@ -81,22 +80,20 @@ elif sys.platform.startswith('win'):
             def setData(self, data):
                 """Write Data"""
                 self._port.Out32(self.base, data)
-                
-        # Set the global *Parallel Interface* variable and the
-        # *have_parallel* flag. 
+
+        # Set the global *Parallel Interface* variable.
         PI = ParallelInpout32
-        have_parallel = True
     except:
         # If the import fails, let them know they might need
         # to install Inpout32
         sys.stderr.write("\nWARNING: The parallel module inpout32 could not load, \n" +
                          "\tso no sync pulsing will be generated.\n\n")
-        have_parallel = False
+        PI = None
 else:
-        # If not Linux or Widnows, tell them they can't load the module. 
+        # If not Linux or Widnows, tell them they can't load the module.
         sys.stderr.write("\nWARNING: The parallel module could not load,\n" +
                          "\tso no sync pulsing will be generated.\n\n")
-        have_parallel = False
+        PI = None
 
 class Pulse(State):
     """
@@ -144,7 +141,7 @@ class Pulse(State):
     on both the presentation machine and the EEG apparatus.
 
     """
-    def __init__(self, code=65, width=0.010, port=0,
+    def __init__(self, code=15, width=0.010, port=0,
                  parent=None, save_log=True, name=None):
         # init the parent class
         super(Pulse, self).__init__(parent=parent,
@@ -202,9 +199,8 @@ class Pulse(State):
         self._started = True
 
         # Pull in the global variables
-        global have_parallel
         global PI
-        if have_parallel:
+        if PI:
             # send the port code and time it
             try:
                 # Create a parallel port object
