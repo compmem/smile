@@ -8,20 +8,95 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import sys
-try:
-    import parallel
-    have_parallel = True
-except ImportError:
-    sys.stderr.write("\nWARNING: The parallel module could not load,\n" + 
-                     "\tso no sync pulsing will be generated.\n\n")
-    have_parallel = False
-
-
 from state import Wait, State, Loop, Done, Log, Subroutine
 from clock import clock
 from experiment import event_time
 from ref import NotAvailable
 
+# Interface Class for Docstrings
+class ParallelInterface(object):
+    """The interface for creating a Parallel Port Interface
+
+    SMILE uses a standard interface for using the ParallelPort drivers. This
+    is a blank interface for the purpose of expressing the required functions
+    needed if you wanted to create your own Parallel Port Interface. """
+    def __init__(self, address):
+        """The init for the interface.
+
+        Depending on what module you use to send sync pulsing, the addressing
+        system will be different. For example, Inpout32 uses a binary address
+        system i.e. 0xD010. parallel for Linux for exapmle uses a port system,
+        and simply putting the address as an integer like 0 or 1 will allow
+        it to work.
+
+        It is recommended that if you are using a windows system to look up
+        what your port number is via device manager. """
+        return
+    def setData(self, data):
+        return
+
+# Find out what platform to import for
+if sys.platform.startswith('linux'):
+    # If Linux, try pyparallel
+    try:
+        import parallel
+        class LinuxP(ParallelInterface):
+            def __init__(self, address):
+                """Setup Port"""
+                self._port = parallel.Parallel(port=address)
+
+            def setData(self, data):
+                """Write Data"""
+                self._port.setData(data)
+
+        PI = LinuxP
+        have_parallel = True
+    except:
+        # If the import fails, let them know that
+        # pyparallel didn't load properly.
+        sys.stderr.write("\nWARNING: The parallel module pyparallel could not load,\n" +
+                         "\tso no sync pulsing will be generated.\n\n")
+        have_parallel = False
+elif sys.platform.startswith('win'):
+    # If Windows, try Inpout32, right now, required to be in the
+    # same folder as the experiment.
+    try:
+        from ctypes import windll
+        class ParallelInpout32(ParallelInterface):
+            def __init__(self, address):
+                """Setup the port"""
+                self._port = windll.inpout32
+                self.base = address
+                BYTEMODEMASK = 0x11100000
+
+                # Make sure that the port is in BYTE MODE
+                _inp = self._port.Inp32(self.base + 0x402)
+                self._port.Out32(self.base + 0x402,
+                                 int((_inp & ~BYTEMODEMASK) | (1 << 5)))
+
+                # Make sure that the port is in OUTPUT MODE
+                _inp = self._port.Inp32(self.base + 2)
+                self._port.Out32(self.base + 2,
+                                 int(_inp & ~(0x00100000)))
+            def setData(self, data):
+                """Write Data"""
+                self._port.Out32(self.base, data)
+                
+        # Set the global *Parallel Interface* variable and the
+        # *have_parallel* flag. 
+        PI = ParallelInpout32
+        have_parallel = True
+    except:
+        # If the import fails, let them know they might need
+        # to install Inpout32
+        sys.stderr.write("\nWARNING: The parallel module inpout32 could not load, \n" +
+                         "\tso no sync pulsing will be generated.\n\n")
+        have_parallel = False
+else:
+        # If not Linux or Widnows, tell them they can't load the module. 
+        sys.stderr.write("\nWARNING: The parallel module could not load,\n" +
+                         "\tso no sync pulsing will be generated.\n\n")
+        have_parallel = False
 
 class Pulse(State):
     """
@@ -69,7 +144,7 @@ class Pulse(State):
     on both the presentation machine and the EEG apparatus.
 
     """
-    def __init__(self, code=15, width=0.010, port=0,
+    def __init__(self, code=65, width=0.010, port=0,
                  parent=None, save_log=True, name=None):
         # init the parent class
         super(Pulse, self).__init__(parent=parent,
@@ -126,19 +201,20 @@ class Pulse(State):
         # we've started
         self._started = True
 
-        # send the code
+        # Pull in the global variables
         global have_parallel
+        global PI
         if have_parallel:
             # send the port code and time it
             try:
-                # Create a parallel port object (locks it exclusively)
-                self._pport = parallel.Parallel(port=self._port)
-
+                # Create a parallel port object
+                # from the global variable (locks it exclusively)
+                self._pport = PI(address=self._port)
                 start_time = clock.now()
                 self._pport.setData(self._code_num)
                 end_time = clock.now()
             except:  # eventually figure out which errors to catch
-                sys.stderr.write("\nWARNING: The parallel module could not send pulses,\n" + 
+                sys.stderr.write("\nWARNING: The parallel module could not send pulses,\n" +
                                  "\tso no sync pulsing will be generated.\n\n")
                 have_parallel = False
                 self._pport = None
