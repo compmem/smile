@@ -35,6 +35,9 @@ class ParallelInterface(object):
     def setData(self, data):
         return
 
+# PI set to none for if the creation of a Parallel Interface fails.
+PI = None
+
 # Find out what platform to import for
 if sys.platform.startswith('linux'):
     # If Linux, try pyparallel
@@ -55,7 +58,7 @@ if sys.platform.startswith('linux'):
         # pyparallel didn't load properly.
         sys.stderr.write("\nWARNING: The parallel module pyparallel could not load,\n" +
                          "\tso no sync pulsing will be generated.\n\n")
-        PI = None
+
 elif sys.platform.startswith('win'):
     # If Windows, try Inpout32, right now, required to be in the
     # same folder as the experiment.
@@ -88,12 +91,10 @@ elif sys.platform.startswith('win'):
         # to install Inpout32
         sys.stderr.write("\nWARNING: The parallel module inpout32 could not load, \n" +
                          "\tso no sync pulsing will be generated.\n\n")
-        PI = None
 else:
         # If not Linux or Widnows, tell them they can't load the module.
         sys.stderr.write("\nWARNING: The parallel module could not load,\n" +
                          "\tso no sync pulsing will be generated.\n\n")
-        PI = None
 
 class Pulse(State):
     """
