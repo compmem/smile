@@ -213,7 +213,7 @@ class Pulse(State):
             except:  # eventually figure out which errors to catch
                 sys.stderr.write("\nWARNING: The parallel module could not send pulses,\n" +
                                  "\tso no sync pulsing will be generated.\n\n")
-                have_parallel = False
+                PI = None
                 self._pport = None
                 self._pulse_on = None
                 self._pulse_off = None
