@@ -110,6 +110,10 @@ a **Subroutine** is defined with the python `def` followed by the name of the
 Subroutine. In SMILE, it is proper practice to name any state with the first
 letter of every word a capital letter.
 
+.. note::
+
+    Please note that Subroutines should only be used as self contained snipits of state-machine. Only write a subroutine if the section of state-machine you are trying to replicate would rely only on the parameters passed into it. You should never try to change the value of a parameter inside the Subroutine from outside the Subroutine. However, you have read-only access to any variable set using the **self** reference explained below. If you would like to have access to the height of a Label inside your subroutine outside your subroutine, you must set **self** variable to the Height of your Label during Experimental Build Time.
+
 The following is an example on how to define a **Subroutine** that displays a :py:class:`~smile.video.Label`
 that will display a number that counts up from a passed in minimum number.
 
@@ -119,7 +123,9 @@ In the subroutine file (`test_sub.py`), first import all of SMILE's common state
 
     from smile.common import *
 
-*Be advised, the above line does not always give every necessary state for an experiment.*
+.. warning::
+
+    Be advised, the above line does not always give every necessary state for an experiment, just the States that are available on every platform.
 
 Next, the definition line needs to be written for the subroutine:
 
@@ -158,6 +164,9 @@ Now we can write state machine code for the **Subroutine**:
             # to apply the str() function to self.counter during
             # Experimental Runtime instead of Buildtime
             Label(text=Ref(str,self.counter), duration=.2)
+.. warning::
+
+    When writting a Subroutine, you can only use SMILE States. A Subroutine will only run any general pythonic code ONCE when the Subroutine is first built during Experimental Build Time. It is best practice to only use SMILE states, sets, and gets during in a Subroutine. If you need to run some kind of complex function in order to run your subroutine, use the **Func** state to run a function during Experimental Run Time.
 
 Notice `self.counter`, it creates a :py:class:`~smile.state.Set`
 state that will set a new attribute to the **Subroutine** called `counter` and
@@ -514,6 +523,37 @@ the **Func** state must be accessed.
 
     Remember that you can pass in keyword arguments AND regular arguments into both Func states and Ref calls.
 
+Effective timing of KeyPress
+============================
+
+In order to increase the effectiveness of a **KeyPress** state, you can set a
+*base_time* parameter. A **KeyPress** will calculate the reaction time, or *rt*,
+by subtracting the *base_time* from the *press_time*. If no *base_time* is
+passed in as a paramter to **KeyPress**, SMILE will set the *base_time* to the
+**KeyPresses** *start_time*.
+
+When you want someone to press a button **immediately** after they see a
+stimulus, you need to set the *base_time* as the *appear_time['time']*. See an
+example of this below.
+
+.. code-block:: python
+
+    press = Label(text="Press NOW!")
+    with UntilDone():
+        Wait(min_response_time)
+        kp = KeyPress(base_time=press.appear_time['time'])
+
+When you want a participant to press a button **immediately** after they see a
+stimulus disappear off the screen, you need to set the *base_time* as the
+*disappear_time['time']*. See an example of this below.
+
+.. code-block:: python
+
+    press = Label(ext="Press When I Disappear", duration=2.0)
+    Wait(until=press.disappear_time)
+    kp = KeyPress(base_time=press.disappear_time['time'])
+
+
 Timing the Screen Refresh VS Timing Inputs
 ==========================================
 
@@ -553,8 +593,10 @@ The following is a mini example of such a **Parallel**:
 
     with Parallel() as p:
         NonBlockingFlip()
-        Label(text="PRESS NOW!!!")
-        kp = KeyPress()
+        lb = Label(text="PRESS NOW!!!")
+        with UntilDone():
+            Wait(until=lb.appear_time)
+            kp = KeyPress(base_time = lb.appear_time['time'])
 
 A **BlockingFlip** is used when the timing of screen appearance takes priority
 over when the timing of inputs occur. Using this mode, the changes in `exp._last_flip`
