@@ -106,7 +106,7 @@ Defining Subroutines
 In SMILE, there exists special states called :py:class:`Subroutines <~smile.state.Subroutine>`.
 **Subroutines** are special states that contain small chunks of state machine code
 that the main experiment will need to run over and over again. Like a function,
-a **Subroutine** is defined with the python `def` followed by the name of the
+a **Subroutine** is defined with the python *def* followed by the name of the
 Subroutine. In SMILE, it is proper practice to name any state with the first
 letter of every word a capital letter.
 
@@ -117,7 +117,7 @@ letter of every word a capital letter.
 The following is an example on how to define a **Subroutine** that displays a :py:class:`~smile.video.Label`
 that will display a number that counts up from a passed in minimum number.
 
-In the subroutine file (`test_sub.py`), first import all of SMILE's common states:
+In the subroutine file (*test_sub.py*), first import all of SMILE's common states:
 
 .. code-block:: python
 
@@ -134,7 +134,7 @@ Next, the definition line needs to be written for the subroutine:
     @Subroutine
     def CountUpFrom(self, minVal):
 
-First, notice the `@Subroutine`. This allows *CountUpFrom* to be a subclass of
+First, notice the *@Subroutine*. This allows *CountUpFrom* to be a subclass of
 *Subroutine*, the general subroutine state.
 
 .. note::
@@ -168,16 +168,18 @@ Now we can write state machine code for the **Subroutine**:
 
     When writting a Subroutine, you can only use SMILE States. A Subroutine will only run any general pythonic code ONCE when the Subroutine is first built during Experimental Build Time. It is best practice to only use SMILE states, sets, and gets during in a Subroutine. If you need to run some kind of complex function in order to run your subroutine, use the **Func** state to run a function during Experimental Run Time.
 
-Notice `self.counter`, it creates a :py:class:`~smile.state.Set`
-state that will set a new attribute to the **Subroutine** called `counter` and
-will initialize it to `minVal` during :ref:`Experimental Runtime <run_build_time>`_.
+Notice *self.counter*, it creates a :py:class:`~smile.state.Set`
+state that will set a new attribute to the **Subroutine** called *counter* and
+will initialize it to *minVal* during
+:ref:`Experimental Runtime <run_build_time>`_.
 
-Anything initialized with the `self.` will be able to be accessed from outside of
-the **Subroutine**.  If the above Subroutine is used as an example, the
- **Subroutine** as `cup = CountUpFrom()` can be initialized and `cup.counter`
+Anything initialized with the *self.* will be able to be accessed from outside
+of the **Subroutine**.  If the above Subroutine is used as an example, the
+**Subroutine** as *cup = CountUpFrom()* can be initialized and *cup.counter*
 can be called to get at the value of the counter.
 
-The following is an example of calling this subroutine during an actual experiment:
+The following is an example of calling this subroutine during an actual
+experiment:
 
 .. code-block:: python
 
@@ -199,20 +201,22 @@ The following is an example of calling this subroutine during an actual experime
 Wrapping Kivy Widgets
 ---------------------
 
-Currently, most of the visual states in SMILE are *wrapped* Kivy widgets. :py:class:`~smile.video.Rectangle`,
-:py:class:`~smile.video.Image`, and :py:class:`~smile.video.Video` are all
-examples of Kivy widgets that were wrapped in the `video.py` code and turned
-into :py:class:`WidgetStates <~smile.video.WidgetState>`.
+Currently, most of the visual states in SMILE are *wrapped* Kivy widgets.
+:py:class:`~smile.video.Rectangle`, :py:class:`~smile.video.Image`, and
+:py:class:`~smile.video.Video` are all examples of Kivy widgets that were
+wrapped in the *video.py* code and turned into
+:py:class:`WidgetStates <~smile.video.WidgetState>`.
 
-if there is a desired function that SMILE can't performed using pre-written states,
-and the function cannot be created by writing a py:class:`~smile.state.Subroutine`,
-Kivy widgets can be written to achieve this functionality. To write a Kivy widget
-for SMILE, the knowledge of the SMILE backend and Kivy is needed. This
-section is only for those who want to write their own widgets!
+if there is a desired function that SMILE can't performed using pre-written
+states, and the function cannot be created by writing a
+:py:class:`~smile.state.Subroutine`, Kivy widgets can be written to achieve this
+functionality. To write a Kivy widget for SMILE, the knowledge of the SMILE
+backend and Kivy is needed. This section is only for those who want to write
+their own widgets!
 
 The `My First Widget<https://kivy.org/docs/tutorials/firstwidget.html>` gives a
-thorough examination on how to create a very basic Kivy widget and display it on a Kivy
-app. This also provides sufficient start on how to create a Kivy widget.
+thorough examination on how to create a very basic Kivy widget and display it on
+a Kivy app. This also provides sufficient start on how to create a Kivy widget.
 
 For following example, dotbox.py will be examined. A program was written to
 produce tiny dots on the screen in an area. The most efficient way
@@ -232,7 +236,7 @@ Here is the definition of our *DotBox*:
         num_dots : integer
             Number of dots to draw
         pointsize : integer
-            Radius of dot (see `Point`)
+            Radius of dot (see *Point*)
         color : tuple or string
             Color of dots
         backcolor : tuple or string
@@ -247,15 +251,15 @@ Here is the definition of our *DotBox*:
         pointsize = NumericProperty(5)
 
 In *DotBox* several different parameters are needed to be passed into the
-`__init__` method in order to create different kinds of DotBoxes.
+*__init__* method in order to create different kinds of DotBoxes.
 
-- Color : A list of float values that represent the RGBA of the dots
+    - Color : A list of float values that represent the RGBA of the dots
 
-- backcolor : A list of float values that represent the RGBA of the background
+    - backcolor : A list of float values that represent the RGBA of the background
 
-- num_dots : The number of random dots to generate
+    - num_dots : The number of random dots to generate
 
-- pointsize : How big to draw the dots, pointsize by pointsize squares in pixels
+    - pointsize : How big to draw the dots, pointsize by pointsize squares in pixels
 
 Next, the '__init__' method is declared for our 'DotBox' widget:
 
@@ -282,12 +286,12 @@ Next, the '__init__' method is declared for our 'DotBox' widget:
         # point locations
         self._update_locs()
 
-The `.bind()` method will bind each different attribute of the dot box to a
+The *.bind()* method will bind each different attribute of the dot box to a
 method callback that might want to run if any of those attributes change.
-An example of this is if, in SMILE, an :py:class:`~smile.video.UpdateWidget'
-state is created where it updates a **DotBox** attribute, e.g. `num_dots` attribute.
+An example of this is if, in SMILE, an :py:class:`~smile.video.UpdateWidget`
+state is created where it updates a **DotBox** attribute, e.g. *num_dots* attribute.
 The attribute change will cause Kivy to callback the corresponding function
-attached with `.bind()`. Now the functions can be defined:
+attached with *.bind()*. Now the functions can be defined:
 
 .. code-block:: python
 
@@ -333,16 +337,15 @@ attached with `.bind()`. Now the functions can be defined:
             self._points = Point(points=points, pointsize=self.pointsize)
 
 Any visual widget created in Kivy will require some kind of drawing to the
-canvas. In the above example, the line `with self.canvas` was used to define the
-area in which calls to the graphics portion of Kivy were made, `kivy.graphics`.
-The color of what to be drawn was set, then it was drawn. For example, `Color()` sets
-the draw color, then `Rectangle()` tells **kivy.graphics** to draw a rectangle
+canvas. In the above example, the line *with self.canvas* was used to define the
+area in which calls to the graphics portion of Kivy were made, *kivy.graphics*.
+The color of what to be drawn was set, then it was drawn. For example, *Color()* sets
+the draw color, then *Rectangle()* tells **kivy.graphics** to draw a rectangle
 of that color to the screen.
 
 Since this Widget defined in Kivy will be wrapped with a **WidgetState**, it
-can be assumed that this widget will have access to arguments like `self.pos`, `self.size`,
-and obviously arguments like `self.x, self.y, self.width, self.height`.
-
+can be assumed that this widget will have access to arguments like *self.pos, self.size*,
+and obviously arguments like *self.x, self.y, self.width, self.height*.
 
 dotbox.py in Full
 -----------------
@@ -358,7 +361,7 @@ dotbox.py in Full
         num_dots : integer
             Number of dots to draw
         pointsize : integer
-            Radius of dot (see `Point`)
+            Radius of dot (see *Point*)
         color : tuple or string
             Color of dots
         backcolor : tuple or string
@@ -428,10 +431,11 @@ Setting a variable in RT
 ========================
 
 Like it is stated in :ref:`Build Time VS Run Time <run_build_time>`, in order to
-set a variable in SMILE during **RT**, the `exp.variable_name` syntax must be used.
-In this section, the results of calling 'exp.variable_name' in SMILE will be examined.
+set a variable in SMILE during **RT**, the *exp.variable_name* syntax must be
+used. In this section, the results of calling 'exp.variable_name' in SMILE will
+be examined.
 
-The following is a sample experiment where `exp.display_me` is set to a string:
+The following is a sample experiment where *exp.display_me* is set to a string:
 
 .. code-block:: python
 
@@ -444,13 +448,14 @@ The following is a sample experiment where `exp.display_me` is set to a string:
 
     exp.run()
 
-This is a very simple experiment. It must be understood that `exp.display_me = "LETS DISPLAY THIS SECRET MESSAGE"`
-creates a :py:class:`~smile.experiment.Set` state. A **Set** state takes a
-string `var_name` that refers to a variable in an **Experiment** or to a newly
-created variable, and a `value` that refers to the value that the variable
-is assigned to take on. The important takeaway is that 'value' can be referenced to
-a value. If 'value' is a reference, it will be evaluated during **RT**.  Below is
-an example of what the experiment would look like if the 3rd line is changed:
+This is a very simple experiment. It must be understood that
+*exp.display_me = "LETS DISPLAY THIS SECRET MESSAGE"* creates a
+:py:class:`~smile.experiment.Set` state. A **Set** state takes a string
+*var_name* that refers to a variable in an **Experiment** or to a newly created
+variable, and a *value* that refers to the value that the variable is assigned
+to take on. The important takeaway is that 'value' can be referenced to a value.
+If 'value' is a reference, it will be evaluated during **RT**.  Below is an
+example of what the experiment would look like if the 3rd line is changed:
 
 .. code-block:: python
 
@@ -475,24 +480,25 @@ Performing Operations and Functions in RT
 =========================================
 
 Until this point, new methods that run during **RT** have not run correctly. In
-this section, examining why this happens and correcting this issue will be discussed.
+this section, examining why this happens and correcting this issue will be
+discussed.
 
 Since every SMILE experiment is separated into **BT** and **RT**, any calls to
 functions or methods without using the proper SMILE syntax will run in **BT**
-and not **RT**. In order to run a function or method, a :py:class:`~smile.ref.Ref`
-or a :py:class:`~smile.state.Func` is needed to be used. As stated in
- :ref:`The Reference Section <ref_def>` of the state machine document, a **Ref**
- is a delayed function call.
+and not **RT**. In order to run a function or method, a
+:py:class:`~smile.ref.Ref` or a :py:class:`~smile.state.Func` is needed to be
+used. As stated in :ref:`The Reference Section <ref_def>` of the state machine
+document, a **Ref** is a delayed function call.
 
 **When it is desired to pass in the return value of a function to a SMILE state
-as a parameter, it is appropriate use** **Ref**. The first parameter for a **Ref**
-call is always the function desired to run, and the other parameter to that function
-call are the rest of the parameters to the **Ref**.
+as a parameter, it is appropriate use** **Ref**. The first parameter for a
+**Ref** call is always the function desired to run, and the other parameter to
+that function call are the rest of the parameters to the **Ref**.
 
 Below is an example of a loop that displays the counter of the loop in a label
 on the center of the screen. Since the :py:class:`~smile.state.Loop` counter is
-an integer, the integer must first be changed to a string. This can be performed by
-creating a **Ref** to call 'str()'.
+an integer, the integer must first be changed to a string. This can be performed
+by creating a **Ref** to call 'str()'.
 
 .. code-block:: python
 
@@ -504,9 +510,9 @@ creating a **Ref** to call 'str()'.
 
 **To run a function during RT** the **Func** state is needed.
 **Func** creates a state that will not run the passed in function call
-until the previous state leaves. The following is an example of using a **Func** to
-generate the next set of stimulus for each iteration of a **Loop**. To access the
-return value of a method or function call, the `.result` attribute of
+until the previous state leaves. The following is an example of using a **Func**
+to generate the next set of stimulus for each iteration of a **Loop**. To access
+the return value of a method or function call, the *.result* attribute of
 the **Func** state must be accessed.
 
 .. code-block:: python
@@ -571,21 +577,22 @@ the screen, then flips the next time it passes through the event loop if it is
 around the flip interval. Then SMILE flips into **NonBlocking Flip** Mode. In
 this mode, SMILE will try and flip the buffer as soon as anything changes.
 SMILE switches to this mode to allow Kivy to update the screen whenever it needs
-to. The other time in a Visual State's lifespan where SMILE calls for a **Blocking Flip**
-is when it disappears from the screen. SMILE uses **Blocking Flips** for the
-appearance and disappearance of a VisualState to accurately track the timing of
-those two events.
+to. The other time in a Visual State's lifespan where SMILE calls for a
+**Blocking Flip** is when it disappears from the screen. SMILE uses
+**Blocking Flips** for the appearance and disappearance of a VisualState to
+accurately track the timing of those two events.
 
-In SMILE, the end user can force the 2 different modes of updating the screen using
-:py:class:`~smile.video.BlockingFlip` and :py:class:`~smile.video.NonBlockingFlip`.
-They both are important, for they both grant the ability to prioritize different
-aspects of an experiment, *input* or *output*, when it comes to timing things as
-accurately as possible.
+In SMILE, the end user can force the 2 different modes of updating the screen
+using :py:class:`~smile.video.BlockingFlip` and
+:py:class:`~smile.video.NonBlockingFlip`. They both are important, for they both
+grant the ability to prioritize different aspects of an experiment, *input* or
+*output*, when it comes to timing things as accurately as possible.
 
 A **NonBlockingFlip** is used when the timing of visual stimulus isn't the most
 important. If SMILE is forced into this mode, timing of input can be made much
-more accurate, like mouse and keyboard. SMILE can be forced into NonBlockingFlips
-by putting this state in parallel with what is desired to run in NonBlockingFlip Mode.
+more accurate, like mouse and keyboard. SMILE can be forced into
+NonBlockingFlips by putting this state in parallel with what is desired to run
+in NonBlockingFlip Mode.
 
 The following is a mini example of such a **Parallel**:
 
@@ -599,7 +606,7 @@ The following is a mini example of such a **Parallel**:
             kp = KeyPress(base_time = lb.appear_time['time'])
 
 A **BlockingFlip** is used when the timing of screen appearance takes priority
-over when the timing of inputs occur. Using this mode, the changes in `exp._last_flip`
+over when the timing of inputs occur. Using this mode, the changes in *exp._last_flip*
 can be :py:class:`~smile.state.Record`.
 
 An example of this is as follows:
@@ -610,6 +617,69 @@ An example of this is as follows:
         BlockingFlip()
         vd = Video(source="test_vid.mp4")
         Record(name="video_record", flip=exp._last_flip)
+
+Information for SMILE Developers
+================================
+
+Below will be several sections that better explain all of the intricacies of
+SMILE's backend. Look at this section only if you are interested in creating
+your own states, or better understanding how SMILE does what it does.
+
+The States of a State
+---------------------
+
+Every state in SMILE runs through 6 main function calls. These function calls
+are automatic and never need to be called by the end user, but it is important
+to understand what they do and when they do it to fully understand SMILE.
+These function calls are *__init__*, *.enter()*, *.start()*, *.end()*,
+*.leave()*, and *.finalize()*. Each of these calls happen at different parts of
+the experiment, and have different functions depending on the subclass.
+
+**.__init__** happens during **BT** and is the only one to happen at **BT**.
+This function usually sets up all of the references, processes some of the
+parameters, and knows what to do if a parameter is missing or wasn't passed in.
+
+**.enter()** happens during **RT** and will be called after the previous state
+calls *.leave()*. This function will evaluate all of the parameters that were
+references, and set all the values of the remaining parameters. It will also
+schedule a start time for this state.
+
+**.start()** is a class of function calls that, during **RT**, the state starts
+doing whatever makes it special. This function is not always called *.start()*.
+In the case of an :py:class:`~smile.video.Image` state, *.start()* is replaced
+with *.appear()*. The *.start()* functions could do anything from showing an
+image to recording a keypress. After *.start()* this state will begin actually
+performing its main function.
+
+.. note::
+
+    A *.start()* kind of call will only exist in an Action State (see below).
+
+**.end()** is a class of function calls that, during **RT**, ends whatever makes
+the state special. In the case of an Image, *.end()* is replaced with
+*.disappear()*. After *.end()*, *.leave()* is available to be called.
+
+.. note::
+
+    A *.end()* kind of call will only exist in an Action State (see below).
+
+**.leave()** happens during **RT** and will be called whenever the duration of
+a state is over, or whenever the rules of a state says it should end. A special
+case for this is the *.cancel()* call. If a state should need to be ended early
+for whatever reason, the *Experiment* will call the state's *.cancel()* method
+and that method will setup an immediate call to both *.leave()* and
+*.finalize()*.
+
+**.finalize()** happens during **RT** but not until after a state has left.
+This call usually happens whenever the clock has extra time, i.e. during a :py:class:`~smile.state.Wait`
+state. This call will save out the logs, setup callbacks to the :py:class:`~smile.state.ParentState` to
+tell it that this state has finished, and set *self.active* to false. This call
+is used to clean up the state sometime after the state has run *.leave()*.
+
+The SMILE timing Algorithm
+--------------------------
+
+Write up coming soon.
 
 
 Want to Contribute to SMILE?

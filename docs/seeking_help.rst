@@ -1,27 +1,8 @@
-============
-How to SMILE
-============
-
-.. _how-to-smile:
-
-.. _running-smile:
-
-Running a SMILE Experiment
-==========================
-
-Not implemented yet.
-
-
-.. toctree::
-   :maxdepth: 2
-
-   state_machine
-   smile_states
-   tutorial
-   advanced_smile
-
+=============
 Seeking Help?
 =============
+
+.. _seeking-help:
 
 SMILE has a Google group where you can discuss SMILE with other people who are
 trying to learn how to use it, as well as see if anyone is having the same
