@@ -4,7 +4,10 @@ SMILE States
 
 The States of SMILE
 ===================
-
+Below is the list of most of the SMILE states you will ever need when running an
+experiment. Each state has a rudimentary tutorial on how to use them. If you
+need more information about what a specific state does, then checkout each
+state's docstring.
 
 The Flow States of SMILE
 ========================
@@ -207,30 +210,32 @@ For more details, see the :py:class:`~smile.state.Wait` docstring.
 If, Elif, and Else States
 -------------------------
 
-These 3 states are how SMILE handles branching in an experiment. Only a :py:class:`~smile.state.If`
-state is needed to create a branch. Through the use of
-the :py:class:`~smile.state.Elif` and the :py:class:`~smile.state.Else` state, much more complex experiments
-can be created.
+These 3 states are how SMILE handles branching in an experiment. Only a
+:py:class:`~smile.state.If` state is needed to create a branch. Through the use
+of the :py:class:`~smile.state.Elif` and the :py:class:`~smile.state.Else`
+state, much more complex experiments can be created.
 
-An *If* state runs all of its children in serial only if its conditional statement is considered True. Below is a simple
-of an *If* state.
+An *If* state runs all of its children in serial only if its conditional
+statement is considered True. Below is a simple of an *If* state.
+
 .. code-block:: python
+
 	from smile.common import *
 	exp = Experiment()
-
 	exp.a = 1
 	exp.b = 1
 	with If exp.a == exp.b:
 		Label(text="CORRECT")
 	exp.run()
 
-Here, *exp.a == exp.b* is the conditional statement.  This *If* state expresses that if the conditional
-*exp.a == exp.b* is True, then the experiment will display the Label "CORRECT".  In this case, if the conditional was
-False (say exp.b = 2 instead of 1), then the experiment will not display the Label.
+Here, *exp.a == exp.b* is the conditional statement.  This *If* state expresses
+that if the conditional *exp.a == exp.b* is True, then the experiment will
+display the Label "CORRECT".  In this case, if the conditional was False
+(say exp.b = 2 instead of 1), then the experiment will not display the Label.
 
-An *Elif* statement, short for "Else if", is another conditional statement. It functions the same as the pythonic
-"elif".  An *Else* statement is identical to the pythonic "else".
-The following is a 4 option if test.
+An *Elif* statement, short for "Else if", is another conditional statement. It
+functions the same as the pythonic "elif". An *Else* statement is identical to
+the pythonic "else". The following is a 4 option if test.
 
 .. code-block:: python
 
@@ -269,7 +274,7 @@ loop an exact number of times by passing in a number as a parameter.
 
 A *Loop* state requires a variable to be defined to access all of the information
 about the loop. This can be performed by utilizing the pythonic *as* keyword.
-`with Loop(list_of_dic) as trial:` is the line that defines the loop. If access
+*with Loop(list_of_dic) as trial:* is the line that defines the loop. If access
 to the current iteration of a loop is needed, 'trial.current' can be utilized.
 
 Refer to the :py:class:`~smile.state.Loop`* docstring

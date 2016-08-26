@@ -106,8 +106,8 @@ operation to a **Ref** (i.e. +, -, *, or /) it will create a new **Ref** that
 contains both sides of the operation, and the operation function itself.
 
 .. code-block:: python
-    from smile.ref import Ref
 
+    from smile.ref import Ref
     a = Ref.object(5)
     b = Ref.object(6)
     c = a + b
@@ -151,6 +151,8 @@ please see :ref:`Preforming Functions and Operations in RT <func_ref_def>`
 
 The next section of the doc will go over some simple SMILE tutorials and
 introduce you to the states you can add to a SMILE experiment.
+
+.. _smile_tutorial:
 
 Looping over Lists! In Style
 ============================

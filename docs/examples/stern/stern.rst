@@ -218,7 +218,7 @@ located below.
 
 
 stern.py in Full
-=============
+================
 
 .. code-block:: python
     :linenos:
@@ -341,7 +341,7 @@ gen_stim.py in Full
     random.shuffle(trials)
     for t in range(len(trials)):
         trials[t]['trial_num'] = t
-		
+
 CITATION
 ========
 

@@ -9,7 +9,7 @@ will provide a better understanding into exactly how to code a
 SMILE experiment in real world conditions, rather than in bite-sized samples of
 code.
 
-.. full-experiments:
+.. _full_experiments:
 
 Experiments
 -----------

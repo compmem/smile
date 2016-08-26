@@ -67,7 +67,7 @@ below.
     When PYO asks for a directory to install to, choose `C:\Python27`. If that folder doesn't already exist, create it and then attempt to install PYO into that folder
 
 With that, you are finished installing SMILE. Congrats! Head over to
-`SMILE Tutorial<tutorial.html>`_ to start SMILING. This will cover a more
+:ref:`The SMILE Tutorial <smile_tutorial>` to start SMILING. This will cover a more
 advance look into how SMILE works.
 
 Sync Pulsing on Windows
@@ -134,7 +134,7 @@ website. The link is provided below.
     -`PYO Download <http://ajaxsoundstudio.com/software/pyo/>`_
 
 With that, you are finished installing SMILE. Congrats! Head over to
-`SMILE Tutorial<tutorial.html>`_ to start SMILING. This will cover a more
+:ref:`The SMILE Tutorial <smile_tutorial>` to start SMILING. This will cover a more
 advance look into how SMILE works.
 
 Mac Troubleshooting
@@ -182,7 +182,7 @@ run the following line in your terminal window.
 This will add SMILE to your python distribution.
 
 With that, you are finished installing SMILE. Congrats! Head over to
-`SMILE Tutorial<tutorial.html>`_ to start SMILING. This will cover a more
+:ref:`The SMILE Tutorial <smile_tutorial>` to start SMILING. This will cover a more
 advance look into how SMILE works.
 
 Sync pulsing on Linux

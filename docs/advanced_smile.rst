@@ -425,7 +425,7 @@ dotbox.py in Full
                 # draw the points
                 self._points = Point(points=points, pointsize=self.pointsize)
 
-.. _setting_in_rt
+.. _setting_in_rt:
 
 Setting a variable in RT
 ========================
@@ -474,7 +474,7 @@ value of the variable immediately at enter. For more information look at the
 docstring for :py:class:`~smile.experiment.Set` and the code behind the
 **smile.experiment.Experiment.set_var()** method.
 
-.. _func_ref_def
+.. _func_ref_def:
 
 Performing Operations and Functions in RT
 =========================================
