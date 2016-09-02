@@ -62,15 +62,17 @@ class Grating(Widget):
     phase = NumericProperty(0.0)
     color_one = ListProperty([1., 1., 1., 1.])
     color_two = ListProperty([0., 0., 0., 0.])
+    contrast = NumericProperty(1.0)
 
     def __init__(self, **kwargs):
         super(type(self), self).__init__(**kwargs)
 
         if self.std_dev is None:
-            self.std_dev = (self.width/2) * 0.1
+            self.std_dev = (self.width / 2) * 0.1
 
         self._texture = None
         self._mask_texture = None
+        self._period = None
 
         self.bind(envelope=self._update_texture,
                   std_dev=self._update_texture,
@@ -79,24 +81,26 @@ class Grating(Widget):
                   color_two=self._update_texture,
                   frequency=self._update_texture,
                   pos=self._update,
-                  size=self._update_texture)
+                  size=self._update_texture,
+                  contrast=self._update_texture)
         self._update_texture()
 
     '''Performs the calculation for the mask either Gaussian, linear, or circular.
     The function creates the bottom left quadrant of the mask, then mirrors and
     repeats the texture 3 times in the top left, top right, and bottom left quadrants'''
+
     def _calc_mask(self, rx, ry):
-        dx = rx - (self.width/2.)   # horizontal center of Grating
-        dy = ry - (self.height/2.)  # vertical center of Grating
+        dx = rx - (self.width / 2.)   # horizontal center of Grating
+        dy = ry - (self.height / 2.)  # vertical center of Grating
         radius = math.sqrt(dx ** 2 + dy ** 2)
-        #Gaussian Gabor stimuli calculations
+        # Gaussian Gabor stimuli calculations
         if self.envelope[0].lower() == 'g':
-            transparency = math.exp(-0.5 * (dy / (self.std_dev*3)) ** 2 - 0.5 *
-                                    (dx / (self.std_dev*3)) ** 2)
-        #Linear Gabor stimuli calculations
+            transparency = math.exp(-0.5 * (dy / (self.std_dev * 3)) ** 2 - 0.5 *
+                                    (dx / (self.std_dev * 3)) ** 2)
+        # Linear Gabor stimuli calculations
         elif self.envelope[0].lower() == 'l':
             transparency = max(0, (0.5 * self.width - radius) / (0.5 * self.width))
-        #Circular Gabor stimuli calculations
+        # Circular Gabor stimuli calculations
         elif self.envelope[0].lower() == 'c':
             if (radius > 0.5 * self.width):
                 transparency = 0.0
@@ -105,17 +109,19 @@ class Grating(Widget):
         else:
             transparency = 1.0
         transparency = 1.0 - transparency
-        #Return
+        # Return
         return 0, 0, 0, transparency
 
     '''Performs the calculation for the grating behind the mask
     This works by creating one period of a sin wave, then using tex_coords,
     a repeat function not residing in this function to fill the rectangle with
     the grating'''
+
     def _calc_color(self, x):
-        #Creation of the sin wave for the grating texture
-        amp = 0.5 + 0.5 * math.sin((x*math.pi/180) * self.frequency + self.phase)
-        #RGB color return
+        # Creation of the sin wave for the grating texture
+        amp = ((self.contrast * (0.5 + 0.5 * math.sin((x * math.pi / 180) *
+                                                      self.frequency + self.phase))) + (1.0 - self.contrast) / 2)
+        # RGB color return
         return [(self.color_one[0] * amp + self.color_two[0] * (1.0 - amp)),
                 (self.color_one[1] * amp + self.color_two[1] * (1.0 - amp)),
                 (self.color_one[2] * amp + self.color_two[2] * (1.0 - amp))]
@@ -136,6 +142,7 @@ class Grating(Widget):
     and bottom left quadrant to increase efficiency. Also it repeats the sin wave,
     created in the  _calc_color function to fill the rectangle with the sin wave
     based grating.'''
+
     def _update(self, *pargs):
         # clear (or else we get gratings all over)
         self.canvas.clear()
@@ -149,15 +156,15 @@ class Grating(Widget):
             # draw the mask
             mask = Rectangle(size=self.size, pos=self.pos,
                              texture=self._mask_texture)
-            #repeats 4 times to fill the created texture rectangle
+            # repeats 4 times to fill the created texture rectangle
             mask.tex_coords = 0, 0, 2, 0, 2, 2, 0, 2
 
             # draw the grating
             grating = Rectangle(size=self.size, pos=self.pos,
                                 texture=self._texture)
-            #repeats the grating to fill the texture rectangle
-            grating.tex_coords = (0, 0, self.width/self._period,
-                                  0, self.width/self._period,
+            # repeats the grating to fill the texture rectangle
+            grating.tex_coords = (0, 0, self.width / self._period,
+                                  0, self.width / self._period,
                                   self.height, 0, self.height)
 
         # clean up the blending
@@ -167,9 +174,10 @@ class Grating(Widget):
     '''Update grating variables
     The function calls the _calc_color function to create the grating texture which
     is layered behind the mask.'''
+
     def _update_grating(self, *args):
         # calculate the num needed for period
-        self._period = int(round(360./self.frequency))
+        self._period = int(round(360. / self.frequency))
 
         # make new texture
         self._texture = Texture.create(size=(self._period, 1),
@@ -193,10 +201,11 @@ class Grating(Widget):
     '''Update Mask variables
     The function calls the mask creating function. Also, it stores masks in a cache,
     for later use to increase function efficiency.'''
+
     def _update_mask(self, *args):
-        #creation of texture, half the width and height, will be reflected to
-        #completely cover the grating texture
-        self._mask_texture = Texture.create(size=(self.width/2, self.height/2),
+        # creation of texture, half the width and height, will be reflected to
+        # completely cover the grating texture
+        self._mask_texture = Texture.create(size=(self.width / 2, self.height / 2),
                                             colorfmt='rgba')
 
         # generate a unique mask id for cache lookup
@@ -210,8 +219,8 @@ class Grating(Widget):
         except KeyError:
             # set mask (this is the slow part)
             mask_buf = list(chain.from_iterable([self._calc_mask(rx, ry)
-                                                 for rx in range(self.width/2)
-                                                 for ry in range(self.height/2)]))
+                                                 for rx in range(self.width / 2)
+                                                 for ry in range(self.height / 2)]))
             # turn into an array
             mask_arr = array('f', mask_buf)
 
@@ -223,17 +232,19 @@ class Grating(Widget):
                                        bufferfmt='float')
         #mask is mirrored and repeated
         self._mask_texture.wrap = 'mirrored_repeat'
-        #mask is set to foremost texture
+        # mask is set to foremost texture
         self._mask_texture.mag_filter = 'nearest'
         BindTexture(texture=self._mask_texture, index=1)
 
     '''Controller for the Gabor blending to the background color
     glBlendFunc(starting RGBA values, desired RGBA values)'''
+
     def _set_blend_func(self, instruction):
         glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_SRC_ALPHA)
 
     '''Reset of the Gabor blending properties for creation of new stimuli
     glBlendFunc(starting RGBA values, desired RGBA values)'''
+
     def _reset_blend_func(self, instruction):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
@@ -247,28 +258,28 @@ if __name__ == '__main__':
 
     exp = Experiment(background_color="#4F33FF")
 
-    g = Grating(width=250, height=250)
+    g = Grating(width=250, height=250, contrast=0.1)
     with UntilDone():
         KeyPress()
         g.update(bottom=exp.screen.center)
         KeyPress()
 
     g = Grating(width=500, height=500, envelope='Gaussian', frequency=75,
-                phase=11.0, color_one='blue', color_two='red')
+                phase=11.0, color_one='blue', color_two='red', contrast=0.25)
     with UntilDone():
         KeyPress()
         g.update(bottom=exp.screen.center)
         KeyPress()
 
     with Parallel():
-        g = Grating(width=256, height=256, frequency=20,envelope='Gaussian',
-                  std_dev=5,
-                  color_one='green', color_two='orange')
+        g = Grating(width=256, height=256, frequency=20, envelope='Gaussian',
+                    std_dev=5, contrast=0.75,
+                    color_one='green', color_two='orange')
         lbl = Label(text='Grating!', bottom=g.top)
     with UntilDone():
         # kp = KeyPress()
         with Parallel():
-            g.slide(phase=-8*math.pi, frequency=10.,
+            g.slide(phase=-8 * math.pi, frequency=10.,
                     bottom=exp.screen.bottom,
                     duration=6.)
             g.slide(rotate=90, duration=2.0)
@@ -278,13 +289,13 @@ if __name__ == '__main__':
 
     with Parallel():
         g = Grating(width=1000, height=1000, frequency=10, envelope='Gaussian',
-                  std_dev=10,
-                  color_one='blue', color_two='red')
+                    std_dev=10, contrast=0.4,
+                    color_one='blue', color_two='red')
         lbl = Label(text='Grating!', bottom=g.top)
     with UntilDone():
         kp = KeyPress()
         with Parallel():
-            g.slide(phase=-8*math.pi, frequency=10.,
+            g.slide(phase=-8 * math.pi, frequency=10.,
                     left=exp.screen.left,
                     duration=6.)
             g.slide(rotate=90, duration=2.0)
