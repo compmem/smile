@@ -6,40 +6,78 @@ What is SMILE?
     :height: 241
     :align: right
 
-SMILE is a State Machine Interface Library for Experiments. In broad terms, a
-state machine is an abstract device that stores the current status of relevant
-input events, then initiates an action depending on a predetermined set of
-rules. The goal of a state machine is to build objects that can be in many
-possible states and to define the rules for transitioning from one of those
-states to another. A common example used to describe a state machine is
-a stoplight: in this case, the three possible states are a red state, a green
-state, and a yellow state. There is a set order of cycling through these
-states; specifically, red transitions to green, green transitions to yellow, and
-yellow cycles back to red.
+SMILE is the State Machine Interface Library for Experiments. The goal when
+developing SMILE was to create an east-to-use experiment building library
+that allows for millisecond-accurate timing. SMILE was written so that the end
+user doesn't have to worry about the intricacies of timing, event handling, or
+logging data.
 
-The goal of SMILE was to create an easy to use State Machine Interface where
-the hardest part about coding an experiment would be the stimulus list
-generation. Through SMILE, we have developed a state machine interface between
-the experimenter and Kivy, a python library that specializes in creating and
-displaying stimulus on the screen in the form of widgets. With SMILE, you are
-able to build a Psychology experiment without the hassle of handling any of the
-timing, the logging of data, or the presenting of stimulus. SMILE is considered
-to be a hierarchical state machine.  This is because all of the states in
-SMILE have a parent-child relationship that comes into play when dealing with
-the timing of multiple states at the same time.
+Inspired by the concept of a state machine, SMILE works by storing the current
+status of releveant input events, then initiating an action depending on a
+predetermined set of rules. With the support of the versatile **Python**
+programming language and **Kivy**, a module create for video game development,
+SMILE is powerful and flexible while still being simple to use.
 
-Why SMILE?
-==========
+What does a SMILE experiment look like?
+=======================================
 
-Not yet finished
+Below is hello.py, an example of what the simplest SMILE experiment looks like:
+
+.. code-block:: python
+
+    from smile.common import *
+
+    exp = Experiment()
+
+    Label(text="Hello, World!", duration=5)
+
+    exp.run()
+
+In order to run this experiment from a computer that has SMILE installed, you
+would use your favorite OS's command prompt and run the following line:
+
+::
+
+    >> python hello.py -s SubjectID
+
+This program creates a full-screen window with a black background and the words
+**Hello, World!** in white text in the center--just like that, we are SMILEing!
+
+Now let us go through our SMILE experiment line by line and see what each of
+them does.
+
+**First** is the line *exp = Experiment()*. This line is the initialization line
+for SMILE. This tells SMILE that it should prepare to see states being declared.
+
+**Second** is the line *Label(text="Hello, World!", duration=5)*. **Label** is a
+SMILE visual state that displays text onto the screen. Certain SMILE states take
+a *duration*, and we are setting this state's duration to **5**. This means the
+state will remain active on the screen for 5 seconds.
+
+**Third** is the line *exp.run()*. This line signals to SMILE that you have finished
+building your experiment and that it is ready to run. SMILE will then run your
+experiment from start to finish and exit the experiment window when it has
+finished.
+
+Whats Next?
+===========
+
+To help you get ready to SMILE, the first section of this documentation is the
+SMILE installation and the installation of its dependencies. After that is a
+section that delves deeper into SMILE and how to write more complicated
+experiments.
 
 .. toctree::
    :maxdepth: 1
 
    install
-   how_to_smile
+   tutorial
+   smile_states
+   tutorial_2
    real_examples
    accessing_data
+   advanced_smile
+   seeking_help
    smile
 
 

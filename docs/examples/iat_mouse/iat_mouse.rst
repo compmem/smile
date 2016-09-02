@@ -24,7 +24,7 @@ nouns, and negatively associated nouns and to classify them into categories.
 The blocks of stimuli will be better explained below in the **Stimulus Generation**
 section of this document.
 
-This SMILE experiment will utilize many of the :py:module:`Mouse <smile.mouse>`
+This SMILE experiment will utilize many of the *Mouse*
 Classes in `mouse.py`, including :py:class:`~smile.mouse.MouseCursor` and
 :py:class:`~smile.mouse.MouseRecord`. We will also be using many of the SMILE
 **flow** states like :py:class:`~smile.state.Loop` and :py:class:`~smile.state.Meanwhile`
