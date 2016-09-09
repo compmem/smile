@@ -14,7 +14,7 @@ from experiment import event_time
 from ref import NotAvailable
 
 # Interface Class for Docstrings
-class ParallelInterface(object):
+class PulseInterface(object):
     """The interface for creating a Parallel Port Interface
 
     SMILE uses a standard interface for using the ParallelPort drivers. This
@@ -43,7 +43,7 @@ if sys.platform.startswith('linux'):
     # If Linux, try pyparallel
     try:
         import parallel
-        class LinuxP(ParallelInterface):
+        class LinuxP(PulseInterface):
             def __init__(self, address):
                 """Setup Port"""
                 self._port = parallel.Parallel(port=address)
@@ -57,14 +57,13 @@ if sys.platform.startswith('linux'):
         # If the import fails, let them know that
         # pyparallel didn't load properly.
         sys.stderr.write("\nWARNING: The parallel module pyparallel could not load,\n" +
-                         "\tso no sync pulsing will be generated.\n\n")
-
+                         "\tso no parallel sync pulsing will be available.\n\n")
 elif sys.platform.startswith('win'):
     # If Windows, try Inpout32, right now, required to be in the
     # same folder as the experiment.
     try:
         from ctypes import windll
-        class ParallelInpout32(ParallelInterface):
+        class ParallelInpout32(PulseInterface):
             def __init__(self, address):
                 """Setup the port"""
                 self._port = windll.inpout32
@@ -89,12 +88,40 @@ elif sys.platform.startswith('win'):
     except:
         # If the import fails, let them know they might need
         # to install Inpout32
-        sys.stderr.write("\nWARNING: The parallel module inpout32 could not load, \n" +
-                         "\tso no sync pulsing will be generated.\n\n")
+        sys.stderr.write("\nWARNING: The parallel module inpout32 could not load,\n" +
+                         "\tso no parallel sync pulsing will be available.\n\n")
 else:
-        # If not Linux or Widnows, tell them they can't load the module.
-        sys.stderr.write("\nWARNING: The parallel module could not load,\n" +
-                         "\tso no sync pulsing will be generated.\n\n")
+    # If not Linux or Widnows, tell them they can't load the module.
+    sys.stderr.write("\nWARNING: The parallel module could not load,\n" +
+                     "\tso no parallel sync pulsing will be available.\n\n")
+
+# PI set to none for if the creation of a Parallel Interface fails.
+SI = None
+
+# Find out what platform to import for
+try:
+    import serial
+    class SerialPySerial(PulseInterface):
+        """Serial sync pulsing via PySerial.
+
+        Works with both virtual usb serial ports and hardware serial ports."""
+        def __init__(self, address="COM4", baud=57600,
+                     data_size=8, stop_size=1):
+            """Setup the port.
+
+            The address, baud, data size, and stop size should be set to match
+            the requirements of your system."""
+
+            self._port = serial.Serial(port=address, baudrate=baud,
+                                       bytesize=data_size, stopsize=stop_size)
+        def setData(self, data):
+            """Write Data, Must be an iterable object"""
+            self._port.write(data)
+    # Set the global *Serial Interface* to SerialPySerial
+    SI = SerialPySerial
+except:
+    sys.stderr.write("\nWARNING: The serial module pyserial could not load,\n" +
+                     "\tso no serial sync pulsing will be available.\n\n")
 
 class Pulse(State):
     """
@@ -143,7 +170,8 @@ class Pulse(State):
 
     """
     def __init__(self, code=15, width=0.010, port=0,
-                 parent=None, save_log=True, name=None):
+                 parent=None, save_log=True, name=None,
+                 sync_style="parallel"):
         # init the parent class
         super(Pulse, self).__init__(parent=parent,
                                     duration=0,
@@ -157,6 +185,8 @@ class Pulse(State):
         self._pulse_on = NotAvailable
         self._pulse_off = NotAvailable
 
+        self._sync_style = sync_style
+
         # append log vars
         self.log_attrs.extend(['code', 'code_num', 'width', 'port',
                                'pulse_on', 'pulse_off'])
@@ -169,25 +199,26 @@ class Pulse(State):
         self._pulse_on = NotAvailable
         self._pulse_off = NotAvailable
 
-        # Convert code if necessary
-        if type(self._code) == str:
-            if self._code[0] == "S":
-                # Use first 4 bits
-                ncode = int(self._code[1:])
-                if ncode < 0 or ncode > 16:
-                    ncode = 15
-            elif self._code[0] == "R":
-                # Use last 4 bits
-                ncode = int(self._code[1:])
-                if ncode < 0 or ncode > 16:
-                    ncode = 15
-                ncode = ncode >> 4
+        if self._sync_style == "parallel":
+            # Convert code if necessary
+            if type(self._code) == str:
+                if self._code[0] == "S":
+                    # Use first 4 bits
+                    ncode = int(self._code[1:])
+                    if ncode < 0 or ncode > 16:
+                        ncode = 15
+                elif self._code[0] == "R":
+                    # Use last 4 bits
+                    ncode = int(self._code[1:])
+                    if ncode < 0 or ncode > 16:
+                        ncode = 15
+                    ncode = ncode >> 4
+                else:
+                    # Convert to an integer
+                    ncode = int(self._code)
             else:
-                # Convert to an integer
                 ncode = int(self._code)
-        else:
-            ncode = int(self._code)
-        self._code_num = ncode
+            self._code_num = ncode
 
     def _schedule_start(self):
         clock.schedule(self._callback, event_time=self._start_time)
@@ -198,20 +229,25 @@ class Pulse(State):
     def _callback(self):
         # we've started
         self._started = True
-
         # Pull in the global variables
         global PI
         if PI:
             # send the port code and time it
             try:
-                # Create a parallel port object
-                # from the global variable (locks it exclusively)
-                self._pport = PI(address=self._port)
-                start_time = clock.now()
-                self._pport.setData(self._code_num)
-                end_time = clock.now()
+                if self._sync_style == "parallel":
+                    # Create a parallel port object
+                    # from the global variable (locks it exclusively)
+                    self._sport = PI(address=self._port)
+                    start_time = clock.now()
+                    self._sport.setData(self._code_num)
+                    end_time = clock.now()
+                elif self._sync_style == "serial":
+                    self._sport = SI(address=self._port)
+                    start_time = clock.now()
+                    self._sport.setData(self._code_num)
+                    end_time = clock.now()
             except:  # eventually figure out which errors to catch
-                sys.stderr.write("\nWARNING: The parallel module could not send pulses,\n" +
+                sys.stderr.write("\nWARNING: The sync module could not send pulses,\n" +
                                  "\tso no sync pulsing will be generated.\n\n")
                 PI = None
                 self._pport = None
@@ -240,7 +276,7 @@ class Pulse(State):
                 self._pulse_off = None
 
                 # clean up/ close the port
-                self._pport = None
+                self._sport = None
 
                 # so we can finalize now, too
                 clock.schedule(self.finalize)
@@ -256,12 +292,16 @@ class Pulse(State):
 
     def _pulse_off_callback(self):
         # turn off the code
-        start_time = clock.now()
-        self._pport.setData(0)
-        end_time = clock.now()
-
+        if self._sync_style == "parallel":
+            start_time = clock.now()
+            self._sport.setData(0)
+            end_time = clock.now()
+        else:
+            start_time = clock.now()
+            self._sport.setData("0")
+            end_time = clock.now()
         # clean up / close the port
-        self._pport = None
+        self._sport = None
 
         # set the pulse time
         time_err = (end_time - start_time)/2.
