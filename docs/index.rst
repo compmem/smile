@@ -81,6 +81,14 @@ experiments.
    smile
 
 
+.. image:: _static/ccbs.jpg
+    :width: 200
+    :height: 200
+    :align: left
+
+Development made possible by a seed grant from the Center for Cognitive and
+Brain Sciences.
+
 Indices and tables
 ==================
 
