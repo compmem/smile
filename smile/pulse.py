@@ -113,7 +113,7 @@ try:
             the requirements of your system."""
 
             self._port = serial.Serial(port=address, baudrate=baud,
-                                       bytesize=data_size, stopsize=stop_size)
+                                       bytesize=data_size, stopbits=stop_size)
         def setData(self, data):
             """Write Data, Must be an iterable object"""
             self._port.write(data)
@@ -231,7 +231,8 @@ class Pulse(State):
         self._started = True
         # Pull in the global variables
         global PI
-        if PI:
+        global SI
+        if PI or SI:
             # send the port code and time it
             try:
                 if self._sync_style == "parallel":
@@ -315,7 +316,8 @@ class Pulse(State):
 
 @Subroutine
 def JitteredPulses(self, code=1, width=0.010, port=0,
-                   pause_between=3.0, jitter_between=3.0):
+                   pause_between=3.0, jitter_between=3.0,
+                   sync_style="parallel"):
     """Send pulses separated by a jittered wait.
 
     The typical use case for this subroutine is to send a random train
@@ -332,7 +334,7 @@ def JitteredPulses(self, code=1, width=0.010, port=0,
     # loop indefinitely
     with Loop():
         # send a pulse
-        pulse = Pulse(code=code, port=port, width=width)
+        pulse = Pulse(code=code, port=port, width=width, sync_style=sync_style)
         Done(pulse)
 
         # do a jittered wait
