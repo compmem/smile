@@ -80,19 +80,16 @@ experiments.
    seeking_help
    smile
 
+Funding Sources
+===============
+
+Funding for SMILE made possible by grants from:
 
 .. image:: _static/ccbs.jpg
-    :width: 200
-    :height: 200
-    :align: center
+    :width: 150
+    :height: 150
+    :align: left
+    :target: https://cog.osu.edu
 
-Development made possible by a seed grant from the Center for Cognitive and
-Brain Sciences.
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
