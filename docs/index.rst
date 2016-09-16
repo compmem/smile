@@ -83,7 +83,7 @@ experiments.
 Funding Sources
 ===============
 
-Funding for SMILE made possible by grants from:
+Development of SMILE made possible by grants from:
 
 .. image:: _static/ccbs.jpg
     :width: 150
