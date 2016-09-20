@@ -2519,7 +2519,7 @@ class CallbackState(AutoFinalizeState):
         clock.unschedule(self.callback)
 
     def _unschedule_end(self):
-        clock.schedule(self.leave)
+        clock.unschedule(self.leave)
 
     def _leave(self):
         clock.unschedule(self.callback)
