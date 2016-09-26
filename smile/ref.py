@@ -1,14 +1,15 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import random
 import operator
+
 
 class NotAvailable(object):
     """Special value for indicating a variable is not available yet.
@@ -18,6 +19,7 @@ class NotAvailable(object):
     every variable to some available value at or before finalize.
 
     """
+
     def __repr__(self):
         return "NotAvailable"
 
@@ -27,12 +29,16 @@ class NotAvailable(object):
 # make a single instance used everywhere
 NotAvailable = NotAvailable()
 
+
 class NotAvailableError(ValueError):
     pass
 
+
 def pass_thru(obj):
-    """Returns its only argument. Needed to delay the evaluation of a variable."""
+    """Returns its only argument. Needed to delay the evaluation of a
+    variable."""
     return obj
+
 
 class Ref(object):
     """Delayed function call.
@@ -79,6 +85,7 @@ class Ref(object):
 
 
     """
+
     def __init__(self, func, *pargs, **kwargs):
         # store the arguments
         self.func = func
@@ -126,10 +133,10 @@ class Ref(object):
     def cond(cond, true_val, false_val):
         """**cond** allows you to evaluate a conditional during Experimental Runtime.
 
-        **cond** creates a Ref that will evaluate to the *true_val* if the passed
-        in conditional evaluates to true, and *false_val* if false. It allows
-        you do create parameters for different states that can vary without
-        using an **If** state.
+        **cond** creates a Ref that will evaluate to the *true_val* if the
+        passed in conditional evaluates to true, and *false_val* if false.
+        It allows you do create parameters for different states that can vary
+        without using an **If** state.
 
         Parameters
         ----------
@@ -145,8 +152,8 @@ class Ref(object):
 
         Returns
         -------
-        **cond** returns a ref with that will evaluate to either the *true_val* or
-        *false_val* depending on the *cond* parameter.
+        **cond** returns a ref with that will evaluate to either the
+        *true_val* or *false_val* depending on the *cond* parameter.
 
         Example
         -------
@@ -200,7 +207,8 @@ class Ref(object):
     def add_change_callback(self, func, *pargs, **kwargs):
         """Add callback that's called when this value changes.
         """
-        #print "add_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
+        # print "add_change_callback %s, %r, %r, %r" % (self,
+        #                                              func, pargs, kwargs)
         # if this is the first callback
         if not len(self.change_callbacks):
             # set up dependency callbacks
@@ -210,7 +218,8 @@ class Ref(object):
         self.change_callbacks.add((func, pargs, tuple(kwargs.iteritems())))
 
     def remove_change_callback(self, func, *pargs, **kwargs):
-        #print "remove_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
+        # print "remove_change_callback %s, %r, %r, %r" % (self,
+        #                                                  func, pargs, kwargs)
         self.change_callbacks.discard((func, pargs, tuple(kwargs.iteritems())))
         # clean up if there are no more callbacks
         if not len(self.change_callbacks):
@@ -226,7 +235,7 @@ class Ref(object):
             dep.remove_change_callback(self.dep_changed)
 
     def dep_changed(self):
-        #print "dep_changed %r, %r" % (self, self.change_callbacks)
+        # print "dep_changed %r, %r" % (self, self.change_callbacks)
         # cache is not valid
         self.cache_valid = False
         # iter through each change callback and call them
@@ -251,80 +260,117 @@ class Ref(object):
 
     def __getattr__(self, attr):
         return Ref(getattr, self, attr)
+
     def __lt__(self, other):
         return Ref(operator.lt, self, other)
+
     def __le__(self, other):
         return Ref(operator.le, self, other)
+
     def __gt__(self, other):
         return Ref(operator.gt, self, other)
+
     def __ge__(self, other):
         return Ref(operator.ge, self, other)
+
     def __eq__(self, other):
         return Ref(operator.eq, self, other)
+
     def __ne__(self, other):
         return Ref(operator.ne, self, other)
+
     def __and__(self, other):
         return Ref(operator.and_, self, other)
+
     def __rand__(self, other):
         return Ref(operator.and_, other, self)
+
     def __or__(self, other):
         return Ref(operator.or_, self, other)
+
     def __ror__(self, other):
         return Ref(operator.or_, other, self)
+
     def __xor__(self, other):
         return Ref(operator.xor, self. other)
+
     def __rxor__(self, other):
         return Ref(operator.xor, other, self)
+
     def __invert__(self):
         return Ref(operator.invert, self)
+
     def __add__(self, other):
         return Ref(operator.add, self, other)
+
     def __radd__(self, other):
         return Ref(operator.add, other, self)
+
     def __sub__(self, other):
         return Ref(operator.sub, self, other)
+
     def __rsub__(self, other):
         return Ref(operator.sub, other, self)
+
     def __pow__(self, other, modulo=None):
         return Ref(pow, self, other, modulo)
+
     def __rpow__(self, other):
         return Ref(operator.pow, other, self)
+
     def __mul__(self, other):
         return Ref(operator.mul, self, other)
+
     def __rmul__(self, other):
         return Ref(operator.mul, other, self)
+
     def __div__(self, other):
-        #NOTE: using lambda to be sensitive to __future__.division
+        # NOTE: using lambda to be sensitive to __future__.division
         return Ref(lambda a, b: a / b, self, other)
+
     def __rdiv__(self, other):
-        #NOTE: using lambda to be sensitive to __future__.division
+        # NOTE: using lambda to be sensitive to __future__.division
         return Ref(lambda a, b: a / b, other, self)
+
     def __floordiv__(self, other):
         return Ref(operator.floordiv, self, other)
+
     def __rfloordiv__(self, other):
         return Ref(operator.floordiv, other, self)
+
     def __mod__(self, other):
         return Ref(operator.mod, self, other)
+
     def __rmod__(self, other):
         return Ref(operator.mod, other, self)
+
     def __divmod__(self, other):
-        return Ref(divmod, self,other)
+        return Ref(divmod, self, other)
+
     def __rdivmod__(self, other):
         return Ref(divmod, other, self)
+
     def __pos__(self):
         return Ref(operator.pos, self)
+
     def __neg__(self):
         return Ref(operator.neg, self)
+
     def __contains__(self, key):
         return Ref(operator.contains, self, key)
+
     def __lshift(self, other):
         return Ref(operator.lshift, self, other)
+
     def __rlshift(self, other):
         return Ref(operator.lshift, other, self)
+
     def __rshift(self, other):
         return Ref(operator.rshift, self, other)
+
     def __rrshift(self, other):
         return Ref(operator.rshift, other, self)
+
     def __abs__(self):
         return Ref(abs, self)
 
@@ -332,12 +378,16 @@ class Ref(object):
 def jitter(lower, jitter_mag):
     return Ref(random.uniform, lower, lower + jitter_mag, use_cache=False)
 
+
 def _shuffle(iterable):
     lst = list(iterable)
     random.shuffle(lst)
     return lst
+
+
 def shuffle(iterable):
     return Ref(_shuffle, iterable, use_cache=False)
+
 
 def val(obj):
     try:
@@ -349,7 +399,7 @@ def val(obj):
         elif isinstance(obj, tuple):
             return tuple(val(value) for value in obj)
         elif isinstance(obj, dict):
-            return {val(key) : val(value) for key, value in obj.iteritems()}
+            return {val(key): val(value) for key, value in obj.iteritems()}
         elif isinstance(obj, slice):
             return slice(val(obj.start), val(obj.stop), val(obj.step))
         elif obj is NotAvailable:
@@ -357,7 +407,8 @@ def val(obj):
         else:
             return obj
     except NotAvailableError:
-        raise NotAvailableError("val(%r) produced NotAvailable result" % repr(obj))
+        raise NotAvailableError("val(%r) produced "
+                                "NotAvailable result" % repr(obj))
 
 
 def iter_deps(obj):
@@ -409,6 +460,7 @@ if __name__ == '__main__':
     print y[0], val(ry[0] % 2), val(2 % ry[0])
 
     class Jubba(object):
+
         def __init__(self, val):
             self.x = val
 
@@ -428,7 +480,7 @@ if __name__ == '__main__':
     e = [4, 3, 2]
     f = Ref.getitem(e, 2)
 
-    g = b+d+f
+    g = b + d + f
     print val(g)
 
     a.x = 6

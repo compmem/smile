@@ -1,11 +1,11 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from contextlib import contextmanager
 from functools import partial
@@ -18,7 +18,7 @@ import os.path
 import kivy_overrides
 import ref
 from ref import Ref, val, NotAvailable, NotAvailableError
-#from utils import rindex, get_class_name
+# from utils import rindex, get_class_name
 from log import LogWriter, log2csv
 from clock import clock
 
@@ -35,6 +35,7 @@ class StateBuilder(object):
     machine construction.
 
     """
+
     def _clone(self, parent):
         """Return an inactive copy of this state builder as an instance of its
         state class with the specified parent.
@@ -79,7 +80,8 @@ class StateBuilder(object):
                 state.override_instantiation_context()
                 return
             except NotImplementedError:
-                raise AttributeError("State does not support attribute setting!")
+                raise AttributeError("State does not support "
+                                     "attribute setting!")
 
         # First, set the attribute value as normal.
         super(StateBuilder, self).__setattr__(name, value)
@@ -99,6 +101,7 @@ class StateBuilder(object):
 
         # return that plus the log attribute names
         return lst + self._log_attrs
+
 
 class StateClass(type):
     """A metaclass for States that creates a StateBuilder class for each State
@@ -426,7 +429,7 @@ class State(object):
         id_strs = [
             "file: %r" % self._instantiation_filename,
             "line: %d" % self._instantiation_lineno
-            ]
+        ]
         if self._name is not None:
             id_strs.append("name: %s" % self._name)
 
@@ -436,7 +439,7 @@ class State(object):
             type(self).__name__,
             ", ".join(id_strs),
             msg
-            )
+        )
 
     def print_traceback(self, child=None, t=None):
         """Print a SMILE traceback on the console.
@@ -462,7 +465,7 @@ class State(object):
         def tstr(tm):
             if (isinstance(tm, dict) and
                 len(tm) == 2 and
-                "time" in tm and "error" in tm):
+                    "time" in tm and "error" in tm):
                 if tm["error"] is None:
                     error = ""
                 else:
@@ -707,7 +710,7 @@ class State(object):
             call_time = self._leave_time - self._exp._root_executor._start_time
             call_duration = clock.now() - self._leave_time
             if self._end_time is None:
-                 self.print_trace_msg(
+                self.print_trace_msg(
                     "LEAVE time=%fs, duration=%fs, perpetual" %
                     (call_time, call_duration))
             else:
@@ -770,9 +773,9 @@ class State(object):
         """
         self._exp.write_to_state_log(
             type(self).__name__,
-            {name : getattr(self, "_" + name) for name in self._log_attrs})
+            {name: getattr(self, "_" + name) for name in self._log_attrs})
 
-    def finalize(self):  #TODO: call a _finalize method?
+    def finalize(self):  # TODO: call a _finalize method?
         """Deactivate the state and perform any state logging.
         """
         if not self._active:
@@ -801,6 +804,7 @@ class AutoFinalizeState(State):
     """Base class for states that automatically finalize immediately after
     leaving.
     """
+
     def leave(self):
         super(AutoFinalizeState, self).leave()
         clock.schedule(self.finalize)
@@ -841,6 +845,7 @@ class ParentState(State):
     docstring for additional logged parameters.
 
     """
+
     def __init__(self, children=None, parent=None, duration=None,
                  save_log=True, name=None, blocking=True):
         # keep track of references issued for user variables
@@ -1015,6 +1020,7 @@ class ParentState(State):
 class ParentSet(AutoFinalizeState):
     """State that sets a user attribute value on a ParentState.
     """
+
     def __init__(self, state, var_name, value, index=None, parent=None,
                  save_log=True, name=None):
         super(ParentSet, self).__init__(parent=parent,
@@ -1090,6 +1096,7 @@ class Parallel(ParentState):
 
 
     """
+
     def __init__(self, children=None, parent=None, save_log=True, name=None,
                  blocking=True):
         super(Parallel, self).__init__(children=children,
@@ -1175,6 +1182,7 @@ class Parallel(ParentState):
 
 
 class ParallelInsertState(ParentState):
+
     def __init__(self, parallel_state, children=None, parent=None,
                  save_log=True, name=None):
         super(ParallelInsertState, self).__init__(children=children,
@@ -1205,6 +1213,7 @@ class ParallelInsertState(ParentState):
 
 
 class StateHandle(object):
+
     def __init__(self, state):
         self.__state = state
 
@@ -1338,6 +1347,7 @@ class SequentialState(ParentState):
     all of the children and schedules them in the correct sequential order.
 
     """
+
     def __init__(self, children=None, parent=None, save_log=True, name=None,
                  blocking=True):
         super(SequentialState, self).__init__(children=children,
@@ -1455,10 +1465,10 @@ class Serial(SequentialState):
     These examples will display 3 labels in serial and then the experiment will
     end.
 
-    Another example that would be helpful is to use Serial within a **Parallel**
-    state.  Say you want 2 sequences of states to run at the same time. The
-    easiest way to accomplish this is to use 2 Serial states within a Parallel
-    state.
+    Another example that would be helpful is to use Serial within a
+    **Parallel** state.  Say you want 2 sequences of states to run at the
+    same time. The easiest way to accomplish this is to use 2 Serial
+    states within a Parallel state.
 
     ::
 
@@ -1487,6 +1497,7 @@ class Serial(SequentialState):
     the eye it will look like they are taking turns.
 
     """
+
     def _get_child_iterator(self):
         return iter(self._children)
 
@@ -1516,16 +1527,17 @@ class Subroutine(object):
                 self.mult_temp = self.mult_temp*mult
 
     This will create a **Subroutine** that your experiment can call. The
-    **Subroutine** will then run during experimental runtime just like any other
-    state. The call would look something like what follows.
+    **Subroutine** will then run during experimental runtime just like
+    any other state. The call would look something like what follows.
 
     ::
 
         Example_Subroutine(num_loop=15, input=200, mult=7)
 
-    And just like that, the Example_Subroutine is added to the **ParentState's**
-    children.
+    And just like that, the Example_Subroutine is added to the
+    **ParentState's** children.
     """
+
     def __init__(self, func):
         self._func = func
         self.__doc__ = func.__doc__
@@ -1543,7 +1555,7 @@ class Subroutine(object):
                 @contextmanager
                 def context():
                     with state:
-                        with contextmanager(lambda : retval)():
+                        with contextmanager(lambda: retval)():
                             yield state
                 result = context()
             else:
@@ -1558,6 +1570,7 @@ class SubroutineState(Serial):
     """Serial-like state at the top-level of a deployment of a Subroutine.
 
     """
+
     def __init__(self, subroutine, parent=None, save_log=True, name=None,
                  blocking=True):
         super(SubroutineState, self).__init__(parent=parent,
@@ -1654,6 +1667,7 @@ class If(SequentialState):
     all the other conditionals evaluate to *False*.
 
     """
+
     def __init__(self, conditional, true_state=None, false_state=None,
                  parent=None, save_log=True, name=None, blocking=True):
 
@@ -1661,7 +1675,8 @@ class If(SequentialState):
         super(If, self).__init__(parent=parent, save_log=save_log, name=name,
                                  blocking=blocking)
 
-        # save a list of conds to be evaluated (last one always True, acts as the Else)
+        # save a list of conds to be evaluated
+        # (last one always True, acts as the Else)
         self._init_cond = [conditional, True]
         self._outcome_index = None
         self.__true_state = true_state
@@ -1673,8 +1688,10 @@ class If(SequentialState):
         else:
             # create the true state
             self.__true_state = Serial(parent=self, name="IF BODY")
-            self.__true_state._instantiation_filename = self._instantiation_filename
-            self.__true_state._instantiation_lineno = self._instantiation_lineno
+            self.__true_state._instantiation_filename =\
+                self._instantiation_filename
+            self.__true_state._instantiation_lineno =\
+                self._instantiation_lineno
 
         # process the false state similarly
         if self.__false_state:
@@ -1682,8 +1699,10 @@ class If(SequentialState):
         else:
             # create the false state
             self.__false_state = Serial(parent=self, name="DO NOTHING")
-            self.__false_state._instantiation_filename = self._instantiation_filename
-            self.__false_state._instantiation_lineno = self._instantiation_lineno
+            self.__false_state._instantiation_filename =\
+                self._instantiation_filename
+            self.__false_state._instantiation_lineno =\
+                self._instantiation_lineno
 
         # save the out_states
         self._out_states = [self.__true_state, self.__false_state]
@@ -1697,7 +1716,7 @@ class If(SequentialState):
 
     def __enter__(self):
         # push self.__true_state as current parent
-        if not self._exp is None:
+        if self._exp is not None:
             self._exp._parents.append(self.__true_state)
         return self
 
@@ -1705,6 +1724,7 @@ class If(SequentialState):
 class Elif(Serial):
     """State to attach an elif to and **If** state. See **If**
     """
+
     def __init__(self, conditional, parent=None, save_log=True, name=None,
                  blocking=True):
         # init the parent class
@@ -1861,6 +1881,7 @@ class Loop(SequentialState):
             exp.X += 1
 
     """
+
     def __init__(self, iterable=None, shuffle=False, conditional=True,
                  parent=None, save_log=True, name=None, blocking=True):
         super(Loop, self).__init__(parent=parent, save_log=save_log, name=name,
@@ -1877,7 +1898,8 @@ class Loop(SequentialState):
         self._current = NotAvailable
 
         self.__body_state = Serial(parent=self, name="LOOP BODY")
-        self.__body_state._instantiation_filename = self._instantiation_filename
+        self.__body_state._instantiation_filename =\
+            self._instantiation_filename
         self.__body_state._instantiation_lineno = self._instantiation_lineno
         self.__current_child = None
         self.__cancel_time = None
@@ -1919,7 +1941,7 @@ class Loop(SequentialState):
 
     def __enter__(self):
         # push self.__body_state as current parent
-        if not self._exp is None:
+        if self._exp is not None:
             self._exp._parents.append(self.__body_state)
         return self
 
@@ -1971,6 +1993,7 @@ class Record(State):
 
 
     """
+
     def __init__(self, duration=None, parent=None, name=None, blocking=True,
                  triggers=None, **kwargs):
         super(Record, self).__init__(parent=parent,
@@ -2135,6 +2158,7 @@ class Log(AutoFinalizeState):
     **log_dict_food**, **key_reaction_time**, and **key_pressed**.
 
     """
+
     def __init__(self, log_dict=None, parent=None, name=None, **kwargs):
         # init the parent class
         super(Log, self).__init__(parent=parent,
@@ -2197,6 +2221,7 @@ class _DelayedValueTest(State):
     """Internal class for testing the Done state.
 
     """
+
     def __init__(self, delay, value, parent=None, save_log=True, name=None,
                  blocking=True):
         # init the parent class
@@ -2212,7 +2237,7 @@ class _DelayedValueTest(State):
     def _enter(self):
         self._value_out = NotAvailable
         clock.schedule(self._set_value_out,
-                       event_time=self._start_time+self._delay)
+                       event_time=self._start_time + self._delay)
         self.leave()
 
     def _set_value_out(self):
@@ -2223,7 +2248,7 @@ class _DelayedValueTest(State):
 class Done(AutoFinalizeState):
     """Waits until a state is finished or a ref is evaluated.
 
-    A *Done* state will block the experiment from continuing until a 
+    A *Done* state will block the experiment from continuing until a
     state is finalized. This is mainly only used when the
     timing of something like **disappear_time** needs to be logged.
 
@@ -2243,6 +2268,7 @@ class Done(AutoFinalizeState):
         Log(label_off=lb.disappear_time['time'])
 
     """
+
     def __init__(self, *states, **kwargs):
         # init the parent class
         super(Done, self).__init__(parent=kwargs.pop("parent", None),
@@ -2257,8 +2283,8 @@ class Done(AutoFinalizeState):
 
     def _enter(self):
         clones = [state.current_clone for state in self.__states]
-        self.__some_active = Ref(lambda : any(state._active for
-                                              state in clones))
+        self.__some_active = Ref(lambda: any(state._active for
+                                             state in clones))
         for state in clones:
             state._add_finalize_callback(self.__some_active.dep_changed)
         self.__some_active.add_change_callback(self._check)
@@ -2339,6 +2365,7 @@ class Wait(State):
         exp.run()
 
     """
+
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
                  save_log=True, name=None, blocking=True):
         if duration is not None and jitter is not None:
@@ -2478,6 +2505,7 @@ class ResetClock(AutoFinalizeState):
     blocking : boolean
 
     """
+
     def __init__(self, new_time=None, parent=None, save_log=True, name=None,
                  blocking=True):
         # init the parent class
@@ -2501,6 +2529,7 @@ class CallbackState(AutoFinalizeState):
     """Base state that calls a callback method starting at the states start
     time.
     """
+
     def __init__(self, repeat_interval=None, duration=0.0, parent=None,
                  save_log=True, name=None, blocking=True):
         super(CallbackState, self).__init__(duration=duration, parent=parent,
@@ -2519,7 +2548,7 @@ class CallbackState(AutoFinalizeState):
         clock.unschedule(self.callback)
 
     def _unschedule_end(self):
-        clock.schedule(self.leave)
+        clock.unschedule(self.leave)
 
     def _leave(self):
         clock.unschedule(self.callback)
@@ -2597,6 +2626,7 @@ class Func(CallbackState):
     *Func* state, you would be running **add_num** outside of experiment
     runtime.
     """
+
     def __init__(self, func, *pargs, **kwargs):
         # init the parent class
         super(Func, self).__init__(
@@ -2658,6 +2688,7 @@ class Debug(CallbackState):
 
 
     """
+
     def __init__(self, parent=None, save_log=False, name=None, **kwargs):
         # init the parent class
         super(Debug, self).__init__(parent=parent,
@@ -2671,7 +2702,7 @@ class Debug(CallbackState):
         id_strs = [
             "file: %r" % self._instantiation_filename,
             "line: %d" % self._instantiation_lineno
-            ]
+        ]
         if self._name is not None:
             id_strs.append("name: %s" % self._name)
         lag = clock.now() - self._start_time
@@ -2683,6 +2714,7 @@ class Debug(CallbackState):
 class PrintTraceback(CallbackState):
     """State that prints a SMILE traceback on the console.
     """
+
     def __init__(self, parent=None, save_log=False, name=None):
         # init the parent class
         super(PrintTraceback, self).__init__(parent=parent,
@@ -2721,7 +2753,7 @@ if __name__ == '__main__':
 
     exp = Experiment()
 
-    #with UntilDone():
+    # with UntilDone():
     #    Wait(5.0)
     with Meanwhile():
         with Loop():
@@ -2734,7 +2766,7 @@ if __name__ == '__main__':
         Log(a=1, b=2, c=loop.i, name="aaa")
     Log({"q": loop.i, "w": loop.i}, x=4, y=2, z=1, name="bbb")
     Log([{"q": loop.i, "w": n} for n in xrange(5)], x=4, y=2, z=1, name="ccc")
-    #Log("sdfsd")  # This should cause an error
+    # Log("sdfsd")  # This should cause an error
 
     exp.for_the_thing = 3
     dtt = DoTheThing(3, 4, name="first")
@@ -2756,10 +2788,12 @@ if __name__ == '__main__':
     with Parallel():
         with Serial():
             Wait(2.0)
-            Func(lambda: None)  # force variable assignment to wait until correct time
+            # force variable assignment to wait until correct time
+            Func(lambda: None)
             exp.bar = True
             Wait(2.0)
-            Func(lambda: None)  # force variable assignment to wait until correct time
+            # force variable assignment to wait until correct time
+            Func(lambda: None)
             exp.bar = False
             Wait(1.0)
         When(exp.bar, Debug(name="when test"))
@@ -2771,8 +2805,8 @@ if __name__ == '__main__':
             Wait(0.5)
             Debug(name="non-blocking test")
 
-    exp.foo=1
-    Record(foo=exp.foo)#, name="rectest")
+    exp.foo = 1
+    Record(foo=exp.foo)  # , name="rectest")
     with UntilDone():
         Debug(name="FOO!")
         Wait(1.0)
@@ -2801,7 +2835,7 @@ if __name__ == '__main__':
             Debug(name="FOO!")
         with Serial():
             Debug(name="FOO!!!")
-            Wait(until=exp.foo==5, name="wait until")
+            Wait(until=exp.foo == 5, name="wait until")
             Debug(name="foo=5!")
 
     with Loop(10) as loop:
@@ -2822,7 +2856,7 @@ if __name__ == '__main__':
         with Loop(block, shuffle=True) as trial:
             Debug(current_val=trial.current['val'])
             Wait(1.0)
-            If(trial.current['val']==block[-1],
+            If(trial.current['val'] == block[-1],
                Wait(2.0))
         with If(outer.i >= 3):
             exp.not_done = False
@@ -2831,9 +2865,8 @@ if __name__ == '__main__':
     with Loop(block) as trial:
         Debug(current=trial.current)
         Wait(1.0)
-        If(trial.current==block[-1],
+        If(trial.current == block[-1],
            Wait(2.))
-
 
     If(True,
        Debug(name="True"),
@@ -2843,7 +2876,7 @@ if __name__ == '__main__':
        Debug(name="True"),
        Debug(name="False"))
     Wait(2.0)
-    If(False, Debug(name="ACK!!!")) # won't do anything
+    If(False, Debug(name="ACK!!!"))  # won't do anything
     Debug(name="two")
     Wait(3.0)
     with Parallel():
@@ -2853,7 +2886,7 @@ if __name__ == '__main__':
         Debug(name='four')
     Wait(2.0)
 
-    block = [{'text':'a'},{'text':'b'},{'text':'c'}]
+    block = [{'text': 'a'}, {'text': 'b'}, {'text': 'c'}]
     with Loop(block) as trial:
         Debug(current_text=trial.current['text'])
         Wait(1.0)
