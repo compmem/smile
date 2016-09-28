@@ -1,11 +1,11 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import os
 import time
@@ -19,13 +19,14 @@ try:
 except ImportError:
     import sys
     if sys.platform == 'darwin':
-        os_sp_dir = '/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages'
+        os_sp_dir = ('/Library/Frameworks/Python.framework'
+                     '/Versions/2.7/lib/python2.7/site-packages')
     elif sys.platform.startswith('win'):
         os_sp_dir = 'C:\Python27\Lib\site-packages'
     else:
         raise ImportError("Could not import pyo and no special pyo path for "
                           "this platform (%s)." % sys.platform)
-    if not os_sp_dir in sys.path:
+    if os_sp_dir not in sys.path:
         sys.path.append(os_sp_dir)
         import pyo
 
@@ -41,7 +42,7 @@ _pyo_server = None
 # _pyo_server.start()
 
 
-#TODO: compensate for buffer lag where possible?
+# TODO: compensate for buffer lag where possible?
 
 def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
                       audio='portaudio', jackname='pyo',
@@ -73,6 +74,7 @@ def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
     _pyo_server.start()
 
     return _pyo_server
+
 
 def default_init_audio_server():
     if _pyo_server is None:
@@ -151,6 +153,7 @@ class Beep(Wait):
             Label(text='This is high pictch', duration=5)
 
     """
+
     def __init__(self, duration=None, freq=400, fadein=0.05, fadeout=0.05,
                  volume=0.5, parent=None, save_log=True,
                  name=None, blocking=True):
@@ -189,7 +192,7 @@ class Beep(Wait):
             clock.schedule(self._start_sound, event_time=self._start_time)
             if self._end_time is not None:
                 clock.schedule(self._stop_sound,
-                               event_time=self._end_time-self._fadeout)
+                               event_time=self._end_time - self._fadeout)
 
     def _start_sound(self):
         self.__sine.out()
@@ -207,7 +210,7 @@ class Beep(Wait):
         super(Beep, self).cancel(cancel_time)
         clock.unschedule(self._stop_sound)
         clock.schedule(self._stop_sound,
-                       event_time=self._end_time-self._fadeout)
+                       event_time=self._end_time - self._fadeout)
 
 
 class SoundFile(Wait):
@@ -278,6 +281,7 @@ class SoundFile(Wait):
     sound_start_time : float
         The time that the sound file started playing approximately.
     """
+
     def __init__(self, filename, volume=0.5, start=0.0, stop=None,
                  duration=None, loop=False, parent=None, save_log=True,
                  name=None, blocking=True):
@@ -326,7 +330,7 @@ class SoundFile(Wait):
 
         # schedule stopping the sound
         if self._end_time is not None:
-                clock.schedule(self._stop_sound, event_time=self._end_time)
+            clock.schedule(self._stop_sound, event_time=self._end_time)
 
     def _start_sound(self):
         self.__snd.out()
@@ -401,6 +405,7 @@ class RecordSoundFile(Wait):
     rec_start : float
         The time at which the recording started.
     """
+
     def __init__(self, duration=None, filename=None, parent=None,
                  save_log=True, name=None, blocking=True):
         # init the parent class
