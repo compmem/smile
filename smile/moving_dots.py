@@ -22,6 +22,7 @@ def random_variance(base, variance):
 
 
 class Dot(object):
+
     def __init__(self, radius=100, scale=1.0,
                  color=[1.0, 1.0, 1.0, 1.0],
                  direction=0, direction_variance=0.0,
@@ -68,9 +69,9 @@ class Dot(object):
     def reset(self):
         # determine new location
         t = 2 * math.pi * random.random()
-        u = random.random()+random.random()
+        u = random.random() + random.random()
         if u > 1:
-            r = 2-u
+            r = 2 - u
         else:
             r = u
         self.x = (self.radius * r * math.cos(t))
@@ -79,8 +80,8 @@ class Dot(object):
         self.start_y = self.y
 
         # process the movement direction
-        angle = random_variance(self.direction*math.pi/180,
-                                self.direction_variance*math.pi/180)
+        angle = random_variance(self.direction * math.pi / 180,
+                                self.direction_variance * math.pi / 180)
         speed = random_variance(self.speed, self.speed_variance)
         self.velocity_x = speed * math.cos(angle)
         self.velocity_y = speed * math.sin(angle)
@@ -161,7 +162,6 @@ class _MovingDotsWidget(Widget):
         # not currently running
         self._active = False
 
-
     def start(self):
         Clock.schedule_once(self._update, self.update_interval)
         self._active = True
@@ -175,8 +175,8 @@ class _MovingDotsWidget(Widget):
         self._dt_avg += (dt - self._dt_avg) / self._avg_n
 
         # advance time and locs for all dots
-        bases = (self.x + self.scale, self.y+self.scale)
-        locs = [bases[i % 2]+p+self.radius
+        bases = (self.x + self.scale, self.y + self.scale)
+        locs = [bases[i % 2] + p + self.radius
                 for i, p in enumerate(chain.from_iterable([d.update(dt)
                                                            for d in
                                                            self.__dots]))]
@@ -197,6 +197,7 @@ class _MovingDotsWidget(Widget):
     @property
     def refresh_rate(self):
         return 1.0 / self._dt_avg
+
 
 class MovingDots(WidgetState.wrap(_MovingDotsWidget)):
     """
@@ -232,6 +233,7 @@ class MovingDots(WidgetState.wrap(_MovingDotsWidget)):
     motion_props : list of dicts
         List of properties governing dot motion.
     """
+
     def show(self):
         # custom show so that the widget doesn't run when not onscreen
         self._widget.start()
