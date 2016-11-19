@@ -408,7 +408,7 @@ experimental runtime.
 
 .. code-block:: python
 
-    from smile import *
+    from smile.common import *
 
     def pre_func(i):
         return i * 50.7777
@@ -416,7 +416,7 @@ experimental runtime.
     exp = Experiment()
 
     with Loop(100) as lp:
-        rtrn = Func(lp.i)
+        rtrn = Func(pre_func,lp.i)
         Debug(i = rtrn.result)
 
     exp.run()
