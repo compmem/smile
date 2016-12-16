@@ -1,11 +1,11 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from functools import partial
 from contextlib import contextmanager
@@ -47,7 +47,9 @@ color_name_table = {
     "PINK": (1.0, 0.75, 0.8, 1.0),
     "BROWN": (0.65, 0.16, 0.16, 1.0),
     "INDIGO": (0.29, 0.5, 0.0, 1.0)
-    }
+}
+
+
 def normalize_color_spec(spec):
     if isinstance(spec, tuple) or isinstance(spec, list):
         if len(spec) == 2:
@@ -76,9 +78,9 @@ def normalize_color_spec(spec):
         if spec[0] == '#':
             if len(spec) == 7:
                 try:
-                    return (int(spec[1 : 3], 16) / 255.0,
-                            int(spec[3 : 5], 16) / 255.0,
-                            int(spec[5 : 7], 16) / 255.0,
+                    return (int(spec[1: 3], 16) / 255.0,
+                            int(spec[3: 5], 16) / 255.0,
+                            int(spec[5: 7], 16) / 255.0,
                             1.0)
                 except ValueError:
                     raise ValueError(
@@ -86,10 +88,10 @@ def normalize_color_spec(spec):
                         "  Got: %r" % spec)
             elif len(spec) == 9:
                 try:
-                    return (int(spec[1 : 3], 16) / 255.0,
-                            int(spec[3 : 5], 16) / 255.0,
-                            int(spec[5 : 7], 16) / 255.0,
-                            int(spec[7 : 9], 16) / 255.0)
+                    return (int(spec[1: 3], 16) / 255.0,
+                            int(spec[3: 5], 16) / 255.0,
+                            int(spec[5: 7], 16) / 255.0,
+                            int(spec[7: 9], 16) / 255.0)
                 except ValueError:
                     raise ValueError(
                         "Color spec hex string has invalid characters."
@@ -142,6 +144,7 @@ class Screenshot(CallbackState):
         the presented time could be off by.
 
     """
+
     def __init__(self, filename=None, parent=None, save_log=True, name=None,
                  blocking=True):
         super(Screenshot, self).__init__(parent=parent,
@@ -207,6 +210,7 @@ class VisualState(State):
         maximum error in calculating the disappear time of the stimulus.
 
     """
+
     def __init__(self, duration=None, parent=None, save_log=True, name=None,
                  blocking=True):
         super(VisualState, self).__init__(parent=parent,
@@ -290,7 +294,8 @@ class VisualState(State):
         super(VisualState, self).cancel(cancel_time)
 
 
-class BackgroundColor(VisualState):  #TODO: this doesn't work with Done?  Never clears?
+# TODO: this doesn't work with Done?  Never clears?
+class BackgroundColor(VisualState):
     """ Sets the BackgroundColor for a duration.
 
     If you need to change the background color during experimental runtime, you
@@ -388,14 +393,16 @@ class NonBlockingFlips(VisualState):
 
     def show(self):
         NonBlockingFlips.layers.append(self)
-        self._exp._app.force_nonblocking_flip = len(NonBlockingFlips.layers) > 0
+        self._exp._app.force_nonblocking_flip =\
+            len(NonBlockingFlips.layers) > 0
 
     def unshow(self):
         if NonBlockingFlips.layers[-1] is self:
             NonBlockingFlips.layers.pop()
         else:
             NonBlockingFlips.layers.remove(self)
-        self._exp._app.force_nonblocking_flip = len(NonBlockingFlips.layers) > 0
+        self._exp._app.force_nonblocking_flip =\
+            len(NonBlockingFlips.layers) > 0
 
 
 def _get_widget_props(widget_class):
@@ -508,7 +515,7 @@ class WidgetState(VisualState):
         "right_bottom": ("right", "y"),
         "right_center": ("right", "center_y"),
         "right_top": ("right", "top")
-        }
+    }
 
     @classmethod
     def wrap(cls, widget_class, name=None):
@@ -578,7 +585,7 @@ class WidgetState(VisualState):
                 prop_tuple = [Ref(self.get_current_param, prop) for
                               prop in props]
                 ref = Ref(tuple, prop_tuple, _parent_state=self)
-                #ref = prop_tuple
+                # ref = prop_tuple
             else:
                 raise RuntimeError("Bad value for 'props': %r" % props)
             self.__issued_refs[name] = ref
@@ -595,7 +602,7 @@ class WidgetState(VisualState):
         # important that this is pulling from the current clone
         current_clone = self.current_clone
         if name in ['index', 'rotate', 'rotate_origin']:
-            return getattr(current_clone, '_'+name)
+            return getattr(current_clone, '_' + name)
         else:
             return getattr(current_clone._widget, name)
 
@@ -670,7 +677,7 @@ class WidgetState(VisualState):
         # handle rotation
         # will fill None after live_change
         if self._rotate_origin is None:
-            rot_orig = (0,0)
+            rot_orig = (0, 0)
         else:
             rot_orig = self._rotate_origin
         self.__rotate_inst = kivy.graphics.Rotate(angle=self._rotate,
@@ -696,7 +703,7 @@ class WidgetState(VisualState):
 
         # handle rotation
         self._widget.canvas.before.add(kivy.graphics.PushMatrix())
-        #self.__rotate_inst = kivy.graphics.Rotate(angle=self._rotate,
+        # self.__rotate_inst = kivy.graphics.Rotate(angle=self._rotate,
         #                                          )#origin=self._rotate_origin)
         self._widget.canvas.before.add(self.__rotate_inst)
         self._widget.canvas.after.add(kivy.graphics.PopMatrix())
@@ -861,7 +868,7 @@ class WidgetState(VisualState):
         """
         def interp(a, b, w):
             if isinstance(a, dict):
-                return {name : interp(a[name], b[name], w) for
+                return {name: interp(a[name], b[name], w) for
                         name in set(a) & set(b)}
             elif hasattr(a, "__iter__"):
                 return [interp(a_prime, b_prime, w) for
@@ -877,13 +884,14 @@ class WidgetState(VisualState):
                     new_value = self.transform_param(param_name, value)
                     return interp(initial, new_value, t / duration)
                 anim_params[param_name] = func
-        #TODO: fancier interpolation modes!!!
+        # TODO: fancier interpolation modes!!!
         else:
-            raise ValueError("Invalid combination of parameters.")  #...
+            raise ValueError("Invalid combination of parameters.")  # ...
         anim = self.animate(interval=interval, duration=duration,
                             parent=parent, save_log=save_log, name=name,
                             blocking=blocking, **anim_params)
-        anim.override_instantiation_context()  # PBS: Is this line needed (see animate)?
+        # PBS: Is this line needed (see animate)?
+        anim.override_instantiation_context()
         return anim
 
     def _enter(self):
@@ -899,7 +907,7 @@ class WidgetState(VisualState):
 
     def __enter__(self):
         if self.__parallel is not None:
-            raise RuntimeError("WidgetState context is not reentrant!")  #!!!
+            raise RuntimeError("WidgetState context is not reentrant!")  # !!!
         # TODO: make sure we're the previous state?
         WidgetState.layout_stack.append(self)
         self.__parallel = Parallel(name="LAYOUT")
@@ -922,6 +930,7 @@ class WidgetState(VisualState):
 
 
 class UpdateWidgetUntimed(CallbackState):
+
     def __init__(self, target, prop_name, prop_value, prop_index=None,
                  parent=None, save_log=True, name=None, blocking=True):
         super(UpdateWidgetUntimed, self).__init__(duration=0.0,
@@ -948,7 +957,8 @@ class UpdateWidgetUntimed(CallbackState):
             full_value = self._prop_value
         else:
             # get the current param value
-            full_value = self.__target.get_attribute_ref(self._prop_name).eval()
+            full_value =\
+                self.__target.get_attribute_ref(self._prop_name).eval()
 
             # set the index with the value
             full_value[self._prop_index] = self._prop_value
@@ -1002,6 +1012,7 @@ class UpdateWidget(VisualState):
         update happens.
 
     """
+
     def __init__(self, target, parent=None, save_log=True, name=None,
                  blocking=True, **kwargs):
         super(UpdateWidget, self).__init__(duration=0.0,
@@ -1098,10 +1109,13 @@ class Animate(State):
 
         with UntilDone():
             with Parallel(name="Pacman motion"):
-                ellipse.slide(left=exp.screen.right, duration=8.0, name="Pacman travel")
+                ellipse.slide(left=exp.screen.right,
+                              duration=8.0, name="Pacman travel")
                 ellipse.animate(
-                    angle_start=lambda t, initial: initial + (cos(t * 8) + 1) * 22.5,
-                    angle_end=lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
+                    angle_start = \
+                        lambda t, initial: initial + (cos(t * 8) + 1) * 22.5,
+                    angle_end =\
+                        lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
                     duration=8.0, name="Pacman gobble")
 
         exp.run()
@@ -1113,6 +1127,7 @@ class Animate(State):
 
     """
     # TODO: log updates!
+
     def __init__(self, target, interval=None, duration=None, parent=None,
                  save_log=True, name=None, blocking=True, **anim_params):
         super(Animate, self).__init__(duration=duration, parent=parent,
@@ -1182,7 +1197,7 @@ def vertex_instruction_widget(instr_cls, name=None):
         attr_val = getattr(instr_cls, attr, None)
         if hasattr(attr_val, "__get__") and hasattr(attr_val, "__set__"):
             props.append(attr)
-    dict_ = {prop : ObjectProperty(None) for prop in props if
+    dict_ = {prop: ObjectProperty(None) for prop in props if
              prop not in ("size", "pos")}
     dict_["color"] = ListProperty([1.0, 1.0, 1.0, 1.0])
 
@@ -1199,7 +1214,7 @@ def vertex_instruction_widget(instr_cls, name=None):
                 if name not in shape_kwargs:
                     shape_kwargs[name] = value
             self._shape = instr_cls(**shape_kwargs)
-        self.bind(color=self.redraw, **{prop : self.redraw for prop in props})
+        self.bind(color=self.redraw, **{prop: self.redraw for prop in props})
     dict_["__init__"] = __init__
 
     def redraw(self, *pargs):
@@ -1233,7 +1248,7 @@ disappear_time : dictionary
 
 vertex_instructions = [
     "Bezier",
-    #"StripMesh",
+    # "StripMesh",
     "Mesh",
     "Point",
     "Triangle",
@@ -1241,8 +1256,8 @@ vertex_instructions = [
     "Rectangle",
     "BorderImage",
     "Ellipse",
-    #"RoundedRectangle"
-    ]
+    # "RoundedRectangle"
+]
 for instr in vertex_instructions:
     exec("%s = WidgetState.wrap(vertex_instruction_widget(kivy.graphics.%s))" %
          (instr, instr))
@@ -1256,8 +1271,8 @@ A **WidgetState** that shows a button in the window.
 
 Use this state when you would like to show a button on the screen. This State
 will display a button that can be clicked by a mouse cursor. When used in
-conjunction with the **ButtonPress** state, you can create multiple buttons, all
-with different colors, text, or even images.
+conjunction with the **ButtonPress** state, you can create multiple buttons,
+all with different colors, text, or even images.
 
 Parameters
 ----------
@@ -1299,7 +1314,8 @@ color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     The color in the bezier (r, g, b, a) format.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.graphics.bezier. <https://kivy.org/docs/api-kivy.graphics.html?highlight=bezier#kivy.graphics.Bezier>'_
+Kivy documentation for 'kivy.graphics.bezier.
+<https://kivy.org/docs/api-kivy.graphics.html?highlight=bezier#kivy.graphics.Bezier>'_
 
 """
 Mesh.__doc__ = """A **WidgetState** that allows you to freehand draw shapes.
@@ -1358,12 +1374,14 @@ color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     The color of this mesh in (r, g, b, a) format.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.graphics.mesh. <https://kivy.org/docs/api-kivy.graphics.html?highlight=mesh#kivy.graphics.Mesh>'_
+Kivy documentation for 'kivy.graphics.mesh.
+<https://kivy.org/docs/api-kivy.graphics.html?highlight=mesh#kivy.graphics.Mesh>'_
 
 """
 Point.__doc__ = """A **WidgetState that draws a bunch of points.
 
-You can list any number of points and the **Point** state will draw all of them. s
+You can list any number of points and the **Point** state will draw all of
+them.
 
 Parameters
 ----------
@@ -1398,7 +1416,8 @@ color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     The color of the points being draw in (r, g, b, a) format.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.graphics.Point. <https://kivy.org/docs/api-kivy.graphics.html?highlight=kivy.graphics.point#kivy.graphics.Point>'_
+Kivy documentation for 'kivy.graphics.Point.
+<https://kivy.org/docs/api-kivy.graphics.html?highlight=kivy.graphics.point#kivy.graphics.Point>'_
 
 """
 Triangle.__doc__ = """A **WidgetState** that shows a triangle on the screen.
@@ -1436,7 +1455,8 @@ color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     The color of the Triangle in (r, g, b, a) format.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.graphics.Triangle. <https://kivy.org/docs/api-kivy.graphics.html?highlight=kivy.graphics.triangle#kivy.graphics.Triangle>'_
+Kivy documentation for 'kivy.graphics.Triangle.
+<https://kivy.org/docs/api-kivy.graphics.html?highlight=kivy.graphics.triangle#kivy.graphics.Triangle>'_
 
 """
 
@@ -1474,7 +1494,8 @@ color : list (Parameter, optional, defaut=[1.0, 1.0, 1.0, 1.0])
     The color of the quadrangle in (r, g, b, a) format.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.graphics.Quad. <https://kivy.org/docs/api-kivy.graphics.html?highlight=kivy.graphics.quad#kivy.graphics.Quad>'_
+Kivy documentation for 'kivy.graphics.Quad.
+<https://kivy.org/docs/api-kivy.graphics.html?highlight=kivy.graphics.quad#kivy.graphics.Quad>'_
 
 """
 Rectangle.__doc__ = """A **WidgetState** to display a rectangle on the screen.
@@ -1523,15 +1544,16 @@ All **WidgetState** States have the ability to set the positional variables
 as parameters when building the states. Please see **WidgetState** for the
 positional paramters you can set.
 
-For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.graphics.Rectangle. <https://kivy.org/docs/api-kivy.graphics.html?highlight=rectangle#kivy.graphics.Rectangle>'_
+For other parameters or properties that this Widget might have, refer to
+the Kivy documentation for 'kivy.graphics.Rectangle.
+<https://kivy.org/docs/api-kivy.graphics.html?highlight=rectangle#kivy.graphics.Rectangle>'_
 
 """
 BorderImage.__doc__ = """A **WidgetState** that creates 4 Rectangles around an area.
 
-This 2d border image creates rectangles at a postion depending on the parameters
-passed in. You can use any of the parameters or properties that a **Rectagnle**
-State has access to.
+This 2d border image creates rectangles at a postion depending on the
+parameters passed in. You can use any of the parameters or properties that
+a **Rectagnle** State has access to.
 
 Parameters
 ----------
@@ -1615,15 +1637,13 @@ color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     The color of the ellipse in (r, g, b, a) format.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.graphics.Ellipse. <https://kivy.org/docs/api-kivy.graphics.html?highlight=ellipse#kivy.graphics.Ellipse>'_
+Kivy documentation for 'kivy.graphics.Ellipse.
+<https://kivy.org/docs/api-kivy.graphics.html?highlight=ellipse#kivy.graphics.Ellipse>'_
 
 """
 for instr in vertex_instructions:
     exec("%s.__doc__ = %s.__doc__ + WSP_doc_addition" %
          (instr, instr))
-
-
-
 
 
 def _sp(value):
@@ -1642,7 +1662,7 @@ widgets = [
     "CheckBox",
     "Camera",
 
-    #...
+    # ...
     "AnchorLayout",
     "BoxLayout",
     "FloatLayout",
@@ -1652,7 +1672,7 @@ widgets = [
     "ScatterLayout",
     "StackLayout",
     "ScrollView",
-    ]
+]
 for widget in widgets:
     modname = "kivy.uix.%s" % widget.lower()
     exec("import %s" % modname)
@@ -1664,8 +1684,8 @@ A **WidgetState** that shows a button in the window.
 
 Use this state when you would like to show a button on the screen. This State
 will display a button that can be clicked by a mouse cursor. When used in
-conjunction with the **ButtonPress** state, you can create multiple buttons, all
-with different colors, text, or even images.
+conjunction with the **ButtonPress** state, you can create multiple buttons,
+all with different colors, text, or even images.
 
 Parameters
 ----------
@@ -1701,20 +1721,28 @@ background_color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     Background color, in the format (r, g, b, a).
 
     This acts as a multiplier to the texture colour. The default texture is
-    grey, so just setting the background color will give a darker result. To set
-    a plain color, set the background_normal to "".
-background_disabled_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/button_disabled_pressed")
-    Background image of the button used for the default graphical representation
-    when the button is disabled and pressed.
-background_disabled_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/button_disabled")
-    Background image of the button used for the default graphical representation
-    when the button is disabled and not pressed.
-background_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/button_pressed")
-    Background image of the button used for the default graphical representation
-    when the button is pressed.
-background_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/button")
-    Background image of the button used for the default graphical representation
-    when the button is not pressed.
+    grey, so just setting the background color will give a darker result. To
+    set a plain color, set the background_normal to "".
+background_disabled_down : string (Parameter,
+                                   optional,
+                                   default=("atlas://data/images/"
+                                            "defaulttheme/button_disabled_pressed"))
+    Background image of the button used for the default graphical
+    representation when the button is disabled and pressed.
+background_disabled_normal : string (Parameter,
+                                     optional,
+                                     default=("atlas://data/images/"
+                                              "defaulttheme/button_disabled"))
+    Background image of the button used for the default graphical
+    representation when the button is disabled and not pressed.
+background_down : string (Parameter, optional,
+                          default="atlas://data/images/defaulttheme/button_pressed")
+    Background image of the button used for the default graphical
+    representation when the button is pressed.
+background_normal : string (Parameter, optional,
+                            default="atlas://data/images/defaulttheme/button")
+    Background image of the button used for the default graphical
+    representation when the button is not pressed.
 border : list (Parameter, optional, default=[16, 16, 16, 16])
     Border used for BorderImage graphics instruction. Used with
     background_normal and background_down. Can be used for custom backgrounds.
@@ -1726,8 +1754,8 @@ state : string (Property)
     "down" only when the button is currently touched/clicked, otherwise its
     "normal".
 
-See **Label** for other Kivy Parameters. Most parameters that can be passed into
-**Label** can be passed into Button.
+See **Label** for other Kivy Parameters. Most parameters that can be passed
+into **Label** can be passed into Button.
 
 See **ButtonPress** for an example on how to use buttons.
 
@@ -1803,7 +1831,8 @@ value_pos : float (Property)
     Position of the internal cursor, based on the normalized value.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.slider. <https://kivy.org/docs/api-kivy.uix.slider.html>'_
+Kivy documentation for 'kivy.uix.slider.
+<https://kivy.org/docs/api-kivy.uix.slider.html>'_
 
 """
 
@@ -1849,17 +1878,23 @@ allow_copy : boolean (Parameter, optional, default=True)
     Decides whether to allow copying the text.
 auto_indent : boolean (Parameter, optional, default=False)
     Automatically indent multiline text.
-background_active : string (Parameter, optional, default="atlas://data/images/defaulttheme/textinput_active")
+background_active : string (Parameter, optional,
+                            default="atlas://data/images/defaulttheme/textinput_active")
     Background image of the TextInput when it's in focus.
 background_color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     Current color of the background, in (r, g, b, a) format.
 foreground_color : list (Parameter, optional, default=[0.0, 0.0, 0.0, 1.0])
     Current color of the foreground, in (r, g, b, a) format.
-disabled_foreground_color : list (Parameter, optional, default=[0.0, 0.0, 0.0, 0;5])
+disabled_foreground_color : list (Parameter, optional,
+                                  default=[0.0, 0.0, 0.0, 0;5])
     Current color of the foreground when disabled, in (r, g, b, a) format.
-background_disabled_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/textinput_disabled")
+background_disabled_normal : string (Parameter, optional,
+                                     default=("atlas://data/images/"
+                                              "defaulttheme/textinput_disabled"))
     Background image of the TextInput when disabled.
-background_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/textinput")
+background_normal : string (Parameter, optional,
+                            default=("atlas://data/images/"
+                                     "defaulttheme/textinput"))
     Background image of the TextInput when it's not in focus.
 border : list (Parameter, optional, default=[4.0, 4.0, 4.0, 4.0])
     Border used for BorderImage graphics instruction. Used with
@@ -1870,28 +1905,32 @@ border : list (Parameter, optional, default=[4.0, 4.0, 4.0, 4.0])
     BorderImage instruction for more information about how to use it.
 cursor : tuple (Property)
     Tuple of (row, col) values indicating the current cursor position. You can
-    set a new (row, col) if you want to move the cursor. The scrolling area will
-    be automatically updated to ensure that the cursor is visible inside the
-    viewport.
+    set a new (row, col) if you want to move the cursor. The scrolling area
+    will be automatically updated to ensure that the cursor is visible inside
+    the viewport.
 cursor_col : integer (Property)
     Current column of the cursor.
 cursor_row : integer (Property)
     Current row of the cursor.
 cursor_blink : boolean (Parameter, optional, default=False)
-    This property is used to blink the cursor graphic. The value of cursor_blink
-    is automatically computed. Setting a value on it will have no impact.
+    This property is used to blink the cursor graphic. The value of
+    cursor_blink is automatically computed. Setting a value on it will have no
+    impact.
 cursor_pos : tuple (Property)
     Current position of the cursor, in (x,y)
 font_name : string (Parameter, optional, default="Roboto")
     Filename of the font to use. The path can be absolute or relative.
 font_size : integer (Parameter, optional, default=10)
     Font size of the text in pixels.
-handle_image_left : string (Parameter, optional, default="atlas://data/images/defaulttheme/selector_left")
+handle_image_left : string (Parameter, optional,
+                            default="atlas://data/images/defaulttheme/selector_left")
     Image used to display the Left handle on the TextInput for selection.
-handle_image_middle : string (Parameter, optional, default="atlas://data/images/defaulttheme/selector_middle")
+handle_image_middle : string (Parameter, optional,
+                             default="atlas://data/images/defaulttheme/selector_middle")
     Image used to display the middle handle on the TextInput for cursor
     positioning.
-handle_image_right : string (Parameter, optional, default="atlas://data/images/defaulttheme/selector_right")
+handle_image_right : string (Parameter, optional,
+                             default="atlas://data/images/defaulttheme/selector_right")
     Image used to display the Right handle on the TextInput for selection.
 hint_text : string (Parameter, optional, default="")
     Hint text of the widget, shown if text is "".
@@ -1922,7 +1961,8 @@ padding : list (Parameter, optional, default=[6, 6, 6, 6])
     padding also accepts a two argument form [padding_horizontal,
     padding_vertical] and a one argument form [padding].
 password : boolean (Parameter, optional, default=False)
-    If True, the widget will display its characters as the character set in password_mask.
+    If True, the widget will display its characters as the character set in
+    password_mask.
 paddword_mask : string (Parameter, optional, default="*")
     Sets the character used to mask the text when password is True.
 readonly : boolean (Parameter, optional, default=False)
@@ -1933,7 +1973,8 @@ scroll_x : integer (Parameter, optional, default=0)
     scroll_x and scroll_y properties may be changed.
 scroll_y : integer (Parameter, optional, default=0)
     Y scrolling value of the viewport. See scroll_x for more information.
-selection_color : list (Parameter, optional, default= [0.1843, 0.6549, 0.8313, .5])
+selection_color : list (Parameter, optional,
+                        default= [0.1843, 0.6549, 0.8313, .5])
     Current color of the selection, in (r, g, b, a) format.
 selection_from : list (Property)
     If a selection is in progress or complete, this property will represent the
@@ -1951,9 +1992,11 @@ suggestion_text : string (Parameter, optional, default="")
 tab_width : integer (Parameter, optional, default=4)
     By default, each tab will be replaced by four spaces on the text input
     widget. You can set a lower or higher value.
-use_bubble : boolean (Parameter, optional, default=True on Mobile OS's, and False on Desktop OS's)
+use_bubble : boolean (Parameter, optional,
+                      default=True on Mobile OS's, and False on Desktop OS's)
     Indicates whether the cut/copy/paste bubble is used.
-use_handles : boolean (Parameter, optional, default=True on mobile OS's, False on desktop OS's)
+use_handles : boolean (Parameter, optional,
+                       default=True on mobile OS's, False on desktop OS's)
     Indicates whether the selection handles are displayed.
 write_tab : boolean (Parameter, optional, default=True)
     Whether the tab key should move focus to the next widget or if it should
@@ -2071,8 +2114,8 @@ Kivy documentation for 'kivy.uix.progressbar.
 
 CodeInput.__doc__ = """A **WidgetState** that is an editable box.
 
-This State supports all all the same features as a **TextInput** but also allows
-highlighting in different programming languages.
+This State supports all all the same features as a **TextInput** but
+also allows highlighting in different programming languages.
 
 Parameters
 ----------
@@ -2115,7 +2158,8 @@ style_name : string (Parameter, optional, default="default")
     Name of the pygments style to use for formatting.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.codeinput. <https://kivy.org/docs/api-kivy.uix.codeinput.html>'_
+Kivy documentation for 'kivy.uix.codeinput.
+<https://kivy.org/docs/api-kivy.uix.codeinput.html>'_
 
 """
 
@@ -2128,28 +2172,44 @@ group, the images take on the look of check boxes.
 
 active : boolean (Parameter, optional, default=False)
     Indicates if the switch is active or inactive.
-background_checkbox_disabled_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_disabled_on")
+background_checkbox_disabled_down : string (Parameter, optional,
+                                            default=("atlas://data/images/"
+                                                     "defaulttheme/checkbox_disabled_on"))
     Background image of the checkbox used for the default graphical
     representation when the checkbox is disabled and active.
-background_checkbox_disabled_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_disabled_off")
+background_checkbox_disabled_normal : string (Parameter, optional,
+                                              default=("atlas://data/images/"
+                                                       "defaulttheme/checkbox_disabled_off"))
     Background image of the checkbox used for the default graphical
     representation when the checkbox is disabled and not active.
-background_checkbox_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_on")
+background_checkbox_down : string (Parameter, optional,
+                                   default=("atlas://data/images/defaulttheme"
+                                            "/checkbox_on"))
     Background image of the checkbox used for the default graphical
     representation when the checkbox is active.
-background_checkbox_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_off")
+background_checkbox_normal : string (Parameter, optional,
+                                     default=("atlas://data/images/"
+                                              "defaulttheme/checkbox_off"))
     Background image of the checkbox used for the default graphical
     representation when the checkbox is not active.
-background_radio_disabled_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_radio_disabled_on")
+background_radio_disabled_down : string (Parameter, optional,
+                                         default=("atlas://data/images/default"
+                                                  "theme/checkbox_radio_disabled_on"))
     Background image of the radio button used for the default graphical
     representation when the radio button is disabled and active.
-background_radio_disabled_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_radio_disabled_off")
+background_radio_disabled_normal : string (Parameter, optional,
+                                           default=("atlas://data/images/"
+                                                    "defaulttheme/checkbox_radio_disabled_off"))
     Background image of the radio button used for the default graphical
     representation when the radio button is disabled and not active.
-background_radio_down : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_radio_on")
+background_radio_down : string (Parameter, optional,
+                                default=("atlas://data/images/defaulttheme/"
+                                         "checkbox_radio_on"))
     Background image of the radio button used for the default graphical
     representation when the radio button is active.
-background_radio_normal : string (Parameter, optional, default="atlas://data/images/defaulttheme/checkbox_radio_off")
+background_radio_normal : string (Parameter, optional,
+                                  default=("atlas://data/images/defaulttheme/"
+                                           "checkbox_radio_off"))
     Background image of the radio button used for the default graphical
     representation when the radio button is not active.
 color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
@@ -2157,17 +2217,20 @@ color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     and radio button (images).
 
     Color is in the format (r, g, b, a). Use alpha greater than 1 for brighter
-    colors. Alpha greater than 4 causes blending border and check mark together.
+    colors. Alpha greater than 4 causes blending border and check mark
+    together.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.checkbox. <https://kivy.org/docs/api-kivy.uix.checkbox.html>'_
+Kivy documentation for 'kivy.uix.checkbox.
+<https://kivy.org/docs/api-kivy.uix.checkbox.html>'_
 
 """
 
 Camera.__doc__ = """A **WidgetState** is used to capture and display video.
 
 This State can display what a webcam on a desktop or a camera on your phone
-sees. You can also save out the *texture* property this state to take a picture.
+sees. You can also save out the *texture* property this state to take a
+picture.
 
 Parameters
 ----------
@@ -2210,7 +2273,8 @@ See smile.video.Image for all the other parameters and properties that can be
 used by this state.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.camera. <https://kivy.org/docs/api-kivy.uix.camera.html>'_
+Kivy documentation for 'kivy.uix.camera.
+<https://kivy.org/docs/api-kivy.uix.camera.html>'_
 
 """
 
@@ -2259,7 +2323,8 @@ padding : list (Parameter, optional, default=[0, 0, 0, 0])
     padding_vertical] and a one argument form [padding].
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.AnchorLayout. <https://kivy.org/docs/api-kivy.uix.anchorlayout.html>'_
+Kivy documentation for 'kivy.uix.AnchorLayout.
+<https://kivy.org/docs/api-kivy.uix.anchorlayout.html>'_
 
 """
 
@@ -2321,10 +2386,12 @@ size : list (Parameter, optional, default=[50, 50])
     widget will fill in size automatically.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.BoxLayout. <https://kivy.org/docs/api-kivy.uix.boxlayout.html>'_
+Kivy documentation for 'kivy.uix.BoxLayout.
+<https://kivy.org/docs/api-kivy.uix.boxlayout.html>'_
 
 """
-FloatLayout.__doc__ = """A **WidgetState** where the postion of the children is realitive to the Experiment Screen.
+FloatLayout.__doc__ = """A **WidgetState** where the postion of the children
+is realitive to the Experiment Screen.
 
 If you move the position of the **FloatLayout**, then you must also change the
 positions of its children manually.
@@ -2369,10 +2436,12 @@ size : list (Parameter, optional, default=[50, 50])
     widget will fill in size automatically.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.FloatLayout. <https://kivy.org/docs/api-kivy.uix.floatlayout.html>'_
+Kivy documentation for 'kivy.uix.FloatLayout.
+<https://kivy.org/docs/api-kivy.uix.floatlayout.html>'_
 
 """
-RelativeLayout.__doc__ = """A **WidgetState** Layout where its children are positioned realitive to itself.
+RelativeLayout.__doc__ = """A **WidgetState** Layout where its children
+are positioned realitive to itself.
 
 In this layout, all of the **WidgetStates** that are children of it use the
 position of this layout as (0, 0). Also if you update the position of this
@@ -2419,14 +2488,15 @@ size : list (Parameter, optional, default=[50, 50])
     widget will fill in size automatically.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.RelativeLayout. <https://kivy.org/docs/api-kivy.uix.relativelayout.html>'_
+Kivy documentation for 'kivy.uix.RelativeLayout.
+<https://kivy.org/docs/api-kivy.uix.relativelayout.html>'_
 
 """
 GridLayout.__doc__ = """A **WidgetState** that arranges children in a matrix.
 
-This layout takes the available size of the layout, and splits it evenly between
-its children based on the number of columns and rows that are set in the
-parameters of the layout.
+This layout takes the available size of the layout, and splits it evenly
+between its children based on the number of columns and rows that are set in
+the parameters of the layout.
 
 Parameters
 ----------
@@ -2503,14 +2573,15 @@ spacing : integer (Parameter, optional, default=0)
 
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.GridLayout. <https://kivy.org/docs/api-kivy.uix.gridlayout.html>'_
+Kivy documentation for 'kivy.uix.GridLayout.
+<https://kivy.org/docs/api-kivy.uix.gridlayout.html>'_
 
 """
 PageLayout.__doc__ = """A **WidgetState** used to create a paged layout.
 
 Use this **WidgetState** to when you want to create a set of pages that can be
-*swiped* around. When used in conjuction with other layouts, each layout will be
-a different page.
+*swiped* around. When used in conjuction with other layouts, each layout
+will be a different page.
 
 Example
 -------
@@ -2591,7 +2662,8 @@ swipe_threshold : float (Parameter, optional, default=0.5)
     The thresold used to trigger swipes as percentage of the widget size.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.PageLayout. <https://kivy.org/docs/api-kivy.uix.pagelayout.html>'_
+Kivy documentation for 'kivy.uix.PageLayout.
+<https://kivy.org/docs/api-kivy.uix.pagelayout.html>'_
 
 """
 ScatterLayout.__doc__ = """A **WidgetState** that allows for rotation, translation, and scalling.
@@ -2680,11 +2752,12 @@ transform : matrix (Parameter, optional, default=The identity matrix)
 transform_inv : matrix (Parameter, optional, default=The identity matrix)
     Inverse of the transformation matrix.
 translation_touches : integer (Parameter, optional, default=1)
-    Determine whether translation was triggered by a single or multiple touches.
-    This only has effect when do_translation = True.
+    Determine whether translation was triggered by a single or multiple
+    touches. This only has effect when do_translation = True.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.ScatterLayout. <https://kivy.org/docs/api-kivy.uix.scatterlayout.html>'_
+Kivy documentation for 'kivy.uix.ScatterLayout.
+<https://kivy.org/docs/api-kivy.uix.scatterlayout.html>'_
 
 """
 StackLayout.__doc__ = """A **WidgetState** that arranges its children to make them fit.
@@ -2735,8 +2808,8 @@ minimum_height : integer (Parameter, optional, default=0)
     Minimum height needed to contain all children. It is automatically set by
     the layout.
 minimum_width : integer (Parameter, optional, default=0)
-    Minimum width needed to contain all children. It is automatically set by the
-    layout.
+    Minimum width needed to contain all children. It is automatically set by
+    the layout.
 minimum_size : list (Parameter, optional, default=[0, 0])
     Minimum size needed to contain all children. It is automatically set by the
     layout.
@@ -2753,7 +2826,8 @@ spacing : integer (Parameter, optional, default=0)
     Spacing between children, in pixels.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.StackLayout. <https://kivy.org/docs/api-kivy.uix.stacklayout.html>'_
+Kivy documentation for 'kivy.uix.StackLayout.
+<https://kivy.org/docs/api-kivy.uix.stacklayout.html>'_
 
 """
 ScrollView.__doc__ = """A **WidgetState** for scrollable/pannable viewing.
@@ -2823,23 +2897,23 @@ bar_box_y : string (Parameter, optional, default="right")
     Which side of the ScrollView the vertical scroll bar should go on. Possible
     values are "left" and "right".
 bar_width : integer (Parameter, optional, default=2)
-    Width of the horizontal / vertical scroll bar. The width is interpreted as a
-    height for the horizontal bar.
+    Width of the horizontal / vertical scroll bar. The width is interpreted as
+    a height for the horizontal bar.
 hbar : list (Property)
     Return a tuple of (position, size) of the horizontal scrolling bar.
 
-    The position and size are normalized between 0-1, and represent a percentage
-    of the current scrollview height. This property is used internally for
-    drawing the little horizontal bar when you're scrolling.
+    The position and size are normalized between 0-1, and represent a
+    percentage of the current scrollview height. This property is used
+    internally for drawing the little horizontal bar when you're scrolling.
 scroll_distance : integer (Parameter, optional, default=20)
     Distance to move before scrolling the ScrollView, in pixels. As soon as the
     distance has been traveled, the ScrollView will start to scroll, and no
-    touch event will go to children. It is advisable that you base this value on
-    the dpi of your target device's screen.
+    touch event will go to children. It is advisable that you base this
+    value on the dpi of your target device's screen.
 scroll_timeout : integer (Parameter, optional, default=55)
-    Timeout allowed to trigger the scroll_distance, in milliseconds. If the user
-    has not moved scroll_distance within the timeout, the scrolling will be
-    disabled, and the touch event will go to the children.
+    Timeout allowed to trigger the scroll_distance, in milliseconds.
+    If the user has not moved scroll_distance within the timeout, the
+    scrolling will be disabled, and the touch event will go to the children.
 scroll_type : list (Parameter, optional, default=["content"])
     Sets the type of scrolling to use for the content of the scrollview.
     Available options are: ["content"], ["bars"], ["bars", "content"].
@@ -2848,9 +2922,9 @@ scroll_wheel_distance : integer (Parameter, optional, default=20)
     advisable that you base this value on the dpi of your target device's
     screen.
 scroll_x : float (Property)
-    X scrolling value, between 0 and 1. If 0, the content's left side will touch
-    the left side of the ScrollView. If 1, the content's right side will touch
-    the right side.
+    X scrolling value, between 0 and 1. If 0, the content's left side will
+    touch the left side of the ScrollView. If 1, the content's right side
+    will touch the right side.
 scroll_y : float (Property)
     Y scrolling value, between 0 and 1. If 0, the content's bottom side will
     touch the bottom side of the ScrollView. If 1, the content's top side will
@@ -2858,15 +2932,16 @@ scroll_y : float (Property)
 vbar : list (Property)
     Return a tuple of (position, size) of the vertical scrolling bar.
 
-    The position and size are normalized between 0-1, and represent a percentage
-    of the current scrollview height. This property is used internally for
-    drawing the little vertical bar when you're scrolling.
+    The position and size are normalized between 0-1, and represent a
+    percentage of the current scrollview height. This property is used
+    internally for drawing the little vertical bar when you're scrolling.
 viewport_size : integer (Property)
     (internal) Size of the internal viewport. This is the size of your only
     child in the scrollview.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.ScrollLayout. <https://kivy.org/docs/api-kivy.uix.Scrolllayout.html>'_
+Kivy documentation for 'kivy.uix.ScrollLayout.
+<https://kivy.org/docs/api-kivy.uix.Scrolllayout.html>'_
 
 """
 
@@ -2875,11 +2950,10 @@ for widget in widgets:
          (widget, widget))
 
 
-
 import kivy.uix.rst
 RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
 
-RstDocument.__doc__="""A **WidgetState** for displaying RST documents.
+RstDocument.__doc__ = """A **WidgetState** for displaying RST documents.
 
 This **WidgetState** allows you to control the colors, fonts, and functions as
 a **ScrollView**. See **ScrollView** for other parameters you can use in this
@@ -2946,8 +3020,8 @@ colors : dictionary (Parameter, optional, default listed below)
        - "title" : "204a87ff"
 
 document_root : string (Parameter, optional, default=None)
-    Root path where :doc: will search for rst documents. If no path is given, it
-    will use the directory of the first loaded source file.
+    Root path where :doc: will search for rst documents. If no path is given,
+    it will use the directory of the first loaded source file.
 show_errors : boolean (Parameter, optional, default=False)
     Indicate whether RST parsers errors should be shown on the screen or not.
 source_encoding : string (Parameter, optional, default="utf-8")
@@ -2958,8 +3032,9 @@ source_error : string (Parameter, optional, default="strict"
 title : string (Property)
     Title of the current document. Read-only.
 toctrees : dictionary (Property)
-    Toctree of all loaded or preloaded documents. This dictionary is filled when
-    a rst document is explicitly loaded or where preload() has been called.
+    Toctree of all loaded or preloaded documents. This dictionary is filled
+    when a rst document is explicitly loaded or where preload() has
+    been called.
 
     If the document has no filename, e.g. when the document is loaded from a
     text file, the key will be "".
@@ -2967,14 +3042,16 @@ underline_color : string (Parameter, optional, default="204a9699")
     Underline color of the titles, expressed in html color notation.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.rst. <https://kivy.org/docs/api-kivy.uix.rst.html>'_
+Kivy documentation for 'kivy.uix.rst.
+<https://kivy.org/docs/api-kivy.uix.rst.html>'_
 
 """
 
 import kivy.uix.filechooser
-FileChooserListView = WidgetState.wrap(kivy.uix.filechooser.FileChooserListView)
+FileChooserListView =\
+    WidgetState.wrap(kivy.uix.filechooser.FileChooserListView)
 
-FileChooserListView.__doc__="""A **WidgetState** that displays and selects files and directories.
+FileChooserListView.__doc__ = """A **WidgetState** that displays and selects files and directories.
 
 Only used in the spash screen of SMILE, this state is useful if you are trying
 to design your own splash screen.
@@ -3019,7 +3096,8 @@ size : list (Parameter, optional, default=[50, 50])
     widget will fill in size automatically.
 dirselect : boolean (Parameter, optional, default=False)
     Determines whether directories are valid selections or not.
-file_econdings : list (Parameter, optional, default=["utf-8", "latin1", "cp1252"])
+file_econdings : list (Parameter, optional,
+                       default=["utf-8", "latin1", "cp1252"])
     Possible encodings for decoding a filename to unicode. In the case that the
     user has a non-ascii filename, undecodable without knowing it's initial
     encoding, we have no other choice than to guess it.
@@ -3036,16 +3114,16 @@ filter_dirs : boolean (Parameter, optional, default=False)
     Indicates whether filters should also apply to directories.
 filters : list (Parameter, optional, default=[])
     filters specifies the filters to be applied to the files in the directory.
-    filters is a ListProperty and defaults to []. This is equivalent to "*" i.e.
-    nothing is filtered.
+    filters is a ListProperty and defaults to []. This is equivalent to "*"
+    i.e. nothing is filtered.
 
     The filters are not reset when the path changes. You need to do that
     yourself if desired.
 
-    There are two kinds of filters: patterns and callbacks. Patterns are strings
-    that match the file name patteres. Use "*" to match all files, or "*.png" to
-    only match png files. You can also use a sequence of characters to match any
-    files with that sequence in it.
+    There are two kinds of filters: patterns and callbacks. Patterns are
+    strings that match the file name patteres. Use "*" to match all files,
+    or "*.png" to only match png files. You can also use a sequence of
+    characters to match any files with that sequence in it.
 
     callbacks are just a function that takes the folder and the file as the
     parameters, in that order. If you write a callback function, it must take
@@ -3059,21 +3137,23 @@ path : string (Parameter, optional, defaults to current working directory)
     It specifies the path on the filesystem that this controller should refer
     to.
 rootpath : string (Parameter, optional, default=None)
-    Root path to use instead of the system root path. If set, it will not show a
-    ".." directory to go up to the root path. For example, if you set rootpath
-    to /users/foo, the user will be unable to go to /users or to any other
-    directory not starting with /users/foo.
+    Root path to use instead of the system root path. If set, it will not show
+    a ".." directory to go up to the root path. For example, if you set
+    rootpath to /users/foo, the user will be unable to go to /users or to
+    any other directory not starting with /users/foo.
 selection : list (Property)
     Contains the list of files that are currently selected.
 show_hidden : boolean (Parameter, optional, default=False)
     Determines whether hidden files and folders should be shown.
-sort_func : object (Parameter, optional, defaults to a function returning alphanumerically named folders first.)
-    Provides a function to be called with a list of filenames as the first
-    argument and the filesystem implementation as the second argument. It
-    returns a list of filenames sorted for display in the view.
+sort_func : object (Parameter, optional, defaults to a function returning
+    alphanumerically named folders first.) Provides a function to be called
+    with a list of filenames as the first argument and the filesystem
+    implementation as the second argument. It returns a list of filenames
+    sorted for display in the view.
 
 For other parameters or properties that this Widget might have, refer to the
-Kivy documentation for 'kivy.uix.filechooser. <https://kivy.org/docs/api-kivy.uix.filechooser.html>'_
+Kivy documentation for 'kivy.uix.filechooser.
+<https://kivy.org/docs/api-kivy.uix.filechooser.html>'_
 
 """
 
@@ -3082,6 +3162,8 @@ kivy.metrics.sp = _sp_save
 
 
 import kivy.uix.video
+
+
 class Video(WidgetState.wrap(kivy.uix.video.Video)):
     """A **WidgetState** that plays a video.
 
@@ -3098,9 +3180,9 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
     duration : float (optional, default = None)
         The duration of this state, or how long you want the video to play. If
         the *duration* is less than the duration of the file, than the video
-        will stop playing before done. If the *duration* is more than the file's
-        duration, than the video will stop on the last frame and will display
-        that frame until the *duration* is over.
+        will stop playing before done. If the *duration* is more than the
+        file's duration, than the video will stop on the last frame and will
+        display that frame until the *duration* is over.
     parent : ParentState (optional)
         The parent of this state, if None, it will be set automatically
     save_log : boolean (optinal, default = True)
@@ -3130,9 +3212,9 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
     source : string (Parameter)
         Filename or source of your video file.
     allow_strech : boolean (Parameter, optional, default = False)
-        If True, the normalized image size will be maximized to fit in the image
-        box. Otherwise, if the box is too tall, the image will not be stretched
-        more than 1:1 pixels.
+        If True, the normalized image size will be maximized to fit in the
+        image box. Otherwise, if the box is too tall, the image will not be
+        stretched more than 1:1 pixels.
     keep_ratio : boolean (Parameter, optional, default = True)
         If False along with allow_stretch being True, the normalized image size
         will be maximized to fit in the image box and ignores the aspect ratio
@@ -3145,10 +3227,12 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         Position of the video between 0 and duration. The position defaults to
         -1 and is set to a real position when the video is loaded.
 
-    For other parameters or properties that this Widget might have, refer to the
-    Kivy documentation for 'kivy.uix.video. <https://kivy.org/docs/api-kivy.uix.Video.html>'_
+    For other parameters or properties that this Widget might have, refer to
+    the Kivy documentation for 'kivy.uix.video.
+    <https://kivy.org/docs/api-kivy.uix.Video.html>'_
 
     """
+
     def _set_widget_defaults(self):
         # force video to load immediately so that duration is available...
         _kivy_clock.unschedule(self._widget._do_video_load)
@@ -3168,7 +3252,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
 
         # override the update interval (eventually make this a setting)
         _kivy_clock.unschedule(self._widget._video._update)
-        _kivy_clock.schedule_interval(self._widget._video._update, 1/60.)
+        _kivy_clock.schedule_interval(self._widget._video._update, 1 / 60.)
 
         # set the size to (0, 0) so we know if it has been changed later
         self._widget.size = (0, 0)
@@ -3195,6 +3279,8 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
 
 
 import kivy.uix.image
+
+
 class Image(WidgetState.wrap(kivy.uix.image.Image)):
     """A WidgetState subclass to present and image on the screen.
 
@@ -3229,9 +3315,9 @@ class Image(WidgetState.wrap(kivy.uix.image.Image)):
     source : string (Parameter)
         Filename or source of your video file.
     allow_strech : boolean (Parameter, optional, default = False)
-        If True, the normalized image size will be maximized to fit in the image
-        box. Otherwise, if the box is too tall, the image will not be stretched
-        more than 1:1 pixels.
+        If True, the normalized image size will be maximized to fit in the
+        image box. Otherwise, if the box is too tall, the image will not be
+        stretched more than 1:1 pixels.
     keep_ratio : boolean (Parameter, optional, default = True)
         If False along with allow_stretch being True, the normalized image size
         will be maximized to fit in the image box and ignores the aspect ratio
@@ -3241,8 +3327,8 @@ class Image(WidgetState.wrap(kivy.uix.image.Image)):
         Number of loops to play then stop animating a nonstatic image like a
         gif. 0 means keep animating.
     anim_delay : float (Parameter, optional, default = .25 (meaning 4 FPS))
-        Delay the animation if the image is sequenced (like an animated gif). If
-        anim_delay is set to -1, the animation will be stopped.
+        Delay the animation if the image is sequenced (like an animated gif).
+        If anim_delay is set to -1, the animation will be stopped.
     color : list (Parameter, optional, default = [1.0, 1.0, 1.0, 1.0])
         Image color, in the format (r, g, b, a). This attribute can be used to
         "tint" an image. Be careful: if the source image is not gray/white, the
@@ -3250,14 +3336,18 @@ class Image(WidgetState.wrap(kivy.uix.image.Image)):
     image_ratio : list (Property)
         Ratio of the image (width / float(height).
 
-    For other parameters or properties that this Widget might have, refer to the
-    Kivy documentation for 'kivy.uix.image. <https://kivy.org/docs/api-kivy.uix.image.html>'_
+    For other parameters or properties that this Widget might have, refer to
+    the Kivy documentation for 'kivy.uix.image.
+    <https://kivy.org/docs/api-kivy.uix.image.html>'_
 
     """
+
     def _set_widget_defaults(self):
         self._widget.size = self._widget.texture_size
 
 import kivy.uix.label
+
+
 class Label(WidgetState.wrap(kivy.uix.label.Label)):
     """State for presenting any kind of text stimulus onto the screen.
 
@@ -3332,8 +3422,8 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
         The side from which we should shorten the text from, can be "left", "
         right", or "center".
 
-        For example, if left, the ellipsis will appear towards the left side and
-        we will display as much text starting from the right as possible.
+        For example, if left, the ellipsis will appear towards the left side
+        and we will display as much text starting from the right as possible.
         Similar to shorten, this option only applies when text_size [0] is not
         None, In this case, the string is shortened to fit within the specified
         width.
@@ -3346,9 +3436,10 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
         If shorten_from is the empty string, "", we split on every character
         fitting as much text as possible into the line.
     strip : boolean (Parameter, optional, default=False)
-        Whether leading and trailing spaces and newlines should be stripped from
-        each displayed line. If True, every line will start at the right or left
-        edge, depending on halign. If halign is justify it is implicitly True.
+        Whether leading and trailing spaces and newlines should be stripped
+        from each displayed line. If True, every line will start at the right
+        or left edge, depending on halign. If halign is justify it is
+        implicitly True.
     text_size : list (Parameter, optional, default=[Nonce, None])
         By default, the label is not constrained to any bounding box. You can
         set the size constraint of the label with this property. The text will
@@ -3358,15 +3449,16 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
 
         This sets and clips texture_size to text_size if not None.
 
-        For example, whatever your current widget size is, if you want the label
-        to be created in a box with width=200 and unlimited height:
+        For example, whatever your current widget size is, if you want the
+        label to be created in a box with width=200 and unlimited height:
 
             Label(text="Very big big line", text_size=(200, None))
 
     texture : object (Property)
         Texture object of the text. The text is rendered automatically when a
-        property changes. The OpenGL texture created in this operation is stored
-        in this property. You can use this texture for any graphics elements.
+        property changes. The OpenGL texture created in this operation is
+        stored in this property. You can use this texture for any graphics
+        elements.
 
         Depending on the texture creation, the value will be a Texture or
         TextureRegion object.
@@ -3375,24 +3467,27 @@ class Label(WidgetState.wrap(kivy.uix.label.Label)):
         text. If text_size is [None, None], the texture will be the size
         required to fit the text, otherwise it's clipped to fit text_size.
 
-        When text_size is [None, None], one can bind to texture_size and rescale
-        it proportionally to fit the size of the label in order to make the text
-        fit maximally in the label.
+        When text_size is [None, None], one can bind to texture_size and
+        rescale it proportionally to fit the size of the label in order to
+        make the text fit maximally in the label.
     unicode_errors : string (Parameter, optional, default="replace")
         How to handle unicode decode errors. Can be "strict", "replace" or
         "ignore".
     valign : string (Parameter, optional, default="bottom")
         Vertical alignment of the text. Can be "bottom", "middle", or "top"
 
-    For other parameters or properties that this Widget might have, refer to the
-    Kivy documentation for 'kivy.uix.label. <https://kivy.org/docs/api-kivy.uix.label.html>'_
+    For other parameters or properties that this Widget might have, refer to
+    the Kivy documentation for 'kivy.uix.label.
+    <https://kivy.org/docs/api-kivy.uix.label.html>'_
 
     """
+
     def _set_widget_defaults(self):
         # we need to update the texture now
         _kivy_clock.unschedule(self._widget.texture_update)
         self._widget.texture_update()
         self._widget.size = self._widget.texture_size
+
 
 def iter_nested_buttons(state):
     if isinstance(state, Button):
@@ -3401,6 +3496,7 @@ def iter_nested_buttons(state):
         for child in state._children:
             for button in iter_nested_buttons(child):
                 yield button
+
 
 class ButtonPress(CallbackState):
     """Like a KeyPress state, but listens for any buttons to be clicked.
@@ -3476,6 +3572,7 @@ class ButtonPress(CallbackState):
                        center_x=exp.screen.center_x*3/2)
 
     """
+
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
                  duration=None, parent=None, save_log=True, name=None,
                  blocking=True):
@@ -3562,8 +3659,8 @@ class ButtonPress(CallbackState):
 
     def __enter__(self):
         if self.__parallel is not None:
-            raise RuntimeError("ButtonPress context is not reentrant!")  #!!!
-        #TODO: make sure we're the previous state?
+            raise RuntimeError("ButtonPress context is not reentrant!")  # !!!
+        # TODO: make sure we're the previous state?
         self.__parallel = Parallel(name="BUTTONPRESS")
         self.__parallel.override_instantiation_context()
         self.__parallel.claim_child(self)
@@ -3581,7 +3678,8 @@ class ButtonPress(CallbackState):
 
 if __name__ == '__main__':
     from experiment import Experiment
-    from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial, Done, Debug
+    from state import (Wait, Loop, Parallel, Meanwhile,
+                       UntilDone, Serial, Done, Debug)
     from mouse import MouseCursor
     from math import sin, cos
     from contextlib import nested
@@ -3647,12 +3745,12 @@ $ print("Hello world")
         rect.center = exp.screen.right_bottom
         Wait(1.0)
         rect.center = exp.screen.left_top
-        #Screenshot()
+        # Screenshot()
         Wait(1.0)
-        #rect.center = exp.screen.left_bottom
+        # rect.center = exp.screen.left_bottom
         rect.update(center=exp.screen.left_bottom, color="yellow")
         Wait(1.0)
-        #rect.center = exp.screen.center
+        # rect.center = exp.screen.center
         rect.update(center=exp.screen.center, color="purple")
         Wait(1.0)
         rect.slide(center=exp.screen.right_top, duration=2.0)
@@ -3666,18 +3764,18 @@ $ print("Hello world")
     with Meanwhile():
         vid.slide(center_x=exp.screen.width * 0.75,
                   center_y=exp.screen.center_y,
-                  duration=1.0)#, interval=0.5)
-        #Screenshot("my_screenshot.png")
+                  duration=1.0)  # , interval=0.5)
+        # Screenshot("my_screenshot.png")
         vid.animate(center_x=(lambda t, initial: exp.screen.center_x +
                               cos(t / 3.0) * exp.screen.width * 0.25),
                     center_y=(lambda t, initial: exp.screen.center_y +
                               sin(t / 3.0) * exp.screen.width * 0.25),
                     height=(lambda t, initial: initial + sin(t / 2.0) *
-                            initial * 0.5))#, interval=0.5)
+                            initial * 0.5))  # , interval=0.5)
     with Loop(3) as loop:
         Video(source="test_video.mp4", size=exp.screen.size,
-              allow_stretch=loop.i%2, duration=5.0)
-        #Screenshot(name="foo")
+              allow_stretch=loop.i % 2, duration=5.0)
+        # Screenshot(name="foo")
 
     with ButtonPress():
         Button(text="Click to continue", size=(exp.screen.width / 4,
@@ -3701,16 +3799,20 @@ $ print("Hello world")
                       color=(1.0, 1.0, 0.0), name="Pacman")
     with UntilDone():
         with Parallel(name="Pacman motion"):
-            ellipse.slide(left=exp.screen.right, duration=8.0, name="Pacman travel")
+            ellipse.slide(left=exp.screen.right, duration=8.0,
+                          name="Pacman travel")
             ellipse.animate(
-                angle_start=lambda t, initial: initial + (cos(t * 8) + 1) * 22.5,
+                angle_start=lambda t,
+                initial: initial + (cos(t * 8) + 1) * 22.5,
                 angle_end=lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
                 duration=8.0, name="Pacman gobble")
 
     with BoxLayout(width=500, height=500, top=exp.screen.top, duration=4.0):
-        rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=3.0)
+        rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), pos=(0, 0),
+                         size_hint=(1, 1), duration=3.0)
         Rectangle(color="#00FF00", pos=(0, 0), size_hint=(1, 1), duration=2.0)
-        Rectangle(color=(0.0, 0.0, 1.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=1.0)
+        Rectangle(color=(0.0, 0.0, 1.0, 1.0), pos=(0, 0),
+                  size_hint=(1, 1), duration=1.0)
         rect.slide(color=(1.0, 1.0, 1.0, 1.0), duration=3.0)
 
     with Loop(range(3)):
@@ -3718,8 +3820,8 @@ $ print("Hello world")
                   duration=1.0)
         Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0),
                   duration=1.0)
-        Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
-                  duration=1.0)
+        Rectangle(x=100, y=100, width=50, height=50,
+                  color=(0.0, 0.0, 1.0, 1.0), duration=1.0)
 
     with Parallel():
         label = Label(text="SMILE!", duration=4.0, center_x=100, center_y=100,
@@ -3729,17 +3831,18 @@ $ print("Hello world")
                   duration=3.0)
         Rectangle(x=50, y=50, width=50, height=50, color="lime",
                   duration=2.0)
-        Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
-                  duration=1.0)
+        Rectangle(x=100, y=100, width=50, height=50,
+                  color=(0.0, 0.0, 1.0, 1.0), duration=1.0)
 
     with Loop(range(3)):
         Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
                   duration=1.0)
-        #NOTE: This will flip between iterations, but the rectangle should remain on screen continuously.
+        # NOTE: This will flip between iterations, but the rectangle should
+        # remain on screen continuously.
 
     Wait(1.0)
     Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
-              duration=0.0)  #NOTE: This should flip once but display nothing
+              duration=0.0)  # NOTE: This should flip once but display nothing
     Wait(1.0)
 
     Wait(1.0)
@@ -3751,9 +3854,11 @@ $ print("Hello world")
         rect.animate(x=lambda t, initial: t * 50, y=lambda t, initial: t * 25,
                      duration=5.0)
         with Meanwhile():
-            Rectangle(x=50, y=50, width=50, height=50, color=(0.5, 0.5, 0.5, 1.0))
+            Rectangle(x=50, y=50, width=50, height=50,
+                      color=(0.5, 0.5, 0.5, 1.0))
         with Parallel():
-            rect.animate(color=lambda t, initial: (1.0, 1.0 - t / 5.0, t / 5.0, 1.0),
+            rect.animate(color=lambda t,
+                         initial: (1.0, 1.0 - t / 5.0, t / 5.0, 1.0),
                          duration=5.0)
             rect.animate(height=lambda t, initial: 50.0 + t * 25, duration=5.0)
         Wait(1.0)
@@ -3761,7 +3866,8 @@ $ print("Hello world")
             height=lambda t, initial: (initial * (1.0 - t / 5.0) +
                                        25 * (t / 5.0)),
             duration=5.0, name="shrink vertically")
-        rect.slide(color=(0.0, 1.0, 1.0, 1.0), duration=10.0, name="color fade")
+        rect.slide(color=(0.0, 1.0, 1.0, 1.0),
+                   duration=10.0, name="color fade")
         with Meanwhile():
             rect.animate(x=lambda t, initial: initial + sin(t * 4) * 100,
                          name="oscillate")

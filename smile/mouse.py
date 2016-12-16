@@ -1,11 +1,11 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import operator
 import os
@@ -278,6 +278,7 @@ class MousePress(CallbackState):
         A tuple, (x, y), that is the position of the mouse button press.
 
     """
+
     def __init__(self, buttons=None, correct_resp=None, base_time=None,
                  widget=None, duration=None, parent=None, save_log=True,
                  name=None, blocking=True):
@@ -378,7 +379,7 @@ if __name__ == '__main__':
     exp = Experiment()
 
     with Meanwhile():
-        #Record(pos=MousePos(), button=MouseButton())
+        # Record(pos=MousePos(), button=MouseButton())
         with Parallel():
             MouseRecord()
             MouseCursor()
@@ -389,13 +390,13 @@ if __name__ == '__main__':
     Debug(name='Mouse Press Test')
 
     exp.last_pressed = ''
-    with Loop(conditional=(exp.last_pressed!='RIGHT')):
-        kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')
+    with Loop(conditional=(exp.last_pressed != 'RIGHT')):
+        kp = MousePress(buttons=['LEFT', 'RIGHT'], correct_resp='RIGHT')
         Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
         exp.last_pressed = kp.pressed
         Log(pressed=kp.pressed, rt=kp.rt)
 
-    kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')
+    kp = MousePress(buttons=['LEFT', 'RIGHT'], correct_resp='RIGHT')
     Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
     Wait(1.0)
 
