@@ -630,7 +630,7 @@ class State(object):
             self._exp = Experiment._last_instance()
 
         # evaluate the '_init_' Refs...
-        for name, value in self._refs_for_init_attrs.iteritems():
+        for name, value in self._refs_for_init_attrs.items():
             try:
                 setattr(self, name, val(value))
             except NotAvailableError:
@@ -2025,7 +2025,7 @@ class Record(State):
         self._started = True
 
         # starts recording changes for each ref
-        for name, ref in self.__refs.iteritems():
+        for name, ref in self.__refs.items():
             # only add in refs that trigger
             if self.__triggers and name not in self.__triggers:
                 continue
@@ -2045,7 +2045,7 @@ class Record(State):
         super(Record, self).finalize()
 
         # stop tracking changes for each ref
-        for name, ref in self.__refs.iteritems():
+        for name, ref in self.__refs.items():
             # only stop refs that trigger
             if self.__triggers and name not in self.__triggers:
                 continue
@@ -2252,7 +2252,7 @@ class Done(AutoFinalizeState):
                                    blocking=kwargs.pop("blocking", True))
         if len(kwargs):
             raise ValueError("Invalid keyword arguments for Done: %r" %
-                             kwargs.iterkeys())
+                             kwargs.keys())
         self.__states = states
 
     def _enter(self):
@@ -2675,9 +2675,9 @@ class Debug(CallbackState):
         if self._name is not None:
             id_strs.append("name: %s" % self._name)
         lag = clock.now() - self._start_time
-        print "DEBUG (%s) - lag=%fs" % (", ".join(id_strs), lag)
-        for name, value in self._kwargs.iteritems():
-            print "  %s: %r" % (name, value)
+        print("DEBUG (%s) - lag=%fs" % (", ".join(id_strs), lag))
+        for name, value in self._kwargs.items():
+            print("  %s: %r" % (name, value))
 
 
 class PrintTraceback(CallbackState):
@@ -2697,10 +2697,10 @@ if __name__ == '__main__':
     from experiment import Experiment
 
     def print_actual_duration(target):
-        print val(target.end_time - target.start_time)
+        print(val(target.end_time - target.start_time))
 
     def print_periodic():
-        print "PERIODIC!"
+        print("PERIODIC!")
 
     @Subroutine
     def DoTheThing(self, a, b, c=7, d="ssdfsd"):

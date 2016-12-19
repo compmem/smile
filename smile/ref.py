@@ -108,7 +108,7 @@ class Ref(object):
                                      map(repr, self.pargs) +
                                      ["%s=%r" % (name, value) for
                                       name, value in
-                                      self.kwargs.iteritems()])
+                                      self.kwargs.items()])
 
     @staticmethod
     def getattr(obj, name):
@@ -207,11 +207,11 @@ class Ref(object):
             self.setup_dep_callbacks()
             self.cache_valid = False
         # the tuple is needed because this is a set
-        self.change_callbacks.add((func, pargs, tuple(kwargs.iteritems())))
+        self.change_callbacks.add((func, pargs, tuple(kwargs.items())))
 
     def remove_change_callback(self, func, *pargs, **kwargs):
         #print "remove_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
-        self.change_callbacks.discard((func, pargs, tuple(kwargs.iteritems())))
+        self.change_callbacks.discard((func, pargs, tuple(kwargs.items())))
         # clean up if there are no more callbacks
         if not len(self.change_callbacks):
             self.teardown_dep_callbacks()
@@ -349,7 +349,7 @@ def val(obj):
         elif isinstance(obj, tuple):
             return tuple(val(value) for value in obj)
         elif isinstance(obj, dict):
-            return {val(key) : val(value) for key, value in obj.iteritems()}
+            return {val(key) : val(value) for key, value in obj.items()}
         elif isinstance(obj, slice):
             return slice(val(obj.start), val(obj.stop), val(obj.step))
         elif obj is NotAvailable:
@@ -369,7 +369,7 @@ def iter_deps(obj):
             for dep in iter_deps(value):
                 yield dep
     elif isinstance(obj, dict):
-        for key, value in obj.iteritems():
+        for key, value in obj.items():
             for dep in iter_deps(key):
                 yield dep
             for dep in iter_deps(value):
@@ -388,25 +388,25 @@ if __name__ == '__main__':
     import math
     x = [0.0]
     r = Ref(math.cos, Ref.getitem(x, 0))
-    print x[0], val(r)
+    print(x[0], val(r))
     x[0] += .5
-    print x[0], val(r)
+    print(x[0], val(r))
 
     r = Ref.object(str)(Ref.object(x)[0])
     x[0] += .75
-    print x[0], val(r)
+    print(x[0], val(r))
 
     r = (Ref.object(x)[0] > 0) & (Ref.object(x)[0] < 0)
-    print x[0], val(r)
+    print(x[0], val(r))
     r = (Ref.object(x)[0] > 0) & (Ref.object(x)[0] >= 0)
     x[0] -= 10.0
-    print x[0], val(r)
+    print(x[0], val(r))
 
     y = [7]
     ry = Ref.object(y)
-    print y[0], val(ry[0] % 2), val(2 % ry[0])
+    print(y[0], val(ry[0] % 2), val(2 % ry[0]))
     y[0] = 8
-    print y[0], val(ry[0] % 2), val(2 % ry[0])
+    print(y[0], val(ry[0] % 2), val(2 % ry[0]))
 
     class Jubba(object):
         def __init__(self, val):
@@ -418,9 +418,9 @@ if __name__ == '__main__':
     a = Jubba(5)
     b = Ref.getattr(a, 'x')
     br = Ref.object(a).x
-    print val(b), val(br)
+    print(val(b), val(br))
     a.x += 42.0
-    print val(b), val(br)
+    print(val(b), val(br))
 
     c = {'y': 6}
     d = Ref.getitem(c, 'y')
@@ -429,22 +429,22 @@ if __name__ == '__main__':
     f = Ref.getitem(e, 2)
 
     g = b+d+f
-    print val(g)
+    print(val(g))
 
     a.x = 6
-    print val(g)
+    print(val(g))
 
     c['y'] = 7
-    print val(g)
+    print(val(g))
 
     e[2] = 3
-    print val(g)
+    print(val(g))
 
     x = Jubba([])
     y = Ref.getitem(x, 'x')
-    print val(y)
+    print(val(y))
     y = y + [b]
-    print val(y)
+    print(val(y))
     y = y + [d]
     y = y + [f]
-    print val(y)
+    print(val(y))
