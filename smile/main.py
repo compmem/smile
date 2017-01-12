@@ -40,7 +40,6 @@ _kivy_clock = kivy.clock.Clock
 
 FLIP_TIME_MARGIN = 0.002     # increase this if we're missing flips
 IDLE_USLEEP = 250            # USLEEP During idle
-FLIP_TIME_MIN = 0.002
 
 class _VideoChange(object):
     """Container for a change to the graphics tree."""
@@ -96,7 +95,6 @@ class SmileApp(App):
             Window.fullscreen = self.exp._fullscreen
         if self.exp._resolution is not None:
             Window.system_size = self.exp._resolution
-        self.first_blocking_flip = None
 
         # handle setting the bg color
         self.set_background_color()
@@ -137,7 +135,6 @@ class SmileApp(App):
             self.exp._root_executor.enter(clock.now() + 0.25)
 
         self.last_blocking_flip = self.last_flip['time']
-        self.estimated_last_flip = self.last_flip['time']
         self.next_flip_time = self.last_blocking_flip + self.flip_interval
         self.flips_after_blocking_flip = 1.
 
@@ -154,10 +151,10 @@ class SmileApp(App):
             self.exp._root_executor.enter(clock.now() + 0.25)
 
         # we need a redraw here
-        EventLoop.window.dispatch('on_flip')
+        self.blocking_flip()
         self.last_blocking_flip = self.last_flip['time']
-        self.estimated_last_flip = self.next_flip_time
         self.next_flip_time = self.last_blocking_flip + self.flip_interval
+        self.flips_after_blocking_flip = 1.
 
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
@@ -352,7 +349,6 @@ class SmileApp(App):
 
                     ## Setup the new next_flip_time
                     self.last_blocking_flip = self.last_flip['time']
-                    self.estimated_last_flip = self.last_flip['time']
                     self.flips_after_blocking_flip = 1.
                     self.next_flip_time = (self.last_blocking_flip
                                           + self.flip_interval)
@@ -364,8 +360,6 @@ class SmileApp(App):
                     temp_time = clock.now()
                     self.last_flip = event_time(self.next_flip_time,
                                                 self.next_flip_time - temp_time)
-
-                    self.estimated_last_flip = self.next_flip_time
                     self.flips_after_blocking_flip += 1
                     self.next_flip_time = (self.last_blocking_flip +
                         self.flips_after_blocking_flip*self.flip_interval)
