@@ -17,19 +17,20 @@ states are states that control the flow of the experiment.
 Serial State
 ------------
 
-A :py:class:`~smile.state.Serial` state is a state that has children and runs its children one after
-another. All states defined between the lines `exp = Experiment()` and
-`exp.run()` in an experiment will exist as children of a *Serial* state. Once
-one state ends, the :py:class:`~smile.state.Serial` state will call the next state's
-start method. Like any flow state, the use of the `with` pythonic keyword
-is required and makes the source code look clean and readable.  Below is an example
-of the *Serial* state.
+A :py:class:`~smile.state.Serial` state is a state that has children and runs
+its children one after another. That means that the next state will not start
+until the previous state has ended. The default state that a SMILE experiment is
+in is a *Serial* state. That means that every state between
+'exp = Experiment()' and 'exp.run()'. Once one state ends, the
+:py:class:`~smile.state.Serial` state will call the next state's start method.
+Like any flow state, the use of the `with` pythonic keyword is required.  Below
+are a few examples of the *Serial* state and displaying text on the screen.
 
 .. note::
 
-    For many examples, Action State *Label* will be used.  This state merely displays text on the
-    screen, similar to the "print" python command.  For more details on *Label*,
-    click :py:class:`~smile.video.Label`.
+    For many examples, Action State *Label* will be used.  This state merely
+    displays text on the screen, similar to the "print" python command.  For
+    more details on *Label*, click :py:class:`~smile.video.Label`.
 
 The following two experiments are equivalent.
 
@@ -58,17 +59,18 @@ The following two experiments are equivalent.
 
     exp.run()
 
-As shown above, the default state of an experiment is a :py:class:`~smile.state.Serial` state in
-which all of the states initialized between `exp = Experiment()` and
-`exp.run()` are children.
+As shown above, the default state of an experiment is a
+:py:class:`~smile.state.Serial` state in which all of the states initialized
+between `exp = Experiment()` and `exp.run()` are children.
 
 For more details, see the :py:class:`~smile.state.Serial` docstring.
 
 Parallel State
 --------------
 
-A :py:class:`~smile.state.Parallel` state is a state that has children and runs those children
-simultaneously with each other, which we call parallel. The key to a *Parallel* state is that it
+A :py:class:`~smile.state.Parallel` state is a parent state that has children
+and runs those children simultaneously. This means that all of the children
+inside a *Parallel* state will start at the exact same time. The key to a *Parallel* state is that it
 will not end unless all of its children end. Once it has no more children running, the current
 state will schedule its own end call, allowing the next state to run.
 
@@ -280,7 +282,7 @@ to the current iteration of a loop is needed, 'trial.current' can be utilized.
 Refer to the :py:class:`~smile.state.Loop`* docstring
 for information on how to access the different properties of a *Loop*.
 
-Below is an example of all 3 loops.
+Below are a few examples of different use-cases for loops.
 
 List of Dictionaries
 
@@ -318,6 +320,24 @@ Loop a number of times:
         Wait(1)
 
     exp.run()
+
+Loop and Display a different number based on the current loop iteration:
+
+.. code-block:: python
+
+    from smile.common import *
+
+    exp = Experiment()
+
+    with Loop(10) as lp:
+        # Because lp.i is a ref, we need to create a ref that converts it to
+        # to a string during run time. That is what Ref(str, lp.i) does.
+        Label(text=Ref(str, lp.i), duration=1)
+        Wait(1)
+
+    exp.run()
+
+
 
 Loop while something is true:
 
