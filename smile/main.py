@@ -7,6 +7,8 @@
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
+from __future__ import print_function
+
 # import main modules
 import os
 
@@ -131,7 +133,7 @@ class SmileApp(App):
         self.blocking_flip()
         # hack to wait until fullscreen on OSX
         if True:  # not (platform in ('macosx',) and Window.fullscreen):
-            print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()
+            print("Estimated Refresh Rate:", 1.0 / self.calc_flip_interval())
             self.exp._root_executor.enter(clock.now() + 0.25)
 
     def _on_resize(self, *pargs):
@@ -143,7 +145,7 @@ class SmileApp(App):
         if platform in ('macosx',) and Window.fullscreen and \
            not self.exp._root_executor._enter_time and \
            not self.exp._root_executor._active:
-            print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()
+            print("Estimated Refresh Rate:", 1.0 / self.calc_flip_interval())
             self.exp._root_executor.enter(clock.now() + 0.25)
 
         # we need a redraw here
@@ -459,7 +461,7 @@ class SmileApp(App):
         #print m['exp']
         #m = globals()
         # l = locals()
-        print m.exp
+        print(m.exp)
         # print l
         #execfile(expfile, m)
 
