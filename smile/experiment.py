@@ -413,8 +413,10 @@ class Experiment(object):
 
         # set up the subject and subj dir
         self._subj = args.subject
-
-        self._subj_dir = os.path.join('data', self._subj)
+        if self._platform == "linux4":
+            self._subj_dir = os.path.join("/sdcard", "SMILE_DATA",'data', subj_id)
+        else:
+            self._subj_dir = os.path.join('data', subj_id)
         if not os.path.exists(self._subj_dir):
             os.makedirs(self._subj_dir)
 
