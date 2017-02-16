@@ -9,6 +9,7 @@
 
 # import main modules
 import os
+import sys
 import weakref
 import time
 import threading
@@ -289,6 +290,9 @@ class Experiment(object):
     """
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
+
+        self._platform = sys.platform
+
         self._process_args()
 
         # handle fullscreen and resolution before Window is imported
@@ -320,6 +324,43 @@ class Experiment(object):
         self._reserved_data_filenames = set(os.listdir(self._subj_dir))
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
+
+    def _change_smile_subj(self, subj_id):
+        for filename, logger in self._state_loggers.itervalues():
+            logger.close()
+            os.remove(filename)
+        self._subj = subj_id
+        if self._platform == "linux4":
+            self._subj_dir = os.path.join("/sdcard", "SMILE_DATA",'data', subj_id)
+        else:
+            self._subj_dir = os.path.join('data', subj_id)
+        subj_dir = os.path.join('data', subj_id)
+        if not os.path.isdir(subj_dir):
+            os.makedirs(subj_dir)
+
+        self._reserved_data_filenames = set(os.listdir(subj_dir))
+        self._reserved_data_filenames_lock = threading.Lock()
+        self._state_loggers = {}
+        self._root_state.begin_log()
+
+    def _get_config(self):
+        frame_rate = kivy_overrides.kivyC.getdefault("SMILE", "FRAMERATE", 60.)
+        locked = kivy_overrides.kivyC.getdefaultint("SMILE", "LOCKEDSUBJID", 0)
+        font_name = kivy_overrides.kivyC.getdefault("SMILE", "FONTNAME", "Roboto")
+        font_size = kivy_overrides.kivyC.getdefaultint("SMILE", "FONTSIZE", 45)
+        fullscreen = kivy_overrides.kivyC.getdefaultint("SMILE", "FULLSCREEN", 1)
+        return_dict = {"fullscreen":fullscreen,
+                       "locked":locked,
+                       "font_size":font_size,
+                       "font_name":font_name,
+                       "frame_rate":frame_rate,}
+        return return_dict
+
+    def _set_config(self, fullscreen, locked):
+        kivy_overrides.kivyC.set("SMILE","FULLSCREEN", fullscreen)
+        kivy_overrides.kivyC.set("SMILE","LOCKEDSUBJID", locked)
+        kivy_overrides.kivyC.write()
+
 
     def get_var_ref(self, name):
         try:
@@ -372,6 +413,7 @@ class Experiment(object):
 
         # set up the subject and subj dir
         self._subj = args.subject
+
         self._subj_dir = os.path.join('data', self._subj)
         if not os.path.exists(self._subj_dir):
             os.makedirs(self._subj_dir)
