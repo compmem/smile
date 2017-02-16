@@ -24,6 +24,8 @@ help you find the information you are looking for.
 
     - :ref:`Step 5: Looping, References, and Animation<loops_ref>`_
 
+    - :ref:`Step 6: If, Elif, Else, and Conditional Refs<conditional_refs>`_
+
 The Experiment Break-Down
 =========================
 
@@ -303,7 +305,7 @@ Step 5: Looping, References, and Animation
     # contains all of the information that SMILE will need to run each *trial*
     # of your experiment. Ours is simple and every trial will only need to know
     # what color goes on what side.
-    block = [{'left_color': 'RED', 'right_color': 'GREEN'}]*10 + [{'left_color': 'GREEN', 'right_color': 'RED'}]*90
+    block = [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J'}]*50 + [{'left_color': 'GREEN', 'right_color': 'RED', 'correct_key':'F'}]*50
     random.shuffle(block)
 
     exp = Experiment()
@@ -335,7 +337,10 @@ Step 5: Looping, References, and Animation
             Rectangle(center_x=exp.screen.width*3./4.,center_y=exp.screen.height/2.,
                      color=trial.current['right_color'], duration=2.)
         with Meanwhile():
-            kp = KeyPress(keys=['F','J'], correct_resp='J',)
+            # We created our list of dictionaries to include every peice of
+            # information that we need in each trial. That includes which
+            # key will be the correct key to press.
+            kp = KeyPress(keys=['F','J'], correct_resp=trial.current['correct_key'])
 
     exp.run()
 
@@ -349,9 +354,109 @@ order to allow people to make references to values that might not exist until
 the experiment is running, we cre ate the :py:class:'~smile.ref.Ref' object.
 
 A *Ref*, at its simplest, is a delayed function call. It contains two
-attributes, a *func* and a *value*, and SMILE identifies when the value of the
-Ref is needed and then evaluates
+attributes, a *func* and a *value*. SMILE will know when the result of a ref is
+needed by the experiment, and then attempt to evaluate it by passing the *value*
+into the *func*. *Ref*s allow you to reference the values of widths, heights,
+or any value that isn't defined until the experiment is running during
+*Build Time*. *Ref*s are also recursive. If a Ref's *value* is another Ref, it
+will attempt to evaluate the value of that Ref before passing it into the
+*func*. For more information about Refs, including the ability to use normal
+opperators(+, -, *, /) on them and how they interact with lists, please refer
+to the :ref:`SMILE References<setting_in_rt>`_ document in the Advanced SMILE
+section.
 
+Understanding Refs is important to understanding all of the more complicated
+states in SMILE. The :py:class:'~smile.state.Loop' state was introduced in this
+step. Loop will allow you to run chunks of your experiment multiple times. The
+ammount of times that a Loop will run can be set in many different ways. Above,
+we pass in a list of dictionaries to our Loop that will tell the loop to run
+for as many times as the length of the list. Since *block* has a length of 100,
+our loop will run 100 times. You can also pass in an integer to the loop to
+tell it to run a set number of times. Lastly, you can tell a Loop to loop while
+a Ref evaluates to True. For more information about the many uses of a Loop
+state, please look at the :ref:`SMILE States<smile_states>`_ document.
+
+If you understand the pythonic *with* and *as* statements, you know that when
+we write the line `with Loop(block) as trial:` the variable *trial* will
+containt the object created by *Loop(block)*. Since we do not have access to
+the current item from *block* during build time, we use the *trial.current* Ref
+to reference the current value of each iteration of the loop. You can also
+reference the loop number with the Ref *trial.i*. You are able to treat
+*trial.current* as if it was one of the items in the list *block*. Since
+*block* contains a list of dictionaries, you can index into *trial.current*
+using the same strings that we setup above, ala *trial.current['left_color']*.
+
+.. warning::
+
+    Whether it be a list or a dictionary, you cannot use a ref to index into either of these objects. For example, if you wanted to index into *ex_list* with *trial.current['index_num']*, you can't do `ex_list[trial.current['index_num']]`. This line will error out by saying that the index is invalid. Instead, refer to the documentation for *Ref.getitem()* for the way to index into an object with a Ref.
+
+Now that we have a better understanding of Refs and build time vs run time, we
+can now move onto more complicated applications of these concepts. Mainly, the
+next section will cover the conditional States, If, Elif, and Else, as well as
+the conditional Refs, *Ref.cond*.
+
+.. _conditional_refs
+
+Step 6: If, Elif, Else, and Conditional Refs
+++++++++++++++++++++++++++++++++++++++++++++
+
+.. code-block: python
+
+    from smile.common import *
+    import random
+    # Now we are creating a
+    block = [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'left','prime_color':'RED'}]*10 + \
+            [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'left','prime_color':'GREEN'}]*10 + \
+            [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'right','prime_color':'RED'}]*10 + \
+            [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'right','prime_color':'GREEN'}]*10 + \
+            [{'left_color': 'GREEN', 'right_color': 'RED', 'correct_key':'F', 'prime_side':'left','prime_color':'RED'}]*10 + \
+            [{'left_color': 'GREEN', 'right_color': 'RED', 'correct_key':'F', 'prime_side':'left','prime_color':'GREEN'}]*10 + \
+            [{'left_color': 'GREEN', 'right_color': 'RED', 'correct_key':'F', 'prime_side':'right','prime_color':'RED'}]*10 + \
+            [{'left_color': 'GREEN', 'right_color': 'RED', 'correct_key':'F', 'prime_side':'right','prime_color':'GREEN'}]*10
+
+    # Priming shape on screen Duration
+    PRIME_DUR = .2
+    # Between priming  and stim duration
+    PRIME_ISI = .2
+    # Stimulus duration
+    STIM_DUR = 2.
+
+    random.shuffle(block)
+
+    exp = Experiment()
+
+    Label(Text="Press F if the left rectangle is green and J if the right rectangle is green. The experiment will begin when you press ENTER.",
+          text_size=(500, None), font_size=30, duration=4.)
+    with UntilDone():
+        KeyPress(keys=["ENTER"])
+    Wait(2)
+
+    With Loop(block) as trial:
+
+        # We are finally ready to add the priming stimulus to the screen! We
+        # will present a circle on a side of the screen that depends on which
+        # trial of the Loop we are on.  The color of the circle will also
+        # depend on the trial that we are on in the Loop. We use Ref.cond to
+        # make Ref's whos value will change depending on the value of the
+        # conditional, true or false.
+        exp.prime_center_x = Ref.cond(trial.current['prime_side'] == "LEFT",
+                                      true_value=exp.screen.width/4.,
+                                      false_value=exp.screen.width*3./4.)
+
+        Ellipse(center_x=exp.prime_center_x, color=trial.current['prime_color'],
+                duration=PRIME_DUR)
+
+        Wait(PRIME_ISI)
+
+        With Parallel():
+            Rectangle(center_x=exp.screen.width/4.,center_y=exp.screen.height/2.,
+                     color=trial.current['left_color'], duration=STIM_DUR)
+            Rectangle(center_x=exp.screen.width*3./4.,center_y=exp.screen.height/2.,
+                     color=trial.current['right_color'], duration=STIM_DUR)
+        with Meanwhile():
+            kp = KeyPress(keys=['F','J'], correct_resp=trial.current['correct_key'])
+
+    exp.run()
 
 
 Running a SMILE Experiment

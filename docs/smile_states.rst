@@ -1,3 +1,6 @@
+.. _smile_states
+
+
 ============
 SMILE States
 ============
