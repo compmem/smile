@@ -102,3 +102,4 @@ class SmileEventLoop(kivy.base.EventLoopBase):
         return self.quit
 
 kivy.base.EventLoop = SmileEventLoop()
+from kivy.config import Config as kivyC
