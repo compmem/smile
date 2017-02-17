@@ -3161,7 +3161,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
                 for i in range(10):
                     if self._widget._video.duration == -1:
                         break
-                    print('d', end="")
+                    print('d')
                     clock.usleep(100)
 
             self._end_time = self._start_time + self._widget._video.duration
@@ -3183,7 +3183,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
                 for i in range(10):
                     if self._widget._video.texture:
                         break
-                    print('t', end="")
+                    print('t')
                     clock.usleep(100)
                     self._widget._video._update(0)
             self.live_change(size=self._widget._video.texture.size)

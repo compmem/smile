@@ -435,7 +435,8 @@ class Experiment(object):
         return filename
 
     def close_state_loggers(self, to_csv):
-        for filename, logger in self._state_loggers.items():
+        for dict_key, items in iter(self._state_loggers.items()):
+            filename, logger = items
             logger.close()
             if to_csv:
                 csv_filename = (os.path.splitext(filename)[0] + ".csv")
