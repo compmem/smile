@@ -134,9 +134,9 @@ class SmileApp(App):
             print "Estimated Refresh Rate:", 1.0 / self.calc_flip_interval()
             self.exp._root_executor.enter(clock.now() + 0.25)
 
-        self.last_blocking_flip = self.last_flip['time']
-        self.next_flip_time = self.last_blocking_flip + self.flip_interval
-        self.flips_after_blocking_flip = 1.
+        self._last_blocking_flip = self.last_flip['time']
+        self._next_flip_time = self._last_blocking_flip + self.flip_interval
+        self._flips_after_blocking_flip = 1.
 
     def _on_resize(self, *pargs):
         # handle the resize
@@ -152,9 +152,9 @@ class SmileApp(App):
 
         # we need a redraw here
         self.blocking_flip()
-        self.last_blocking_flip = self.last_flip['time']
-        self.next_flip_time = self.last_blocking_flip + self.flip_interval
-        self.flips_after_blocking_flip = 1.
+        self._last_blocking_flip = self.last_flip['time']
+        self._next_flip_time = self._last_blocking_flip + self.flip_interval
+        self._flips_after_blocking_flip = 1.
 
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
@@ -243,8 +243,8 @@ class SmileApp(App):
         self._new_time = clock.now()
         time_err = (self._new_time - self._last_time) / 2.0
         self.event_time = event_time(self._last_time + time_err, time_err)
-        self.within_flip_time_margin = (self._new_time >=
-                                         self.next_flip_time - FLIP_TIME_MARGIN)
+        within_flip_time_margin = (self._new_time >=
+                                   self._next_flip_time - FLIP_TIME_MARGIN)
         # call any of our scheduled events that are ready
         clock.tick()
 
@@ -303,7 +303,7 @@ class SmileApp(App):
         # dispatch draw if necessary, draw if need_draw, needs_redraw,
         # within the flip time margin but haven't drawn yet.
 
-        if kivy_needs_draw or (self.within_flip_time_margin
+        if kivy_needs_draw or (within_flip_time_margin
                                and not self._did_draw):
             EventLoop.window.dispatch('on_draw')
             self._did_draw = True
@@ -333,7 +333,7 @@ class SmileApp(App):
                 del self.video_queue[0]
 
             # do flip if necessary
-            if need_flip or self.within_flip_time_margin:
+            if need_flip or within_flip_time_margin:
                 # test if blocking or non-blocking flip
                 # do a blocking if:
                 # 1) Forcing a blocking flip_interval
@@ -347,9 +347,9 @@ class SmileApp(App):
                     self.blocking_flip()
 
                     ## Setup the new next_flip_time
-                    self.last_blocking_flip = self.last_flip['time']
-                    self.flips_after_blocking_flip = 1.
-                    self.next_flip_time = (self.last_blocking_flip
+                    self._last_blocking_flip = self.last_flip['time']
+                    self._flips_after_blocking_flip = 1.
+                    self._next_flip_time = (self._last_blocking_flip
                                           + self.flip_interval)
 
                 else:
@@ -357,10 +357,10 @@ class SmileApp(App):
 
                     ## increment the new next_flip_time by one flip_interval
                     temp_time = clock.now()
-                    self.last_flip = event_time(self.next_flip_time, 0.0)
-                    self.flips_after_blocking_flip += 1
-                    self.next_flip_time = (self.last_blocking_flip +
-                        self.flips_after_blocking_flip*self.flip_interval)
+                    self.last_flip = event_time(self._next_flip_time, 0.0)
+                    self._flips_after_blocking_flip += 1
+                    self._next_flip_time = (self._last_blocking_flip +
+                        self._flips_after_blocking_flip*self.flip_interval)
 
 
                 # still may need to update flip_time_callbacks
