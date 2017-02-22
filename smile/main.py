@@ -132,8 +132,13 @@ class SmileApp(App):
         # self.exp._root_state.enter(clock.now() + 1.0)
         self.blocking_flip()
         # hack to wait until fullscreen on OSX
+
+        kconfig = self.exp._get_config()
+
+        self.flip_interval = 1./kconfig['frame_rate']
+
         if True:  # not (platform in ('macosx',) and Window.fullscreen):
-            print("Estimated Refresh Rate:", 1.0 / self.calc_flip_interval())
+            print("Estimated Refresh Rate:", 1./self.flip_interval)
             self.exp._root_executor.enter(clock.now() + 0.25)
 
     def _on_resize(self, *pargs):
@@ -145,7 +150,7 @@ class SmileApp(App):
         if platform in ('macosx',) and Window.fullscreen and \
            not self.exp._root_executor._enter_time and \
            not self.exp._root_executor._active:
-            print("Estimated Refresh Rate:", 1.0 / self.calc_flip_interval())
+            print("Estimated Refresh Rate:", self._flip_interval)
             self.exp._root_executor.enter(clock.now() + 0.25)
 
         # we need a redraw here
@@ -478,7 +483,7 @@ class SmileApp(App):
         #     return exp
         # else:
         #     raise ValueError("The provided file does not have an Experiment instance.")
-        
+
         return m.exp
         #return m['exp']
 
