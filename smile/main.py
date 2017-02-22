@@ -144,7 +144,7 @@ class SmileApp(App):
         if platform in ('macosx',) and Window.fullscreen and \
            not self.exp._root_executor._enter_time and \
            not self.exp._root_executor._active:
-            print("Estimated Refresh Rate:", 1.0 / self.calc_flip_interval())
+            print("Estimated Refresh Rate:", self._flip_interval)
             self.exp._root_executor.enter(clock.now() + 0.25)
 
         # we need a redraw here

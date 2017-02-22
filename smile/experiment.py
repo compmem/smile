@@ -328,7 +328,7 @@ class Experiment(object):
         for filename, logger in self._state_loggers.itervalues():
             logger.close()
             os.remove(filename)
-        
+
         self._subj = subj_id
 
         self._subj_dir = os.path.join(kconfig['default_data_dir'], "data", self._name, subj_id)
@@ -342,7 +342,7 @@ class Experiment(object):
         self._root_state.begin_log()
 
     def _get_config(self):
-        frame_rate = kivy_overrides.kivyC.getdefault("SMILE", "FRAMERATE", 60.)
+        frame_rate = float(kivy_overrides.kivyC.getdefault("SMILE", "FRAMERATE", 60.))
         locked = kivy_overrides.kivyC.getdefaultint("SMILE", "LOCKEDSUBJID", 0)
         font_name = kivy_overrides.kivyC.getdefault("SMILE", "FONTNAME", "Roboto")
         font_size = kivy_overrides.kivyC.getdefaultint("SMILE", "FONTSIZE", 45)
@@ -371,7 +371,7 @@ class Experiment(object):
         if locked != None:
             kivy_overrides.kivyC.set("SMILE","LOCKEDSUBJID", locked)
         if framerate != None:
-            kivy_overrides.kivyC.set("SMILE","FRAMERATE",framerate)
+            kivy_overrides.kivyC.set("SMILE","FRAMERATE", float(framerate))
         if fontname != None:
             kivy_overrides.kivyC.set("SMILE","FONTNAME", fontname)
         if fontsize != None:
