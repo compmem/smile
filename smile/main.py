@@ -240,14 +240,16 @@ class SmileApp(App):
 
     def _idle_callback(self, event_loop):
         # record the time range
+
         self._new_time = clock.now()
         time_err = (self._new_time - self._last_time) / 2.0
         self.event_time = event_time(self._last_time + time_err, time_err)
-        within_flip_time_margin = (self._new_time >=
-                                   self._next_flip_time - FLIP_TIME_MARGIN)
+
         # call any of our scheduled events that are ready
         clock.tick()
 
+        within_redraw_time = (self._new_time >=
+                                  (self._next_flip_time - FLIP_TIME_MARGIN))
         # see if we're ready for video
         ready_for_video = ((self._new_time - self.last_flip["time"]) >=
                            (self.flip_interval - FLIP_TIME_MARGIN))
@@ -303,7 +305,7 @@ class SmileApp(App):
         # dispatch draw if necessary, draw if need_draw, needs_redraw,
         # within the flip time margin but haven't drawn yet.
 
-        if kivy_needs_draw or (within_flip_time_margin
+        if kivy_needs_draw or (within_redraw_time
                                and not self._did_draw):
             EventLoop.window.dispatch('on_draw')
             self._did_draw = True
@@ -333,7 +335,7 @@ class SmileApp(App):
                 del self.video_queue[0]
 
             # do flip if necessary
-            if need_flip or within_flip_time_margin:
+            if need_flip or within_redraw_time:
                 # test if blocking or non-blocking flip
                 # do a blocking if:
                 # 1) Forcing a blocking flip_interval
@@ -343,7 +345,7 @@ class SmileApp(App):
                 if self.force_blocking_flip or \
                    (len(flip_time_callbacks) and
                     not self.force_nonblocking_flip):
-
+                    print "bflip"
                     self.blocking_flip()
 
                     ## Setup the new next_flip_time
@@ -354,7 +356,7 @@ class SmileApp(App):
 
                 else:
                     EventLoop.window.dispatch('on_flip')
-
+                    print 'nbflip'
                     ## increment the new next_flip_time by one flip_interval
                     temp_time = clock.now()
                     self.last_flip = event_time(self._next_flip_time, 0.0)
