@@ -2159,11 +2159,11 @@ class Log(AutoFinalizeState):
         else:
             title = "log_%s" % self._name
 
-        if self.__log_filename != None:
+        if self.__log_filename is not None:
             os.remove(self.__log_filename)
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
 
-        if self.__log_writer != None:
+        if self.__log_writer is not None:
             self.__log_writer.close()
         self.__log_writer = LogWriter(self.__log_filename)
 
