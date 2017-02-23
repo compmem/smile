@@ -342,15 +342,15 @@ class Experiment(object):
         self._root_state.begin_log()
 
     def _get_config(self):
-        frame_rate = float(kivy_overrides.kivyC.getdefault("SMILE", "FRAMERATE", 60.))
-        locked = kivy_overrides.kivyC.getdefaultint("SMILE", "LOCKEDSUBJID", 0)
-        font_name = kivy_overrides.kivyC.getdefault("SMILE", "FONTNAME", "Roboto")
-        font_size = kivy_overrides.kivyC.getdefaultint("SMILE", "FONTSIZE", 45)
-        fullscreen = kivy_overrides.kivyC.getdefaultint("SMILE", "FULLSCREEN", 1)
+        frame_rate = float(kivy_overrides.Config.getdefault("SMILE", "FRAMERATE", 60.))
+        locked = kivy_overrides.Config.getdefaultint("SMILE", "LOCKEDSUBJID", 0)
+        font_name = kivy_overrides.Config.getdefault("SMILE", "FONTNAME", "Roboto")
+        font_size = kivy_overrides.Config.getdefaultint("SMILE", "FONTSIZE", 45)
+        fullscreen = kivy_overrides.Config.getdefaultint("SMILE", "FULLSCREEN", 1)
         if self._platform == "android" or self._platform == "ios":
-            data_dir = kivy_overrides.kivyC.getdefault("SMILE","DEFAULT_DATA_DIR","/sdcard/SMILE/")
+            data_dir = kivy_overrides.Config.getdefault("SMILE","DEFAULT_DATA_DIR","/sdcard/SMILE/")
         else:
-            data_dir = kivy_overrides.kivyC.getdefault("SMILE","DEFAULT_DATA_DIR",".")
+            data_dir = kivy_overrides.Config.getdefault("SMILE","DEFAULT_DATA_DIR",".")
         return_dict = {"fullscreen":fullscreen,
                        "locked":locked,
                        "font_size":font_size,
@@ -366,19 +366,19 @@ class Experiment(object):
                           fontsize=None,
                           data_dir=None
                           ):
-        if fullscreen != None:
-            kivy_overrides.kivyC.set("SMILE","FULLSCREEN", fullscreen)
-        if locked != None:
-            kivy_overrides.kivyC.set("SMILE","LOCKEDSUBJID", locked)
-        if framerate != None:
-            kivy_overrides.kivyC.set("SMILE","FRAMERATE", float(framerate))
-        if fontname != None:
-            kivy_overrides.kivyC.set("SMILE","FONTNAME", fontname)
-        if fontsize != None:
-            kivy_overrides.kivyC.set("SMILE","FONTSIZE", fontsize)
-        if data_dir != None:
-            kivy_overrides.kivyC.set("SMILE","DEFAULT_DATA_DIR", data_dir)
-        kivy_overrides.kivyC.write()
+        if fullscreen is not None:
+            kivy_overrides.Config.set("SMILE","FULLSCREEN", fullscreen)
+        if locked is not None:
+            kivy_overrides.Config.set("SMILE","LOCKEDSUBJID", locked)
+        if framerate is not None:
+            kivy_overrides.Config.set("SMILE","FRAMERATE", float(framerate))
+        if fontname is not None:
+            kivy_overrides.Config.set("SMILE","FONTNAME", fontname)
+        if fontsize is not None:
+            kivy_overrides.Config.set("SMILE","FONTSIZE", fontsize)
+        if data_dir is not None:
+            kivy_overrides.Config.set("SMILE","DEFAULT_DATA_DIR", data_dir)
+        kivy_overrides.Config.write()
 
 
     def get_var_ref(self, name):
@@ -514,6 +514,10 @@ class Experiment(object):
     @property
     def screen(self):
         return self._screen
+
+    @property
+    def platform(self):
+        return self._platform
 
     @property
     def subject(self):
