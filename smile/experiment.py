@@ -9,6 +9,7 @@
 
 # import main modules
 import os
+import sys
 import weakref
 import time
 import threading
@@ -17,6 +18,7 @@ import threading
 import kivy_overrides
 import kivy
 import kivy.base
+from kivy.utils import platform
 import kivy.clock
 
 # local imports
@@ -289,6 +291,9 @@ class Experiment(object):
     """
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
+
+        self._platform = platform
+        self._name = name
         self._process_args()
 
         # handle fullscreen and resolution before Window is imported
@@ -320,6 +325,65 @@ class Experiment(object):
         self._reserved_data_filenames = set(os.listdir(self._subj_dir))
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
+
+    def _change_smile_subj(self, subj_id):
+        kconfig = self._get_config()
+
+        for filename, logger in self._state_loggers.itervalues():
+            logger.close()
+            os.remove(filename)
+
+        self._subj = subj_id
+
+        self._subj_dir = os.path.join(kconfig['default_data_dir'], "data", self._name, subj_id)
+
+        if not os.path.isdir(self._subj_dir):
+            os.makedirs(self._subj_dir)
+
+        self._reserved_data_filenames = set(os.listdir(self._subj_dir))
+        self._reserved_data_filenames_lock = threading.Lock()
+        self._state_loggers = {}
+        self._root_state.begin_log()
+
+    def _get_config(self):
+        frame_rate = float(kivy_overrides.Config.getdefault("SMILE", "FRAMERATE", 60.))
+        locked = kivy_overrides.Config.getdefaultint("SMILE", "LOCKEDSUBJID", 0)
+        font_name = kivy_overrides.Config.getdefault("SMILE", "FONTNAME", "Roboto")
+        font_size = kivy_overrides.Config.getdefaultint("SMILE", "FONTSIZE", 45)
+        fullscreen = kivy_overrides.Config.getdefaultint("SMILE", "FULLSCREEN", 1)
+        if self._platform == "android" or self._platform == "ios":
+            data_dir = kivy_overrides.Config.getdefault("SMILE","DEFAULT_DATA_DIR","/sdcard/SMILE/")
+        else:
+            data_dir = kivy_overrides.Config.getdefault("SMILE","DEFAULT_DATA_DIR",".")
+        return_dict = {"fullscreen":fullscreen,
+                       "locked":locked,
+                       "font_size":font_size,
+                       "font_name":font_name,
+                       "frame_rate":frame_rate,
+                       "default_data_dir":data_dir}
+        return return_dict
+
+    def _set_config(self, fullscreen=None,
+                          locked=None,
+                          framerate=None,
+                          fontname=None,
+                          fontsize=None,
+                          data_dir=None
+                          ):
+        if fullscreen is not None:
+            kivy_overrides.Config.set("SMILE","FULLSCREEN", fullscreen)
+        if locked is not None:
+            kivy_overrides.Config.set("SMILE","LOCKEDSUBJID", locked)
+        if framerate is not None:
+            kivy_overrides.Config.set("SMILE","FRAMERATE", float(framerate))
+        if fontname is not None:
+            kivy_overrides.Config.set("SMILE","FONTNAME", fontname)
+        if fontsize is not None:
+            kivy_overrides.Config.set("SMILE","FONTSIZE", fontsize)
+        if data_dir is not None:
+            kivy_overrides.Config.set("SMILE","DEFAULT_DATA_DIR", data_dir)
+        kivy_overrides.Config.write()
+
 
     def get_var_ref(self, name):
         try:
@@ -368,11 +432,16 @@ class Experiment(object):
 
     def _process_args(self):
         # get args from kivy_overrides
+        # and config variables from kivy
         args = kivy_overrides.args
+        kconfig = self._get_config()
 
         # set up the subject and subj dir
         self._subj = args.subject
-        self._subj_dir = os.path.join('data', self._subj)
+
+        self._subj_dir = os.path.join(kconfig['default_data_dir'], "data",
+                                      self._name, self._subj)
+
         if not os.path.exists(self._subj_dir):
             os.makedirs(self._subj_dir)
 
@@ -449,6 +518,10 @@ class Experiment(object):
     @property
     def screen(self):
         return self._screen
+
+    @property
+    def platform(self):
+        return self._platform
 
     @property
     def subject(self):

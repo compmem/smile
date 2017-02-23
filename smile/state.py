@@ -2143,6 +2143,8 @@ class Log(AutoFinalizeState):
                                   save_log=False)
         self._init_log_dict = log_dict
         self._init_log_items = kwargs
+        self.__log_filename = None
+        self.__log_writer = None
 
     def begin_log(self):
         """Set up per-class AND per-instance logs.
@@ -2156,7 +2158,13 @@ class Log(AutoFinalizeState):
                 self._instantiation_lineno)
         else:
             title = "log_%s" % self._name
+
+        if self.__log_filename is not None:
+            os.remove(self.__log_filename)
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
+
+        if self.__log_writer is not None:
+            self.__log_writer.close()
         self.__log_writer = LogWriter(self.__log_filename)
 
     def end_log(self, to_csv=False):
@@ -2223,7 +2231,7 @@ class _DelayedValueTest(State):
 class Done(AutoFinalizeState):
     """Waits until a state is finished or a ref is evaluated.
 
-    A *Done* state will block the experiment from continuing until a 
+    A *Done* state will block the experiment from continuing until a
     state is finalized. This is mainly only used when the
     timing of something like **disappear_time** needs to be logged.
 
