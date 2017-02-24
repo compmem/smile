@@ -43,7 +43,6 @@ _kivy_clock = kivy.clock.Clock
 FLIP_TIME_MARGIN = 0.002     # increase this if we're missing flips
 IDLE_USLEEP = 250            # USLEEP During idle
 
-
 class _VideoChange(object):
     """Container for a change to the graphics tree."""
     def __init__(self, update_cb, flip_time, flip_time_cb):
@@ -114,6 +113,7 @@ class SmileApp(App):
         # set starting times
         self._last_time = clock.now()
         self._last_kivy_tick = clock.now()
+        self._did_draw = False
 
         # use our idle callback (defined below)
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
@@ -136,6 +136,10 @@ class SmileApp(App):
             print("Estimated Refresh Rate:", 1.0 / self.calc_flip_interval())
             self.exp._root_executor.enter(clock.now() + 0.25)
 
+        self._last_blocking_flip = self.last_flip['time']
+        self._next_flip_time = self._last_blocking_flip + self.flip_interval
+        self._flips_after_blocking_flip = 1.
+
     def _on_resize(self, *pargs):
         # handle the resize
         self.exp._screen._set_width(Window.width)
@@ -149,7 +153,11 @@ class SmileApp(App):
             self.exp._root_executor.enter(clock.now() + 0.25)
 
         # we need a redraw here
-        EventLoop.window.dispatch('on_flip')
+        self.blocking_flip()
+        self._last_blocking_flip = self.last_flip['time']
+        self._next_flip_time = self._last_blocking_flip + self.flip_interval
+        self._flips_after_blocking_flip = 1.
+
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
         if keycode[0] == 27 and "shift" in modifiers:
@@ -234,6 +242,7 @@ class SmileApp(App):
 
     def _idle_callback(self, event_loop):
         # record the time range
+
         self._new_time = clock.now()
         time_err = (self._new_time - self._last_time) / 2.0
         self.event_time = event_time(self._last_time + time_err, time_err)
@@ -245,70 +254,49 @@ class SmileApp(App):
         ready_for_video = ((self._new_time - self.last_flip["time"]) >=
                            (self.flip_interval - FLIP_TIME_MARGIN))
 
-        # see if the kivy clock needs a tick
-        # throttled by flip interval
-        ready_for_kivy_tick = ready_for_video and (self._new_time -
-                                                   self._last_kivy_tick >=
-                                                   self.flip_interval)
-
         # prepare for every video to be drawn on the next flip
-        need_draw = False
         for video in self.video_queue:
-            if (not video.drawn and
-                ((self.pending_flip_time is None and
-                  self._new_time >= (video.flip_time -
-                                     (self.flip_interval / 2.0))) or
-                 video.flip_time == self.pending_flip_time)):
-                # prepare that video change
-                video.update_cb()
-                need_draw = True
-                video.drawn = True
 
-                # save the pending time so all other changes
-                # for that time will also run
-                self.pending_flip_time = video.flip_time
+            if ((video.flip_time - self._next_flip_time < 0.0)):
+
+                if (not video.drawn and
+                    ((self.pending_flip_time is None and
+                      self._new_time >= (video.flip_time -
+                                         (self.flip_interval / 2.0))) or
+                    video.flip_time == self.pending_flip_time)):
+                    # prepare that video change
+                    video.update_cb()
+                    video.drawn = True
+
+                    # save the pending time so all other changes
+                    # for that time will also run
+                    self.pending_flip_time = video.flip_time
+                else:
+                    # either none are ready or the remaining are
+                    # for a subsequent flip
+                    break
+
             else:
-                # either none are ready or the remaining are
-                # for a subsequent flip
                 break
-
-        # do a kivy tick if we're going to be drawing or enough time
-        # has passed (see above)
-        # but only tick and draw once before a flip
-        do_kivy_tick = ready_for_kivy_tick or need_draw
-        if do_kivy_tick:
-            # tick the kivy clock
-            _kivy_clock.tick()
-            self._last_kivy_tick = self._new_time
 
         # dispatch input events
         event_loop.dispatch_input()
 
-        # process the builder and check for kivy draws
-        if do_kivy_tick:
+        # handle video and flips
+        if ready_for_video:
+            # tick the kivy clock
+            _kivy_clock.tick()
+            self._last_kivy_tick = self._new_time
+            # sync Builder and call tick_draw to prepare to draw
             Builder.sync()
             _kivy_clock.tick_draw()
             Builder.sync()
-            kivy_needs_draw = EventLoop.window.canvas.needs_redraw or need_draw
-            # print (_kivy_clock.get_fps(),
-            # _kivy_clock.get_rfps(), self._new_time)
-        else:
-            kivy_needs_draw = False
-
-        # dispatch draw if necessary
-        if kivy_needs_draw:
             EventLoop.window.dispatch('on_draw')
 
-        # handle video and flips
-        if ready_for_video:
             # we need flip if kivy needs one
-            need_flip = kivy_needs_draw and self.pending_flip_time is None
             flip_time_callbacks = []
             for video in self.video_queue:
                 if video.drawn and video.flip_time == self.pending_flip_time:
-                    # a smile video change is ready, so we need flip
-                    need_flip = True
-
                     # append the flip time callback
                     if video.flip_time_cb is not None:
                         flip_time_callbacks.append(video.flip_time_cb)
@@ -323,35 +311,43 @@ class SmileApp(App):
             while len(self.video_queue) and self.video_queue[0].flipped:
                 del self.video_queue[0]
 
-            # do flip if necessary
-            if need_flip:
-                # test if blocking or non-blocking flip
-                # do a blocking if:
-                # 1) Forcing a blocking flip_interval
-                #   OR
-                # 2) We have a specific flip callback request and we
-                #      are not forcing a non-blocking flip
-                if self.force_blocking_flip or \
-                   (len(flip_time_callbacks) and
-                    not self.force_nonblocking_flip):
-                    # print "BLOCKING FLIP!"
-                    self.blocking_flip()
-                else:
-                    # non-blocking flip
-                    # print "FLIP!"
-                    EventLoop.window.dispatch('on_flip')
-                    self.last_flip = event_time(clock.now(), 0.0)
+            # test if blocking or non-blocking flip
+            # do a blocking if:
+            # 1) Forcing a blocking flip_interval
+            #   OR
+            # 2) We have a specific flip callback request and we
+            #      are not forcing a non-blocking flip
+            if self.force_blocking_flip or \
+               (len(flip_time_callbacks) and
+                not self.force_nonblocking_flip):
+                self.blocking_flip()
 
-                # still may need to update flip_time_callbacks
-                # even though they may be wrong for non-blocking flips
-                for cb in flip_time_callbacks:
-                    cb(self.last_flip)
+                ## Setup the new next_flip_time
+                self._last_blocking_flip = self.last_flip['time']
+                self._flips_after_blocking_flip = 1.
+                self._next_flip_time = (self._last_blocking_flip
+                                      + self.flip_interval)
 
-                # tell refs that last_flip updated
-                self.exp._screen._set_last_flip(self.last_flip)
+            else:
+                EventLoop.window.dispatch('on_flip')
+                ## increment the new next_flip_time by one flip_interval
+                temp_time = clock.now()
+                self.last_flip = event_time(self._next_flip_time, 0.0)
+                self._flips_after_blocking_flip += 1
+                self._next_flip_time = (self._last_blocking_flip +
+                    self._flips_after_blocking_flip*self.flip_interval)
 
-                # no longer pending flip
-                self.pending_flip_time = None
+
+            # still may need to update flip_time_callbacks
+            # even though they may be wrong for non-blocking flips
+            for cb in flip_time_callbacks:
+                cb(self.last_flip)
+
+            # tell refs that last_flip updated
+            self.exp._screen._set_last_flip(self.last_flip)
+
+            # reset for next flip
+            self.pending_flip_time = None
 
         # save the time
         self._last_time = self._new_time
@@ -382,7 +378,7 @@ class SmileApp(App):
         self.last_flip = event_time(clock.now(), 0.0)
         return self.last_flip
 
-    def calc_flip_interval(self, nflips=55, nignore=5):
+    def calc_flip_interval(self, nflips=100, nignore=5):
         diffs = 0.0
         last_time = 0.0
         count = 0.0
@@ -477,8 +473,9 @@ class SmileApp(App):
         # if exp and isinstance(Experiment, exp):
         #     return exp
         # else:
-        #     raise ValueError("The provided file does not have an Experiment instance.")
-        
+        #     raise ValueError("The provided file does not
+        #     have an Experiment instance.")
+
         return m.exp
         #return m['exp']
 
