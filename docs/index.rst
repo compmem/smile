@@ -80,11 +80,16 @@ experiments.
    seeking_help
    smile
 
+Funding Sources
+===============
 
-Indices and tables
-==================
+Development of SMILE made possible by grants from:
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. image:: _static/ccbs.jpg
+    :width: 150
+    :height: 150
+    :align: left
+    :target: https://cog.osu.edu
+
+
 

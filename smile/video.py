@@ -539,7 +539,7 @@ class WidgetState(VisualState):
         self.__parent_widget = None
         self._constructor_param_names = params.keys()
         self._init_constructor_params = params
-        for name, value in params.iteritems():
+        for name, value in params.items():
             setattr(self, "_init_" + name, value)
         if layout is None:
             if len(WidgetState.layout_stack):
@@ -627,7 +627,7 @@ class WidgetState(VisualState):
         return new_params
 
     def transform_params(self, params):
-        for name, value in params.iteritems():
+        for name, value in params.items():
             params[name] = self.transform_param(name, value)
         return params
 
@@ -721,17 +721,17 @@ class WidgetState(VisualState):
                      y_pos_props.keys())
         new_x_pos_mode = None
         new_y_pos_mode = None
-        for prop, mode in xy_pos_props.iteritems():
+        for prop, mode in xy_pos_props.items():
             if prop in params:
                 new_x_pos_mode = mode
                 new_y_pos_mode = mode
                 break
         else:
-            for prop, mode in x_pos_props.iteritems():
+            for prop, mode in x_pos_props.items():
                 if prop in params:
                     new_x_pos_mode = mode
                     break
-            for prop, mode in y_pos_props.iteritems():
+            for prop, mode in y_pos_props.items():
                 if prop in params:
                     new_y_pos_mode = mode
                     break
@@ -756,10 +756,10 @@ class WidgetState(VisualState):
             params["center_y"] = self._widget.center_y
         elif self.__y_pos_mode == "max":
             params["top"] = self._widget.top
-        for name, value in params.iteritems():
+        for name, value in params.items():
             if name not in pos_props:
                 setattr(self._widget, name, value)
-        for name, value in params.iteritems():
+        for name, value in params.items():
             if name in pos_props:
                 setattr(self._widget, name, value)
 
@@ -1028,7 +1028,7 @@ class UpdateWidget(VisualState):
 
     def save_log(self):
         class_name = type(self).__name__
-        for name, value in self._values.iteritems():
+        for name, value in self._values.items():
             field_values = {
                 "instantiation_filename": self._instantiation_filename,
                 "instantiation_lineno": self._instantiation_lineno,
@@ -1146,7 +1146,7 @@ class Animate(State):
             # because get_attribute_ref looks up the target clone
             self.__initial_params = {
                 name: self.__target.get_attribute_ref(name).eval() for
-                name in self.__anim_params.iterkeys()}
+                name in self.__anim_params.keys()}
 
             # we can leave now that we have initial params
             clock.schedule(self.leave)
@@ -1158,7 +1158,7 @@ class Animate(State):
         t = now - self._start_time
         params = {name: func(t, self.__initial_params[name]) for
                   name, func in
-                  self.__anim_params.iteritems()}
+                  self.__anim_params.items()}
         self.__target_clone.live_change(
             **self.__target_clone.transform_params(
                 self.__target_clone.apply_aliases(params)))
@@ -3161,7 +3161,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
                 for i in range(10):
                     if self._widget._video.duration == -1:
                         break
-                    print 'd',
+                    print('d')
                     clock.usleep(100)
 
             self._end_time = self._start_time + self._widget._video.duration
@@ -3183,7 +3183,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
                 for i in range(10):
                     if self._widget._video.texture:
                         break
-                    print 't',
+                    print('t')
                     clock.usleep(100)
                     self._widget._video._update(0)
             self.live_change(size=self._widget._video.texture.size)
@@ -3536,6 +3536,12 @@ class ButtonPress(CallbackState):
         if not len(pressed_list):
             return
         button = pressed_list[0]
+
+        # make sure not a disabled button
+        if self.__buttons[self._button_names.index(button)].disabled.eval():
+            return
+
+        # process the button
         self._pressed = button
         self._press_time = self._exp._app.event_time
 

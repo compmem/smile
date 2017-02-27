@@ -7,11 +7,14 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-
-import cPickle
 import gzip
 import csv
 import os
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 class LogWriter(object):
     """An object that handles the writing of .slog files.
@@ -30,7 +33,7 @@ class LogWriter(object):
 
     def __init__(self, filename):
         self._file = gzip.open(filename, "wb")
-        self._pickler = cPickle.Pickler(self._file, -1)
+        self._pickler = pickle.Pickler(self._file, -1)
 
     def write_record(self, data):
         """Call this funciton to write a single row to the .slog file.
@@ -77,7 +80,7 @@ class LogReader(object):
         self._append_columns = append_columns
 
         # set up the unpickler
-        self._unpickler = cPickle.Unpickler(self._file)
+        self._unpickler = pickle.Unpickler(self._file)
 
     def read_record(self):
         """Returns a dicitionary with the field names as keys.
@@ -269,7 +272,7 @@ def log2csv(log_filename, csv_filename=None, **append_columns):
                 record = dict((k, v.encode('utf-8')
                                if isinstance(v, unicode)
                                else v)
-                              for k, v in record.iteritems())
+                              for k, v in record.items())
 
                 # write it out
                 dw.writerow(record)
