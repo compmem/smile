@@ -10,7 +10,7 @@
 import sys
 from state import Wait, State, Loop, Done, Log, Subroutine
 from clock import clock
-from experiment import event_time
+from event import event_time
 from ref import NotAvailable
 
 # Interface Class for Docstrings

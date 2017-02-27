@@ -24,13 +24,9 @@ from state import Serial, AutoFinalizeState
 from ref import Ref
 from clock import clock
 from log import LogWriter, log2csv
-
+from event import event_time
 
 _kivy_clock = kivy.clock.Clock
-
-
-def event_time(time, time_error=0.0):  # TODO: make this a class!
-    return {'time': time, 'error': time_error}
 
 
 class Screen(object):

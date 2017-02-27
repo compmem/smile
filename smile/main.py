@@ -32,7 +32,7 @@ from kivy.utils import platform
 import kivy.clock
 
 # local imports
-from experiment import event_time
+from event import event_time
 from clock import clock
 from video import normalize_color_spec
 
