@@ -3536,6 +3536,12 @@ class ButtonPress(CallbackState):
         if not len(pressed_list):
             return
         button = pressed_list[0]
+
+        # make sure not a disabled button
+        if self.__buttons[self._button_names.index(button)].disabled.eval():
+            return
+
+        # process the button
         self._pressed = button
         self._press_time = self._exp._app.event_time
 
