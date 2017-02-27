@@ -85,32 +85,42 @@ class Grating(Widget):
                   contrast=self._update_texture)
         self._update_texture()
 
-    def _calc_mask(self, rx, ry):
+    def _calc_gaussian_mask(self, rx, ry):
         '''Performs the calculation for the mask either Gaussian, linear, or circular.
-        The function creates the bottom left quadrant of the mask, then mirrors and
-        repeats the texture 3 times in the top left, top right, and bottom left quadrants'''
-
+        The function creates the bottom left quadrant of the mask, then mirrors
+        and repeats the texture 3 times in the top left, top right, and bottom
+        left quadrants'''
         dx = rx - (self.width / 2.)   # horizontal center of Grating
         dy = ry - (self.height / 2.)  # vertical center of Grating
         radius = math.sqrt(dx ** 2 + dy ** 2)
         # Gaussian Gabor stimuli calculations
-        if self.envelope[0].lower() == 'g':
-            transparency = math.exp(-0.5 * (dy / (self.std_dev * 3)) ** 2 - 0.5 *
-                                    (dx / (self.std_dev * 3)) ** 2)
-        # Linear Gabor stimuli calculations
-        elif self.envelope[0].lower() == 'l':
-            transparency = max(0, (0.5 * self.width - radius) / (0.5 * self.width))
-        # Circular Gabor stimuli calculations
-        elif self.envelope[0].lower() == 'c':
-            if (radius > 0.5 * self.width):
-                transparency = 0.0
-            else:
-                transparency = 1.0
+        transparency = math.exp(-0.5 * (dy / (self.std_dev * 3)) ** 2 - 0.5 *
+                                (dx / (self.std_dev * 3)) ** 2)
+        return 0, 0, 0, int((1 - transparency) * 255)  # 0 is no alpha
+
+    def _calc_linear_mask(self, rx, ry):
+        dx = rx - (self.width / 2.)   # horizontal center of Grating
+        dy = ry - (self.height / 2.)  # vertical center of Grating
+        radius = math.sqrt(dx ** 2 + dy ** 2)
+
+        transparency =\
+            max(0, (0.5 * self.width - radius) / (0.5 * self.width))
+        return 0, 0, 0, int((1 - transparency)*255)  # 0 is no alpha
+
+    def _calc_circular_mask(self, rx, ry):
+        dx = rx - (self.width / 2.)   # horizontal center of Grating
+        dy = ry - (self.height / 2.)  # vertical center of Grating
+        radius = math.sqrt(dx ** 2 + dy ** 2)
+        if (radius > 0.5 * self.width):
+            transparency = 0.0
         else:
             transparency = 1.0
-        transparency = 1.0 - transparency
+        return 0, 0, 0, int((1 - transparency)*255)  # 0 is no alpha
+
+    def _calc_undefined_mask(self, rx, ry):
+        transparency = 1.0
         # Return
-        return 0, 0, 0, transparency
+        return 0, 0, 0, int((1 - transparency)*255)  # 0 is no alpha
 
     def _calc_color(self, x):
         '''Performs the calculation for the grating behind the mask
@@ -124,9 +134,9 @@ class Grating(Widget):
                                       self.frequency + self.phase))) +
                (1.0 - self.contrast) / 2)
         # RGB color return
-        return [(self.color_one[0] * amp + self.color_two[0] * (1.0 - amp)),
-                (self.color_one[1] * amp + self.color_two[1] * (1.0 - amp)),
-                (self.color_one[2] * amp + self.color_two[2] * (1.0 - amp))]
+        return (int((self.color_one[0] * amp + self.color_two[0] * (1.0 - amp))*255),
+            int((self.color_one[1] * amp + self.color_two[1] * (1.0 - amp))*255),
+            int((self.color_one[2] * amp + self.color_two[2] * (1.0 - amp))*255))
 
     def _update_texture(self, *pargs):
         '''Updates textures by calling update functions'''
@@ -185,17 +195,17 @@ class Grating(Widget):
         # make new texture
         self._texture = Texture.create(size=(self._period, 1),
                                        colorfmt='rgb',
-                                       bufferfmt='float')
+                                       bufferfmt='ubyte')
 
         # fill the buffer for the texture
         grating_buf = list(chain.from_iterable([self._calc_color(x)
                                                 for x in range(self._period)]))
         # make an array from the buffer
-        grating_arr = array('f', grating_buf)
+        grating_arr = b''.join(map(chr, grating_buf))
 
         # blit the array to the texture
         self._texture.blit_buffer(grating_arr, colorfmt='rgb',
-                                  bufferfmt='float')
+                                  bufferfmt='ubyte')
 
         # set it to repeat
         self._texture.wrap = 'repeat'
@@ -209,7 +219,7 @@ class Grating(Widget):
         # creation of texture, half the width and height, will be reflected to
         # completely cover the grating texture
         self._mask_texture = Texture.create(size=(self.width / 2, self.height / 2),
-                                            colorfmt='rgba')
+                                            colorfmt='rgba', bufferfmt='ubyte')
 
         # generate a unique mask id for cache lookup
         mask_id = 'e%s_w%d_h%d' % (self.envelope[0].lower(),
@@ -221,18 +231,39 @@ class Grating(Widget):
             mask_arr = _mask_cache[mask_id]
         except KeyError:
             # set mask (this is the slow part)
-            mask_buf = list(chain.from_iterable([self._calc_mask(rx, ry)
-                                                 for rx in range(self.width / 2)
-                                                 for ry in range(self.height / 2)]))
+            if self.envelope[0].lower() == 'g':
+                mask_buf =\
+                    list(chain.from_iterable([
+                        self._calc_gaussian_mask(rx, ry)
+                        for rx in range(self.width / 2)
+                        for ry in range(self.height / 2)]))
+            elif self.envelope[0].lower() == 'l':
+                mask_buf =\
+                    list(chain.from_iterable([
+                        self._calc_linear_mask(rx, ry)
+                        for rx in range(self.width / 2)
+                        for ry in range(self.height / 2)]))
+            elif self.envelope[0].lower() == 'c':
+                mask_buf =\
+                    list(chain.from_iterable([
+                        self._calc_circular_mask(rx, ry)
+                        for rx in range(self.width / 2)
+                        for ry in range(self.height / 2)]))
+            else:
+                mask_buf =\
+                    list(chain.from_iterable([
+                        self._calc_undefined_mask(rx, ry)
+                        for rx in range(self.width / 2)
+                        for ry in range(self.height / 2)]))
             # turn into an array
-            mask_arr = array('f', mask_buf)
-
+            mask_arr = b''.join(map(chr, mask_buf))
+            # print mask_arr
             # add it to the cache
             _mask_cache[mask_id] = mask_arr
 
         # blit it
         self._mask_texture.blit_buffer(mask_arr, colorfmt='rgba',
-                                       bufferfmt='float')
+                                       bufferfmt='ubyte')
         #mask is mirrored and repeated
         self._mask_texture.wrap = 'mirrored_repeat'
         # mask is set to foremost texture
@@ -292,7 +323,7 @@ if __name__ == '__main__':
 
     with Parallel():
         g = Grating(width=1000, height=1000, frequency=10, envelope='Gaussian',
-                    std_dev=10, contrast=0.4,
+                    std_dev=20, contrast=0.4,
                     color_one='blue', color_two='red')
         lbl = Label(text='Grating!', bottom=g.top)
     with UntilDone():
