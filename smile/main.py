@@ -128,9 +128,9 @@ class SmileApp(App):
     def _on_start(self, *pargs):
         # print "on_start"
         # self.exp._root_state.enter(clock.now() + 1.0)
-        self.do_flip(block=True)
+        print("Estimated Refresh Rate:", 1.0 / self.get_flip_interval())
 
-        print("Estimated Refresh Rate:", 1.0 / self.calc_flip_interval())
+        self.do_flip(block=True)
 
         # start the state machine
         self.exp._root_executor.enter(clock.now() + 0.25)
@@ -378,11 +378,13 @@ class SmileApp(App):
 
         return self.last_flip
 
-    def calc_flip_interval(self, nflips=100, nignore=20):
+    def get_flip_interval(self):
         # hard code to 60 Hz for now
-        if True:
-            self.flip_interval = 1/60.
-            return self.flip_interval
+        kconfig = self.exp._get_config()
+        self.flip_interval = 1./kconfig['frame_rate']
+        return self.flip_interval
+
+        """    OLD WAY
         diffs = 0.0
         last_time = 0.0
         count = 0.0
@@ -400,6 +402,7 @@ class SmileApp(App):
         # take the mean and return
         self.flip_interval = diffs / count
         return self.flip_interval
+        """
 
     def schedule_video(self, update_cb, flip_time=None, flip_time_cb=None):
         # TODO: Remove None options where possible
