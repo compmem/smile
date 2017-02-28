@@ -110,7 +110,7 @@ class Grating(Widget):
         transparency =\
             max(0, (0.5 * self.width - radius) / (0.5 * self.width))
 
-        return 0, 0, 0, int(round((1 - transparency) * 255))  # 0 is no alpha
+        return 0, 0, 0, int(round((1 - transparency)*255))  # 0 is no alpha
 
     def _calc_circular_mask(self, rx, ry):
         dx = rx - (self.width / 2.)   # horizontal center of Grating
@@ -120,12 +120,12 @@ class Grating(Widget):
             transparency = 0.0
         else:
             transparency = 1.0
-        return 0, 0, 0, int(round((1 - transparency) * 255))  # 0 is no alpha
+        return 0, 0, 0, int(round((1 - transparency)*255))  # 0 is no alpha
 
     def _calc_undefined_mask(self, rx, ry):
         transparency = 1.0
         # Return
-        return 0, 0, 0, int(round((1 - transparency) * 255))  # 0 is no alpha
+        return 0, 0, 0, int(round((1 - transparency)*255))  # 0 is no alpha
 
     def _calc_color(self, x):
         '''Performs the calculation for the grating behind the mask
@@ -335,7 +335,7 @@ if __name__ == '__main__':
 
     with Parallel():
         g = Grating(width=256, height=256, frequency=20,
-                    envelope='Gaussian', std_dev=7.5,
+                    envelope='Circular', std_dev=7.5,
                     contrast=0.75,
                     color_one='green', color_two='orange')
         lbl = Label(text='Grating!', bottom=g.top)
@@ -351,7 +351,7 @@ if __name__ == '__main__':
                 lbl.slide(top=g.bottom, duration=4.)
 
     with Parallel():
-        g = Grating(width=1000, height=1000, frequency=10, envelope='Gaussian',
+        g = Grating(width=1000, height=1000, frequency=10, envelope='Linear',
                     std_dev=20, contrast=0.4,
                     color_one='blue', color_two='red')
         lbl = Label(text='Grating!', bottom=g.top)
