@@ -9,7 +9,7 @@
 
 # import main modules
 import os
-import sys
+
 import weakref
 import time
 import threading
