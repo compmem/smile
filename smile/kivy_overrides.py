@@ -109,7 +109,7 @@ def _get_config():
     frame_rate = float(Config.getdefault("SMILE", "FRAMERATE", 60.))
     locked = Config.getdefaultint("SMILE", "LOCKEDSUBJID", 0)
     font_name = Config.getdefault("SMILE", "FONTNAME", "Roboto")
-    font_size = float(Config.getdefaultint("SMILE","FONTSIZE", 45))
+    font_size = float(Config.getdefault("SMILE","FONTSIZE", 45.))
     fullscreen = Config.getdefault("SMILE", "FULLSCREEN", "auto")
     if platform == "android" or platform == "ios":
         data_dir = Config.getdefault("SMILE", "DEFAULT_DATA_DIR",
