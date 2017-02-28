@@ -9,6 +9,7 @@
 
 # import main modules
 import os
+
 import weakref
 import time
 import threading
@@ -17,6 +18,7 @@ import threading
 import kivy_overrides
 import kivy
 import kivy.base
+from kivy.utils import platform
 import kivy.clock
 
 # local imports
@@ -285,6 +287,9 @@ class Experiment(object):
     """
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
                  name="Smile"):
+
+        self._platform = platform
+        self._name = name
         self._process_args()
 
         # handle fullscreen and resolution before Window is imported
@@ -316,6 +321,26 @@ class Experiment(object):
         self._reserved_data_filenames = set(os.listdir(self._subj_dir))
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
+
+    def _change_smile_subj(self, subj_id):
+        kconfig = kivy_overrides._get_config()
+
+        for filename, logger in self._state_loggers.itervalues():
+            logger.close()
+            os.remove(filename)
+
+        self._subj = subj_id
+
+        self._subj_dir = os.path.join(kconfig['default_data_dir'], "data",
+                                      self._name, subj_id)
+
+        if not os.path.isdir(self._subj_dir):
+            os.makedirs(self._subj_dir)
+
+        self._reserved_data_filenames = set(os.listdir(self._subj_dir))
+        self._reserved_data_filenames_lock = threading.Lock()
+        self._state_loggers = {}
+        self._root_state.begin_log()
 
     def get_var_ref(self, name):
         try:
@@ -364,11 +389,16 @@ class Experiment(object):
 
     def _process_args(self):
         # get args from kivy_overrides
+        # and config variables from kivy
         args = kivy_overrides.args
+        kconfig = kivy_overrides._get_config()
 
         # set up the subject and subj dir
         self._subj = args.subject
-        self._subj_dir = os.path.join('data', self._subj)
+
+        self._subj_dir = os.path.join(kconfig['default_data_dir'], "data",
+                                      self._name, self._subj)
+
         if not os.path.exists(self._subj_dir):
             os.makedirs(self._subj_dir)
 
@@ -445,6 +475,10 @@ class Experiment(object):
     @property
     def screen(self):
         return self._screen
+
+    @property
+    def platform(self):
+        return self._platform
 
     @property
     def subject(self):

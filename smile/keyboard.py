@@ -7,7 +7,7 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-import os.path
+import os.path, os
 
 from state import CallbackState
 from ref import val, NotAvailable
@@ -236,7 +236,8 @@ class KeyRecord(KeyState):
         super(KeyState, self).__init__(parent=parent, duration=duration,
                                        save_log=False, name=name,
                                        blocking=blocking)
-
+        self.__log_filename = None
+        self.__log_writer = None
     def begin_log(self):
         super(KeyRecord, self).begin_log()
         title = "keyrec_%s_%d_%s" % (
@@ -244,7 +245,13 @@ class KeyRecord(KeyState):
                 os.path.basename(self._instantiation_filename))[0],
             self._instantiation_lineno,
             self._name)
+
+        if self.__log_filename is not None:
+            os.remove(self.__log_filename)
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
+
+        if self.__log_writer is not None:
+            self.__log_writer.close()
         self.__log_writer = LogWriter(self.__log_filename)
 
     def end_log(self, to_csv=False):
@@ -306,4 +313,3 @@ if __name__ == '__main__':
         Wait(1.0)
 
     exp.run()
-
