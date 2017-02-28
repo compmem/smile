@@ -13,7 +13,7 @@ from types import GeneratorType
 import copy
 import inspect
 import weakref
-import os.path
+import os.path, os
 
 import kivy_overrides
 import ref
@@ -1981,6 +1981,8 @@ class Record(State):
 
         self.__refs = kwargs
         self.__triggers = triggers
+        self.__log_filename = None
+        self.__log_writer = None
 
     def begin_log(self):
         """Set up per-class AND per-instance logs.
@@ -1993,7 +1995,13 @@ class Record(State):
                 self._instantiation_lineno)
         else:
             title = "record_%s" % self._name
+
+        if self.__log_filename is not None:
+            os.remove(self.__log_filename)
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
+
+        if self.__log_writer is not None:
+            self.__log_writer.close()
         self.__log_writer = LogWriter(self.__log_filename)
 
     def end_log(self, to_csv=False):

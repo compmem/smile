@@ -128,8 +128,7 @@ class SmileApp(App):
     def _on_start(self, *pargs):
         # print "on_start"
         # self.exp._root_state.enter(clock.now() + 1.0)
-        print("Estimated Refresh Rate:", 1.0 / self.get_flip_interval())
-
+        self.get_flip_interval()
         self.do_flip(block=True)
 
         # start the state machine
@@ -144,7 +143,6 @@ class SmileApp(App):
         if platform in ('macosx',) and Window.fullscreen and \
            not self.exp._root_executor._enter_time and \
            not self.exp._root_executor._active:
-            print("Estimated Refresh Rate:", self._flip_interval)
             self.exp._root_executor.enter(clock.now() + 0.25)
 
         # we need a redraw here
@@ -380,7 +378,7 @@ class SmileApp(App):
 
     def get_flip_interval(self):
         # hard code to 60 Hz for now
-        kconfig = self.exp._get_config()
+        kconfig = kivy_overrides._get_config()
         self.flip_interval = 1./kconfig['frame_rate']
         return self.flip_interval
 

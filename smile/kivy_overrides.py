@@ -102,3 +102,43 @@ class SmileEventLoop(kivy.base.EventLoopBase):
         return self.quit
 
 kivy.base.EventLoop = SmileEventLoop()
+
+Config.adddefaultsection("SMILE")
+
+def _get_config():
+    frame_rate = float(Config.getdefault("SMILE", "FRAMERATE", 60.))
+    locked = Config.getdefaultint("SMILE", "LOCKEDSUBJID", 0)
+    font_name = Config.getdefault("SMILE", "FONTNAME", "Roboto")
+    font_size = Config.getdefaultint("SMILE","FONTSIZE", 45)
+    fullscreen = Config.getdefaultint("SMILE", "FULLSCREEN", "auto")
+    if platform == "android" or platform == "ios":
+        data_dir = Config.getdefault("SMILE", "DEFAULT_DATA_DIR",
+                                     "/sdcard/SMILE/")
+    else:
+        data_dir = Config.getdefault("SMILE", "DEFAULT_DATA_DIR", ".")
+
+    return_dict = {"fullscreen":fullscreen, "locked":locked,
+                   "font_size":font_size, "font_name":font_name,
+                   "frame_rate":frame_rate, "default_data_dir":data_dir}
+
+    return return_dict
+
+    def _set_config(fullscreen=None,
+                    locked=None,
+                    framerate=None,
+                    fontname=None,
+                    fontsize=None,
+                    data_dir=None):
+        if fullscreen is not None:
+            Config.set("SMILE","FULLSCREEN", fullscreen)
+        if locked is not None:
+            Config.set("SMILE","LOCKEDSUBJID", locked)
+        if framerate is not None:
+            Config.set("SMILE","FRAMERATE", float(framerate))
+        if fontname is not None:
+            Config.set("SMILE","FONTNAME", fontname)
+        if fontsize is not None:
+            Config.set("SMILE","FONTSIZE", fontsize)
+        if data_dir is not None:
+            Config.set("SMILE","DEFAULT_DATA_DIR", data_dir)
+        Config.write()
