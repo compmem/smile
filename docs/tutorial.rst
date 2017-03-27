@@ -26,6 +26,40 @@ help you find the information you are looking for.
 
     - :ref:`Step 6: If, Elif, Else, and Conditional Refs<conditional_refs>`_
 
+Running a SMILE Experiment
+==========================
+
+After installing SMILE, there is only one thing needed to run a SMILE
+experiment, and that is a fully coded experiment file. SMILE uses python to run
+its experiments, so to run SMILE you must run the *.py* file with python.
+
+If you followed our instructions for installing SMILE, Linux and Windows users
+would use the following line in a command prompt to run their SMILE experiments:
+
+::
+
+    >> python filename.py -s SubjectID
+
+If you are an OSX user, you just replace the **python** in the previous line
+with **kivy**:
+
+::
+
+    $ kivy filename.py -s SubjectID
+
+Notice the *-s* in the commands above. This is a command line argument for
+SMILE. SMILE has 3 command line arguments.
+
+    - *-s* : Subject ID, whatever identifier you would like to use for a particular run of the experiment. The next argument passed *-s* will be the subject ID for the purposes of where to save data on your system.
+
+    - *-f* : Fullscreen, if *-f* is present in the command line, SMILE will run in windowed mode.
+
+    - *-c* : CSV, if -c is present, SMILE will save out all of its *.slog* data files as *.csv* data files as well. **Not Recommended**
+
+Before you learn how to code SMILE experiments, it is important to understand
+a few things about how SMILE works. The next section goes over how SMILE
+first *builds* then *runs* experiments.
+
 The Experiment Break-Down
 =========================
 
@@ -123,7 +157,7 @@ Now that we know more about positioning, lets put more things on the screen!
 Step 3: Timing, in Parallel and in Serial!
 ++++++++++++++++++++++++++++++++++++++++++
 
-.. code-block: python
+.. code-block:: python
 
     from smile.common import *
 
@@ -203,7 +237,7 @@ input.
 Step 4: User Input, UntilDone, and Meanwhile
 ++++++++++++++++++++++++++++++++++++++++++++
 
-.. code-block: python
+.. code-block:: python
 
     from smile.common import *
 
@@ -264,13 +298,13 @@ the screen. In order to do this right, we need to use one of our Flow States
 called the :py:class:'~smile.state.Meanwhile' state. A Meanwhile is a Parent
 state that will run its children serially(one after the other) in parallel with
 the previous state, and cancel its children when the previous state has ended.
-Earlier in the experiment we made use of the UntilDone state when creating an
-instructions screen. An UntilDone is a Parent state that will run its children
-serially(one after the other) in parallel with the previous state, just like
-the Meanwhile, but once its children are done running it will cancel the
-previous state(the opposite of the Meanwhile). Both states will be useful in
-different situations but it takes some time to master when each one is the most
-useful.
+Earlier in the experiment we made use of the :py:class:`~smile.state.UntilDone`
+state when creating an instructions screen. An UntilDone is a Parent state that
+will run its children serially(one after the other) in parallel with the
+previous state, just like the Meanwhile, but once its children are done running
+it will cancel the previous state(the opposite of the Meanwhile). Both states
+will be useful in different situations but it takes some time to master when
+each one is the most useful.
 
 .. note::
 
@@ -295,7 +329,7 @@ our next SMILE flow state, the Loop State.
 Step 5: Looping, References, and Animation
 ++++++++++++++++++++++++++++++++++++++++++
 
-.. code-block: python
+.. code-block:: python
 
     from smile.common import *
     import random
@@ -400,11 +434,13 @@ the conditional Refs, *Ref.cond*.
 Step 6: If, Elif, Else, and Conditional Refs
 ++++++++++++++++++++++++++++++++++++++++++++
 
-.. code-block: python
+.. code-block:: python
 
     from smile.common import *
     import random
-    # Now we are creating a
+    # Now we are creating a list of dictionaries that has all of our conditions
+    # in it. The *prime_* keys are associated with the new conditional that
+    # we are adding to our experiment.
     block = [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'left','prime_color':'RED'}]*10 + \
             [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'left','prime_color':'GREEN'}]*10 + \
             [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'right','prime_color':'RED'}]*10 + \
@@ -420,7 +456,8 @@ Step 6: If, Elif, Else, and Conditional Refs
     PRIME_ISI = .2
     # Stimulus duration
     STIM_DUR = 2.
-
+    INTER_TRIAL_INTERVAL=1.
+    INTER_TRIAL_JITTER=.5
     random.shuffle(block)
 
     exp = Experiment()
@@ -443,55 +480,252 @@ Step 6: If, Elif, Else, and Conditional Refs
                                       true_value=exp.screen.width/4.,
                                       false_value=exp.screen.width*3./4.)
 
-        Ellipse(center_x=exp.prime_center_x, color=trial.current['prime_color'],
-                duration=PRIME_DUR)
+        # Setup the Priming Ellipse that will be shown before our actual trial
+        # using both the ref we defined about and the 'prime_color' key from
+        # our dictionary.
+        prime_ell = Ellipse(center_x=exp.prime_center_x,
+                            color=trial.current['prime_color'],
+                            duration=PRIME_DUR)
 
         Wait(PRIME_ISI)
 
         With Parallel():
-            Rectangle(center_x=exp.screen.width/4.,center_y=exp.screen.height/2.,
-                     color=trial.current['left_color'], duration=STIM_DUR)
-            Rectangle(center_x=exp.screen.width*3./4.,center_y=exp.screen.height/2.,
-                     color=trial.current['right_color'], duration=STIM_DUR)
+            Rectangle(center_x=exp.screen.width/4.,
+                             center_y=exp.screen.height/2.,
+                             color=trial.current['left_color'],
+                             duration=STIM_DUR)
+            Rectangle(center_x=exp.screen.width*3./4.,
+                             center_y=exp.screen.height/2.,
+                             color=trial.current['right_color'],
+                             duration=STIM_DUR)
         with Meanwhile():
-            kp = KeyPress(keys=['F','J'], correct_resp=trial.current['correct_key'])
+            kp = KeyPress(keys=['F','J'],
+                          correct_resp=trial.current['correct_key'])
+
+
+        # Utilizing the If and Else states, we are able to provide feedback to
+        # our participants. If kp.correct is True, we will show "Correct!" in
+        # Green on the screen, if kp.correct is False, we will show "Incorrect!"
+        # in red.
+        with If(kp.correct):
+            Label(text="CORRECT!", color="GREEN", font_size=35, duration=2.)
+        with Else():
+            Label(text="INCORRECT!", color="RED", font_size=35, duration=2.)
+
+        # Jitter allows you to create random duration waits that will last
+        # duration and duration+jitter seconds.
+        Wait(INTER_TRIAL_INVERVAL, jitter=INTER_TRIAL_JITTER)
 
     exp.run()
 
+Now that we have a good understanding of build time vs run time, we can
+introduce how SMILE handles conditionals. We have special states that allow you
+to run sections of your state machine based on the results of a conditional.
+These states are called the :py:class:`~smile.state.If`,
+:py:class:`~smile.state.Elif`, and :py:class:`~smile.state.Else` states. If the
+conditional that is passed into the *If* state evaluates as true, then the child
+states of that *If* state will run. The same applies to the *Elif* state and its
+ children. If all of the conditionals within the *If* state and the *Elif*
+states evaluate to False, then the children of the *Else* state will run.
 
-Running a SMILE Experiment
-==========================
+Refs also have the ability to be initialized with condtionals. We make use of
+*Ref.cond* to create a ref that has one value if the conditional evaluates to
+True, and another value if it evaluates to False. You can make good use of
+*Ref.cond* if your experiment has many complex variables and conditionals.
 
-After installing SMILE, there is only one thing needed to run a SMILE
-experiment, and that is a fully coded experiment file. SMILE uses python to run
-its experiments, so to run SMILE you must run the *.py* file with python.
+*Loop* states also have a conditional parameter to them. Regardless of the
+other parameters passed into your Loop, if the *conditional* you pass in
+evaluates to False, then the Loop will not start its next iteration. This is
+how you do While loops using SMILE state machines.
 
-If you followed our instructions for installing SMILE, Linux and Windows users
-would use the following line in a command prompt to run their SMILE experiments:
+.. warning::
 
-::
+    If you are constructing conditionals that might contain a Ref object, you must use the '&' or '|' operators instead of using 'and' or 'or'. Refs cannot handle the 'and' and 'or' keywords.
 
-    >> python filename.py -s SubjectID
+Now that you have a basic understanding of how to create an experiment in
+SMILE, it is important that we go over how to *Log* your data properly. We will
+also go over the best practices that are needed to properly time the different
+events in smile.
 
-If you are an OSX user, you just replace the **python** in the previous line
-with **kivy**:
 
-::
+.. _timing_logging
 
-    $ kivy filename.py -s SubjectID
+Step 7: Logging and Good Timing Practices
++++++++++++++++++++++++++++++++++++++++++
 
-Notice the *-s* in the commands above. This is a command line argument for
-SMILE. SMILE has 3 command line arguments.
+.. code-block:: python
 
-    - *-s* : Subject ID, whatever identifier you would like to use for a particular run of the experiment. The next argument passed *-s* will be the subject ID for the purposes of where to save data on your system.
+    from smile.common import *
+    import random
 
-    - *-f* : Fullscreen, if *-f* is present in the command line, SMILE will run in windowed mode.
+    block = [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'left','prime_color':'RED'}]*10 + \
+            [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'left','prime_color':'GREEN'}]*10 + \
+            [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'right','prime_color':'RED'}]*10 + \
+            [{'left_color': 'RED', 'right_color': 'GREEN', 'correct_key':'J', 'prime_side':'right','prime_color':'GREEN'}]*10 + \
+            [{'left_color': 'GREEN', 'right_color': 'RED', 'correct_key':'F', 'prime_side':'left','prime_color':'RED'}]*10 + \
+            [{'left_color': 'GREEN', 'right_color': 'RED', 'correct_key':'F', 'prime_side':'left','prime_color':'GREEN'}]*10 + \
+            [{'left_color': 'GREEN', 'right_color': 'RED', 'correct_key':'F', 'prime_side':'right','prime_color':'RED'}]*10 + \
+            [{'left_color': 'GREEN', 'right_color': 'RED', 'correct_key':'F', 'prime_side':'right','prime_color':'GREEN'}]*10
 
-    - *-c* : CSV, if -c is present, SMILE will save out all of its *.slog* data files as *.csv* data files as well. **Not Recommended**
 
-Before you learn how to code SMILE experiments, it is important to understand
-a few things about how SMILE works. The next section goes over how SMILE
-first *builds* then *runs* experiments.
+    PRIME_DUR = .2
+    PRIME_ISI = .2
+    STIM_DUR = 2.
+    INTER_TRIAL_INTERVAL=1.
+    INTER_TRIAL_JITTER=.5
+
+    random.shuffle(block)
+
+    exp = Experiment()
+
+    Label(Text="Press F if the left rectangle is green and J if the right rectangle is green. The experiment will begin when you press ENTER.",
+          text_size=(500, None), font_size=30, duration=4.)
+    with UntilDone():
+        KeyPress(keys=["ENTER"])
+    Wait(2)
+
+    With Loop(block) as trial:
+
+        exp.prime_center_x = Ref.cond(trial.current['prime_side'] == "LEFT",
+                                      true_value=exp.screen.width/4.,
+                                      false_value=exp.screen.width*3./4.)
+
+        prime_ell = Ellipse(center_x=exp.prime_center_x,
+                            color=trial.current['prime_color'],
+                            duration=PRIME_DUR)
+
+        # Wait(until) will not end *until* prime_ell.disappear_time is not None
+        Wait(until=prime_ell.disappear_time)
+
+        # ResetClock will ensure that the next ensure that the next state, i.e.
+        # Wait, will calculate its end time based upon the
+        # prime_ell.disappear_time, and not its "start time". You want to use
+        # ResetClock right before a state whose timing you need ensured to be
+        # accurate. In this case, we want to make sure that the stimulus
+        # rectangles come on the screen exactly PRIME_ISI seconds after the
+        # priming ellipse.
+        ResetClock(prime_ell.disappear_time['time'])
+        Wait(PRIME_ISI)
+
+        With Parallel():
+            rec1 = Rectangle(center_x=exp.screen.width/4.,
+                             center_y=exp.screen.height/2.,
+                             color=trial.current['left_color'],
+                             duration=STIM_DUR)
+            rec2 = Rectangle(center_x=exp.screen.width*3./4.,
+                             center_y=exp.screen.height/2.,
+                             color=trial.current['right_color'],
+                             duration=STIM_DUR)
+        with Meanwhile():
+            # KeyPress will the *base_time* parameter to calculate the
+            # reaction time (rt) after a key is pressed.
+            #  rt = press_time - base_time
+            kp = KeyPress(keys=['F','J'],
+                          correct_resp=trial.current['correct_key'],
+                          base_time=rec1.appear_time['time'])
+
+        Wait(.2)
+
+        # The first argument is the dictionary *trial.current* which will save
+        # out each key as a different column in our .slog. Our slog file name
+        # will be *log_[name].slog* where *name* is the name parameter of
+        # this state. We log everything that we could possibly need for later
+        # analysis, including the appear and disappear times of important
+        # stimuli and all of the info about each keypress. Each Keyword argument
+        # that goes into the Log state will be turned into a separate column.
+        Log(trial.current,
+            name="PrimingEffect",
+            prime_appear=prime_ell.appear_time,
+            prime_disappear=prime_ell.disappear_time,
+            stim_appear=rec1.appear_time,
+            stim_disappear=rec1.disappear_time,
+            correct=kp.correct,
+            resp=kp.pressed,
+            rt=kp.rt,
+            base_time=kp.base_time,
+            press_time=kp.press_time)
+
+        with If(kp.correct):
+            Label(text="CORRECT!", color="GREEN", font_size=35, duration=2.)
+        with Else():
+            Label(text="INCORRECT!", color="RED", font_size=35, duration=2.)
+
+        Wait(INTER_TRIAL_INVERVAL, jitter=INTER_TRIAL_JITTER)
+
+    exp.run()
+
+In this section, we add in a few states that are vital for someone to
+analyze our experiment. The :py:class:`~smile.state.Log` state allows us to
+aggrigate all of the information important to analysis in one place, and the
+:py:class:`~smile.state.ResetClock` state allows us to garuntee the timing of
+certain states.
+
+The *ResetClock* state takes in a time and then bases the next state's end time
+on that time. In the case above, we used ResetClock to garuntee that our *Wait*
+between the priming stimulus and the testing stimulus ended exactly PRIME_ISI
+after the disappear_time of the *prime_ell*, not PRIME_ISI after the start of
+the wait. If timing is important to your expierment, you will want to use
+*ResetClock* every time you have a non_visual state that has a duration.
+*ResetClock* should also only have a time passed into it that is definite. The
+only times in SMILE that are the appear and disappear times of visual stimulus.
+If you want to learn more about timing and why appear and disappear times are
+definite, please read the :ref:`Timing<advanced_timing>`_ section of
+*Advanced Smiling*.
+
+.. warning::
+
+    Using ResetClock correctly can give you better control over the timing of things in your experiment. Using ResetClock incorrectly can break everything and cause very unexpected timing errors. Use with Caution.
+
+The *Log* state allows you to save out specific information to a .slog file.
+SMILE, by default, saves out everything related to every state during your
+experiment. It saves these data into a directory, depending on your OS, that
+looks like *data/[experiemnt name]/[subject ID]/[log_file].slog*. The experiment
+name can be passed into *Experiment* via the *name* parameter, and by default
+it is "Smile". SMILE will create a separate file for each kind of state that
+you use in your experiment. For example, each row in *state_Parallel.slog* will
+be a different instance of the *Parallel* state, containing each peice of
+information about them in different columns. The kinds of things that get logged
+into the default state loggers are outlined in the docstrings of each state.
+Because it would be difficult and time consuming to slog (get it?) through all
+of those files, we created the *Log* state to allow you to just save out the
+information that you think is important to your analysis later. Each
+keyword arugment that you pass into the Log state will be a separate column in
+your data.
+
+.. note::
+
+    A note about .slog files : each new line is compressed and writen to the end of the file during runtime. If you experiment, for whatever reason, crashes midway through running, you wont lose all of the data that you collected up until that point. All of that data will have already been saved out and you will be able to access it with our myriade of slog reading functions.
+
+Lastly, we used the *base_time* parameter in the KeyPress state. Every input
+state that cacluates a reaction time will be able to take a *base_time* as a
+parameter. The forumla for reaction time of an input is as follows :
+
+.. code:: python
+
+    rt = action_time - base_time
+
+The reaction time is the time since the base time, when an action occurs. Most
+experiments want to know a reaction time based on when something came on to or
+off of the screen. In our case, we wanted to know how long after the appear_time
+of the rectangle stimuli did they press a key, so our *base_time* needed to be
+set to the appear_time of the rectangle.
+
+.. note::
+
+    *appear_time* and *disappear_time* are Events meaning they have a 'time' key and an 'error' key. 'error' will always be 0, so you need to pass *appear_time['time']* into basetime.
+
+
+And there you go!
+=================
+
+Now that you have finished the tutorial, you can move on to the other, more
+advanced concepts in SMILE.
+
+
+
+
+
+
 
 .. _run_build_time:
 
