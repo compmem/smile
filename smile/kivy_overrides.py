@@ -123,22 +123,22 @@ def _get_config():
 
     return return_dict
 
-    def _set_config(fullscreen=None,
-                    locked=None,
-                    framerate=None,
-                    fontname=None,
-                    fontsize=None,
-                    data_dir=None):
-        if fullscreen is not None:
-            Config.set("SMILE","FULLSCREEN", fullscreen)
-        if locked is not None:
-            Config.set("SMILE","LOCKEDSUBJID", locked)
-        if framerate is not None:
-            Config.set("SMILE","FRAMERATE", float(framerate))
-        if fontname is not None:
-            Config.set("SMILE","FONTNAME", fontname)
-        if fontsize is not None:
-            Config.set("SMILE","FONTSIZE", fontsize)
-        if data_dir is not None:
-            Config.set("SMILE","DEFAULT_DATA_DIR", data_dir)
-        Config.write()
+ def _set_config(fullscreen=None,
+                 locked=None,
+                 framerate=None,
+                 fontname=None,
+                 fontsize=None,
+                 data_dir=None):
+     if fullscreen is not None:
+         Config.set("SMILE","FULLSCREEN", fullscreen)
+     if locked is not None:
+         Config.set("SMILE","LOCKEDSUBJID", locked)
+     if framerate is not None:
+         Config.set("SMILE","FRAMERATE", float(framerate))
+     if fontname is not None:
+         Config.set("SMILE","FONTNAME", fontname)
+     if fontsize is not None:
+         Config.set("SMILE","FONTSIZE", fontsize)
+     if data_dir is not None:
+         Config.set("SMILE","DEFAULT_DATA_DIR", data_dir)
+     Config.write()
