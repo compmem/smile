@@ -719,61 +719,8 @@ And there you go!
 =================
 
 Now that you have finished the tutorial, you can move on to the other, more
-advanced concepts in SMILE.
-
-
-
-
-
-
-
-.. _run_build_time:
-
-Build Time V.S. Run Time
-========================
-
-The difference between **Build Time** and **Run Time** is the most important
-concept to understand when learning to use SMILE. There are 2 lines of
-code that designate the start of **BT** and then the start of **RT**. Those
-lines are `exp = Experiment()` and `exp.run()` respectively.
-
-`exp = Experiment()` initializes the instance of an :py:class:`~smile.experiment.Experiment`. All calls to a
-state must take place after this line! Once this line is run,
-**BT** starts.  **BT**, or Experimental Build Time, is the section of the
-code that sets up how the experiment will run.
-
-*During Experimental Build Time*, all calls to the different states of SMILE
-define how your experiment will run to SMILE. SMILE sees each of those states
-and uses them to setup the rules of how your state machine will flow from one
-state to another. When SMILE see the *with Parallel():* state, it will know
-that all of the states that are defined within should run at the same time.
-When SMILE sees one **Label** following another **Label**, SMILE will know
-that the second **Label** should not show up on the screen until the first
-one has finished running.
-
-*During Experimental Run Time*, all of the timing and intricacies of SMILE's
-backend are run. Once *exp.run()* is called, SMILE will start whatever the first
-state you defined in the experiment is and continue with the rest of your
-experiment afterwards.
-
-.. note::
-
-    During **RT**, SMILE will not run any non-SMILE code. SMILE will only run the prebuilt state-machine. If you need to run any kind of python during your experiment, use the :py:class:`~smile.state.Func` state.
-
-Another thing to look out for when programming the experiment how variables are
-set and used in **BT**. A local variable in between *exp = Experiment()* and
-*exp.run()* cannot be set and expected to actually set during **RT**.
-In order to *set* and *get* local variables during **RT**, *set* and *get*
-must be used through the local :py:class:`~smile.experiment.Experiment`
-variable. To set this kind of variable, *exp.variable_name* must be added to the
-beginning of the variable name. Doing this creates a :py:class:`~smile.experiment.Set`
-state in SMILE that will run during **RT**.  An example is as follows.
-
-.. code-block:: python
-
-    exp.variableName = lbl.appear_time['time']
-
-For more information about setting in **RT** see the :ref:`Setting a Variable in RT <setting_in_rt>`
-section of **Advanced SMILEing**
-
-.. _ref_def:
+advanced concepts in SMILE. The next section of this documentation will take
+your through the different states in SMILE and give you a brief description as
+to why they are useful. Later you will be able to go checkout some real life
+examples of experiments coded in SMILE, like Sternberg, Stroop, Free Recall, and
+IAT Mouse tracking.  
