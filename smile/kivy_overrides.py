@@ -71,6 +71,7 @@ Config.set('graphics', 'resizable', 0)
 
 # handle supported kivy versions
 import kivy
+
 EXACT_KIVY_VERSIONS = (
     "1.8.0",
     "1.9.0",
@@ -82,12 +83,16 @@ if kivy.__version__ not in EXACT_KIVY_VERSIONS:
 
 # provide custom event loop
 import kivy.base
+
+
 class SmileEventLoop(kivy.base.EventLoopBase):
     def __init__(self):
         super(SmileEventLoop, self).__init__()
         self._idle_callback = None
+
     def set_idle_callback(self, callback):
         self._idle_callback = callback
+
     def idle(self):
         if self._idle_callback:
             self._idle_callback(self)
@@ -100,6 +105,7 @@ class SmileEventLoop(kivy.base.EventLoopBase):
             return False
 
         return self.quit
+
 
 kivy.base.EventLoop = SmileEventLoop()
 
