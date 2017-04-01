@@ -7,6 +7,7 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
+from __future__ import print_function
 from contextlib import contextmanager
 from functools import partial
 from types import GeneratorType
@@ -431,12 +432,11 @@ class State(object):
             id_strs.append("name: %s" % self._name)
 
         # Print the trace message.
-        print "*** %s%s (%s): %s" % (
-            "  " * self.__depth,
-            type(self).__name__,
-            ", ".join(id_strs),
-            msg
-            )
+        print("*** %s%s (%s): %s" %
+              ("  " * self.__depth,
+               type(self).__name__,
+               ", ".join(id_strs),
+               msg))
 
     def print_traceback(self, child=None, t=None):
         """Print a SMILE traceback on the console.
@@ -446,7 +446,7 @@ class State(object):
             t = clock.now()
         if self._parent is None:
             # If we are the root of the state tree, print the header.
-            print " SMILE Traceback:"
+            print(" SMILE Traceback:")
         else:
             # Otherwise, let our parent print its traceback first.
             self._parent.print_traceback(self, t)
@@ -479,11 +479,11 @@ class State(object):
                 return "%fs ago%s" % (offset, error)
 
         # Print traceback state header.
-        print "   %s%s - file: %s, line: %d" % (
-            type(self).__name__,
-            name_spec,
-            self._instantiation_filename,
-            self._instantiation_lineno)
+        print("   %s%s - file: %s, line: %d" %
+              (type(self).__name__,
+               name_spec,
+               self._instantiation_filename,
+               self._instantiation_lineno))
 
         # Print out log attributes...
         for attr_name in self._log_attrs:
@@ -492,9 +492,9 @@ class State(object):
             except NotAvailableError:
                 value = NotAvailable
             if attr_name.endswith("_time"):
-                print "     %s: %s" % (attr_name, tstr(value))
+                print("     %s: %s" % (attr_name, tstr(value)))
             else:
-                print "     %s: %r" % (attr_name, value)
+                print("     %s: %r" % (attr_name, value))
 
     def claim_exceptions(self):
         # TODO: make this a context manager instead?
@@ -1112,9 +1112,9 @@ class Parallel(ParentState):
         super(Parallel, self).print_traceback(child, t)
         if child is not None:
             if child._blocking:
-                print "     Blocking child..."
+                print("     Blocking child...")
             else:
-                print "     Non-blocking child..."
+                print("     Non-blocking child...")
 
     def _enter(self):
         super(Parallel, self)._enter()
