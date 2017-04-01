@@ -520,6 +520,12 @@ class State(object):
 
     @property
     def current_clone(self):  # TODO: new doc string!
+        # if we are a clone, just return self
+        if self.__original_state != self:
+            # we must be a clone, so return self
+            return self
+
+        # otherwise look for the most recent clone of self
         ancestor = self._exp._current_state
         while ancestor is not None:
             try:
