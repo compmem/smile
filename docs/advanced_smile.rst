@@ -550,8 +550,31 @@ dotbox.py in Full
                 # draw the points
                 self._points = Point(points=points, pointsize=self.pointsize)
 
+.. _advanced_timing:
+
+Timing of states and visual stimuli
+===================================
+
+All timed *events* in SMILE are recorded in dictionaries with a 'time' and an
+'error' key. 'time' is when the events supposedly happened, 'error' is the
+maximum error in either direction that the 'time' could be off by. VisualStates
+all have *appear_time* and *disappear_time* dictionairies that indicates when
+they appeared and disappeared onto the screen. This time is in seconds and
+based on the system clock. For appear and disappear times, the 'error' is set to
+0.0. SMILE uses calls to OpenGL in order to accurately record these times. After
+running many tests with the SMILE system, it has become apperant that SMILE
+works really well on machines that are using nvidia graphics cards.
+*We highly recommend that you use a nvidia graphics card* if you are interested
+in having millisecond accurate timing of your stimuli.
+
+You need to also make sure you have v-sync enabled in order to have good timing
+in SMILE.
+
+Below are a series of sections that explain different timing nuances in SMILE.
+It is highly recommended that you read the following sections
+
 Effective timing of KeyPress
-============================
+++++++++++++++++++++++++++++
 
 In order to increase the effectiveness of a **KeyPress** state, you can set a
 *base_time* parameter. A **KeyPress** will calculate the reaction time, or *rt*,
@@ -582,7 +605,7 @@ stimulus disappear off the screen, you need to set the *base_time* as the
 
 
 Timing the Screen Refresh VS Timing Inputs
-==========================================
+++++++++++++++++++++++++++++++++++++++++++
 
 Before examining this section, it is important to understand how SMILE displays
 each frame of your experiment. SMILE runs on a two buffer system, where when
