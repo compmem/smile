@@ -86,6 +86,7 @@ def csv2loq(filename):
     """
     reader = csv.DictReader(open(filename, "r"))
     loq = []
+    gpidcount = 0
     try:
         nt = reader.next()
     except:
@@ -94,7 +95,8 @@ def csv2loq(filename):
         temp = {"question": nt['question'],
                 "type": nt['type'],
                 "ans": [],
-                "group_id": nt['group_id']}
+                "group_id": 'gp_id_' + str(gpidcount)}
+        gpidcount = gpidcount + 1
         if (nt['type'] == "CA") or (nt['type'] == "LI") or \
            (nt['type'] == "MC") or (nt['type'] == "CT"):
             temp['ans'] += [nt['ans']]
@@ -106,7 +108,10 @@ def csv2loq(filename):
                 except:
                     nt = {'type': None, "ans": None, "question": None}
         elif nt['type'] == "TI":
-            temp['multiline'] = int(nt['multiline'])
+            if nt['multiline'] == "":
+                temp['multiline'] = 0
+            else:
+                temp['multiline'] = int(nt['multiline'])
             try:
                 nt = reader.next()
             except:
@@ -128,7 +133,7 @@ def Questionnaire(self,
                   width=None,
                   x=None,
                   y=None,
-                  save_logs=False):
+                  save_logs=True):
 
     """Present a number of questions to a participant
 
@@ -274,18 +279,18 @@ def Questionnaire(self,
     self.TI_refs = []
     self.CT_refs = []
     self.LI_refs = []
-    self.temp_S = [] # DELETE THIS
     self.button_area = 2*min_marg_dist
+
     with ScrollView(width=self.width,
                     height=self.height-self.button_area,
                     x=self.x, y=self.y+self.button_area) as sv:
-        with FloatLayout(size=sv.size, pos=sv.pos) as fl:
+        with FloatLayout(size=sv.size, x=0, y=0) as fl:
             with Parallel() as fullp:
                 rcf = Rectangle(color=(0.3, 0.3, 0.3, 1.0),
-                                top=fl.top, left=fl.left,
+                                top=fl.height, left=0,
                                 width=self.width, height=self.height)
                 self.fullcount = Ref(len, self.loq)
-                self.new_bottom = fl.bottom
+                self.new_bottom = 0.0
                 self.height_count = 0
 
                 with Serial():
@@ -325,7 +330,7 @@ def Questionnaire(self,
                                 with fullp.insert() as tbinsert:
                                     # Create label to display the answer
                                     mcvlb = Label(text=self.cur_tog_but,
-                                                  left=fl.left + 2.5*min_marg_dist,
+                                                  left=2.5*min_marg_dist,
                                                   y=self.new_bottom+min_marg_dist,
                                                   text_size=(fl.width -
                                                              4*min_marg_dist -
@@ -333,7 +338,7 @@ def Questionnaire(self,
                                                   save_log=False)
                                     # Create Toggle button with Group_id
                                     mcvtb = ToggleButton(but_name=self.cur_tog_but,
-                                                         left=fl.left + min_marg_dist,
+                                                         left=min_marg_dist,
                                                          center_y=mcvlb.center_y,
                                                          width=min_marg_dist,
                                                          height=min_marg_dist,
@@ -357,12 +362,12 @@ def Questionnaire(self,
                             # Add the question to the window aswell.
                             with fullp.insert():
                                 mcrec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
-                                                  left=fl.left+1.5*min_marg_dist,
+                                                  left=1.5*min_marg_dist,
                                                   width=fl.width - 3.0*min_marg_dist,
                                                   bottom=self.new_bottom+min_marg_dist,
                                                   save_log=False)
                                 mclbf = Label(text=self.question,
-                                              left=fl.left+2*min_marg_dist,
+                                              left=2*min_marg_dist,
                                               bottom=self.new_bottom+min_marg_dist,
                                               text_size=(fl.width - 4*min_marg_dist, None),
                                               font_size=font_size,
@@ -430,12 +435,12 @@ def Questionnaire(self,
                             # Add the question to the window aswell.
                             with fullp.insert():
                                 lirec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
-                                                  left=fl.left+1.5*min_marg_dist,
+                                                  left=1.5*min_marg_dist,
                                                   width=fl.width - 3.0*min_marg_dist,
                                                   bottom=self.new_bottom+min_marg_dist,
                                                   save_log=False)
                                 lilbf = Label(text=self.question,
-                                              left=fl.left+2*min_marg_dist,
+                                              left=2*min_marg_dist,
                                               bottom=self.new_bottom+min_marg_dist,
                                               text_size=(fl.width - 4*min_marg_dist, None),
                                               font_size=font_size,
@@ -462,7 +467,7 @@ def Questionnaire(self,
                                 with fullp.insert() as cainsert:
                                     # Create label to display the answer
                                     cavlb = Label(text=self.cur_ca_but,
-                                                  left=fl.left + 2.5*min_marg_dist,
+                                                  left=2.5*min_marg_dist,
                                                   y= self.new_bottom+min_marg_dist,
                                                   text_size=(fl.width -
                                                              4*min_marg_dist -
@@ -471,7 +476,7 @@ def Questionnaire(self,
 
                                     # Create Toggle button with Group_id
                                     cavtb = ToggleButton(but_name=self.cur_ca_but,
-                                                         left=fl.left + min_marg_dist,
+                                                         left=min_marg_dist,
                                                          center_y=cavlb.center_y,
                                                          width=min_marg_dist,
                                                          height=min_marg_dist,
@@ -490,16 +495,15 @@ def Questionnaire(self,
                                                                answers_index=Ref(len,self.CA_refs) - 1,
                                                                question=self.question, type="CA",
                                                                index=self.fullcount)]
-                            Debug(s1=self.CA_refs[0][0].but_name,s2=self.CA_refs[0][1].but_name, s3=self.CA_refs[0][2].but_name)
                             # Add the question to the window aswell.
                             with fullp.insert():
                                 carec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
-                                                  left=fl.left+1.5*min_marg_dist,
+                                                  left=1.5*min_marg_dist,
                                                   width=fl.width - 3.0*min_marg_dist,
                                                   bottom=self.new_bottom+min_marg_dist,
                                                   save_log=False)
                                 calbf = Label(text=self.question,
-                                              left=fl.left+2*min_marg_dist,
+                                              left=2*min_marg_dist,
                                               bottom=self.new_bottom+min_marg_dist,
                                               text_size=(fl.width - 4*min_marg_dist, None),
                                               font_size=font_size,
@@ -513,7 +517,7 @@ def Questionnaire(self,
                         with Elif(self.q_type == "TI"):
                             #EDIT THIS LINE WHEN SET AND GET IS FINISHED
                             with fullp.insert() as tiinsert:
-                                tif = TextInput(left=fl.left+min_marg_dist,
+                                tif = TextInput(left=min_marg_dist,
                                                 font_size=font_size,
                                                 bottom=self.new_bottom+min_marg_dist,
                                                 width=fl.width-2*min_marg_dist,
@@ -521,12 +525,12 @@ def Questionnaire(self,
                                                 save_log=False)
 
                                 tirec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
-                                                  left=fl.left+1.5*min_marg_dist,
+                                                  left=1.5*min_marg_dist,
                                                   width=fl.width - 3*min_marg_dist,
                                                   bottom=tif.top+min_marg_dist,
                                                   save_log=False)
                                 tilb = Label(text=self.question,
-                                             left=fl.left+2*min_marg_dist,
+                                             left=2*min_marg_dist,
                                              bottom=tif.top+min_marg_dist,
                                              font_size=font_size,
                                              text_size=(fl.width- 4*min_marg_dist, None),
@@ -542,7 +546,7 @@ def Questionnaire(self,
 
                         with Elif(self.q_type == "CT"):
                             with fullp.insert() as ctinsert:
-                                slf = Slider(left=fl.left + min_marg_dist,
+                                slf = Slider(left=min_marg_dist,
                                              width=fl.width - 2*min_marg_dist,
                                              min=self.question_info['min'],
                                              max=self.question_info['max'],
@@ -564,12 +568,12 @@ def Questionnaire(self,
                                                  font_size=font_size*3/4,
                                                  save_log=False)
                                 slrec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
-                                                  left=fl.left+1.5*min_marg_dist,
+                                                  left=1.5*min_marg_dist,
                                                   width=fl.width - 3*min_marg_dist,
                                                   bottom=slminlbf.top+min_marg_dist,
                                                   save_log=False)
                                 sllbf = Label(text=self.question,
-                                              left=fl.left+2*min_marg_dist,
+                                              left=2*min_marg_dist,
                                               bottom=slminlbf.top + min_marg_dist,
                                               text_size=(fl.width - 4*min_marg_dist, None),
                                               font_size=font_size,
@@ -588,19 +592,19 @@ def Questionnaire(self,
                                 fulltitlb = Label(text=self.question,
                                                   bottom = self.new_bottom + 2*min_marg_dist,
                                                   font_size=font_size*1.5,
-                                                  center_x=self.x + self.width/2)
+                                                  center_x=self.width/2)
                             self.height_count = self.height_count + (fulltitlb.top -
                                                                      self.new_bottom) + 4*min_marg_dist
                             self.new_bottom = fulltitlb.top + 2*min_marg_dist
 
                     with If((self.height_count > rcf.height)):
-                        fl.height = self.height_count
-                        rcf.height = self.height_count
+                        fl.height = self.height_count+50.
+                        rcf.height = self.height_count+50.
                         rcf.top = fl.top
 
     with UntilDone():
         with ButtonPress():
-            Rectangle(color="GRAY", left=sv.left,
+            Rectangle(color=(.25, .25, .25, 1.), left=sv.left,
                       height=self.button_area,
                       width=self.width, y=self.y)
             Button(text="Continue", left = self.x+.5*min_marg_dist,
@@ -639,7 +643,6 @@ def Questionnaire(self,
             with Elif(question.current['type'] == "LI"):
                 self.li_temp_answers_list = []
                 with Loop(self.LI_refs[question.current['answers_index']]) as li_loop_ref:
-                    Debug(t=question.current['answers_index'], but_name = li_loop_ref.current.but_name, state=li_loop_ref.current.state)
                     self.li_temp_answers_list = self.li_temp_answers_list + [{"ans":li_loop_ref.current.but_name,
                                                    "value":li_loop_ref.current.state=='down'}]
                 self.results = self.results + [{"question":question.current['question'],
@@ -709,12 +712,12 @@ if __name__ == "__main__":
             'group_id':'second_li_question'}]
 
     from experiment import Experiment
-    exp = Experiment(resolution=(600,500))
+    exp = Experiment()
     with Parallel():
         tt = Questionnaire(loq=bob,
-                           height=exp.screen.height,
-                           width=exp.screen.width,
-             x = 0, y=0,)
+                           height=800,
+                           width=600,
+             x = 50, y=50,)
         MouseCursor(blocking=False)
     Log(tt.results)
     exp.run()
