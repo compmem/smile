@@ -63,7 +63,22 @@ first *builds* then *runs* experiments.
 The Experiment Break-Down
 =========================
 
-Blah Blah Blah Video Blah BLah Blah
+The following tutorial teaches you how to code a smile experiment, from showing
+you how to code up a basic experiment, to the best practices for timing user
+input and visual states. The experiment described below is a made up Priming
+Effect tutorial that presents the participant with a cirlce stimuli that is
+on the left or the right side of the screen that is either red or green. After
+that, a green and a red rectangle appear on the left or right side of the screen.
+The participant will then need to indicate which side the screen the green rectangle
+has appeared on as quickly as possible.
+
+Each step builds on the last, and by the end of this tutorial you should have a
+basic understanding of all of SMILE's ins and outs. Each step contains the
+finished code with comments explaining each line of code that we add for each
+step. After the finished code will be a more flushed out description of what we
+do in the step.
+
+As will all other programming tutorials, lets start with the Hello World example!
 
 .. _hello_world:
 
@@ -224,8 +239,6 @@ running in parallel.
 Because the Parallel state is so complicated, I recommend reading the Parallel
 section of the :ref:`SMILE States<smile_states>`_ document. It explains some of
 the more complicated functionality of a Parallel state.
-
-MAYBE ADD MORE?
 
 Now that we have a better grasp on the flow states of SMILE, we will need to
 add some user input to our experiment. This next section will go over some
@@ -723,4 +736,4 @@ advanced concepts in SMILE. The next section of this documentation will take
 your through the different states in SMILE and give you a brief description as
 to why they are useful. Later you will be able to go checkout some real life
 examples of experiments coded in SMILE, like Sternberg, Stroop, Free Recall, and
-IAT Mouse tracking.  
+IAT Mouse tracking.

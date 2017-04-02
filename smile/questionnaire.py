@@ -11,7 +11,7 @@ from video import (WidgetState, Label,
                    ToggleButton, FloatLayout, ButtonPress,
                    Button, Rectangle, TextInput, Slider)
 from state import (Loop, Parallel, If, Elif, Else, Serial,
-                   Func, UntilDone, Log, Subroutine)
+                   Func, UntilDone, Log, Subroutine,Debug)
 from ref import Ref
 import kivy.uix.scrollview
 import csv
@@ -93,7 +93,8 @@ def csv2loq(filename):
     while(nt['type'] != None):
         temp = {"question": nt['question'],
                 "type": nt['type'],
-                "ans": []}
+                "ans": [],
+                "group_id": nt['group_id']}
         if (nt['type'] == "CA") or (nt['type'] == "LI") or \
            (nt['type'] == "MC") or (nt['type'] == "CT"):
             temp['ans'] += [nt['ans']]
@@ -273,6 +274,7 @@ def Questionnaire(self,
     self.TI_refs = []
     self.CT_refs = []
     self.LI_refs = []
+    self.temp_S = [] # DELETE THIS
     self.button_area = 2*min_marg_dist
     with ScrollView(width=self.width,
                     height=self.height-self.button_area,
@@ -339,7 +341,7 @@ def Questionnaire(self,
                                                          save_log=False)
 
                                 # Append the temp list of buttons
-                                self.temp_tog_buttons += [tbinsert.last]
+                                self.temp_tog_buttons = self.temp_tog_buttons + [tbinsert.last]
                                 # Make sure the new bottom and height is updated.
                                 self.new_bottom = mcvlb.top
                                 #self.height_count = self.height_count + mcvtb.height + min_marg_dist
@@ -347,8 +349,8 @@ def Questionnaire(self,
 
                             # After the loop finishes, add the temp list of buttons to the
                             # Big list of lists of buttons.
-                            self.MC_refs += [self.temp_tog_buttons]
-                            self.questions += [{"answers_index": Ref(len,self.MC_refs) - 1,
+                            self.MC_refs = self.MC_refs + [self.temp_tog_buttons]
+                            self.questions = self.questions + [{"answers_index": Ref(len,self.MC_refs) - 1,
                                                 "question":self.question, "type":"MC",
                                                 "index":self.fullcount}]
                             # Add the question to the window aswell.
@@ -377,6 +379,7 @@ def Questionnaire(self,
                             # group id's that is a postionally linked
                             # list with toggle_buttons (for Loging Later)
                             self.temp_li_buttons = []
+
                             # Setup the reverse counter for displaying the
                             # Answers from the bottom up.
                             self.li_but_count = Ref(len, self.question_info['ans'])
@@ -408,7 +411,8 @@ def Questionnaire(self,
                                                  #text_size=(2*min_marg_dist, None),
                                                  save_log=False)
                                 # Append the temp list of buttons
-                                self.temp_li_buttons += [liinsert.first]
+                                self.temp_li_buttons = self.temp_li_buttons + [liinsert.first]
+
                                 # Make sure the new bottom and height is updated.
                                 with If(self.new_temp_bottom < liinsert.last.top):
                                     self.new_temp_bottom = liinsert.last.top
@@ -418,10 +422,11 @@ def Questionnaire(self,
                             # After the loop finishes, add the temp
                             # list of buttons to the big list of lists
                             # of buttons.
-                            self.LI_refs += [self.temp_li_buttons]
-                            self.questions += [{"answers_index":Ref(len,self.MC_refs) - 1,
-                                                "question":self.question, "type":"LI",
-                                                "index":self.fullcount}]
+
+                            self.LI_refs = self.LI_refs + Ref(list,[self.temp_li_buttons])
+                            self.questions = self.questions + [Ref(dict, answers_index=Ref(len,self.LI_refs) - 1,
+                                                question=self.question, type="LI",
+                                                index=self.fullcount)]
                             # Add the question to the window aswell.
                             with fullp.insert():
                                 lirec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
@@ -473,18 +478,19 @@ def Questionnaire(self,
                                                          save_log=False)
 
                                 # Append the temp list of buttons
-                                self.temp_ca_buttons += [cainsert.last]
+                                self.temp_ca_buttons = self.temp_ca_buttons + [cainsert.last]
                                 # Make sure the new bottom and height is updated.
                                 self.new_bottom = cavlb.top
                                 #self.height_count = self.height_count + cavlb.height + min_marg_dist
                             # After the loop finishes, add the temp list of buttons to the
                             # Big list of lists of buttons.
-                            self.CA_refs += [self.temp_ca_buttons]
+                            self.CA_refs = self.CA_refs + Ref(list,[self.temp_ca_buttons])
 
-                            self.questions += [{"answers_index":Ref(len,self.CA_refs) - 1,
-                                                "question":self.question, "type":"CA",
-                                                "index":self.fullcount}]
-
+                            self.questions = self.questions + [Ref(dict,
+                                                               answers_index=Ref(len,self.CA_refs) - 1,
+                                                               question=self.question, type="CA",
+                                                               index=self.fullcount)]
+                            Debug(s1=self.CA_refs[0][0].but_name,s2=self.CA_refs[0][1].but_name, s3=self.CA_refs[0][2].but_name)
                             # Add the question to the window aswell.
                             with fullp.insert():
                                 carec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
@@ -525,8 +531,8 @@ def Questionnaire(self,
                                              font_size=font_size,
                                              text_size=(fl.width- 4*min_marg_dist, None),
                                              save_log=False)
-                            self.TI_refs += [tiinsert.first] # Might change to [[tiinsert.first]]
-                            self.questions += [{"answers_index": Ref(len,self.TI_refs) - 1,
+                            self.TI_refs = self.TI_refs + Ref(list,[tiinsert.first]) # Might change to [[tiinsert.first]]
+                            self.questions = self.questions + [{"answers_index": Ref(len,self.TI_refs) - 1,
                                                 "question":self.question, "type":"TI",
                                                 "index":self.fullcount}]
                             tirec.height = tilb.height
@@ -568,8 +574,8 @@ def Questionnaire(self,
                                               text_size=(fl.width - 4*min_marg_dist, None),
                                               font_size=font_size,
                                               save_log=False)
-                            self.CT_refs += [ctinsert.first] # MIGHT HAVE TO CHANGE THIS to [[ctinsert.first]]
-                            self.questions += [{"answers_index": Ref(len,self.CT_refs) - 1,
+                            self.CT_refs = self.CT_refs + Ref(list, [ctinsert.first]) # MIGHT HAVE TO CHANGE THIS to [[ctinsert.first]]
+                            self.questions = self.questions + [{"answers_index": Ref(len,self.CT_refs) - 1,
                                                 "question":self.question, "type":"CT",
                                                 "index":self.fullcount}]
                             slrec.height = sllbf.height
@@ -605,37 +611,38 @@ def Questionnaire(self,
 
         with Loop(self.questions) as question:
             with If(question.current['type'] == "TI"):
-                self.results += [{"question":question.current['question'],
+                self.results = self.results + [{"question":question.current['question'],
                                   "type":"TI", "index":question.current['index'],
                                   "answers":[{"ans":"text_input_value",
                                               "value":self.TI_refs[question.current['answers_index']].text}]}]
             with Elif(question.current['type'] == "CT"):
-                self.results += [{"question":question.current['question'],
+                self.results = self.results + [{"question":question.current['question'],
                                   "type":"CT", "index":question.current['index'],
                                   "answers":[{"ans":"slider_value",
                                               "value":self.CT_refs[question.current['answers_index']].value}]}]
             with Elif(question.current['type'] == "MC"):
                 self.mc_temp_answers_list = []
                 with Loop(self.MC_refs[question.current['answers_index']]) as mc_loop_ref:
-                    self.mc_temp_answers_list += [{"ans":mc_loop_ref.current.but_name,
+                    self.mc_temp_answers_list = self.mc_temp_answers_list + [{"ans":mc_loop_ref.current.but_name,
                                                    "value":mc_loop_ref.current.state=='down'}]
-                self.results += [{"question":question.current['question'],
+                self.results = self.results + [{"question":question.current['question'],
                                   "type":"MC", "index":question.current['index'],
                                   "answers":self.mc_temp_answers_list}]
             with Elif(question.current['type'] == "CA"):
                 self.ca_temp_answers_list = []
                 with Loop(self.CA_refs[question.current['answers_index']]) as ca_loop_ref:
-                    self.ca_temp_answers_list += [{"ans":ca_loop_ref.current.but_name,
+                    self.ca_temp_answers_list = self.ca_temp_answers_list + [{"ans":ca_loop_ref.current.but_name,
                                                    "value":ca_loop_ref.current.state=='down'}]
-                self.results += [{"question":question.current['question'],
+                self.results = self.results + [{"question":question.current['question'],
                                   "type":"CA", "index":question.current['index'],
                                   "answers":self.ca_temp_answers_list}]
             with Elif(question.current['type'] == "LI"):
                 self.li_temp_answers_list = []
                 with Loop(self.LI_refs[question.current['answers_index']]) as li_loop_ref:
-                    self.li_temp_answers_list += [{"ans":li_loop_ref.current.but_name,
+                    Debug(t=question.current['answers_index'], but_name = li_loop_ref.current.but_name, state=li_loop_ref.current.state)
+                    self.li_temp_answers_list = self.li_temp_answers_list + [{"ans":li_loop_ref.current.but_name,
                                                    "value":li_loop_ref.current.state=='down'}]
-                self.results += [{"question":question.current['question'],
+                self.results = self.results + [{"question":question.current['question'],
                                   "type":"LI", "index":question.current['index'],
                                   "answers":self.li_temp_answers_list}]
 
@@ -658,7 +665,7 @@ if __name__ == "__main__":
            {'type':"LI",
             'question':"To be or not to be?",
             'ans':['That is the Question.','To be is to do.','To do is to be.'],
-            'group_id':'second_li_question'},
+            'group_id':'THIRD_li_question'},
            {'type':"CT",
             'question':"How many years have you lived in your current home?",
             'ans':['1','5','10'],
@@ -708,6 +715,6 @@ if __name__ == "__main__":
                            height=exp.screen.height,
                            width=exp.screen.width,
              x = 0, y=0,)
-        MouseCursor()
+        MouseCursor(blocking=False)
     Log(tt.results)
     exp.run()
