@@ -1,10 +1,10 @@
 smile - State Machine Interface Library for Experiments
 
-Copyright (C) 2012-2014
+Copyright (C) 2012-2017
 Per B. Sederberg <psederberg@gmail.com>
 
 Authors: Per B. Sederberg
-URL: www.pysmile.org
+URL: https://github.com/compmem/smile
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
