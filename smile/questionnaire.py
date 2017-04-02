@@ -321,7 +321,8 @@ def Questionnaire(self,
                             self.tog_but_count = Ref(len,
                                                      self.question_info['ans'])
                             self.current_bottom = self.new_bottom
-                            with Loop(Ref(len, self.question_info['ans'])) as mcvlp:
+                            with Loop(Ref(len,
+                                          self.question_info['ans'])) as mcvlp:
                                 # Decrement the counter
                                 self.tog_but_count = self.tog_but_count - 1
                                 # Get the current answer
@@ -334,7 +335,8 @@ def Questionnaire(self,
                                                   y=self.new_bottom+min_marg_dist,
                                                   text_size=(fl.width -
                                                              4*min_marg_dist -
-                                                             2.5*min_marg_dist, None),
+                                                             2.5*min_marg_dist,
+                                                             None),
                                                   save_log=False)
                                     # Create Toggle button with Group_id
                                     mcvtb = ToggleButton(but_name=self.cur_tog_but,
@@ -347,32 +349,35 @@ def Questionnaire(self,
 
                                 # Append the temp list of buttons
                                 self.temp_tog_buttons = self.temp_tog_buttons + [tbinsert.last]
-                                # Make sure the new bottom and height is updated.
+                                # Make sure the new bottom and height
+                                # is updated.
                                 self.new_bottom = mcvlb.top
-                                #self.height_count = self.height_count + mcvtb.height + min_marg_dist
 
-
-                            # After the loop finishes, add the temp list of buttons to the
-                            # Big list of lists of buttons.
+                            # After the loop finishes, add the temp list of
+                            # buttons to the Big list of lists of buttons.
                             self.MC_refs = self.MC_refs + [self.temp_tog_buttons]
-                            self.questions = self.questions + [{"answers_index": Ref(len,self.MC_refs) - 1,
-                                                "question":self.question, "type":"MC",
-                                                "index":self.fullcount}]
+                            self.questions = self.questions + \
+                                             [{"answers_index": Ref(len, self.MC_refs) - 1,
+                                               "question": self.question,
+                                               "type": "MC",
+                                               "index": self.fullcount}]
                             # Add the question to the window aswell.
                             # Add the question to the window aswell.
                             with fullp.insert():
                                 mcrec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
                                                   left=1.5*min_marg_dist,
                                                   width=fl.width - 3.0*min_marg_dist,
-                                                  bottom=self.new_bottom+min_marg_dist,
+                                                  bottom=self.new_bottom + min_marg_dist,
                                                   save_log=False)
                                 mclbf = Label(text=self.question,
                                               left=2*min_marg_dist,
-                                              bottom=self.new_bottom+min_marg_dist,
-                                              text_size=(fl.width - 4*min_marg_dist, None),
+                                              bottom=self.new_bottom + min_marg_dist,
+                                              text_size=(fl.width - 4*min_marg_dist,
+                                                         None),
                                               font_size=font_size,
                                               save_log=False)
-                            # Update the height of the rectangle, buttom, and height_count
+                            # Update the height of the rectangle, buttom,
+                            # and height_count
                             mcrec.height = mclbf.height
                             self.new_bottom = mcrec.top
                             self.height_count = self.height_count + (mcrec.top -
@@ -387,12 +392,15 @@ def Questionnaire(self,
 
                             # Setup the reverse counter for displaying the
                             # Answers from the bottom up.
-                            self.li_but_count = Ref(len, self.question_info['ans'])
+                            self.li_but_count = Ref(len,
+                                                    self.question_info['ans'])
                             self.new_but_mid = self.width
-                            self.li_width_inc = self.width / (self.li_but_count + 1)
+                            self.li_width_inc = self.width / (self.li_but_count
+                                                              + 1)
                             self.new_temp_bottom = self.new_bottom
                             self.current_bottom = self.new_bottom
-                            with Loop(Ref(len, self.question_info['ans'])) as lilp:
+                            with Loop(Ref(len,
+                                          self.question_info['ans'])) as lilp:
                                 # Decrement the counter
                                 self.new_but_mid = self.new_but_mid - self.li_width_inc
                                 self.li_but_count = self.li_but_count - 1
@@ -412,26 +420,27 @@ def Questionnaire(self,
                                     lilb = Label(text=self.cur_li_but,
                                                  center_x=litb.center_x,
                                                  font_size=font_size*3/4,
-                                                 y=litb.top+(0.5*min_marg_dist),
-                                                 #text_size=(2*min_marg_dist, None),
+                                                 y=litb.top + (0.5*min_marg_dist),
                                                  save_log=False)
                                 # Append the temp list of buttons
                                 self.temp_li_buttons = self.temp_li_buttons + [liinsert.first]
 
-                                # Make sure the new bottom and height is updated.
+                                # Make sure the new bottom and
+                                # height is updated.
                                 with If(self.new_temp_bottom < liinsert.last.top):
                                     self.new_temp_bottom = liinsert.last.top
-                                #self.height_count = self.height_count + mcvtb.height + min_marg_dist
-                            self.new_bottom=self.new_temp_bottom
+
+                            self.new_bottom = self.new_temp_bottom
 
                             # After the loop finishes, add the temp
                             # list of buttons to the big list of lists
                             # of buttons.
 
-                            self.LI_refs = self.LI_refs + Ref(list,[self.temp_li_buttons])
-                            self.questions = self.questions + [Ref(dict, answers_index=Ref(len,self.LI_refs) - 1,
-                                                question=self.question, type="LI",
-                                                index=self.fullcount)]
+                            self.LI_refs = self.LI_refs + [self.temp_li_buttons]
+                            self.questions = self.questions + [{"answers_index": Ref(len, self.LI_refs) - 1,
+                                                                "question": self.question,
+                                                                "type": "LI",
+                                                                "index": self.fullcount}]
                             # Add the question to the window aswell.
                             with fullp.insert():
                                 lirec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
@@ -456,9 +465,11 @@ def Questionnaire(self,
                             self.temp_ca_buttons = []
                             # Setup the reverse counter for displaying the
                             # Answers from the bottom up.
-                            self.ca_but_count = Ref(len, self.question_info['ans'])
+                            self.ca_but_count = Ref(len,
+                                                    self.question_info['ans'])
                             self.current_bottom = self.new_bottom
-                            with Loop(Ref(len, self.question_info['ans'])) as cavlp:
+                            with Loop(Ref(len,
+                                          self.question_info['ans'])) as cavlp:
                                 # Decrement the counter
                                 self.ca_but_count = self.ca_but_count - 1
                                 # Get the current answer
@@ -468,10 +479,11 @@ def Questionnaire(self,
                                     # Create label to display the answer
                                     cavlb = Label(text=self.cur_ca_but,
                                                   left=2.5*min_marg_dist,
-                                                  y= self.new_bottom+min_marg_dist,
+                                                  y=self.new_bottom + min_marg_dist,
                                                   text_size=(fl.width -
                                                              4*min_marg_dist -
-                                                             2.5*min_marg_dist, None),
+                                                             2.5*min_marg_dist,
+                                                             None),
                                                   save_log=False)
 
                                     # Create Toggle button with Group_id
@@ -484,12 +496,13 @@ def Questionnaire(self,
 
                                 # Append the temp list of buttons
                                 self.temp_ca_buttons = self.temp_ca_buttons + [cainsert.last]
-                                # Make sure the new bottom and height is updated.
+                                # Make sure the new bottom and
+                                # height is updated.
                                 self.new_bottom = cavlb.top
-                                #self.height_count = self.height_count + cavlb.height + min_marg_dist
-                            # After the loop finishes, add the temp list of buttons to the
-                            # Big list of lists of buttons.
-                            self.CA_refs = self.CA_refs + Ref(list,[self.temp_ca_buttons])
+
+                            # After the loop finishes, add the temp list of
+                            # buttons to the Big list of lists of buttons.
+                            self.CA_refs = self.CA_refs + [self.temp_ca_buttons]
 
                             self.questions = self.questions + [Ref(dict,
                                                                answers_index=Ref(len,self.CA_refs) - 1,
@@ -504,24 +517,25 @@ def Questionnaire(self,
                                                   save_log=False)
                                 calbf = Label(text=self.question,
                                               left=2*min_marg_dist,
-                                              bottom=self.new_bottom+min_marg_dist,
-                                              text_size=(fl.width - 4*min_marg_dist, None),
+                                              bottom=self.new_bottom + min_marg_dist,
+                                              text_size=(fl.width - 4*min_marg_dist,
+                                                         None),
                                               font_size=font_size,
                                               save_log=False)
-                            # Update the height of the rectangle, buttom, and height_count
+                            # Update the height of the rectangle, buttom,
+                            # and height_count
                             carec.height = calbf.height
                             self.new_bottom = carec.top
                             self.height_count = self.height_count + (carec.top -
                                                                      self.current_bottom)
 
                         with Elif(self.q_type == "TI"):
-                            #EDIT THIS LINE WHEN SET AND GET IS FINISHED
                             with fullp.insert() as tiinsert:
                                 tif = TextInput(left=min_marg_dist,
                                                 font_size=font_size,
-                                                bottom=self.new_bottom+min_marg_dist,
-                                                width=fl.width-2*min_marg_dist,
-                                                height=self.question_info['multiline']*def_text_input_height,
+                                                bottom=self.new_bottom + min_marg_dist,
+                                                width=fl.width - 2*min_marg_dist,
+                                                height=self.question_info['multiline'] * def_text_input_height,
                                                 save_log=False)
 
                                 tirec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
@@ -533,15 +547,18 @@ def Questionnaire(self,
                                              left=2*min_marg_dist,
                                              bottom=tif.top+min_marg_dist,
                                              font_size=font_size,
-                                             text_size=(fl.width- 4*min_marg_dist, None),
+                                             text_size=(fl.width - 4*min_marg_dist,
+                                                        None),
                                              save_log=False)
-                            self.TI_refs = self.TI_refs + Ref(list,[tiinsert.first]) # Might change to [[tiinsert.first]]
-                            self.questions = self.questions + [{"answers_index": Ref(len,self.TI_refs) - 1,
-                                                "question":self.question, "type":"TI",
-                                                "index":self.fullcount}]
+                            self.TI_refs = self.TI_refs + [tiinsert.first]
+                            self.questions = self.questions + [{"answers_index": Ref(len, self.TI_refs) - 1,
+                                                                "question": self.question,
+                                                                "type": "TI",
+                                                                "index": self.fullcount}]
                             tirec.height = tilb.height
                             self.new_bottom = tilb.top
-                            self.height_count = self.height_count + tilb.height + \
+                            self.height_count = self.height_count + \
+                                                tilb.height + \
                                                 tif.height + (2*min_marg_dist)
 
                         with Elif(self.q_type == "CT"):
@@ -550,51 +567,57 @@ def Questionnaire(self,
                                              width=fl.width - 2*min_marg_dist,
                                              min=self.question_info['min'],
                                              max=self.question_info['max'],
-                                             bottom=self.new_bottom+min_marg_dist,
+                                             bottom=self.new_bottom + min_marg_dist,
                                              save_log=False)
                                 slminlbf = Label(text=self.question_info['ans'][0],
                                                  left=slf.left,
-                                                 bottom=slf.top-1.7*min_marg_dist,
+                                                 bottom=slf.top - 1.7*min_marg_dist,
                                                  font_size=font_size*3/4,
                                                  save_log=False)
                                 slmidlbf = Label(text=self.question_info['ans'][1],
                                                  center_x=slf.center_x,
-                                                 bottom=slf.top-1.7*min_marg_dist,
+                                                 bottom=slf.top - 1.7*min_marg_dist,
                                                  font_size=font_size*3/4,
                                                  save_log=False)
                                 slmaxlbf = Label(text=self.question_info['ans'][2],
                                                  right=slf.right,
-                                                 bottom=slf.top-1.7*min_marg_dist,
+                                                 bottom=slf.top - 1.7*min_marg_dist,
                                                  font_size=font_size*3/4,
                                                  save_log=False)
                                 slrec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
                                                   left=1.5*min_marg_dist,
                                                   width=fl.width - 3*min_marg_dist,
-                                                  bottom=slminlbf.top+min_marg_dist,
+                                                  bottom=slminlbf.top + min_marg_dist,
                                                   save_log=False)
                                 sllbf = Label(text=self.question,
                                               left=2*min_marg_dist,
                                               bottom=slminlbf.top + min_marg_dist,
-                                              text_size=(fl.width - 4*min_marg_dist, None),
+                                              text_size=(fl.width - 4*min_marg_dist,
+                                                         None),
                                               font_size=font_size,
                                               save_log=False)
-                            self.CT_refs = self.CT_refs + Ref(list, [ctinsert.first]) # MIGHT HAVE TO CHANGE THIS to [[ctinsert.first]]
-                            self.questions = self.questions + [{"answers_index": Ref(len,self.CT_refs) - 1,
-                                                "question":self.question, "type":"CT",
-                                                "index":self.fullcount}]
+                            self.CT_refs = self.CT_refs + [ctinsert.first]
+                            self.questions = self.questions + [{"answers_index": Ref(len, self.CT_refs) - 1,
+                                                                "question": self.question,
+                                                                "type": "CT",
+                                                                "index": self.fullcount}]
                             slrec.height = sllbf.height
                             self.new_bottom = sllbf.top
-                            self.height_count = self.height_count + slf.height + \
-                                                slminlbf.height + sllbf.height + 0.3*min_marg_dist
+                            self.height_count = (self.height_count +
+                                                 slf.height +
+                                                 slminlbf.height +
+                                                 sllbf.height +
+                                                 0.3*min_marg_dist)
 
                         with Elif(self.q_type == "TITLE"):
                             with fullp.insert():
                                 fulltitlb = Label(text=self.question,
-                                                  bottom = self.new_bottom + 2*min_marg_dist,
-                                                  font_size=font_size*1.5,
+                                                  bottom=self.new_bottom + 2*min_marg_dist,
+                                                  font_size=font_size * 1.5,
                                                   center_x=self.width/2)
-                            self.height_count = self.height_count + (fulltitlb.top -
-                                                                     self.new_bottom) + 4*min_marg_dist
+                            self.height_count = (self.height_count +
+                                                 (fulltitlb.top - self.new_bottom) +
+                                                 4*min_marg_dist)
                             self.new_bottom = fulltitlb.top + 2*min_marg_dist
 
                     with If((self.height_count > rcf.height)):
@@ -607,109 +630,125 @@ def Questionnaire(self,
             Rectangle(color=(.25, .25, .25, 1.), left=sv.left,
                       height=self.button_area,
                       width=self.width, y=self.y)
-            Button(text="Continue", left = self.x+.5*min_marg_dist,
-                   top=sv.bottom-.25*min_marg_dist,
+            Button(text="Continue", left=self.x + .5*min_marg_dist,
+                   top=sv.bottom - .25*min_marg_dist,
                    height=self.button_area*.75)
         self.group_counter = 0
         self.results = []
 
         with Loop(self.questions) as question:
             with If(question.current['type'] == "TI"):
-                self.results = self.results + [{"question":question.current['question'],
-                                  "type":"TI", "index":question.current['index'],
-                                  "answers":[{"ans":"text_input_value",
-                                              "value":self.TI_refs[question.current['answers_index']].text}]}]
+                self.results = self.results + [{"question": question.current['question'],
+                                                "type": "TI", "index": question.current['index'],
+                                                "answers": [{"ans": "text_input_value",
+                                                             "value": self.TI_refs[question.current['answers_index']].text}]
+                                                }]
             with Elif(question.current['type'] == "CT"):
-                self.results = self.results + [{"question":question.current['question'],
-                                  "type":"CT", "index":question.current['index'],
-                                  "answers":[{"ans":"slider_value",
-                                              "value":self.CT_refs[question.current['answers_index']].value}]}]
+                self.results = self.results + [{"question": question.current['question'],
+                                                "type": "CT", "index": question.current['index'],
+                                                "answers": [{"ans": "slider_value",
+                                                             "value": self.CT_refs[question.current['answers_index']].value}]
+                                                }]
             with Elif(question.current['type'] == "MC"):
                 self.mc_temp_answers_list = []
                 with Loop(self.MC_refs[question.current['answers_index']]) as mc_loop_ref:
-                    self.mc_temp_answers_list = self.mc_temp_answers_list + [{"ans":mc_loop_ref.current.but_name,
-                                                   "value":mc_loop_ref.current.state=='down'}]
-                self.results = self.results + [{"question":question.current['question'],
-                                  "type":"MC", "index":question.current['index'],
-                                  "answers":self.mc_temp_answers_list}]
+                    self.mc_temp_answers_list = self.mc_temp_answers_list + [{"ans": mc_loop_ref.current.but_name,
+                                                                              "value": mc_loop_ref.current.state == 'down'}]
+                self.results = self.results + [{"question": question.current['question'],
+                                                "type": "MC", "index": question.current['index'],
+                                                "answers": self.mc_temp_answers_list}]
             with Elif(question.current['type'] == "CA"):
                 self.ca_temp_answers_list = []
                 with Loop(self.CA_refs[question.current['answers_index']]) as ca_loop_ref:
-                    self.ca_temp_answers_list = self.ca_temp_answers_list + [{"ans":ca_loop_ref.current.but_name,
-                                                   "value":ca_loop_ref.current.state=='down'}]
-                self.results = self.results + [{"question":question.current['question'],
-                                  "type":"CA", "index":question.current['index'],
-                                  "answers":self.ca_temp_answers_list}]
+                    self.ca_temp_answers_list = self.ca_temp_answers_list + [{"ans": ca_loop_ref.current.but_name,
+                                                                              "value": ca_loop_ref.current.state == 'down'}]
+                self.results = self.results + [{"question": question.current['question'],
+                                                "type": "CA", "index": question.current['index'],
+                                                "answers": self.ca_temp_answers_list}]
             with Elif(question.current['type'] == "LI"):
                 self.li_temp_answers_list = []
                 with Loop(self.LI_refs[question.current['answers_index']]) as li_loop_ref:
-                    self.li_temp_answers_list = self.li_temp_answers_list + [{"ans":li_loop_ref.current.but_name,
-                                                   "value":li_loop_ref.current.state=='down'}]
-                self.results = self.results + [{"question":question.current['question'],
-                                  "type":"LI", "index":question.current['index'],
-                                  "answers":self.li_temp_answers_list}]
+                    self.li_temp_answers_list = self.li_temp_answers_list + [{"ans": li_loop_ref.current.but_name,
+                                                                              "value": li_loop_ref.current.state == 'down'}]
+                self.results = self.results + [{"question" :question.current['question'],
+                                                "type": "LI", "index": question.current['index'],
+                                                "answers": self.li_temp_answers_list}]
 
         with If(save_logs):
             Log(self.results,
-                name = "questionnaire",)
+                name="questionnaire",)
+
 
 if __name__ == "__main__":
     from mouse import MouseCursor
-    bob = [{'type':"TITLE",
+    bob = [{'type': "TITLE",
             'question': "SMILE QUESTIONNAIRE"},
-           {'type':"LI",
-            'question':"How Happy Are You?",
-            'ans':['Not Happy','','','Meh', '','','Happy'],
-            'group_id':'first_question'},
-           {'type':"LI",
-            'question':"How Old are you?",
-            'ans':['<10','12','15','<20'],
+           {'type': "LI",
+            'question': "How Happy Are You?",
+            'ans': ['Not Happy',
+                    '', '',
+                    'Meh',
+                    '', '',
+                    'Happy'],
+            'group_id': 'first_question'},
+           {'type': "LI",
+            'question': "How Old are you?",
+            'ans': ['<10', '12', '15', '<20'],
             'group_id':'second_li_question'},
-           {'type':"LI",
-            'question':"To be or not to be?",
-            'ans':['That is the Question.','To be is to do.','To do is to be.'],
-            'group_id':'THIRD_li_question'},
-           {'type':"CT",
-            'question':"How many years have you lived in your current home?",
-            'ans':['1','5','10'],
-            'max':5,
-            'min':-5},
-           {'type':"CT",
-            'question':"Where left is Too much, and right is too little, and middle is just right, how much does your car cost?",
-            'ans':['','',''],
-            'max':10,
-            'min':-10},
-           {'type':"TI",
-            'question':"Choose your favorite name.",
-            'ans':['Moe','Curly','Larry'],
-            'group_id':'second_ans_question'},
-           {'type':"TI",
-            'question':"If you could do anything in the world right now, what would it be?",
-            'multiline':1},
-           {'type':"TI",
-            'question':"Tell me about your life.",
-            'multiline':3},
-           {'type':"TI",
-            'question':"Tell me about your breakfest",
-            'multiline':2},
-           {'type':"MC",
-            'question':"Choose your Favorite Jim Carry Movie!",
-            'ans':['Eternal Sunshine of the Spotless Mind','Yes Man','A Series of Unfortunate Events', 'I Love You, Phillip Morris!'],
-            'group_id':'third_ans_question'},
-           {'type':"CA",
-            'question':"Choose the all that apply!",
-            'ans':['I am an Adult','I have a pet','I own a house'],
-            'group_id':'choose_question_one'},
-           {'type':"TITLE",
+           {'type': "LI",
+            'question': "To be or not to be?",
+            'ans': ['That is the Question.',
+                    'To be is to do.',
+                    'To do is to be.'],
+            'group_id': 'THIRD_li_question'},
+           {'type': "CT",
+            'question': "How many years have you lived in your current home?",
+            'ans': ['1', '5', '10'],
+            'max': 5,
+            'min': -5},
+           {'type': "CT",
+            'question': "Where left is Too much, and right is too little, and middle is just right, how much does your car cost?",
+            'ans': ['', '', ''],
+            'max': 10,
+            'min': -10},
+           {'type': "TI",
+            'question': "Choose your favorite name.",
+            'ans': ['Moe', 'Curly', 'Larry'],
+            'group_id': 'second_ans_question'},
+           {'type': "TI",
+            'question': "If you could do anything in the world right now, what would it be?",
+            'multiline': 1},
+           {'type': "TI",
+            'question': "Tell me about your life.",
+            'multiline': 3},
+           {'type': "TI",
+            'question': "Tell me about your breakfest",
+            'multiline': 2},
+           {'type': "MC",
+            'question': "Choose your Favorite Jim Carry Movie!",
+            'ans': ['Eternal Sunshine of the Spotless Mind',
+                    'Yes Man',
+                    'A Series of Unfortunate Events',
+                    'I Love You, Phillip Morris!'],
+            'group_id': 'third_ans_question'},
+           {'type': "CA",
+            'question': "Choose the all that apply!",
+            'ans': ['I am an Adult', 'I have a pet', 'I own a house'],
+            'group_id': 'choose_question_one'},
+           {'type': "TITLE",
             'question': "SMILE QUESTIONNAIRE 2 "},
-           {'type':"LI",
-            'question':"How Happy is your family?",
-            'ans':['Not Happy','','','Meh', '','','Happy'],
-            'group_id':'first_question'},
-           {'type':"LI",
-            'question':"How Old is your mother?",
-            'ans':['10','12','15','20'],
-            'group_id':'second_li_question'}]
+           {'type': "LI",
+            'question': "How Happy is your family?",
+            'ans': ['Not Happy',
+                    '', '',
+                    'Meh',
+                    '', '',
+                    'Happy'],
+            'group_id': 'first_question'},
+           {'type': "LI",
+            'question': "How Old is your mother?",
+            'ans': ['10', '12', '15', '20'],
+            'group_id': 'second_li_question'}]
 
     from experiment import Experiment
     exp = Experiment()
@@ -717,7 +756,6 @@ if __name__ == "__main__":
         tt = Questionnaire(loq=bob,
                            height=800,
                            width=600,
-             x = 50, y=50,)
+                           x=50, y=50,)
         MouseCursor(blocking=False)
-    Log(tt.results)
     exp.run()
