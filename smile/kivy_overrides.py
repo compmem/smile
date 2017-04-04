@@ -115,7 +115,7 @@ def _get_config():
     fullscreen = Config.getdefault("SMILE", "FULLSCREEN", "auto")
     if platform == "android" or platform == "ios":
         data_dir = Config.getdefault("SMILE", "DEFAULT_DATA_DIR",
-                                     "/sdcard/SMILE/")
+                                     "/sdcard/SMILE/data")
     else:
         data_dir = Config.getdefault("SMILE", "DEFAULT_DATA_DIR",
                                      os.path.join(".", "data"))

@@ -342,10 +342,10 @@ class Experiment(object):
         self._subject_dir = os.path.join(kconfig['default_data_dir'],
                                          self._exp_name, subj_id)
 
-        self._sesison_dir = os.path.join(kconfig['default_data_dir'],
+        self._session_dir = os.path.join(kconfig['default_data_dir'],
                                          self._exp_name, subj_id,
                                          self._session)
-
+                                         
         if not os.path.isdir(self._session_dir):
             os.makedirs(self._session_dir)
 
@@ -498,7 +498,7 @@ class Experiment(object):
     @property
     def exp_name(self):
         return self._exp_name
-        
+
     @property
     def subject(self):
         return self._subject
