@@ -345,7 +345,7 @@ class Experiment(object):
         self._session_dir = os.path.join(kconfig['default_data_dir'],
                                          self._exp_name, subj_id,
                                          self._session)
-                                         
+
         if not os.path.isdir(self._session_dir):
             os.makedirs(self._session_dir)
 
@@ -409,10 +409,11 @@ class Experiment(object):
         self._subject = args.subject
 
         self._subject_dir = os.path.join(kconfig['default_data_dir'],
-                                      self._exp_name, self._subject)
+                                         self._exp_name, self._subject)
 
         self._session_dir = os.path.join(kconfig['default_data_dir'],
-                                      self._exp_name, self._subject, self._session)
+                                         self._exp_name, self._subject,
+                                         self._session)
 
         if not os.path.exists(self._session_dir):
             os.makedirs(self._session_dir)
