@@ -251,12 +251,18 @@ class Experiment(object):
     screen : Screen
         Used to gain access to the size, shape, and location of variables like
         **center_x**, **height**, and **size** on the screen.
-    subj : string
+    subject : string
         The subject number/name given in the command line via `-s name` or set
         during experimental build time.
-    subj_dir : string
-        string to where to save this subject's data. By default, it will be
-        "data\subject_name"
+    subject_dir : string
+        String to where to save this subject's sessions. By default, it will be
+        "data\experiment_name\subject\*"
+    session : string
+        The session number in the format YYYYMMDD_HHmmss, where the hours are
+        on the 24 hour clock.
+    session_dir : string
+        String to the directory where this subjects data for this session
+        exists. "data\experiment_name\subject\session\*"
     info : string
         The info for the arguments you pass into the Experiment at
         initialization.
@@ -289,8 +295,8 @@ class Experiment(object):
                  name="Smile"):
 
         self._platform = platform
-        self._name = name
-        self._sess_dir = time.strftime("%Y%m%d_%H%M%S")
+        self._exp_name = name
+        self._session = time.strftime("%Y%m%d_%H%M%S")
 
         self._process_args()
 
@@ -320,7 +326,7 @@ class Experiment(object):
         self._vars = {}
         self.__issued_refs = weakref.WeakValueDictionary()
 
-        self._reserved_data_filenames = set(os.listdir(os.path.join(self._subj_dir)))
+        self._reserved_data_filenames = set(os.listdir(os.path.join(self._session_dir)))
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
 
@@ -331,15 +337,18 @@ class Experiment(object):
             logger.close()
             os.remove(filename)
 
-        self._subj = subj_id
+        self._subject = subj_id
 
-        self._subj_dir = os.path.join(kconfig['default_data_dir'], "data",
-                                      self._name, subj_id, self._sess_dir)
+        self._subject_dir = os.path.join(kconfig['default_data_dir'], "data",
+                                      self._exp_name, subj_id)
 
-        if not os.path.isdir(self._subj_dir):
-            os.makedirs(self._subj_dir)
+        self._sesison_dir = os.path.join(kconfig['default_data_dir'], "data",
+                                      self._exp_name, subj_id, self._session)
 
-        self._reserved_data_filenames = set(os.listdir(self._subj_dir))
+        if not os.path.isdir(self._session_dir):
+            os.makedirs(self._session_dir)
+
+        self._reserved_data_filenames = set(os.listdir(self._session_dir))
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
         self._root_state.begin_log()
@@ -396,13 +405,16 @@ class Experiment(object):
         kconfig = kivy_overrides._get_config()
 
         # set up the subject and subj dir
-        self._subj = args.subject
+        self._subject = args.subject
 
-        self._subj_dir = os.path.join(kconfig['default_data_dir'], "data",
-                                      self._name, self._subj, self._sess_dir)
+        self._subject_dir = os.path.join(kconfig['default_data_dir'], "data",
+                                      self._exp_name, self._subject)
 
-        if not os.path.exists(self._subj_dir):
-            os.makedirs(self._subj_dir)
+        self._session_dir = os.path.join(kconfig['default_data_dir'], "data",
+                                      self._exp_name, self._subject, self._session)
+
+        if not os.path.exists(self._session_dir):
+            os.makedirs(self._session_dir)
 
         # check for fullscreen
         if args.fullscreen:
@@ -439,7 +451,7 @@ class Experiment(object):
             title = "%s_%s" % (title, time.strftime("%Y%m%d%H%M%S",
                                                     time.gmtime()))
         with self._reserved_data_filenames_lock:
-            self._reserved_data_filenames |= set(os.listdir(self._subj_dir))
+            self._reserved_data_filenames |= set(os.listdir(self._session_dir))
             for distinguisher in xrange(256):
                 if ext is None:
                     filename = "%s_%d" % (title, distinguisher)
@@ -447,7 +459,7 @@ class Experiment(object):
                     filename = "%s_%d.%s" % (title, distinguisher, ext)
                 if filename not in self._reserved_data_filenames:
                     self._reserved_data_filenames.add(filename)
-                    return os.path.join(self._subj_dir, filename)
+                    return os.path.join(self._session_dir, filename)
             else:
                 raise RuntimeError(
                     "Too many data files with the same title, extension, and timestamp!")
@@ -481,18 +493,24 @@ class Experiment(object):
     @property
     def platform(self):
         return self._platform
-
+    @property
+    def experiment_name(self):
+        return self._exp_name
     @property
     def subject(self):
-        return self._subj
+        return self._subject
+
+    @property
+    def session(self):
+        return self._session
 
     @property
     def subject_dir(self):
-        return self._subj_dir
+        return self._subject_dir
 
     @property
     def session_dir(self):
-        return self._sess_dir
+        return self._session_dir
 
     @property
     def info(self):
