@@ -290,6 +290,8 @@ class Experiment(object):
 
         self._platform = platform
         self._name = name
+        self._sess_dir = time.strftime("%Y%m%d_%H%M%S")
+
         self._process_args()
 
         # handle fullscreen and resolution before Window is imported
@@ -318,7 +320,7 @@ class Experiment(object):
         self._vars = {}
         self.__issued_refs = weakref.WeakValueDictionary()
 
-        self._reserved_data_filenames = set(os.listdir(self._subj_dir))
+        self._reserved_data_filenames = set(os.listdir(os.path.join(self._subj_dir)))
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
 
@@ -332,7 +334,7 @@ class Experiment(object):
         self._subj = subj_id
 
         self._subj_dir = os.path.join(kconfig['default_data_dir'], "data",
-                                      self._name, subj_id)
+                                      self._name, subj_id, self._sess_dir)
 
         if not os.path.isdir(self._subj_dir):
             os.makedirs(self._subj_dir)
@@ -397,7 +399,7 @@ class Experiment(object):
         self._subj = args.subject
 
         self._subj_dir = os.path.join(kconfig['default_data_dir'], "data",
-                                      self._name, self._subj)
+                                      self._name, self._subj, self._sess_dir)
 
         if not os.path.exists(self._subj_dir):
             os.makedirs(self._subj_dir)
@@ -487,6 +489,10 @@ class Experiment(object):
     @property
     def subject_dir(self):
         return self._subj_dir
+
+    @property
+    def session_dir(self):
+        return self._sess_dir
 
     @property
     def info(self):
