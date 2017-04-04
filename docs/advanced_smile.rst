@@ -89,6 +89,131 @@ below in terms of x, y, width, and height:
 
 - right_top : (x + width, y + height)
 
+.. _setting_in_rt:
+
+SMILE References
+================
+
+A SMILE *Ref* is a delayed function call. Its paramters are a function and any
+arguments for that function. A *Ref* will not run the function with those
+parameters, however, until the value of the reference is needed during Run Time.
+
+Not only can a *Ref* delay the evaluation of a function call, it can also delay
+the evaluation of conditional statements, getting an item from a list, or even
+simple mathamatical statements.
+
+Getitem with References
++++++++++++++++++++++++
+
+*Ref.getitem()* is only important when the item that you are trying to get from
+a list like object has an index that is a Ref. This ref could come from a
+calculation that you are trying to do during runtime, the index of the current
+iteration of a loop, or even the result of another call to *Ref.getitem()*.
+
+Below is an example of how to use *Ref.getitem()*
+
+
+Setting a variable in RT
+++++++++++++++++++++++++
+
+Like it is stated in :ref:`Build Time VS Run Time <run_build_time>`, in order to
+set a variable in SMILE during **RT**, the *exp.variable_name* syntax must be
+used. In this section, the results of calling 'exp.variable_name' in SMILE will
+be examined.
+
+The following is a sample experiment where *exp.display_me* is set to a string:
+
+.. code-block:: python
+
+    from smile.common import *
+
+    exp = Experiment()
+
+    exp.display_me = "LETS DISPLAY THIS SECRET MESSAGE"
+    Label(text=exp.display_me)
+
+    exp.run()
+
+This is a very simple experiment. It must be understood that
+*exp.display_me = "LETS DISPLAY THIS SECRET MESSAGE"* creates a
+:py:class:`~smile.experiment.Set` state. A **Set** state takes a string
+*var_name* that refers to a variable in an **Experiment** or to a newly created
+variable, and a *value* that refers to the value that the variable is assigned
+to take on. The important takeaway is that 'value' can be referenced to a value.
+If 'value' is a reference, it will be evaluated during **RT**.  Below is an
+example of what the experiment would look like if the 3rd line is changed:
+
+.. code-block:: python
+
+    from smile.common import *
+
+    exp = Experiment()
+
+    Set(var_name="display_me", value="LETS DISPLAY THIS SECRET MESSAGE")
+    Label(text=exp.display_me)
+
+    exp.run()
+
+Both sample experiments run the exact same way, but the only difference is how
+the code looks to the end user. The Set state is untimed, so it changes the
+value of the variable immediately at enter. For more information look at the
+docstring for :py:class:`~smile.experiment.Set` and the code behind the
+**smile.experiment.Experiment.set_var()** method.
+
+.. _func_ref_def:
+
+Performing Operations and Functions in RT
++++++++++++++++++++++++++++++++++++++++++
+
+Until this point, new methods that run during **RT** have not run correctly. In
+this section, examining why this happens and correcting this issue will be
+discussed.
+
+Since every SMILE experiment is separated into **BT** and **RT**, any calls to
+functions or methods without using the proper SMILE syntax will run in **BT**
+and not **RT**. In order to run a function or method, a
+:py:class:`~smile.ref.Ref` or a :py:class:`~smile.state.Func` is needed to be
+used. As stated in :ref:`The Reference Section <ref_def>` of the state machine
+document, a **Ref** is a delayed function call.
+
+**When it is desired to pass in the return value of a function to a SMILE state
+as a parameter, it is appropriate use** **Ref**. The first parameter for a
+**Ref** call is always the function desired to run, and the other parameter to
+that function call are the rest of the parameters to the **Ref**.
+
+Below is an example of a loop that displays the counter of the loop in a label
+on the center of the screen. Since the :py:class:`~smile.state.Loop` counter is
+an integer, the integer must first be changed to a string. This can be performed
+by creating a **Ref** to call 'str()'.
+
+.. code-block:: python
+
+    with Loop(100) as lp:
+        #This Ref is a delayed function call to str where
+        #one of the parameters is a reference. Ref also
+        #takes care of evaluating references.
+        Label(text=Ref(str, lp.i), duration=0.2)
+
+**To run a function during RT** the **Func** state is needed.
+**Func** creates a state that will not run the passed in function call
+until the previous state leaves. The following is an example of using a **Func**
+to generate the next set of stimulus for each iteration of a **Loop**. To access
+the return value of a method or function call, the *.result* attribute of
+the **Func** state must be accessed.
+
+.. code-block:: python
+
+    #Assume DisplayStim is a predefined Subroutine
+    #that displays a list of stimulus, and assume that
+    #gen_stim is a predefined function that generates
+    #that stimulus
+    with Loop(10) as lp:
+        stim = Func(gen_stim, length=lp.i)
+        DisplayStim(stim.result, duration=5)
+
+.. note::
+
+    Remember that you can pass in keyword arguments AND regular arguments into both Func states and Ref calls.
 
 Extending Smile
 ===============
@@ -425,112 +550,31 @@ dotbox.py in Full
                 # draw the points
                 self._points = Point(points=points, pointsize=self.pointsize)
 
-.. _setting_in_rt:
+.. _advanced_timing:
 
-Setting a variable in RT
-========================
+Timing of states and visual stimuli
+===================================
 
-Like it is stated in :ref:`Build Time VS Run Time <run_build_time>`, in order to
-set a variable in SMILE during **RT**, the *exp.variable_name* syntax must be
-used. In this section, the results of calling 'exp.variable_name' in SMILE will
-be examined.
+All timed *events* in SMILE are recorded in dictionaries with a 'time' and an
+'error' key. 'time' is when the events supposedly happened, 'error' is the
+maximum error in either direction that the 'time' could be off by. VisualStates
+all have *appear_time* and *disappear_time* dictionairies that indicates when
+they appeared and disappeared onto the screen. This time is in seconds and
+based on the system clock. For appear and disappear times, the 'error' is set to
+0.0. SMILE uses calls to OpenGL in order to accurately record these times. After
+running many tests with the SMILE system, it has become apperant that SMILE
+works really well on machines that are using nvidia graphics cards.
+*We highly recommend that you use a nvidia graphics card* if you are interested
+in having millisecond accurate timing of your stimuli.
 
-The following is a sample experiment where *exp.display_me* is set to a string:
+You need to also make sure you have v-sync enabled in order to have good timing
+in SMILE.
 
-.. code-block:: python
-
-    from smile.common import *
-
-    exp = Experiment()
-
-    exp.display_me = "LETS DISPLAY THIS SECRET MESSAGE"
-    Label(text=exp.display_me)
-
-    exp.run()
-
-This is a very simple experiment. It must be understood that
-*exp.display_me = "LETS DISPLAY THIS SECRET MESSAGE"* creates a
-:py:class:`~smile.experiment.Set` state. A **Set** state takes a string
-*var_name* that refers to a variable in an **Experiment** or to a newly created
-variable, and a *value* that refers to the value that the variable is assigned
-to take on. The important takeaway is that 'value' can be referenced to a value.
-If 'value' is a reference, it will be evaluated during **RT**.  Below is an
-example of what the experiment would look like if the 3rd line is changed:
-
-.. code-block:: python
-
-    from smile.common import *
-
-    exp = Experiment()
-
-    Set(var_name="display_me", value="LETS DISPLAY THIS SECRET MESSAGE")
-    Label(text=exp.display_me)
-
-    exp.run()
-
-Both sample experiments run the exact same way, but the only difference is how
-the code looks to the end user. The Set state is untimed, so it changes the
-value of the variable immediately at enter. For more information look at the
-docstring for :py:class:`~smile.experiment.Set` and the code behind the
-**smile.experiment.Experiment.set_var()** method.
-
-.. _func_ref_def:
-
-Performing Operations and Functions in RT
-=========================================
-
-Until this point, new methods that run during **RT** have not run correctly. In
-this section, examining why this happens and correcting this issue will be
-discussed.
-
-Since every SMILE experiment is separated into **BT** and **RT**, any calls to
-functions or methods without using the proper SMILE syntax will run in **BT**
-and not **RT**. In order to run a function or method, a
-:py:class:`~smile.ref.Ref` or a :py:class:`~smile.state.Func` is needed to be
-used. As stated in :ref:`The Reference Section <ref_def>` of the state machine
-document, a **Ref** is a delayed function call.
-
-**When it is desired to pass in the return value of a function to a SMILE state
-as a parameter, it is appropriate use** **Ref**. The first parameter for a
-**Ref** call is always the function desired to run, and the other parameter to
-that function call are the rest of the parameters to the **Ref**.
-
-Below is an example of a loop that displays the counter of the loop in a label
-on the center of the screen. Since the :py:class:`~smile.state.Loop` counter is
-an integer, the integer must first be changed to a string. This can be performed
-by creating a **Ref** to call 'str()'.
-
-.. code-block:: python
-
-    with Loop(100) as lp:
-        #This Ref is a delayed function call to str where
-        #one of the parameters is a reference. Ref also
-        #takes care of evaluating references.
-        Label(text=Ref(str, lp.i), duration=0.2)
-
-**To run a function during RT** the **Func** state is needed.
-**Func** creates a state that will not run the passed in function call
-until the previous state leaves. The following is an example of using a **Func**
-to generate the next set of stimulus for each iteration of a **Loop**. To access
-the return value of a method or function call, the *.result* attribute of
-the **Func** state must be accessed.
-
-.. code-block:: python
-
-    #Assume DisplayStim is a predefined Subroutine
-    #that displays a list of stimulus, and assume that
-    #gen_stim is a predefined function that generates
-    #that stimulus
-    with Loop(10) as lp:
-        stim = Func(gen_stim, length=lp.i)
-        DisplayStim(stim.result, duration=5)
-
-.. note::
-
-    Remember that you can pass in keyword arguments AND regular arguments into both Func states and Ref calls.
+Below are a series of sections that explain different timing nuances in SMILE.
+It is highly recommended that you read the following sections
 
 Effective timing of KeyPress
-============================
+++++++++++++++++++++++++++++
 
 In order to increase the effectiveness of a **KeyPress** state, you can set a
 *base_time* parameter. A **KeyPress** will calculate the reaction time, or *rt*,
@@ -561,7 +605,7 @@ stimulus disappear off the screen, you need to set the *base_time* as the
 
 
 Timing the Screen Refresh VS Timing Inputs
-==========================================
+++++++++++++++++++++++++++++++++++++++++++
 
 Before examining this section, it is important to understand how SMILE displays
 each frame of your experiment. SMILE runs on a two buffer system, where when
