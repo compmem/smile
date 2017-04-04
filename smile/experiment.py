@@ -292,7 +292,7 @@ class Experiment(object):
 
     """
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
-                 name="Smile"):
+                 name="SMILE"):
 
         self._platform = platform
         self._exp_name = name
@@ -339,11 +339,12 @@ class Experiment(object):
 
         self._subject = subj_id
 
-        self._subject_dir = os.path.join(kconfig['default_data_dir'], "data",
-                                      self._exp_name, subj_id)
+        self._subject_dir = os.path.join(kconfig['default_data_dir'],
+                                         self._exp_name, subj_id)
 
-        self._sesison_dir = os.path.join(kconfig['default_data_dir'], "data",
-                                      self._exp_name, subj_id, self._session)
+        self._sesison_dir = os.path.join(kconfig['default_data_dir'],
+                                         self._exp_name, subj_id,
+                                         self._session)
 
         if not os.path.isdir(self._session_dir):
             os.makedirs(self._session_dir)
@@ -407,10 +408,10 @@ class Experiment(object):
         # set up the subject and subj dir
         self._subject = args.subject
 
-        self._subject_dir = os.path.join(kconfig['default_data_dir'], "data",
+        self._subject_dir = os.path.join(kconfig['default_data_dir'],
                                       self._exp_name, self._subject)
 
-        self._session_dir = os.path.join(kconfig['default_data_dir'], "data",
+        self._session_dir = os.path.join(kconfig['default_data_dir'],
                                       self._exp_name, self._subject, self._session)
 
         if not os.path.exists(self._session_dir):
@@ -493,9 +494,11 @@ class Experiment(object):
     @property
     def platform(self):
         return self._platform
+
     @property
-    def experiment_name(self):
+    def exp_name(self):
         return self._exp_name
+        
     @property
     def subject(self):
         return self._subject
