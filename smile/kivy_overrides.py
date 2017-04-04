@@ -1,5 +1,6 @@
 import sys
 import argparse
+import os
 
 if "kivy_overrides" not in sys.modules.keys() and \
    any([name.startswith("kivy") for name in sys.modules.keys() if
@@ -114,9 +115,10 @@ def _get_config():
     fullscreen = Config.getdefault("SMILE", "FULLSCREEN", "auto")
     if platform == "android" or platform == "ios":
         data_dir = Config.getdefault("SMILE", "DEFAULT_DATA_DIR",
-                                     "/sdcard/SMILE/")
+                                     "/sdcard/SMILE/data")
     else:
-        data_dir = Config.getdefault("SMILE", "DEFAULT_DATA_DIR", ".")
+        data_dir = Config.getdefault("SMILE", "DEFAULT_DATA_DIR",
+                                     os.path.join(".", "data"))
 
     return_dict = {"fullscreen": fullscreen, "locked": locked,
                    "font_size": font_size, "font_name": font_name,
