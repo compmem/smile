@@ -695,84 +695,6 @@ that says "PLEASE TALK TO YOUR COMPUTER". It then saves the recording as
 
 For more details, see the :py:class:`~smile.audio.RecordSoundFile` docstring.
 
-Button
-------
-
-:py:class:`~smile.video.Button` is a visual and an input state that draws a
-button on the screen with optional text in the button for a specified
-*duration*. Every button can be set to have a *name* that can be referenced by
-:py:class:`~smile.video.ButtonPress` states to determine if the *correct* button
-was pressed. See the SMILE tutorial example for *ButtonPress* for more information.
-
-Below is an example of a Form, where a :py:class:`~smile.video.Label` state will
-ask someone to type in an answer to a :py:class:`~smile.video.TextInput`. Then
-they will press the button when they are finished typing:
-
-.. code-block:: python
-
-    from smile.common import *
-
-    from smile.video import TextInput
-
-    exp = Experiment()
-
-    # Show both the Label and the TextInput at the same time
-    # during the experiment
-    with Parallel():
-        # Required to show the mouse on the screen during the experiment!
-        MouseCursor()
-        Label(text="Hello, Tell me about your day!", center_y=exp.screen.center_y+50)
-        TextInput(text="", width=500, height=200)
-
-    # When the button is pressed, the Button state ends, causing
-    # the parallel to cancel all of its children, the Label and the
-    # TextInput
-    with UntilDone():
-        # A ButtonPress will end whenever one of its child buttons
-        # is pressed.
-        with ButtonPress():
-            Button(text="Enter")
-
-    exp.run()
-
-For more details, see the :py:class:`~smile.video.Button` docstring.
-
-ButtonPress
------------
-
-:py:class:`~smile.video.ButtonPress` is a parent state, much like
-:py:class:`~smile.state.Parallel`, that will run until a button inside of it is
-pressed. When defining a **ButtonPress** state, The name of a button inside of
-the parent state can be designated as the correct button to press by passing the
-string *name* of the correct **Button** or **Buttons** into the *correct_resp*
-parameter. Refer to the **ButtonPress** example in the SMILE tutorial document.
-
-The following is an example of choosing between 3 buttons where only one of the
-buttons is the correct button to click:
-
-.. code-block:: python
-
-    from smile.common import *
-
-    exp = Experiment()
-
-    # A ButtonPress will end whenever one of its child buttons
-    # is pressed.
-    with ButtonPress(correct_resp=['First_Choice']) as bp:
-        # Required to do anything with buttons.
-        MouseCursor()
-        Label(text="Choose WISELY")
-        # Define both buttons, giving both unique names
-        Button(name="First_Choice",text="LEFT CHOICE",
-               center_x=exp.screen.center_x-200)
-        Button(name="Second_Choice",text="RIGHT CHOICE",
-               center_x=exp.screen.center_x+200)
-    Label(text=bp.pressed, duration=2)
-
-    exp.run()
-
-For more details, see the :py:class:`~smile.video.ButtonPress` docstring.
-
 KeyPress
 --------
 
@@ -863,3 +785,135 @@ For more details, see the :py:class:`~smile.mouse.MouseCursor` docstring.
 
 For more useful mouse tutorials, see the **Mouse Stuff** section of the Tutorial
 document.
+
+Button
+------
+
+:py:class:`~smile.video.Button` is a visual and an input state that draws a
+button on the screen with optional text in the button for a specified
+*duration*. Every button can be set to have a *name* that can be referenced by
+:py:class:`~smile.video.ButtonPress` states to determine if the *correct* button
+was pressed. See the SMILE tutorial example for *ButtonPress* for more information.
+
+Below is an example of a Form, where a :py:class:`~smile.video.Label` state will
+ask someone to type in an answer to a :py:class:`~smile.video.TextInput`. Then
+they will press the button when they are finished typing:
+
+.. code-block:: python
+
+    from smile.common import *
+
+    from smile.video import TextInput
+
+    exp = Experiment()
+
+    # Show both the Label and the TextInput at the same time
+    # during the experiment
+    with Parallel():
+        # Required to show the mouse on the screen during the experiment!
+        MouseCursor()
+        Label(text="Hello, Tell me about your day!", center_y=exp.screen.center_y+50)
+        TextInput(text="", width=500, height=200)
+
+    # When the button is pressed, the Button state ends, causing
+    # the parallel to cancel all of its children, the Label and the
+    # TextInput
+    with UntilDone():
+        # A ButtonPress will end whenever one of its child buttons
+        # is pressed.
+        with ButtonPress():
+            Button(text="Enter")
+
+    exp.run()
+
+For more details, see the :py:class:`~smile.video.Button` docstring.
+
+ButtonPress
+-----------
+
+:py:class:`~smile.video.ButtonPress` is a parent state, much like
+:py:class:`~smile.state.Parallel`, that will run until a button inside of it is
+pressed. When defining a **ButtonPress** state, The name of a button inside of
+the parent state can be designated as the correct button to press by passing the
+string *name* of the correct **Button** or **Buttons** into the *correct_resp*
+parameter. Refer to the **ButtonPress** example in the SMILE tutorial document.
+
+The following is an example of choosing between 3 buttons where only one of the
+buttons is the correct button to click:
+
+.. code-block:: python
+
+    from smile.common import *
+
+    exp = Experiment()
+
+    # A ButtonPress will end whenever one of its child buttons
+    # is pressed.
+    with ButtonPress(correct_resp=['First_Choice']) as bp:
+        # Required to do anything with buttons.
+        MouseCursor()
+        Label(text="Choose WISELY")
+        # Define both buttons, giving both unique names
+        Button(name="First_Choice",text="LEFT CHOICE",
+               center_x=exp.screen.center_x-200)
+        Button(name="Second_Choice",text="RIGHT CHOICE",
+               center_x=exp.screen.center_x+200)
+    Label(text=bp.pressed, duration=2)
+
+    exp.run()
+
+For more details, see the :py:class:`~smile.video.ButtonPress` docstring.
+
+Interactive Widgets
+-------------------
+
+Each **Interactive Widget** listed below has a brief description in the video.py
+docstrings. They are used whenever you need to create an interactive page in
+SMILE. Most of these are very useful in questionnaires, and some of them are
+used within a ButtonPress state.
+
+    - :py:class:`~smile.video.Slider`
+
+    - :py:class:`~smile.video.TextInput`
+
+    - :py:class:`~smile.video.ToggleButton`
+
+    - :py:class:`~smile.video.CheckBox`
+
+    - :py:class:`~smile.video.ProgressBar`
+
+The parameters for each of these vary, but just like any other SMILE state,
+they take the same parameters as the default *State* class. They are Kivy
+widgets wrapped in our *WidgetState* class. Kivy documentation can be referred
+to for understanding how to use them or what parameters they take.
+
+Kivy Layouts
+------------
+
+Each **Kivy Layout** allows you to put widget states on the screen with different
+positioning rules. **FloatLayout** is the default layout of any SMILE
+experiment, which allows you to place widgets relative to the bottom right of
+the screen.
+
+    - AnchorLayout
+
+    - BoxLayout
+
+    - FloatLayout
+
+    - RelativeLayout
+
+    - GridLayout
+
+    - PageLayout
+
+    - ScatterLayout
+
+    - StackLayout
+
+    - ScrollView
+
+Each layout borrows its rules from the corrisponding kivy layout. If you would
+like more information on how each layout works, please view the page on layouts
+over on `the kivy website.<https://kivy.org/docs/gettingstarted/layouts.html>`_
+Most of the parameters map on to parameters that work directly with SMILE.
