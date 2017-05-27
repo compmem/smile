@@ -7,6 +7,7 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
+from __future__ import print_function
 import operator
 import os
 
@@ -373,7 +374,7 @@ if __name__ == '__main__':
     from state import Wait, Debug, Loop, Meanwhile, Record, Log, Parallel
 
     def print_dt(state, *args):
-        print args
+        print(args)
 
     exp = Experiment()
 
