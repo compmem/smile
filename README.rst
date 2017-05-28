@@ -17,10 +17,12 @@ Prepare to Smile...
 Dependencies
 ============
 
-- `python <https://www.python.org/>`_ (version 2.7, not 3)
+- `python <https://www.python.org/>`_ (version 2.7 or 3)
 - `kivy <http://www.kivy.org/>`_ (version 1.8 or 1.9)
 - `pyo <http://ajaxsoundstudio.com/software/pyo/>`_ (optional, for audio)
 
 
+Documentation
+=============
 
-
+For detailed documentation, please visit http://smile-docs.readthedocs.io/
