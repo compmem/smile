@@ -9,7 +9,6 @@
 
 # load all the states
 from smile.common import *
-from smile.experiment import Set
 
 # create an experiment
 exp = Experiment()
@@ -35,9 +34,6 @@ with Meanwhile():
                 circ = Ellipse(center=mp.pos, color=(jitter(0, 1),
                                                      jitter(0, 1),
                                                      jitter(0, 1)))
-            # Set('circs',
-            #     exp.circs + [ins.first],
-            #     save_log=False)
             exp.circs = exp.circs + [ins.first]
 
 # print out the locs we saved
