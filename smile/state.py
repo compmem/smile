@@ -2410,6 +2410,9 @@ class Wait(State):
         if self.__until is None:
             self._started = True
         else:
+            # must ensure we clean up NotAvailable to avoid log error
+            if self._until_value == NotAvailable:
+                self._until_value = None
             self.__until.remove_change_callback(self.check_until)
             clock.unschedule(self.schedule_check_until)
 
@@ -2440,6 +2443,9 @@ class Wait(State):
         except NotAvailableError:
             self._until_value = NotAvailable
         if self._until_value:
+            # PBS: We need to evaluate whether this is the correct
+            # event_time to be using. Do we need to add in another
+            # based on the clock.tick times?
             self._event_time = self._exp._app.event_time
             clock.schedule(partial(self.cancel, self._event_time["time"]))
 

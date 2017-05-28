@@ -67,6 +67,10 @@ class SmileApp(App):
         self.force_nonblocking_flip = False
         self.flip_interval = 1/60.  # default to 60 Hz
 
+        # set event_time stuff
+        self.event_time = event_time(0., 0.)
+        self.dispatch_input_event_time = event_time(0., 0.)
+
         # make Window avail to exp
         self._Window = Window
 
@@ -111,7 +115,7 @@ class SmileApp(App):
         self.current_touch = None
 
         # set starting times
-        self._last_time = clock.now()
+        self._post_dispatch_time = clock.now()
 
         # use our idle callback (defined below)
         kivy.base.EventLoop.set_idle_callback(self._idle_callback)
@@ -208,7 +212,7 @@ class SmileApp(App):
                                    newly_pressed=True,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
-                                   event_time=self.event_time)
+                                   event_time=self.dispatch_input_event_time)
         elif etype == "update":
             self.exp._screen._set_mouse_pos(tuple(int(round(x))
                                                   for x in me.pos))
@@ -218,7 +222,7 @@ class SmileApp(App):
                                    newly_pressed=False,
                                    double=me.is_double_tap,
                                    triple=me.is_triple_tap,
-                                   event_time=self.event_time)
+                                   event_time=self.dispatch_input_event_time)
         else:
             self.exp._screen._set_mouse_button(None)
             self.exp._screen._set_mouse_pos(tuple(int(round(x))
@@ -227,19 +231,21 @@ class SmileApp(App):
             self._trigger_callback("MOTION", pos=me.pos, button=None,
                                    newly_pressed=False,
                                    double=False, triple=False,
-                                   event_time=self.event_time)
+                                   event_time=self.dispatch_input_event_time)
 
     def _idle_callback(self, event_loop):
         # record the time range
         self._new_time = clock.now()
-        time_err = (self._new_time - self._last_time) / 2.0
-        self.event_time = event_time(self._last_time + time_err, time_err)
 
         # call any of our scheduled events that are ready
         clock.tick()
 
         # dispatch input events
+        time_err = (clock.now() - self._post_dispatch_time) / 2.0
+        self.dispatch_input_event_time = event_time(self._post_dispatch_time +
+                                                    time_err, time_err)
         event_loop.dispatch_input()
+        self._post_dispatch_time = clock.now()
 
         # processing video and drawing can only happen if we have
         # not already drawn
@@ -337,9 +343,6 @@ class SmileApp(App):
             # reset for next flip
             self.pending_flip_time = None
 
-        # save the time
-        self._last_time = self._new_time
-
         # exit if experiment done
         if not self.exp._root_executor._active:
             if self.exp._root_executor._enter_time:
@@ -348,6 +351,11 @@ class SmileApp(App):
 
         # give time to other threads
         clock.usleep(IDLE_USLEEP)
+
+        # save the time
+        self._last_time = clock.now()
+        time_err = (self._last_time - self._new_time) / 2.0
+        self.event_time = event_time(self._new_time + time_err, time_err)
 
     def do_flip(self, block=True):
         # call the flip
