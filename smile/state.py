@@ -1147,9 +1147,11 @@ class Parallel(ParentState):
         # return the child
         return child
 
-    def insert(self, children=None, parent=None, save_log=True, name=None):
+    def insert(self, children=None, parent=None, save_log=True, name=None,
+               blocking=True):
         return ParallelInsertState(self, children=children, parent=parent,
-                                   save_log=save_log, name=name)
+                                   save_log=save_log, name=name,
+                                   blocking=blocking)
 
     def child_leave_callback(self, child):
         # called when any child leaves
@@ -1165,6 +1167,14 @@ class Parallel(ParentState):
                 if self._end_time is not None:
                     # we have an end time, so cancel
                     self.cancel(self._end_time)
+        elif not len(self.__blocking_remaining):
+            # there were no blocking children, so end on first
+            # get the time from this first complete child
+            self._end_time = child._end_time
+            if self._end_time is not None:
+                # we have an end time, so cancel
+                self.cancel(self._end_time)
+
         if not len(self.__remaining):
             # there are no more children to finish, so leave
             self.leave()
@@ -1182,12 +1192,12 @@ class Parallel(ParentState):
 
 class ParallelInsertState(ParentState):
     def __init__(self, parallel_state, children=None, parent=None,
-                 save_log=True, name=None):
+                 save_log=True, name=None, blocking=True):
         super(ParallelInsertState, self).__init__(children=children,
                                                   parent=parent,
                                                   save_log=save_log,
                                                   name=name,
-                                                  blocking=True)
+                                                  blocking=blocking)
         self.__parallel_state = parallel_state
         self._inserted = []
 
@@ -1667,7 +1677,8 @@ class If(SequentialState):
         super(If, self).__init__(parent=parent, save_log=save_log, name=name,
                                  blocking=blocking)
 
-        # save a list of conds to be evaluated (last one always True, acts as the Else)
+        # save a list of conds to be evaluated (last one always True,
+        # acts as the Else)
         self._init_cond = [conditional, True]
         self._outcome_index = None
         self.__true_state = true_state
@@ -1698,12 +1709,14 @@ class If(SequentialState):
         self._log_attrs.append('outcome_index')
 
     def _get_child_iterator(self):
-        self._outcome_index = self._cond.index(True)
+        # evaluate each cond with Python if for consistency
+        cond_bool = [True if x else False for x in self._cond]
+        self._outcome_index = cond_bool.index(True)
         yield self._out_states[self._outcome_index]
 
     def __enter__(self):
         # push self.__true_state as current parent
-        if not self._exp is None:
+        if self._exp is not None:
             self._exp._parents.append(self.__true_state)
         return self
 
