@@ -1160,20 +1160,21 @@ class Parallel(ParentState):
         # remove the child from remaining
         self.__remaining.discard(child)
         if len(self.__blocking_remaining):
+            # remove that child if it's in the blocking list
             self.__blocking_remaining.discard(child)
             if not len(self.__blocking_remaining):
-                # there are still blocking
+                # there are none still blocking
                 self._set_end_time()
                 if self._end_time is not None:
                     # we have an end time, so cancel
                     self.cancel(self._end_time)
-        elif not len(self.__blocking_remaining):
-            # there were no blocking children, so end on first
-            # get the time from this first complete child
-            self._end_time = child._end_time
-            if self._end_time is not None:
-                # we have an end time, so cancel
-                self.cancel(self._end_time)
+        # else:
+        #     # there are no blocking children, so end on first
+        #     # get the time from this first complete child
+        #     self._end_time = child._end_time
+        #     if self._end_time is not None:
+        #         # we have an end time, so cancel
+        #         self.cancel(self._end_time)
 
         if not len(self.__remaining):
             # there are no more children to finish, so leave
@@ -1938,7 +1939,7 @@ class Loop(SequentialState):
 
     def __enter__(self):
         # push self.__body_state as current parent
-        if not self._exp is None:
+        if self._exp is not None:
             self._exp._parents.append(self.__body_state)
         return self
 
