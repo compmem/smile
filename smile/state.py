@@ -1168,13 +1168,13 @@ class Parallel(ParentState):
                 if self._end_time is not None:
                     # we have an end time, so cancel
                     self.cancel(self._end_time)
-        # else:
-        #     # there are no blocking children, so end on first
-        #     # get the time from this first complete child
-        #     self._end_time = child._end_time
-        #     if self._end_time is not None:
-        #         # we have an end time, so cancel
-        #         self.cancel(self._end_time)
+        elif not len(self.__blocking_children):
+            # there are no blocking children, so end on first
+            # get the time from this first complete child
+            self._end_time = child._end_time
+            if self._end_time is not None:
+                # we have an end time, so cancel
+                self.cancel(self._end_time)
 
         if not len(self.__remaining):
             # there are no more children to finish, so leave
