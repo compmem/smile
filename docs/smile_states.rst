@@ -71,24 +71,16 @@ For more details, see the :py:class:`~smile.state.Serial` docstring.
 Parallel State
 --------------
 
-A :py:class:`~smile.state.Parallel` state is a parent state that has children
-and runs those children simultaneously. This means that all of the children
-inside a *Parallel* state will start at the exact same time. The key to a
-*Parallel* state is that it will not end unless all of its children have ended.
-Once it has no more children running, the current state will schedule its own
-end call, allowing the next state to run.
-
-The exception to this rule is when a parameter called *blocking* is set to
-False. *blocking* is a Boolean property of every state that only works when the
-state is a child of a *Parallel* state. If set to False, it will not prevent the
-*Parallel* state from calling its own end method. So, a *Parallel* will end when
-all of its *blocking* children have called their end methods. All remaining,
-non-blocking states will have their cancel method called to allow the *Parallel*
-state to end.
-
-If there are no *blocking* children, the *Parallel* state will end when the
-**FIRST** state ends. This means the duration of the *Parallel*, in this case,
-will be equal to the duration of the shortest duration child state.
+A :py:class:`~smile.state.Parallel` state is a parent state that has child
+States and runs those children simultaneously. A Parallel will not end until all
+of its children are finished running. The only exception to this rule is
+*blocking* parameter. By default, all states have *blocking* set to true, but
+if an experimenter sets *blocking* to False, then SMILE will ignore that state
+when deciding when to end a Parallel. If a Parallel state has 3 children, and
+one of them is non-blocking, then this Parallel will only end if the other two
+states have ended, regardless of what the non-blocking state is doing. If there
+are all *non-blocking* children in a Parallel, then the Parallel will end when
+any of its children have ended.
 
 An example below has 3 :py:class:`~smile.video.Label` states that will disappear
 from the screen at the same time, despite having 3 different durations.
