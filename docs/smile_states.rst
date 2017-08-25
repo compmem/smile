@@ -86,6 +86,10 @@ all of its *blocking* children have called their end methods. All remaining,
 non-blocking states will have their cancel method called to allow the *Parallel*
 state to end.
 
+If there are no *blocking* children, the *Parallel* state will end when the
+**FIRST** state ends. This means the duration of the *Parallel*, in this case,
+will be equal to the duration of the shortest duration child state.
+
 An example below has 3 :py:class:`~smile.video.Label` states that will disappear
 from the screen at the same time, despite having 3 different durations.
 

@@ -1052,6 +1052,10 @@ class Parallel(ParentState):
     to the longest duration out of its *blocking* children. Once this state
     *leaves* it will tell all of its non-blocking children to leave as well.
 
+    If there are no *blocking* children, the Parallel state will end when the
+    **FIRST** state ends. This means the duration of the parallel, in this case,
+    will be equal to the duration of the shortest duration child state.
+
     Parameters
     ----------
     children : list (None)
@@ -1091,6 +1095,15 @@ class Parallel(ParentState):
                   center_x=exp.screen.center_x+200, blocking=False)
             Label(text="I will disappear first!", duration=2,
                   center_x=exp.screen.center_x-200)
+
+        with Parallel():
+
+            Label(text="My duration will be cut short!", duration=3,
+                  blocking=False)
+            Label(text="My duration will be cut short.", duration=5,
+                  center_x=exp.screen.center_x+200, blocking=False)
+            Label(text="I will disappear first!", duration=2,
+                  center_x=exp.screen.center_x-200, blocking=False)
 
         exp.run()
 
