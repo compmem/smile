@@ -78,9 +78,17 @@ of its children are finished running. The only exception to this rule is
 if an experimenter sets *blocking* to False, then SMILE will ignore that state
 when deciding when to end a Parallel. If a Parallel state has 3 children, and
 one of them is non-blocking, then this Parallel will only end if the other two
-states have ended, regardless of what the non-blocking state is doing. If there
-are all *non-blocking* children in a Parallel, then the Parallel will end when
-any of its children have ended.
+states have ended, regardless of what the non-blocking state is doing.
+
+If there are all *non-blocking* children in a Parallel, then the Parallel will
+end when any of its children have ended. This is mainly used in SMILE when an
+experimenter is waiting for one of multiple things to happen, like whether a
+key on the keyboard or a mouse button will be pushed first. You can also utilize
+this strategy to create a stimulus on the screen for a duration, and ask for
+participant input at the same time. In this case, either the participant pushes
+the key press in the limited time, canceling the stimulus state, or the stimulus
+duration ends, which cancels the key press input before a participant can make
+a response.
 
 An example below has 3 :py:class:`~smile.video.Label` states that will disappear
 from the screen at the same time, despite having 3 different durations.
@@ -103,6 +111,48 @@ from the screen at the same time, despite having 3 different durations.
 Because the second and third *Label* in the above example are *non-blocking*,
 the *Parallel* state will end after the first *Label*'s duration of 3 seconds
 instead of the third *Label*'s duration which was 10 seconds.
+
+Below is a real world example showing an important use case for having all
+non-blocking states within a parallel. In this scenario, the experimenter only
+wants a Rectangle state to be on the screen until either a mouse press or a
+key press occurs. 
+
+.. code-block:: python
+
+    from smile.common import *
+
+    exp = Experiment()
+
+    Rectangle(color="GREEN")
+    with UntilDone():
+        with Parallel():
+            # Because both the MousePress and the KeyPress
+            # are non-blocking, the Parallel will end when
+            # ever one of the two end.
+            mp = MousePress(blocking=False)
+            kp = KeyPress(blocking=False)
+
+    # Since we don't know whether or not the mouse press or
+    # the key press happened, we have to have an If to test
+    # whose data we save out.
+    with If(kp.pressed != None):
+        exp.pressed = kp.pressed
+        exp.rt = kp.rt
+        exp.press_time = kp.press_time
+    with Else():
+        exp.pressed = mp.pressed
+        exp.rt = mp.rt
+        exp.press_time = mp.press_time
+
+    # This is a Log state saving out the data from the above
+    # test.
+    Log(name="pressed_log",
+        pressed=exp.pressed,
+        rt=exp.rt,
+        press_time=exp.press_time)
+
+    exp.run()
+
 
 Parallel.insert()
 +++++++++++++++++
