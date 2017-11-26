@@ -53,7 +53,7 @@ python program. Run the following line in your terminal in your project director
 
     >>>buildozer init
 
-You will see that Buildozer has created a file called "buildozer.spec". We need to make 
+You will see that Buildozer has created a file called "buildozer.spec". We need to make
 some changes in this file. Open the file with and we will start with editing the "title" line.
 
 ::
@@ -175,19 +175,3 @@ This will open the app on your phone, allowing you to see if it works!
     this early enough, then you will be able to *Ctrl+F* and find *python*. This
     will let you find the lines that *Kivy* has sent to the log and help you
     find where and why your SMILE program broke.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

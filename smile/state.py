@@ -1043,14 +1043,26 @@ class ParentSet(AutoFinalizeState):
 class Parallel(ParentState):
     """A State used to run other States simultaneously.
 
-    A **ParentState** that runs all of its children in parallel. This state's
-    duration is equal to the longest duration of its children. That means this
-    state will not end until all of its children are finished running. The only
-    exception to this rule is *blocking* parameter.  If one of the children
-    of this state set the *blocking* parameter to False, than it will not
-    prevent this state from leaving. That means this states duration is equal
-    to the longest duration out of its *blocking* children. Once this state
-    *leaves* it will tell all of its non-blocking children to leave as well.
+    A **ParentState** that runs all of its children in parallel. A Parallel
+    will not end until all of its children are finished running. The only
+    exception to this rule is *blocking* parameter. By default, all states have
+    *blocking* set to true, but if an experimenter sets *blocking* to False,
+    then SMILE will ignore that state when deciding when to end a Parallel. If
+    a Parallel state has 3 children, and one of them is non-blocking, then this
+    Parallel will only end if the other two states have ended, regardless of
+    what the non-blocking state is doing.
+
+    If there are all *non-blocking* children in a Parallel, then the Parallel
+    will end when any of its children have ended. This is mainly used in SMILE
+    when an experimenter is waiting for one of multiple things to happen, like
+    whether a key on the keyboard or a mouse button will be pushed first. Below
+    is a short example depicting just that.
+
+    Parallel has the unique ability to add in more children during Run Time.
+    Putting a Paralle.insert call inside of a loop will create and add as many
+    states as you want to an already preexisting Parallel. An example follows
+    below where an experimenter wants to spawn some number of rectangles right
+    next to each other. Below is a short example depicting just that.
 
     Parameters
     ----------
@@ -1084,6 +1096,8 @@ class Parallel(ParentState):
 
         exp = Experiment()
 
+        # This Parallel will end after 3s because the
+        # 5s duration Label is non-blocking
         with Parallel():
 
             Label(text="I will remain here the longest!", duration=3)
@@ -1091,6 +1105,20 @@ class Parallel(ParentState):
                   center_x=exp.screen.center_x+200, blocking=False)
             Label(text="I will disappear first!", duration=2,
                   center_x=exp.screen.center_x-200)
+
+        # This Parallel will end after either a mouse press occurs or a key
+        # press occurs.
+        with Parallel():
+            mp = MousePress(blocking=False)
+            kp = KeyPress(blocking=False)
+
+        with Parallel() as par:
+        # Loop.i is the is the number representing the ith iteration through
+        # the loop.
+        with Loop(10) as rec_loop:
+            with par.insert():
+                Rectangle(center_x=rec_loop.i*70, width=60, height=60,
+                          duration=1)
 
         exp.run()
 
