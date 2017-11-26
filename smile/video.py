@@ -1212,7 +1212,30 @@ def vertex_instruction_widget(instr_cls, name=None):
 
     return type(name, (kivy.uix.widget.Widget,), dict_)
 
-WSP_doc_addition = """Logged Attributes
+WSP_doc_addition = """
+General Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Logged Attributes
 -----------------
 All parameters above are available to be accessed and
 manipulated within the experiment code, and will be automatically
@@ -1241,6 +1264,7 @@ vertex_instructions = [
     "Rectangle",
     "BorderImage",
     "Ellipse",
+    "Line",
     #"RoundedRectangle"
     ]
 for instr in vertex_instructions:
@@ -1251,29 +1275,6 @@ for instr in vertex_instructions:
 Bezier.__doc__ = """A **WidgetState** that creates a 2D Bezier curve.
 
 Use this State to create a Bezier curve somewhere in the experiment window.
-
-A **WidgetState** that shows a button in the window.
-
-Use this state when you would like to show a button on the screen. This State
-will display a button that can be clicked by a mouse cursor. When used in
-conjunction with the **ButtonPress** state, you can create multiple buttons, all
-with different colors, text, or even images.
-
-Parameters
-----------
-duration : float (optional, default = None)
-    The duration of this state. Can be None. Will continue running until
-    canceled, or until the duration is over.
-parent : ParentState (optional)
-    The parent of this state, if None, it will be set automatically
-save_log : boolean (optinal, default = True)
-    If True, this state will save out all of the Logged Attributes.
-name : string (optinal)
-    The unique name to this state.
-blocking : boolean (optional, default = True)
-    If True, this state will prevent a *Parallel* state from ending. If
-    False, this state will be canceled if its *ParallelParent* finishes
-    running. Only relevent if within a *ParallelParent*.
 
 Kivy Parameters and Properties
 ------------------------------
@@ -1306,22 +1307,6 @@ Mesh.__doc__ = """A **WidgetState** that allows you to freehand draw shapes.
 
 Depending on the shape of *vertices* and *indices*, you can draw all kinds of
 different shapes.
-
-Parameters
-----------
-duration : float (optional, default = None)
-    The duration of this state. Can be None. Will continue running until
-    canceled, or until the duration is over.
-parent : ParentState (optional)
-    The parent of this state, if None, it will be set automatically
-save_log : boolean (optinal, default = True)
-    If True, this state will save out all of the Logged Attributes.
-name : string (optinal)
-    The unique name to this state.
-blocking : boolean (optional, default = True)
-    If True, this state will prevent a *Parallel* state from ending. If
-    False, this state will be canceled if its *ParallelParent* finishes
-    running. Only relevent if within a *ParallelParent*.
 
 Kivy Parameters and Properties
 ------------------------------
@@ -1363,23 +1348,7 @@ Kivy documentation for 'kivy.graphics.mesh. <https://kivy.org/docs/api-kivy.grap
 """
 Point.__doc__ = """A **WidgetState that draws a bunch of points.
 
-You can list any number of points and the **Point** state will draw all of them. s
-
-Parameters
-----------
-duration : float (optional, default = None)
-    The duration of this state. Can be None. Will continue running until
-    canceled, or until the duration is over.
-parent : ParentState (optional)
-    The parent of this state, if None, it will be set automatically
-save_log : boolean (optinal, default = True)
-    If True, this state will save out all of the Logged Attributes.
-name : string (optinal)
-    The unique name to this state.
-blocking : boolean (optional, default = True)
-    If True, this state will prevent a *Parallel* state from ending. If
-    False, this state will be canceled if its *ParallelParent* finishes
-    running. Only relevent if within a *ParallelParent*.
+You can list any number of points and the **Point** state will draw all of them.
 
 Kivy Parameters and Properties
 ------------------------------
@@ -1406,22 +1375,6 @@ Triangle.__doc__ = """A **WidgetState** that shows a triangle on the screen.
 With 3 sets of points, you can define a triangle to be presented in your
 experiment. You can also set the color.
 
-Parameters
-----------
-duration : float (optional, default = None)
-    The duration of this state. Can be None. Will continue running until
-    canceled, or until the duration is over.
-parent : ParentState (optional)
-    The parent of this state, if None, it will be set automatically
-save_log : boolean (optinal, default = True)
-    If True, this state will save out all of the Logged Attributes.
-name : string (optinal)
-    The unique name to this state.
-blocking : boolean (optional, default = True)
-    If True, this state will prevent a *Parallel* state from ending. If
-    False, this state will be canceled if its *ParallelParent* finishes
-    running. Only relevent if within a *ParallelParent*.
-
 Kivy Parameters and Properties
 ------------------------------
 Below is the docstring attached to the Kivy widget that this WidgetState is
@@ -1443,22 +1396,6 @@ Kivy documentation for 'kivy.graphics.Triangle. <https://kivy.org/docs/api-kivy.
 Quad.__doc__ = """A **WidgetState** that can draw a Quadrangle.
 
 Use this State to draw any 4 sided shape onto the screen.
-
-Parameters
-----------
-duration : float (optional, default = None)
-    The duration of this state. Can be None. Will continue running until
-    canceled, or until the duration is over.
-parent : ParentState (optional)
-    The parent of this state, if None, it will be set automatically
-save_log : boolean (optinal, default = True)
-    If True, this state will save out all of the Logged Attributes.
-name : string (optinal)
-    The unique name to this state.
-blocking : boolean (optional, default = True)
-    If True, this state will prevent a *Parallel* state from ending. If
-    False, this state will be canceled if its *ParallelParent* finishes
-    running. Only relevent if within a *ParallelParent*.
 
 Kivy Parameters and Properties
 ------------------------------
@@ -1482,22 +1419,6 @@ Rectangle.__doc__ = """A **WidgetState** to display a rectangle on the screen.
 You can set the color, height, width, x, y, and all the other positional
 properties of this state.
 
-Parameters
-----------
-duration : float (optional, default = None)
-    The duration of this state. Can be None. Will continue running until
-    canceled, or until the duration is over.
-parent : ParentState (optional)
-    The parent of this state, if None, it will be set automatically
-save_log : boolean (optinal, default = True)
-    If True, this state will save out all of the Logged Attributes.
-name : string (optinal)
-    The unique name to this state.
-blocking : boolean (optional, default = True)
-    If True, this state will prevent a *Parallel* state from ending. If
-    False, this state will be canceled if its *ParallelParent* finishes
-    running. Only relevent if within a *ParallelParent*.
-
 Kivy Parameters and Properties
 ------------------------------
 Below is the docstring attached to the Kivy widget that this WidgetState is
@@ -1517,12 +1438,6 @@ size : list (Parameter, optional, default=[50, 50])
 color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
     The color of the rectangle in (r, g, b, a) format.
 
-Positional Parameters
----------------------
-All **WidgetState** States have the ability to set the positional variables
-as parameters when building the states. Please see **WidgetState** for the
-positional paramters you can set.
-
 For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.graphics.Rectangle. <https://kivy.org/docs/api-kivy.graphics.html?highlight=rectangle#kivy.graphics.Rectangle>'_
 
@@ -1532,28 +1447,6 @@ BorderImage.__doc__ = """A **WidgetState** that creates 4 Rectangles around an a
 This 2d border image creates rectangles at a postion depending on the parameters
 passed in. You can use any of the parameters or properties that a **Rectagnle**
 State has access to.
-
-Parameters
-----------
-duration : float (optional, default = None)
-    The duration of this state. Can be None. Will continue running until
-    canceled, or until the duration is over.
-parent : ParentState (optional)
-    The parent of this state, if None, it will be set automatically
-save_log : boolean (optinal, default = True)
-    If True, this state will save out all of the Logged Attributes.
-name : string (optinal)
-    The unique name to this state.
-blocking : boolean (optional, default = True)
-    If True, this state will prevent a *Parallel* state from ending. If
-    False, this state will be canceled if its *ParallelParent* finishes
-    running. Only relevent if within a *ParallelParent*.
-
-Positional Parameters
----------------------
-All **WidgetState** States have the ability to set the positional variables
-as parameters when building the states. Please see **WidgetState** for the
-positional paramters you can set.
 
 Kivy Parameters and Properties
 ------------------------------
@@ -1569,28 +1462,6 @@ border : list (Parameter, optional, default=[])
 Ellipse.__doc__ = """A **WidgetState** that produces a 2D ellipse.
 
 Use this **WidgetState** to produce an ellipse of any size or color.
-
-Parameters
-----------
-duration : float (optional, default = None)
-    The duration of this state. Can be None. Will continue running until
-    canceled, or until the duration is over.
-parent : ParentState (optional)
-    The parent of this state, if None, it will be set automatically
-save_log : boolean (optinal, default = True)
-    If True, this state will save out all of the Logged Attributes.
-name : string (optinal)
-    The unique name to this state.
-blocking : boolean (optional, default = True)
-    If True, this state will prevent a *Parallel* state from ending. If
-    False, this state will be canceled if its *ParallelParent* finishes
-    running. Only relevent if within a *ParallelParent*.
-
-Positional Parameters
----------------------
-All **WidgetState** States have the ability to set the positional variables
-as parameters when building the states. Please see **WidgetState** for the
-positional paramters you can set.
 
 Kivy Parameters and Properties
 ------------------------------
@@ -1618,11 +1489,43 @@ For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.graphics.Ellipse. <https://kivy.org/docs/api-kivy.graphics.html?highlight=ellipse#kivy.graphics.Ellipse>'_
 
 """
+
+Line.__doc__ = """A **WidgetState** that produces a Line.
+
+Use this **WidgetState** to produce an line of any length, width, or color.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+points : list (Parameter)
+    List of points in the format (x1, y1, x2, y2...)
+segments : integer (Parameter, optional, default=180)
+    Define how many segments are needed for drawing the curve. The drawing will
+    be smoother if you have many segments.
+loop : boolean (Parameter, optional, default=False)
+    Set the bezier curve to join the last point to the first.
+dash_length : integer (Parameter, optional, default=1)
+    Length of a segment (if dashed).
+dash_offset : integer (Parameter, optional, default=0)
+    Distance between the end of a segment and the start of the next one,
+    Changing this makes it dashed.
+color : list (Parameter, optional, default=[1.0, 1.0, 1.0, 1.0])
+    The color in the bezier (r, g, b, a) format.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.graphics.Line. <https://kivy.org/docs/api-kivy.graphics.html?highlight=line#kivy.graphics.Line>'_
+
+"""
+
 for instr in vertex_instructions:
+    print(instr)
     exec("%s.__doc__ = %s.__doc__ + WSP_doc_addition" %
          (instr, instr))
-
-
 
 
 

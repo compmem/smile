@@ -47,6 +47,7 @@ from video import (
     Rectangle,
     BorderImage,
     Ellipse,
+    Line,
     Image,
     Label,
     RstDocument,
