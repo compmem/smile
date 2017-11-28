@@ -1523,7 +1523,6 @@ Kivy documentation for 'kivy.graphics.Line. <https://kivy.org/docs/api-kivy.grap
 """
 
 for instr in vertex_instructions:
-    print(instr)
     exec("%s.__doc__ = %s.__doc__ + WSP_doc_addition" %
          (instr, instr))
 
