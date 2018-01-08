@@ -33,7 +33,10 @@ class Dot(object):
         self.scale = scale
         self.color = color
         self.direction = direction
+        self.new_direction = None
         self.direction_variance = direction_variance
+        self.new_dir_var = None
+
         self.speed = speed
         self.speed_variance = speed_variance
         self.lifespan = lifespan
@@ -49,6 +52,11 @@ class Dot(object):
         # reset if past lifetime
         if self.current_time > self.total_time:
             # reset
+            if self.new_direction is not None:
+                self.direction = self.new_direction
+                self.direction_variance = self.new_dir_var
+                self.new_direction = None
+                self.new_dir_var = None
             self.reset()
             return self.x, self.y
 
@@ -59,6 +67,11 @@ class Dot(object):
         # reset if outside radius
         if math.sqrt((self.x * self.x) + (self.y * self.y)) > self.radius:
             # must reset
+            if self.new_direction is not None:
+                self.direction = self.new_direction
+                self.direction_variance = self.new_dir_var
+                self.new_direction = None
+                self.new_dir_var = None
             self.reset()
             return self.x, self.y
 
@@ -151,6 +164,8 @@ class _MovingDotsWidget(Widget):
             self.__dots.extend([Dot(**current_params)
                                 for i in xrange(num_rand)])
 
+        self.bind(motion_props=self.callback_motion_props)
+
         # shuffle that list
         random.shuffle(self.__dots)
 
@@ -161,6 +176,21 @@ class _MovingDotsWidget(Widget):
         # not currently running
         self._active = False
 
+    def callback_motion_props(self, obj, value):
+        tot_coh = 0
+        print(self.motion_props)
+        for mprop in self.motion_props:
+            num_coh = int(self.num_dots * mprop['coherence'])
+            for i in xrange(tot_coh, tot_coh + num_coh):
+                self.__dots[i].new_direction = mprop['direction']
+                self.__dots[i].new_dir_var = 0
+
+            tot_coh += num_coh
+        print(tot_coh, self.num_dots)
+        if tot_coh < self.num_dots:
+            for i in xrange(tot_coh, self.num_dots):
+                self.__dots[i].new_direction = 0
+                self.__dots[i].new_dir_var = 360
 
     def start(self):
         Clock.schedule_once(self._update, self.update_interval)
