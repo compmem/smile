@@ -33,9 +33,7 @@ class Dot(object):
         self.scale = scale
         self.color = color
         self.direction = direction
-        self.new_direction = None
         self.direction_variance = direction_variance
-        self.new_dir_var = None
 
         self.speed = speed
         self.speed_variance = speed_variance
@@ -52,11 +50,6 @@ class Dot(object):
         # reset if past lifetime
         if self.current_time > self.total_time:
             # reset
-            if self.new_direction is not None:
-                self.direction = self.new_direction
-                self.direction_variance = self.new_dir_var
-                self.new_direction = None
-                self.new_dir_var = None
             self.reset()
             return self.x, self.y
 
@@ -67,11 +60,6 @@ class Dot(object):
         # reset if outside radius
         if math.sqrt((self.x * self.x) + (self.y * self.y)) > self.radius:
             # must reset
-            if self.new_direction is not None:
-                self.direction = self.new_direction
-                self.direction_variance = self.new_dir_var
-                self.new_direction = None
-                self.new_dir_var = None
             self.reset()
             return self.x, self.y
 
@@ -127,15 +115,15 @@ class _MovingDotsWidget(Widget):
 
         # grab default motion params
         default_params = {"radius": self.radius,
-                          "scale": self.scale,
-                          "color": self.color,
-                          "direction": self.direction,
-                          "direction_variance": self.direction_variance,
-                          "speed": self.speed,
-                          "speed_variance": self.speed_variance,
-                          "lifespan": self.lifespan,
-                          "lifespan_variance": self.lifespan_variance,
-                          "coherence": self.coherence}
+                               "scale": self.scale,
+                               "color": self.color,
+                               "direction": self.direction,
+                               "direction_variance": self.direction_variance,
+                               "speed": self.speed,
+                               "speed_variance": self.speed_variance,
+                               "lifespan": self.lifespan,
+                               "lifespan_variance": self.lifespan_variance,
+                               "coherence": self.coherence}
 
         # determine distribution of dots
         tot_coh = 0
@@ -148,7 +136,7 @@ class _MovingDotsWidget(Widget):
             num_coh = int(self.num_dots * current_params['coherence'])
             tot_coh += num_coh
             self.__dots.extend([Dot(**current_params)
-                                for i in xrange(num_coh)])
+                                for i in range(num_coh)])
 
         # calc the number random coh
         num_rand = self.num_dots - tot_coh
@@ -162,7 +150,7 @@ class _MovingDotsWidget(Widget):
             current_params['direction'] = 0.0
             current_params['direction_variance'] = 360
             self.__dots.extend([Dot(**current_params)
-                                for i in xrange(num_rand)])
+                                for i in range(num_rand)])
 
         self.bind(motion_props=self.callback_motion_props)
 
@@ -177,20 +165,51 @@ class _MovingDotsWidget(Widget):
         self._active = False
 
     def callback_motion_props(self, obj, value):
-        tot_coh = 0
-        print(self.motion_props)
-        for mprop in self.motion_props:
-            num_coh = int(self.num_dots * mprop['coherence'])
-            for i in xrange(tot_coh, tot_coh + num_coh):
-                self.__dots[i].new_direction = mprop['direction']
-                self.__dots[i].new_dir_var = 0
+        # Grab the current default values for all of
+        # our parameters
+        default_params = {"radius": self.radius,
+                           "scale": self.scale,
+                           "color": self.color,
+                           "direction": self.direction,
+                           "direction_variance": self.direction_variance,
+                           "speed": self.speed,
+                           "speed_variance": self.speed_variance,
+                           "lifespan": self.lifespan,
+                           "lifespan_variance": self.lifespan_variance,
+                           "coherence": self.coherence}
 
+        tot_coh = 0
+        # loop through the updated values for motion props
+        for mprop in self.motion_props:
+            # Copy the default parameters and only update the given parameters
+            current_params = default_params.copy()
+            current_params.update(mprop)
+
+            # Calculate how many dots need to get updated for this coherence
+            num_coh = int(self.num_dots * mprop['coherence'])
+            # Loop through that many dots and update their motion properties
+            for i in range(tot_coh, tot_coh + num_coh):
+                self.__dots[i].direction = current_params['direction']
+                self.__dots[i].direction_variance = current_params['direction_variance']
+                self.__dots[i].speed = current_params['speed']
+                self.__dots[i].speed_variance = current_params['speed_variance']
+                self.__dots[i].lifespan = current_params['lifespan']
+                self.__dots[i].lifespan_variance = current_params['lifespan_variance']
+
+            # Add the number of dots for this coherence to the total number of
+            # dots updated so far.
             tot_coh += num_coh
-        print(tot_coh, self.num_dots)
+
+        # For all remaining dots, give them a 0 direction and 360 direction
+        # variance. Keep all remaining props as the default params
         if tot_coh < self.num_dots:
-            for i in xrange(tot_coh, self.num_dots):
-                self.__dots[i].new_direction = 0
-                self.__dots[i].new_dir_var = 360
+            for i in range(tot_coh, self.num_dots):
+                self.__dots[i].direction = 0
+                self.__dots[i].direction_variance = 360
+                self.__dots[i].speed = default_params['speed']
+                self.__dots[i].speed_variance = default_params['speed_variance']
+                self.__dots[i].lifespan = default_params['lifespan']
+                self.__dots[i].lifespan_variance = default_params['lifespan_variance']
 
     def start(self):
         Clock.schedule_once(self._update, self.update_interval)
@@ -279,6 +298,17 @@ if __name__ == '__main__':
     from state import UntilDone, Meanwhile, Wait, Loop, Debug
     from keyboard import KeyPress
 
+    # This is list of list of dictionaries that is used to show how motion_props
+    # can be updated while the experiment is running.
+    testing_set = [[{"coherence": 0.1, "direction": 0,
+                     "direction_variance": 0, "speed":400},
+                    {"coherence": 0.5, "direction": 180,
+                     "direction_variance": 0, "speed":50},],
+                   [{"coherence": 0.5, "direction": 0,
+                     "direction_variance": 0, "speed":50},
+                    {"coherence": 0.1, "direction": 180,
+                     "direction_variance": 0, "speed":400},]
+                  ]
     exp = Experiment(background_color=("purple", .3))
 
     Wait(.5)
@@ -304,6 +334,17 @@ if __name__ == '__main__':
         MovingDots()
         with UntilDone():
             KeyPress()
+
+    md = MovingDots(radius=300, scale=3, num_dots=200,
+                    motion_props=[{"coherence": 0.25, "direction": 0,
+                                   "direction_variance": 0},
+                                  {"coherence": 0.25, "direction": 180,
+                                   "direction_variance": 0},])
+    with UntilDone():
+        with Loop(testing_set) as ts:
+            Wait(3.)
+            md.motion_props = ts.current
+        Wait(5.)
 
     Debug(rate=g.widget.refresh_rate)
     exp.run(trace=False)
