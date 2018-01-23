@@ -247,7 +247,7 @@ class State(object):
         from experiment import Experiment
         try:
             self._exp = Experiment._last_instance()
-            debug = self._exp._debug_mode
+            debug = self._exp._debug
         except AttributeError:
             self._exp = None
             debug = None
