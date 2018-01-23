@@ -250,7 +250,7 @@ class State(object):
             debug = self._exp._debug
         except AttributeError:
             self._exp = None
-            debug = None
+            debug = False
 
         self.set_instantiation_context(debug=debug)
 
@@ -359,9 +359,6 @@ class State(object):
 
         # Find the highest frame on the call stack whose function is not an
         # "__init__" for a parent class
-
-        if debug == None:
-            debug = False
 
         if debug:
             mro = inspect.getmro(type(obj))
