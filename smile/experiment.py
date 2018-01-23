@@ -292,12 +292,12 @@ class Experiment(object):
 
     """
     def __init__(self, fullscreen=None, resolution=None, background_color=None,
-                 name="SMILE"):
+                 name="SMILE", debug=False):
 
         self._platform = platform
         self._exp_name = name
         self._session = time.strftime("%Y%m%d_%H%M%S")
-
+        self._debug = debug
         self._process_args()
 
         # handle fullscreen and resolution before Window is imported
