@@ -349,7 +349,7 @@ class State(object):
             return
         ref.dep_changed()
 
-    def set_instantiation_context(self, obj=None, debug=None):
+    def set_instantiation_context(self, obj=None, debug=False):
         """Set this state's instantiation filename and line number to be the
         place where the supplied object was instantiated.
         """
