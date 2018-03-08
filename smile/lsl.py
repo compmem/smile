@@ -12,10 +12,10 @@ from video import Label
 from clock import clock
 from pylsl import StreamInfo, StreamOutlet
 
-global _lsl_outlets = {}
+_lsl_outlets = {}
 
 def init_lsl_outlet(server_name, server_type, nchans,
-                    suggested_freq, dtype, unique_id="SMILE_LSL_OUT",):
+                    suggested_freq, channel_format, unique_id="SMILE_LSL_OUT",):
     """Sends a Marker to a specified LSL.
 
     A *LSLPush* state will use a pre-initialized LSL outlet to send out a
@@ -39,7 +39,7 @@ def init_lsl_outlet(server_name, server_type, nchans,
     suggested_freq : integer
         The sampling rate (in Hz) as advertised by the data source, regular
         (otherwise set to IRREGULAR_RATE).
-    dtype : string
+    channel_format : string
         Format/type of each channel. If your channels have different formats,
         consider supplying multiple streams or use the largest type that can
         hold them all (such as cf_double64). It is also allowed to pass this as
@@ -61,14 +61,14 @@ def init_lsl_outlet(server_name, server_type, nchans,
 
     s = "_"
     unique_identifier = s.join([server_name, server_type, nchans,
-                                suggested_freq, dtype, unique_id])
+                                suggested_freq, str(channel_format),
+                                unique_id])
 
     if unique_identifier in _lsl_outlets.keys():
         return _lsl_outlets[unique_identifier]
     else:
-        #info = StreamInfo('MyMarkerStream3','Markers',1,0,'int32','bababooi513')
         info = StreamInfo(server_name, server_type, nchans, suggested_freq,
-                         dtype, unique_id)
+                          channel_format, unique_id)
         _lsl_outlets[unique_identifier] = StreamOutlet(info)
         return _lsl_outlets[unique_identifier]
 
@@ -123,6 +123,8 @@ class LSLPush(CallbackState):
         self._init_server = server
         self._init_push_val = val
         self._push_time = None
+
+        self._log_attrs.extend(['push_val', 'push_time'])
 
 
     def _callback(self):
