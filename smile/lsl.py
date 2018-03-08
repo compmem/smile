@@ -60,9 +60,9 @@ def init_lsl_outlet(server_name, server_type, nchans,
     global _lsl_outlets
 
     s = "_"
-    unique_identifier = s.join([server_name, server_type, nchans,
-                                suggested_freq, str(channel_format),
-                                unique_id])
+    unique_identifier = s.join([server_name, server_type, str(nchans),
+                                str(suggested_freq), str(channel_format),
+                                str(unique_id)])
 
     if unique_identifier in _lsl_outlets.keys():
         return _lsl_outlets[unique_identifier]
@@ -136,7 +136,7 @@ class LSLPush(CallbackState):
 
 
 
-if __name__ == "__main
+if __name__ == "__main__":
 
     from experiment import Experiment
 
@@ -147,7 +147,7 @@ if __name__ == "__main
                              server_type='Markers',
                              nchans=1,
                              suggested_freq=500,
-                             dtype='int32',
+                             channel_format='int32',
                              unique_id='SMILE_LSL_OUT')
 
     # Signal the beginning of the experiment.
