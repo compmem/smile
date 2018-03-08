@@ -12,6 +12,7 @@ from video import Label
 from clock import clock
 from pylsl import StreamInfo, StreamOutlet
 
+global _lsl_outlets = {}
 
 def init_lsl_outlet(server_name, server_type, nchans,
                     suggested_freq, dtype, unique_id="SMILE_LSL_OUT",):
@@ -56,12 +57,20 @@ def init_lsl_outlet(server_name, server_type, nchans,
     *LSLPush* state.
 
     """
+    global _lsl_outlets
 
+    s = "_"
+    unique_identifier = s.join([server_name, server_type, nchans,
+                                suggested_freq, dtype, unique_id])
 
-    #info = StreamInfo('MyMarkerStream3','Markers',1,0,'int32','bababooi513')
-    info = StreamInfo(server_name, server_type, nchans, suggested_freq,
-                     dtype, unique_id)
-    return StreamOutlet(info)
+    if unique_identifier in _lsl_outlets.keys():
+        return _lsl_outlets[unique_identifier]
+    else:
+        #info = StreamInfo('MyMarkerStream3','Markers',1,0,'int32','bababooi513')
+        info = StreamInfo(server_name, server_type, nchans, suggested_freq,
+                         dtype, unique_id)
+        _lsl_outlets[unique_identifier] = StreamOutlet(info)
+        return _lsl_outlets[unique_identifier]
 
 
 
@@ -125,7 +134,7 @@ class LSLPush(CallbackState):
 
 
 
-if __name__ == "__main__":
+if __name__ == "__main
 
     from experiment import Experiment
 
