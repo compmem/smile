@@ -1,26 +1,94 @@
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+#
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
+#
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-
-
-
-
-from state import State
+from state import CallbackState, Wait, Parallel, Loop
+from video import Label
+from clock import clock
 from pylsl import StreamInfo, StreamOutlet
 
-_lsl_outlet = None
 
-def init_audio_server(server_name, server_type, nchans,
+def init_lsl_outlet(server_name, server_type, nchans,
                       suggested_freq, dtype, unique_id="SMILE_LSL_OUT",):
+    """Sends a Marker to a specified LSL.
 
-    global _lsl_outlet
+    A *LSL_Pulse* state will use a pre-initialized LSL outlet to send out a
+    marker to the Lab Streaming Layer.
 
+    Parameters
+    ----------
+    server_name : string
+        Name of the stream. Describes the device (or product series) that this
+        stream makes available (for use by programs, experimenters or data
+        analysts).
+    server_type : string
+        Content type of the stream. By convention LSL uses the content types
+        defined in the XDF file format specification where applicable
+        (https://github.com/sccn/xdf). The content type is the preferred way to
+        find streams (as opposed to searching by name). This should be set to
+        "Markers" when sending sync triggers.
+    nchans : integer
+        Number of channels per sample. This stays constant for the lifetime of
+        the stream. This number should be 1 for sending a sync marker.
+    suggested_freq : integer
+        The sampling rate (in Hz) as advertised by the data source, regular
+        (otherwise set to IRREGULAR_RATE).
+    dtype : string
+        Format/type of each channel. If your channels have different formats,
+        consider supplying multiple streams or use the largest type that can
+        hold them all (such as cf_double64). It is also allowed to pass this as
+        a string, without the cf_ prefix, e.g., 'float32'
+    unique_id : string (defaut = "SMILE_LSL_OUT", optional)
+        Unique identifier of the device or source of the data, if available
+        (such as the serial number). This is critical for system robustness
+        since it allows recipients to recover from failure even after the
+        serving app, device or computer crashes (just by finding a stream with
+        the same source id on the network again). Therefore, it is highly
+        recommended to always try to provide whatever information can uniquely
+        identify the data source itself.
+    """
     #info = StreamInfo('MyMarkerStream3','Markers',1,0,'int32','bababooi513')
     info = StreamInfo(server_name, server_type, nchans, suggested_freq,
                      dtype, unique_id)
-    _lsl_outlet = StreamOutlet(info)
+    return StreamOutlet(info)
 
 class LSL_Pulse(CallbackState):
+    """Sends a Marker to a specified LSL.
 
-    def __init__(self, val, **kwargs):
+    A *LSL_Pulse* state will use a pre-initialized LSL outlet to send out a
+    marker to the Lab Streaming Layer.
+
+    Parameters
+    ----------
+    val : object
+        The value of the marker you would like to send to the LSL.
+
+    Logged Attributes
+    -----------------
+    All parameters above and below are available to be accessed and
+    manipulated within the experiment code, and will be automatically
+    recorded in the state-specific log. Refer to State class
+    docstring for additional logged parameters.
+
+    pulse_time : Float
+        The time in which the pulse has finished sending to the LSL. This value
+        is in seconds and based on experiment time. Experiment time is the
+        number of seconds since the start of the experiment.
+
+    NOTE
+    ---------------------
+    It is highly recommended to send a TEST PULSE at the beginning of your
+    experiment. Some systems use the first pulse as a signal to start listening
+    to a particular server closely, so you need to send a pulse at the start of
+    your experiment in order to *wake up* the LSL listener.
+
+    """
+    def __init__(self, server, val, **kwargs):
 
         super(LSL_Pulse, self).__init__(parent=kwargs.pop("parent", None),
                                    repeat_interval=kwargs.pop("repeat_interval", None),
@@ -28,10 +96,35 @@ class LSL_Pulse(CallbackState):
                                    save_log=kwargs.pop("save_log", True),
                                    name=kwargs.pop("name", None),
                                    blocking=kwargs.pop("blocking", True))
+        self._init_server = server
         self._init_pulse_val = val
-
+        self._pulse_time = None
 
     def _callback(self):
-
-        outlet.push_sample([self._pulse_val], clock.now())
+        if type(self._pulse_val) != list:
+            self._server.push_sample([self._pulse_val], clock.now())
+        else:
+            self._server.push_sample(self._pulse_val, clock.now())
         self._pulse_time = clock.now()
+
+if __name__ == "__main__":
+
+    from experiment import Experiment
+
+    exp = Experiment()
+
+    MARKER_OUT = init_lsl_outlet('MarkerStream','Markers',1,500,'int32','SMILE_LSL_OUT')
+    LSL_Pulse(MARKER_OUT, 55) # Needed if your system has a delay for the first pulse.
+    Wait(2.) # Wait for the real one!
+    with Parallel():
+        Label(text="We will not pulse 10 times.", blocking=False)
+        with Loop(10, blocking=False):
+            pulse_out = LSL_Pulse(MARKER_OUT, 111)
+
+            # Log like this if you want.
+            #Log(name="PULSES",
+            #    pulse_time=pulse_out.pulse_time)
+
+            Wait(1.)
+
+    exp.run()
