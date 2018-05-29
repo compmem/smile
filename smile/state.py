@@ -247,12 +247,16 @@ class State(object):
         from experiment import Experiment
         try:
             self._exp = Experiment._last_instance()
-            debug = self._exp._debug
+            self._debug = self._exp._debug
         except AttributeError:
             self._exp = None
-            debug = False
+            self._debug = False
 
-        self.set_instantiation_context(debug=debug)
+        self._instantiation_filename = "Turn on Debug Mode for this information"
+        self._instantiation_lineno = 0
+
+        if self._debug:
+            self.set_instantiation_context()
 
         # Determine the parent for this state...
         if parent is None:
@@ -349,7 +353,7 @@ class State(object):
             return
         ref.dep_changed()
 
-    def set_instantiation_context(self, obj=None, debug=False):
+    def set_instantiation_context(self, obj=None):
         """Set this state's instantiation filename and line number to be the
         place where the supplied object was instantiated.
         """
@@ -360,41 +364,39 @@ class State(object):
         # Find the highest frame on the call stack whose function is not an
         # "__init__" for a parent class
 
-        if debug:
-            mro = inspect.getmro(type(obj))
-            for (frame, filename, lineno,
-                 fname, fcode, index) in inspect.stack()[1:]:
-                if fname == "__init__" and type(frame.f_locals["self"]) in mro:
-                    continue
+        mro = inspect.getmro(type(obj))
+        for (frame, filename, lineno,
+             fname, fcode, index) in inspect.stack()[1:]:
+            if fname == "__init__" and type(frame.f_locals["self"]) in mro:
+                continue
 
-                # Record the filename and line number found.  This will be the
-                # place where this state was instantiated by the user because it
-                # excludes calls to constructors State subclasses.
-                self._instantiation_filename = filename
-                self._instantiation_lineno = lineno
-                break
-            else:
-                raise StateConstructionError(
-                    "Can't figure out where instantiation took place!")
+            # Record the filename and line number found.  This will be the
+            # place where this state was instantiated by the user because it
+            # excludes calls to constructors State subclasses.
+            self._instantiation_filename = filename
+            self._instantiation_lineno = lineno
+            break
         else:
-            self._instantiation_filename = "Turn on Debug Mode for this information"
-            self._instantiation_lineno = 0
+            raise StateConstructionError(
+                "Can't figure out where instantiation took place!")
+
 
     def override_instantiation_context(self, depth=0):
         """Set this state's instantiation filename and line number to be the
         place where the calling function was called.
         """
         # Get the desired frame from the call stack.
-        (frame,
-         filename,
-         lineno,
-         function,
-         code_context,
-         index) = inspect.stack()[depth + 2]
+        if self._debug:
+            (frame,
+             filename,
+             lineno,
+             function,
+             code_context,
+             index) = inspect.stack()[depth + 2]
 
-        # Record the source filename and line number from the stack frame.
-        self._instantiation_filename = filename
-        self._instantiation_lineno = lineno
+            # Record the source filename and line number from the stack frame.
+            self._instantiation_filename = filename
+            self._instantiation_lineno = lineno
 
     def begin_log(self):
         """Prepare the per-class state logs.

@@ -353,6 +353,7 @@ class Experiment(object):
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
         self._root_state.begin_log()
+        return self._subject_dir
 
     def get_var_ref(self, name):
         try:
