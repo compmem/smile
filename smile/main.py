@@ -537,6 +537,17 @@ class SmileApp(App):
             # raise the error
             raise
 
+    def stop(self, *largs):
+        """Make sure you use this to close your app.
+
+        from kivy.base import stopTouchApp
+        Config.set('kivy', 'exit_on_escape', '0')
+        def end_it():
+            stopTouchApp()
+        Func(end_it)
+        """
+        self.root_window.close()
+        return super(SmileApp, self). stop(*largs)
 
 if __name__ == '__main__':
     SmileApp().start()
