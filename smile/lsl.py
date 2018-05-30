@@ -129,9 +129,9 @@ class LSLPush(CallbackState):
 
     def _callback(self):
         if type(self._push_val) != list:
-            self._server.push_sample([self._push_val], clock.now())
+            self._server.push_sample([self._push_val])
         else:
-            self._server.push_sample(self._push_val, clock.now())
+            self._server.push_sample(self._push_val)
         self._push_time = clock.now()
 
 
