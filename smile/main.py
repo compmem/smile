@@ -365,8 +365,9 @@ class SmileApp(App):
         if block:
             # draw a transparent point
             # position
-            glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
-                                  "\x00\x00\x00\x0a\x00\x00\x00\x0a")
+            #@FIX: changed the pointer value to a 0 for testing
+            glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,0)
+                                  #"\x00\x00\x00\x0a\x00\x00\x00\x0a")
             # color
             glVertexAttrib4f(3, 0.0, 0.0, 0.0, 0.0)
             glDrawArrays(GL_POINTS, 0, 1)

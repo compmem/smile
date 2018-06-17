@@ -28,6 +28,10 @@ from clock import clock
 from log import LogWriter, log2csv
 from event import event_time
 
+#--EDITED 6.14.18--
+#from state import StateClass
+
+
 _kivy_clock = kivy.clock.Clock
 
 
@@ -455,7 +459,8 @@ class Experiment(object):
                                                     time.gmtime()))
         with self._reserved_data_filenames_lock:
             self._reserved_data_filenames |= set(os.listdir(self._session_dir))
-            for distinguisher in xrange(256):
+            #--@FIX: xrange --> range
+            for distinguisher in range(256):
                 if ext is None:
                     filename = "%s_%d" % (title, distinguisher)
                 else:

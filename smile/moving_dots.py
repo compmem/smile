@@ -108,7 +108,7 @@ class _MovingDotsWidget(Widget):
     update_interval = NumericProperty(1. / 30.)
 
     def __init__(self, **kwargs):
-        super(type(self), self).__init__(**kwargs)
+        super(type(self), self).__init__()
         # set the width and height from radius
         self.width = self.radius * 2
         self.height = self.radius * 2
@@ -136,7 +136,7 @@ class _MovingDotsWidget(Widget):
             num_coh = int(self.num_dots * current_params['coherence'])
             tot_coh += num_coh
             self.__dots.extend([Dot(**current_params)
-                                for i in xrange(num_coh)])
+                                for i in range(num_coh)])
 
         # calc the number random coh
         num_rand = self.num_dots - tot_coh
@@ -150,7 +150,7 @@ class _MovingDotsWidget(Widget):
             current_params['direction'] = 0.0
             current_params['direction_variance'] = 360
             self.__dots.extend([Dot(**current_params)
-                                for i in xrange(num_rand)])
+                                for i in range(num_rand)])
 
         self.bind(motion_props=self.callback_motion_props)
 
