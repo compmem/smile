@@ -12,10 +12,10 @@ from contextlib import contextmanager
 import weakref
 import operator
 
-import kivy_overrides
-from state import State, CallbackState, Parallel, ParentState
-from ref import val, Ref, NotAvailable
-from clock import clock
+import smile.kivy_overrides as kivy_overrides
+from .state import State, CallbackState, Parallel, ParentState
+from .ref import val, Ref, NotAvailable
+from .clock import clock
 
 import kivy.metrics
 import kivy.graphics
@@ -24,6 +24,16 @@ from kivy.properties import Property, ObjectProperty, ListProperty
 import kivy.clock
 _kivy_clock = kivy.clock.Clock
 
+#@FIX: added a blackhole class that will take excess parameters
+class BlackHole(object):
+    def __init__(self, **kwargs):
+        super(BlackHole, self).__init__()
+
+#@FIX: changed base inheritance of Widget in kivy.uix.widget.Widget.py
+#@FIX: imported EventDispatcher
+from kivy.event import EventDispatcher
+WidgetBase = kivy.uix.widget.WidgetMetaclass('WidgetBase', (EventDispatcher, ), {})
+kivy.uix.widget.Widget.__bases__ = (WidgetBase, BlackHole,)
 
 color_name_table = {
     # subset from http://www.rapidtables.com/web/color/RGB_Color.htm
@@ -537,7 +547,8 @@ class WidgetState(VisualState):
         self._init_rotate_origin = rotate_origin
         self._widget = None
         self.__parent_widget = None
-        self._constructor_param_names = params.keys()
+        #-- @FIX: python3 doesnt use .keys()
+        self._constructor_param_names = list(params)
         self._init_constructor_params = params
         for name, value in params.items():
             setattr(self, "_init_" + name, value)
@@ -716,9 +727,13 @@ class WidgetState(VisualState):
         xy_pos_props = {"pos": "min", "center": "mid"}
         x_pos_props = {"x": "min", "center_x": "mid", "right": "max"}
         y_pos_props = {"y": "min", "center_y": "mid", "top": "max"}
-        pos_props = (xy_pos_props.keys() +
-                     x_pos_props.keys() +
-                     y_pos_props.keys())
+        #-- @FIx: keys.() --
+        pos_props = (list(xy_pos_props) + 
+            list(x_pos_props) + 
+            list(y_pos_props))
+        '''pos_props = (xy_pos_props.keys() +
+                                             x_pos_props.keys() +
+                                             y_pos_props.keys())'''
         new_x_pos_mode = None
         new_y_pos_mode = None
         for prop, mode in xy_pos_props.items():
@@ -1558,8 +1573,24 @@ widgets = [
 for widget in widgets:
     modname = "kivy.uix.%s" % widget.lower()
     exec("import %s" % modname)
+
+#@FIX: changed base class inheritance of:
+    #ProgressBar
+    #Label
+    #TextInput
+kivy.uix.progressbar.ProgressBar.__bases__ = (kivy.uix.widget.Widget, BlackHole,)
+#kivy.uix.scrollview.ScrollView.__bases__ = (kivy.uix.widget.Widget, BlackHole,)
+#kivy.uix.behaviors.button.__bases__ = (kivy.uix.widget.Widget, BlackHole,)
+kivy.uix.label.Label.__bases__ = (kivy.uix.widget.Widget, BlackHole,)
+
+from kivy.uix.behaviors import FocusBehavior
+kivy.uix.textinput.TextInput.__bases__ = (kivy.uix.behaviors.FocusBehavior, kivy.uix.widget.Widget, BlackHole,)
+
+#@FIX: moved kivy wrapper exec
+for widget in widgets:
+    modname = "kivy.uix.%s" % widget.lower()
     exec("%s = WidgetState.wrap(%s.%s)" %
-         (widget, modname, widget))
+     (widget, modname, widget))
 
 Button.__doc__ = """
 A **WidgetState** that shows a button in the window.
@@ -3088,6 +3119,8 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
                     print('t')
                     clock.usleep(100)
                     self._widget._video._update(0)
+            #@FIX: print statement
+            #print(type(self._widget._video.texture))
             self.live_change(size=self._widget._video.texture.size)
         super(Video, self).show()
 
@@ -3097,6 +3130,8 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
 
 
 import kivy.uix.image
+#@FIX: added "BlackHole" to kivy's widget base class inheritance
+kivy.uix.image.Image.__bases__ = (kivy.uix.widget.Widget, BlackHole,)
 class Image(WidgetState.wrap(kivy.uix.image.Image)):
     """A WidgetState subclass to present and image on the screen.
 
@@ -3410,6 +3445,7 @@ class ButtonPress(CallbackState):
         self.__parallel = None
 
     def _enter(self):
+        #print("enter!")
         self._button_names = [button._name for button in self.__buttons]
         if self._correct_resp is None:
             self._correct_resp = []
@@ -3424,6 +3460,7 @@ class ButtonPress(CallbackState):
         super(ButtonPress, self)._enter()
 
     def _callback(self):
+        #print("callback!")
         if self._base_time is None:
             self._base_time = self._start_time
         self._pressed = NotAvailable
@@ -3433,8 +3470,10 @@ class ButtonPress(CallbackState):
         self.__pressed_ref.add_change_callback(self.button_callback)
 
     def button_callback(self):
+        #print("button callback!")
         self.claim_exceptions()
         pressed_list = self.__pressed_ref.eval()
+        #print(pressed_list)
         if not len(pressed_list):
             return
         button = pressed_list[0]
@@ -3457,6 +3496,7 @@ class ButtonPress(CallbackState):
         self.cancel(self._press_time['time'])
 
     def _leave(self):
+        #print("leave!!")
         self.__pressed_ref.remove_change_callback(self.button_callback)
         super(ButtonPress, self)._leave()
         if self._pressed is NotAvailable:
@@ -3469,6 +3509,7 @@ class ButtonPress(CallbackState):
             self._rt = None
 
     def __enter__(self):
+        #print("enter!!")
         if self.__parallel is not None:
             raise RuntimeError("ButtonPress context is not reentrant!")  #!!!
         #TODO: make sure we're the previous state?
@@ -3479,6 +3520,7 @@ class ButtonPress(CallbackState):
         return self
 
     def __exit__(self, type, value, tb):
+        #print("exit!!")
         ret = self.__parallel.__exit__(type, value, tb)
         for child in self.__parallel._children[1:]:
             child._blocking = False
@@ -3492,18 +3534,19 @@ if __name__ == '__main__':
     from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial, Done, Debug
     from mouse import MouseCursor
     from math import sin, cos
-    from contextlib import nested
+    #from contextlib import nested
 
     exp = Experiment(background_color="#330000")
-    Wait(2.0)
+    #@FIX: changed wait to 1 for testing purposes
+    Wait(1.0)
 
-    Video(source="test_video.mp4", duration=4.0)
+    #Video(source="test_video.mp4", duration=4.0)
 
-    pb = ProgressBar(max=100)
-    with UntilDone():
-        pb.slide(value=100, duration=2.0)
-
-    Image(source="face-smile.png", duration=5.0)
+    '''pb = ProgressBar(max=100)
+                with UntilDone():
+                    pb.slide(value=100, duration=2.0)
+            
+                Image(source="face-smile.png", duration=5.0)'''
 
     text = """
 .. _top:
@@ -3517,11 +3560,12 @@ And this is a reference to top_::
 $ print("Hello world")
 
     """
-    RstDocument(text=text, duration=5.0, size=exp.screen.size)
+    #@FIX: changed duration to 1 for testing purposes
+    #RstDocument(text=text, duration=1.0, size=exp.screen.size)
 
     with ButtonPress():
-        button = Button(text="Click to continue", size=(exp.screen.width / 4,
-                                                        exp.screen.height / 8))
+        button = Button(text="Click to continue", size=(exp.screen.width // 4,
+                                                        exp.screen.height // 8))
         slider = Slider(min=exp.screen.left, max=exp.screen.right,
                         top=button.bottom, blocking=False)
         rect = Rectangle(color="purple", width=50, height=50,
@@ -3532,6 +3576,8 @@ $ print("Hello world")
     label = Label(text=ti.text, duration=5.0, font_size=50, color="white")
     Done(label)
     Debug(label_disappear_time=label.disappear_time)
+    Debug(label_appear_time=label.appear_time)
+    Debug(x="HELLO WORLD")
 
     Ellipse(color="white", width=100, height=100)
     with UntilDone():
@@ -3588,8 +3634,9 @@ $ print("Hello world")
         #Screenshot(name="foo")
 
     with ButtonPress():
-        Button(text="Click to continue", size=(exp.screen.width / 4,
-                                               exp.screen.height / 4))
+        #@FIX: changed '/' to '//'
+        Button(text="Click to continue", size=(exp.screen.width // 4,
+                                               exp.screen.height // 4))
         MouseCursor()
     with Meanwhile():
         Triangle(points=[0, 0, 500, 500, 0, 500],
