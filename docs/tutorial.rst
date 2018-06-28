@@ -26,6 +26,8 @@ help you find the information you are looking for.
 
     - :ref:`Step 6: If, Elif, Else, and Conditional Refs<conditional_refs>`_
 
+    - :ref:`Step 7: Logging and Good Timing Practices<timing_logging>`_
+
 Running a SMILE Experiment
 ==========================
 
@@ -55,6 +57,10 @@ SMILE. SMILE has 3 command line arguments.
     - *-f* : Fullscreen, if *-f* is present in the command line, SMILE will run in windowed mode.
 
     - *-c* : CSV, if -c is present, SMILE will save out all of its *.slog* data files as *.csv* data files as well. **Not Recommended**
+
+.. note::
+
+    If at any time while smile is running, you can hit the "shift+esc" keys to exit out of the experiment. Please don't try to exit a SMILE experiment another way. SMILE can only save out the data for your experiment if you press "shift+esc".
 
 Before you learn how to code SMILE experiments, it is important to understand
 a few things about how SMILE works. The next section goes over how SMILE
