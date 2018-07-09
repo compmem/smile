@@ -21,7 +21,7 @@ CONFIG_FONT_SIZE = "25sp"
 class _StartScreen(Widget):
 
 	def __init__(self, flag, **kwargs):
-		super(_StartScreen, self).__init__()
+		super(_StartScreen, self).__init__(**kwargs)
 		self.flag=flag
 		self.float_layout = FloatLayout(size=self.size, pos=self.pos)
 		self.setting_layout = FloatLayout(size=self.size, pos=self.pos)
@@ -145,6 +145,7 @@ class _StartScreen(Widget):
 
 	#Continue Button
 	def exitApp(self, instance):
+		#Window.close() is temporary --> continue button should move to the next needed screen
 		Window.close()
 
 	#--- Setting Menu Functions --- 
@@ -187,6 +188,6 @@ if __name__ == '__main__':
 
 	with Parallel():
 		MouseCursor()
-		main = StartScreen(width=exp.screen.width, height=exp.screen.height, flag="none")\
+		main = StartScreen(width=exp.screen.width, height=exp.screen.height, flag="none")
 
 	exp.run()

@@ -537,8 +537,7 @@ class WidgetState(VisualState):
         self._init_rotate_origin = rotate_origin
         self._widget = None
         self.__parent_widget = None
-        #-- @FIX: python3 doesnt use .keys()
-        self._constructor_param_names = list(params)
+        self._constructor_param_names = params.keys()
         self._init_constructor_params = params
         for name, value in params.items():
             setattr(self, "_init_" + name, value)
@@ -717,13 +716,9 @@ class WidgetState(VisualState):
         xy_pos_props = {"pos": "min", "center": "mid"}
         x_pos_props = {"x": "min", "center_x": "mid", "right": "max"}
         y_pos_props = {"y": "min", "center_y": "mid", "top": "max"}
-        #-- @FIx: keys.() --
-        pos_props = (list(xy_pos_props) + 
-            list(x_pos_props) + 
-            list(y_pos_props))
-        '''pos_props = (xy_pos_props.keys() +
-                                             x_pos_props.keys() +
-                                             y_pos_props.keys())'''
+        pos_props = (xy_pos_props.keys() +
+                     x_pos_props.keys() +
+                     y_pos_props.keys())
         new_x_pos_mode = None
         new_y_pos_mode = None
         for prop, mode in xy_pos_props.items():
@@ -3522,7 +3517,7 @@ And this is a reference to top_::
 $ print("Hello world")
 
     """
-    RstDocument(text=text, duration=5.0, size=exp.screen.size)
+    #RstDocument(text=text, duration=5.0, size=exp.screen.size)
 
     with ButtonPress():
         button = Button(text="Click to continue", size=(exp.screen.width / 4,

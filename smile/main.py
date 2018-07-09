@@ -365,9 +365,8 @@ class SmileApp(App):
         if block:
             # draw a transparent point
             # position
-            #@FIX: changed the pointer value to a 0 for testing
-            glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,0)
-                                  #"\x00\x00\x00\x0a\x00\x00\x00\x0a")
+            glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
+                                  "\x00\x00\x00\x0a\x00\x00\x00\x0a")
             # color
             glVertexAttrib4f(3, 0.0, 0.0, 0.0, 0.0)
             glDrawArrays(GL_POINTS, 0, 1)
@@ -547,8 +546,16 @@ class SmileApp(App):
             stopTouchApp()
         Func(end_it)
         """
+        self.exp.finish()
+
+        rtn=super(SmileApp, self).stop(*largs)
         self.root_window.close()
-        return super(SmileApp, self). stop(*largs)
+
+        return rtn
+
+        #@FIX
+        #self.root_window.close()
+        #return super(SmileApp, self).stop(*largs)
 
 if __name__ == '__main__':
     SmileApp().start()
