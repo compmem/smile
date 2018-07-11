@@ -3094,6 +3094,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
     def unshow(self):
         super(Video, self).unshow()
         self._widget.state = "stop"
+        self._widget.unload()
 
 
 import kivy.uix.image
@@ -3497,7 +3498,7 @@ if __name__ == '__main__':
     exp = Experiment(background_color="#330000")
     Wait(2.0)
 
-    Video(source="test_video.mp4", duration=4.0)
+    Video(source="test_video.mp4")
 
     pb = ProgressBar(max=100)
     with UntilDone():
