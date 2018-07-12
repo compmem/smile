@@ -10,6 +10,9 @@
 import random
 import operator
 
+#@FIX: added import for apply
+#from past.builtins import apply
+
 class NotAvailable(object):
     """Special value for indicating a variable is not available yet.
 
@@ -21,7 +24,8 @@ class NotAvailable(object):
     def __repr__(self):
         return "NotAvailable"
 
-    def __nonzero__(self):
+    #@FIX: changed nonzero to bool
+    def __bool__(self):
         return False
 
 # make a single instance used everywhere
@@ -33,6 +37,17 @@ class NotAvailableError(ValueError):
 def pass_thru(obj):
     """Returns its only argument. Needed to delay the evaluation of a variable."""
     return obj
+
+#@FIX: _apply function to replace apply()
+def _apply(function, *pargs, **kwargs):
+    
+    #@IMPORTANT: may need to check this again. 
+    if len(kwargs)==0:
+        return function(pargs)
+    elif kwargs == None:
+        return function(pargs)
+    else:
+        return function(pargs, kwargs)
 
 class Ref(object):
     """Delayed function call.
@@ -103,11 +118,19 @@ class Ref(object):
                 # override our cache state
                 self.use_cache = False
                 break
+<<<<<<< HEAD
     
     #@FIX: changed map to list() for testing purposes
     def __repr__(self):
         return "Ref(%s)" % ", ".join([repr(self.func)] +
                                      (map(repr, self.pargs)) +
+=======
+    #@FIX: added list() to map(repr, self.pargs)
+    #@FIX: imported numpy and added np.array() to list()
+    def __repr__(self):
+        return "Ref(%s)" % ", ".join([repr(self.func)] +
+                                     list(map(repr, self.pargs)) +
+>>>>>>> 62adc7f2ba89105e105f1e618f88d8cda3adf59d
                                      ["%s=%r" % (name, value) for
                                       name, value in
                                       self.kwargs.items()])
@@ -219,14 +242,18 @@ class Ref(object):
         if self.use_cache:
             self.cache_value = value
             self.cache_valid = True
-
+        #print("eval: ", value)
         return value
 
     def add_change_callback(self, func, *pargs, **kwargs):
         """Add callback that's called when this value changes.
         """
+<<<<<<< HEAD
         #print "add_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
         #print(func)
+=======
+        #print("add_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs))
+>>>>>>> 62adc7f2ba89105e105f1e618f88d8cda3adf59d
         # if this is the first callback
         if not len(self.change_callbacks):
             # set up dependency callbacks
@@ -260,9 +287,17 @@ class Ref(object):
             func(*pargs, **dict(kwargs))
 
     # delayed operators...
+    #@FIX: changed apply to _apply because python3 abandoned apply() :( 
+    #@FIX: added import
     def __call__(self, *pargs, **kwargs):
+<<<<<<< HEAD
         #return Ref(_apply, self, pargs, kwargs)
         return Ref(apply, self, pargs, kwargs)
+=======
+        #print(self, pargs, kwargs)
+        #return Ref(apply, self, pargs, kwargs)
+        return Ref(_apply, self, pargs, kwargs)
+>>>>>>> 62adc7f2ba89105e105f1e618f88d8cda3adf59d
 
     def __setitem__(self, index, value):
         if self._parent_state is None:
@@ -272,6 +307,10 @@ class Ref(object):
         return self._parent_state.attribute_update_state(name,
                                                          value,
                                                          index=index)
+    #@FIX: Added __hash__
+    #__hash__=object.__hash__
+    def __hash__(self):
+        return object.__hash__(self)
 
     def __getitem__(self, index):
         return Ref(operator.getitem, self, index)
@@ -367,6 +406,7 @@ def shuffle(iterable):
     return Ref(_shuffle, iterable, use_cache=False)
 
 def val(obj):
+    #print(obj)
     try:
         # handle all types of Refs
         #print("val!")
@@ -427,64 +467,64 @@ if __name__ == '__main__':
 
     import math
     x = [0.0]
-    r = Ref(math.cos, Ref.getitem(x, 0))
-    print(x[0], val(r))
+    #r = Ref(math.cos, Ref.getitem(x, 0))
+    #print(x[0], val(r))
     x[0] += .5
-    print(x[0], val(r))
+    #print(x[0], val(r))
 
     r = Ref.object(str)(Ref.object(x)[0])
     x[0] += .75
     print(x[0], val(r))
 
-    r = (Ref.object(x)[0] > 0) & (Ref.object(x)[0] < 0)
-    print(x[0], val(r))
-    r = (Ref.object(x)[0] > 0) & (Ref.object(x)[0] >= 0)
-    x[0] -= 10.0
-    print(x[0], val(r))
-
-    y = [7]
-    ry = Ref.object(y)
-    print(y[0], val(ry[0] % 2), val(2 % ry[0]))
-    y[0] = 8
-    print(y[0], val(ry[0] % 2), val(2 % ry[0]))
-
-    class Jubba(object):
-        def __init__(self, val):
-            self.x = val
-
-        def __getitem__(self, index):
-            return Ref.getattr(self, index)
-
-    a = Jubba(5)
-    b = Ref.getattr(a, 'x')
-    br = Ref.object(a).x
-    print(val(b), val(br))
-    a.x += 42.0
-    print(val(b), val(br))
-
-    c = {'y': 6}
-    d = Ref.getitem(c, 'y')
-
-    e = [4, 3, 2]
-    f = Ref.getitem(e, 2)
-
-    g = b+d+f
-    print(val(g))
-
-    a.x = 6
-    print(val(g))
-
-    c['y'] = 7
-    print(val(g))
-
-    e[2] = 3
-    print(val(g))
-
-    x = Jubba([])
-    y = Ref.getitem(x, 'x')
-    print(val(y))
-    y = y + [b]
-    print(val(y))
-    y = y + [d]
-    y = y + [f]
-    print(val(y))
+    '''r = (Ref.object(x)[0] > 0) & (Ref.object(x)[0] < 0)
+                print(x[0], val(r))
+                r = (Ref.object(x)[0] > 0) & (Ref.object(x)[0] >= 0)
+                x[0] -= 10.0
+                print(x[0], val(r))
+            
+                y = [7]
+                ry = Ref.object(y)
+                print(y[0], val(ry[0] % 2), val(2 % ry[0]))
+                y[0] = 8
+                print(y[0], val(ry[0] % 2), val(2 % ry[0]))
+            
+                class Jubba(object):
+                    def __init__(self, val):
+                        self.x = val
+            
+                    def __getitem__(self, index):
+                        return Ref.getattr(self, index)
+            
+                a = Jubba(5)
+                b = Ref.getattr(a, 'x')
+                br = Ref.object(a).x
+                print(val(b), val(br))
+                a.x += 42.0
+                print(val(b), val(br))
+            
+                c = {'y': 6}
+                d = Ref.getitem(c, 'y')
+            
+                e = [4, 3, 2]
+                f = Ref.getitem(e, 2)
+            
+                g = b+d+f
+                print(val(g))
+            
+                a.x = 6
+                print(val(g))
+            
+                c['y'] = 7
+                print(val(g))
+            
+                e[2] = 3
+                print(val(g))
+            
+                x = Jubba([])
+                y = Ref.getitem(x, 'x')
+                print(val(y))
+                y = y + [b]
+                print(val(y))
+                y = y + [d]
+                y = y + [f]
+                print(val(y))'''

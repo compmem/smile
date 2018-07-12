@@ -7,12 +7,12 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from video import (WidgetState, Label,
+from .video import (WidgetState, Label,
                    ToggleButton, FloatLayout, ButtonPress,
                    Button, Rectangle, TextInput, Slider)
-from state import (Loop, Parallel, If, Elif, Else, Serial,
+from .state import (Loop, Parallel, If, Elif, Else, Serial,
                    Func, UntilDone, Log, Subroutine,Debug)
-from ref import Ref
+from .ref import Ref
 import kivy.uix.scrollview
 import csv
 ScrollView = WidgetState.wrap(kivy.uix.scrollview.ScrollView)
@@ -680,7 +680,7 @@ def Questionnaire(self,
 
 
 if __name__ == "__main__":
-    from mouse import MouseCursor
+    from .mouse import MouseCursor
     bob = [{'type': "TITLE",
             'question': "SMILE QUESTIONNAIRE"},
            {'type': "LI",
@@ -750,7 +750,7 @@ if __name__ == "__main__":
             'ans': ['10', '12', '15', '20'],
             'group_id': 'second_li_question'}]
 
-    from experiment import Experiment
+    from .experiment import Experiment
     exp = Experiment()
     with Parallel():
         tt = Questionnaire(loq=bob,
