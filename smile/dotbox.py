@@ -7,10 +7,10 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from video import WidgetState, BlockingFlips, NonBlockingFlips
-from state import Wait, Meanwhile, Parallel, Loop, Subroutine
-from state import If, Else
-from ref import jitter
+from .video import WidgetState, BlockingFlips, NonBlockingFlips
+from .state import Wait, Meanwhile, Parallel, Loop, Subroutine
+from .state import If, Else
+from .ref import jitter
 
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ListProperty
@@ -42,7 +42,7 @@ class DotBox(Widget):
     pointsize = NumericProperty(5)
 
     def __init__(self, **kwargs):
-        super(type(self), self).__init__(**kwargs)
+        super(type(self), self).__init__()
 
         self._color = None
         self._backcolor = None
@@ -63,7 +63,7 @@ class DotBox(Widget):
 
     def _update_locs(self, *pargs):
         self._locs = [random.random()
-                      for i in xrange(int(self.num_dots)*2)]
+                      for i in range(int(self.num_dots)*2)]
         self._update()
 
     def _update_pointsize(self, *pargs):
@@ -155,8 +155,8 @@ def DynamicDotBox(self, duration=None,
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
-    from state import UntilDone, Serial
+    from .experiment import Experiment
+    from .state import UntilDone, Serial
 
     exp = Experiment(background_color="#330000")
 

@@ -12,7 +12,7 @@ from __future__ import print_function
 import os
 
 # kivy imports
-import kivy_overrides
+import smile.kivy_overrides as kivy_overrides
 import kivy
 import kivy.base
 from kivy.app import App
@@ -32,9 +32,9 @@ from kivy.utils import platform
 import kivy.clock
 
 # local imports
-from event import event_time
-from clock import clock
-from video import normalize_color_spec
+from .event import event_time
+from .clock import clock
+from .video import normalize_color_spec
 
 
 _kivy_clock = kivy.clock.Clock
@@ -365,8 +365,9 @@ class SmileApp(App):
         if block:
             # draw a transparent point
             # position
-            glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
-                                  "\x00\x00\x00\x0a\x00\x00\x00\x0a")
+            #@FIX: changed the pointer value to a 0 for testing
+            glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,0)
+                                  #"\x00\x00\x00\x0a\x00\x00\x00\x0a")
             # color
             glVertexAttrib4f(3, 0.0, 0.0, 0.0, 0.0)
             glDrawArrays(GL_POINTS, 0, 1)
@@ -546,8 +547,16 @@ class SmileApp(App):
             stopTouchApp()
         Func(end_it)
         """
+        self.exp.finish()
+
+        rtn=super(SmileApp, self).stop(*largs)
         self.root_window.close()
-        return super(SmileApp, self). stop(*largs)
+
+        return rtn
+
+        #@FIX
+        #self.root_window.close()
+        #return super(SmileApp, self).stop(*largs)
 
 if __name__ == '__main__':
     SmileApp().start()

@@ -16,12 +16,12 @@ import inspect
 import weakref
 import os.path, os
 
-import kivy_overrides
-import ref
-from ref import Ref, val, NotAvailable, NotAvailableError
+import smile.kivy_overrides as kivy_overrides
+import smile.ref as ref
+from .ref import Ref, val, NotAvailable, NotAvailableError
 #from utils import rindex, get_class_name
-from log import LogWriter, log2csv
-from clock import clock
+from .log import LogWriter, log2csv
+from .clock import clock
 
 
 class StateConstructionError(RuntimeError):
@@ -111,9 +111,17 @@ class StateClass(type):
             cls._builder_class = type(cls.__name__ + "Builder",
                                       (StateBuilder, cls),
                                       {"_state_class": cls})
+    #def __new__(cls, *pargs, **kwargs):
+    #    return super(StateClass, cls).__new__(cls, *pargs, **kwargs)
 
 
+#class State(object):
+<<<<<<< HEAD
 class State(object):
+=======
+#-- @FIX: python3 __metaclass__ changed
+class State(object, metaclass=StateClass):
+>>>>>>> 62adc7f2ba89105e105f1e618f88d8cda3adf59d
     """Base State object for the hierarchical state machine.
 
     This class contains all of the calls that are required of a state
@@ -166,20 +174,25 @@ class State(object):
     """
 
     # Apply the StateClass metaclass
-    __metaclass__ = StateClass
-
+    #__metaclass__ = StateClass
     def __new__(cls, *pargs, **kwargs):
-        # Pull out the use_state_class argument
         use_state_class = kwargs.pop("use_state_class", False)
-
         if use_state_class or issubclass(cls, StateBuilder):
+<<<<<<< HEAD
             # If this is already a StateBuilder or if we got the
             # use_state_class flag, create the object as normal.
+            #return super(State, cls)
             return super(State, cls).__new__(cls, *pargs, **kwargs)
         else:
             # Otherwise, instantiate with the StateBuilder mixin instead.
-            return cls._builder_class.__new__(cls._builder_class,
-                                              *pargs, **kwargs)
+            #return StateClass(cls).__new__(cls, *pargs, **kwargs)
+            return cls._builder_class.__new__(cls._builder_class,*pargs, **kwargs)
+=======
+            #@FIX: deleted *pargs, **kwargs
+            return super(State, cls).__new__(cls)
+        else:
+            return cls._builder_class.__new__(cls._builder_class, *pargs, **kwargs)
+>>>>>>> 62adc7f2ba89105e105f1e618f88d8cda3adf59d
 
     def __init__(self, parent=None, duration=None, save_log=True, name=None,
                  blocking=True):
@@ -190,6 +203,9 @@ class State(object):
 
         # If true, we write a log entry every time this state finalizes.
         self.__save_log = save_log
+
+        #@FIX: added self._callback_time for logging callback states
+        self._callback_time= None
 
         # The custom name for this state.
         self._name = name
@@ -244,7 +260,7 @@ class State(object):
         # Record which source file and line number this constructor was called
         # from.
         # Associate this state with the most recently instantiated Experiment.
-        from experiment import Experiment
+        from .experiment import Experiment
         try:
             self._exp = Experiment._last_instance()
             self._debug = self._exp._debug
@@ -298,7 +314,9 @@ class State(object):
         # list to cause additional attributes to be logged.
         self._log_attrs = ['instantiation_filename', 'instantiation_lineno',
                            'name', 'start_time', 'end_time', 'enter_time',
-                           'leave_time', 'finalize_time']
+                           'leave_time', 'finalize_time', 
+                           #@FIX: added callback_time
+                           'callback_time']
 
         # Concerning state cloning...
 
@@ -530,6 +548,7 @@ class State(object):
     @property
     def current_clone(self):  # TODO: new doc string!
         # if we are a clone, just return self
+
         if self.__original_state != self:
             # we must be a clone, so return self
             return self
@@ -554,6 +573,12 @@ class State(object):
 
         """
         # Return the named attribute from the current clone.
+
+        #@FIX added if statement, if Ref
+        if (type(name)) == tuple:
+            for n in name:
+                return getattr(self.current_clone, n)
+
         return getattr(self.current_clone, name)
 
     def get_attribute_ref(self, name):
@@ -606,6 +631,9 @@ class State(object):
             When the state will start, some time in the future.
 
         """
+        #@FIX: set initial time
+        #self._callback_time = NotAvailable
+
         # set trace
         self.claim_exceptions()
 
@@ -641,12 +669,15 @@ class State(object):
 
         # if we don't have the exp reference, get it now
         if self._exp is None:
-            from experiment import Experiment
+            from .experiment import Experiment
             self._exp = Experiment._last_instance()
 
         # evaluate the '_init_' Refs...
         for name, value in self._refs_for_init_attrs.items():
             try:
+                #@FIX: added if statement to evaluate Ref immediately
+                if (type(self._name) == Ref):
+                    self._name=val(self._name)
                 setattr(self, name, val(value))
             except NotAvailableError:
                 raise NotAvailableError(
@@ -748,6 +779,7 @@ class State(object):
         if not self._started and cancel_time < self._start_time:
             self._unschedule_start()
             if self._end_time is not None:
+                print("self._end_time is not None")
                 self._unschedule_end()
             self._start_time = cancel_time
             self._end_time = cancel_time
@@ -783,6 +815,10 @@ class State(object):
         """Write a record to the state log for the current execution of the
         state.
         """
+        #@DELETE
+        #x={name : getattr(self, "_" + name) for name in self._log_attrs}
+        #if ('callback_time' in x.keys()):
+        #    print(x['callback_time'])
         self._exp.write_to_state_log(
             type(self).__name__,
             {name : getattr(self, "_" + name) for name in self._log_attrs})
@@ -949,7 +985,12 @@ class ParentState(State):
         """
         super(ParentState, self).begin_log()
         for child in self._children:
-            child.begin_log()
+            #@FIX: added if else statement to check for Ref 
+            #@FIX: might need to double check on the bound method check --> may need to change to Ref
+            if ('LogBuilder' in str(type(child))) and ('bound method' in str(child)):
+                pass
+            else:
+                child.begin_log()
 
     def end_log(self, to_csv=False):
         """Close per-class state logs for this state and all its children.
@@ -1283,7 +1324,7 @@ def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
 
     """
     # get the exp reference
-    from experiment import Experiment
+    from .experiment import Experiment
     try:
         exp = Experiment._last_instance()
     except AttributeError:
@@ -1407,7 +1448,9 @@ class SequentialState(ParentState):
         try:
             # clone the children as they come, so just clone the first
             self.__current_child = (
-                self.__child_iterator.next()._clone(self))
+                #-- @FIX: python3 .next() changed
+                #self.__child_iterator.next()._clone(self))
+                next(self.__child_iterator)._clone(self))
             # schedule the child based on the current start time
             clock.schedule(partial(self.__current_child.enter,
                                    self._start_time))
@@ -1439,7 +1482,9 @@ class SequentialState(ParentState):
             try:
                 # clone the next child and schedule it
                 self.__current_child = (
-                    self.__child_iterator.next()._clone(self))
+                    #-- @FIX: Python3 .next() changed
+                    #self.__child_iterator.next()._clone(self))
+                    next(self.__child_iterator)._clone(self))
                 clock.schedule(partial(self.__current_child.enter, next_time))
             except StopIteration:
                 # there are no more children, so set our end time and leave
@@ -1794,7 +1839,7 @@ def Else(name="ELSE BODY"):
     """Returns the else clause of the preceding If state. See *If*
     """
     # get the exp reference
-    from experiment import Experiment
+    from .experiment import Experiment
     try:
         exp = Experiment._last_instance()
     except AttributeError:
@@ -1961,7 +2006,8 @@ class Loop(SequentialState):
             else:
                 count = len(self._iterable)
 
-            for i in xrange(count):
+            #--@FIX: xrange to range --
+            for i in range(count):
                 yield i
 
     def _get_child_iterator(self):
@@ -2038,6 +2084,7 @@ class Record(State):
 
         self.__refs = kwargs
         self.__triggers = triggers
+        #@FIX: changed "none" to "None"
         self.__log_filename = None
         self.__log_writer = None
 
@@ -2211,6 +2258,11 @@ class Log(AutoFinalizeState):
         self.__log_filename = None
         self.__log_writer = None
 
+        #print("NAME TYPE: ", type(name))
+        #print(self._init_log_dict)
+        #print(self._init_log_items)
+        #print(self.__log_filename)
+
     def begin_log(self):
         """Set up per-class AND per-instance logs.
         """
@@ -2223,7 +2275,6 @@ class Log(AutoFinalizeState):
                 self._instantiation_lineno)
         else:
             title = "log_%s" % self._name
-
         if self.__log_writer is not None:
             self.__log_writer.close()
         if self.__log_filename is not None:
@@ -2248,19 +2299,51 @@ class Log(AutoFinalizeState):
         record = self._log_items.copy()
         record["log_time"] = self._start_time
         if self._log_dict is None:
-            self.__log_writer.write_record(record)
+            #@FIX: added try/except block
+            try:
+                self.__log_writer.write_record(record)
+            except AttributeError:
+                #The file doesn't exist (is a Ref), then create the file and log
+                self.begin_log()
+                self.__log_writer.write_record(record)
+
+                #Custom end_log since this is not a child of the ParentState
+                self.end_log()
+
         elif isinstance(self._log_dict, dict):
-            record.update(self._log_dict)
-            self.__log_writer.write_record(record)
+            #@FIX added try/except block
+            try:
+                record.update(self._log_dict)
+                self.__log_writer.write_record(record)
+            except AttributeError:
+                self.begin_log()
+                record.update(self._log_dict)
+                self.__log_writer.write_record(record)
+                self.end_log()
         elif type(self._log_dict) in (tuple, list):
             for dict_ in self._log_dict:
                 if not isinstance(dict_, dict):
                     raise ValueError(
                         "log_dict list/tuple must contain only dicts.")
-                record.update(dict_)
-                self.__log_writer.write_record(record)
+                #@FIX: add try/except block
+                try:
+                    record.update(dict_)
+                    self.__log_writer.write_record(record)
+                except:
+                    self.begin_log()
+                    record.update(dict_)
+                    self.__log_writer.write_record(record)
+                    self.end_log()
         else:
             raise ValueError("Invalid log_dict value: %r" % self._log_dict)
+
+        #@FIX: for testing purposes.
+        #print("FILENAME IS: ", self.__log_filename)
+        #print("LOG DICT: ", self._init_log_dict)
+        #print("LOG ITEMS: ", self._init_log_items)
+        #print("RECORD: ", self._log_items.copy())
+        #print('\n')
+
         self._started = True
         self._ended = True
         clock.schedule(self.leave)
@@ -2480,6 +2563,7 @@ class Wait(State):
             self._until_value = self.__until.eval()
         except NotAvailableError:
             self._until_value = NotAvailable
+        #print(self._until_value, NotAvailable, type(NotAvailable), type(self._until_value))
         if self._until_value:
             clock.schedule(partial(self.cancel, self._start_time))
         else:
@@ -2587,6 +2671,16 @@ class CallbackState(AutoFinalizeState):
                                             blocking=blocking)
         self._init_repeat_interval = repeat_interval
 
+        #@FIX: added _event_time and callback attribute
+        #self._callback_time=None
+        #self._log_attrs.extend(["callback_time"])
+
+    #@FIX: added _enter method
+    '''def _enter(self):
+                    super(CallbackState, self)._enter()
+                    self._callback_time = NotAvailable'''
+
+
     def _schedule_start(self):
         clock.schedule(self.callback, event_time=self._start_time,
                        repeat_interval=self._repeat_interval)
@@ -2613,6 +2707,18 @@ class CallbackState(AutoFinalizeState):
     def callback(self):
         """Call the custom callback method.
         """
+        #@FIX: added callback state logging
+        '''self.claim_exceptions()
+                                self._start=True
+                        
+                                before = clock.now()
+                                #self._exp._app.screenshot(self._filename)
+                                self._callback()
+                                after = clock.now()
+                                self._callback_time = {"time": before, "error": after - before}'''
+
+        #self.save_log()
+
         self.claim_exceptions()
         self._start = True
         self._callback()
@@ -2745,6 +2851,7 @@ class Debug(CallbackState):
 
         # set up the state
         self._init_kwargs = kwargs
+        #print("INIT KWARGS: ", self._init_kwargs)
 
     def _callback(self):
         id_strs = [
@@ -2773,7 +2880,7 @@ class PrintTraceback(CallbackState):
 
 
 if __name__ == '__main__':
-    from experiment import Experiment
+    from .experiment import Experiment
 
     def print_actual_duration(target):
         print(val(target.end_time - target.start_time))
@@ -2812,7 +2919,7 @@ if __name__ == '__main__':
     with Loop(5) as loop:
         Log(a=1, b=2, c=loop.i, name="aaa")
     Log({"q": loop.i, "w": loop.i}, x=4, y=2, z=1, name="bbb")
-    Log([{"q": loop.i, "w": n} for n in xrange(5)], x=4, y=2, z=1, name="ccc")
+    Log([{"q": loop.i, "w": n} for n in range(5)], x=4, y=2, z=1, name="ccc")
     #Log("sdfsd")  # This should cause an error
 
     exp.for_the_thing = 3

@@ -32,6 +32,8 @@ class LogWriter(object):
     """
 
     def __init__(self, filename):
+        #@FIX: added self.filename so it can be used in write_record
+        self.filename=filename
         self._file = gzip.open(filename, "wb")
         self._pickler = pickle.Pickler(self._file, -1)
 
@@ -47,12 +49,18 @@ class LogWriter(object):
         # data must be a dict
         if not isinstance(data, dict):
             raise ValueError("data to log must be a dict instance.")
+
+        #@FIX: added if statement
+        if "name" in data.keys(): #checks to see if name is in the dict so that line 55 doesn't cause errors
+            if "Ref" in str(data['name']): #looks for any instances of Ref
+                import ref
+                data['name'] = ref.val(data['name'])
+
         self._pickler.dump(data)
         self._pickler.clear_memo()
 
     def close(self):
         self._file.close()
-
 
 class LogReader(object):
     """An object that handles reading from .slog files.
@@ -196,7 +204,7 @@ def log2dl(log_filename, unwrap=True, **append_columns):
     if len(log_files) == 0:
         raise IOError("No matching slog files found.")
 
-    # loop over slogs pulling out dicts
+    # loop over slogs pulling out     
     dl = []
     for i, slog in enumerate(log_files):
         append_columns.update({'log_num': i})

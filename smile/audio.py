@@ -10,8 +10,8 @@
 import os
 import time
 
-from state import Wait
-from clock import clock
+from .state import Wait
+from .clock import clock
 
 # add in system site-packages if necessary
 try:
@@ -453,8 +453,8 @@ class RecordSoundFile(Wait):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
-    from state import Parallel, Wait, Serial, Meanwhile, UntilDone, Loop
+    from .experiment import Experiment
+    from .state import Parallel, Wait, Serial, Meanwhile, UntilDone, Loop
 
     exp = Experiment()
 
