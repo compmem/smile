@@ -4,7 +4,7 @@
 #   copyright and license terms.
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
-from .video import WidgetState
+from video import WidgetState
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.graphics import Color, Point
@@ -91,11 +91,8 @@ class Dot(object):
         self.total_time = random_variance(self.lifespan,
                                           self.lifespan_variance)
 
-class BlackHole(object):
-    def __init__(self, **kwargs):
-        super(BlackHole, self).__init__()
 
-class _MovingDotsWidget(Widget, BlackHole):
+class _MovingDotsWidget(Widget):
     motion_props = ListProperty([{}])
     num_dots = NumericProperty(100)
     scale = NumericProperty(4.0)
@@ -139,10 +136,10 @@ class _MovingDotsWidget(Widget, BlackHole):
             num_coh = int(self.num_dots * current_params['coherence'])
             tot_coh += num_coh
             self.__dots.extend([Dot(**current_params)
-                                for i in range(num_coh)])
+                                for i in xrange(num_coh)])
+
         # calc the number random coh
         num_rand = self.num_dots - tot_coh
-        print("num_rand", num_rand)
         if num_rand < 0:
             raise ValueError('Total coherence must be less than 1.0.')
 
@@ -153,7 +150,7 @@ class _MovingDotsWidget(Widget, BlackHole):
             current_params['direction'] = 0.0
             current_params['direction_variance'] = 360
             self.__dots.extend([Dot(**current_params)
-                                for i in range(num_rand)])
+                                for i in xrange(num_rand)])
 
         self.bind(motion_props=self.callback_motion_props)
 
@@ -192,8 +189,6 @@ class _MovingDotsWidget(Widget, BlackHole):
             num_coh = int(self.num_dots * mprop['coherence'])
             # Loop through that many dots and update their motion properties
             for i in range(tot_coh, tot_coh + num_coh):
-                print("i: ", i)
-                
                 self.__dots[i].direction = current_params['direction']
                 self.__dots[i].direction_variance = current_params['direction_variance']
                 self.__dots[i].speed = current_params['speed']
@@ -202,21 +197,14 @@ class _MovingDotsWidget(Widget, BlackHole):
                 self.__dots[i].lifespan_variance = current_params['lifespan_variance']
 
             tot_coh += num_coh
-<<<<<<< HEAD
         print("HELLOIAM")
         print("tot_coh", tot_coh)
         print("self.num_dots: ", self.num_dots)
         print("__dots", len(self.__dots))
-=======
->>>>>>> 62adc7f2ba89105e105f1e618f88d8cda3adf59d
         # For all remaining dots, give them a 0 direction and 360 direction
         # variance. Keep all remaining props as the default params
-        print("tot_coh", tot_coh)
-        print("self.num_dots: ", self.num_dots)
-        print("__dots", len(self.__dots))
         if tot_coh < self.num_dots:
             for i in range(tot_coh, self.num_dots):
-                
                 self.__dots[i].direction = 0
                 self.__dots[i].direction_variance = 360
                 self.__dots[i].speed = default_params['speed']
@@ -307,9 +295,9 @@ class MovingDots(WidgetState.wrap(_MovingDotsWidget)):
 
 if __name__ == '__main__':
 
-    from .experiment import Experiment
-    from .state import UntilDone, Meanwhile, Wait, Loop, Debug
-    from .keyboard import KeyPress
+    from experiment import Experiment
+    from state import UntilDone, Meanwhile, Wait, Loop, Debug
+    from keyboard import KeyPress
 
     # A testing set to show all the different things you can change when
     # setting motion_props during run-time.
@@ -324,7 +312,7 @@ if __name__ == '__main__':
                      "direction_variance": 10, "speed":400,
                      "speed_variance":200},]
                   ]
-    exp = Experiment(background_color=("purple", .3), debug=True)
+    exp = Experiment(background_color=("purple", .3))
 
     Wait(.5)
 

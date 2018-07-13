@@ -1,4 +1,4 @@
-import smile.kivy_overrides as kivy_overrides
+import kivy_overrides
 import kivy.clock
 
 _get_time = kivy.clock._default_time

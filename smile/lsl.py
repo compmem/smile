@@ -7,10 +7,10 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from .state import CallbackState, Wait, Parallel, Loop
-from .video import Label
-from .clock import clock
-from .pylsl import StreamInfo, StreamOutlet
+from state import CallbackState, Wait, Parallel, Loop
+from video import Label
+from clock import clock
+from pylsl import StreamInfo, StreamOutlet
 
 _lsl_outlets = {}
 
@@ -138,7 +138,7 @@ class LSLPush(CallbackState):
 
 if __name__ == "__main__":
 
-    from .experiment import Experiment
+    from experiment import Experiment
 
     exp = Experiment()
 

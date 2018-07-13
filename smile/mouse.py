@@ -11,14 +11,14 @@ from __future__ import print_function
 import operator
 import os
 
-import smile.kivy_overrides as kivy_overrides
+import kivy_overrides
 import kivy.graphics
 from kivy.core.image import Image
 
-from .state import CallbackState, Record
-from .ref import Ref, val, NotAvailable
-from .experiment import Experiment
-from .video import VisualState
+from state import CallbackState, Record
+from ref import Ref, val, NotAvailable
+from experiment import Experiment
+from video import VisualState
 
 
 def MouseWithin(widget):
@@ -370,8 +370,8 @@ class MousePress(CallbackState):
 
 if __name__ == '__main__':
 
-    from .experiment import Experiment
-    from .state import Wait, Debug, Loop, Meanwhile, Record, Log, Parallel
+    from experiment import Experiment
+    from state import Wait, Debug, Loop, Meanwhile, Record, Log, Parallel
 
     def print_dt(state, *args):
         print(args)

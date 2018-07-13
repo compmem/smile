@@ -10,8 +10,8 @@
 import os
 import time
 
-from .state import Wait
-from .clock import clock
+from state import Wait
+from clock import clock
 
 # add in system site-packages if necessary
 try:
@@ -43,34 +43,74 @@ _pyo_server = None
 
 #TODO: compensate for buffer lag where possible?
 
+#@FIX: import sys
+import sys
+
 def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
-                      audio='portaudio', jackname='pyo',
+                      audio='portaudio', jackname='pyo',#@FIX: Added parameters
+                      #ichnls=None, winhost='wasapi', midi='portmidi',
                       input_device=None, output_device=None):
     # grab the global server
     global _pyo_server
 
     # eventually read defaults from a config file
 
-    # set up the server
+    ###################################################################################
+
+    #@FIX: audio
+    from pyo import *
+    if sys.platform=="win32":
+        host_apis=["mme", "directsound", "asio", "wasapi", "wdm-ks"]
+
+    input_names, input_indexes=pa_get_input_devices()
+
     if _pyo_server is None:
-        # init first time
-        _pyo_server = pyo.Server(sr=sr, nchnls=nchnls, buffersize=buffersize,
-                                 duplex=duplex, audio=audio, jackname=jackname)
+        _pyo_server=Server(duplex=0)
     else:
-        # stop and reinit
         _pyo_server.stop()
-        _pyo_server.reinit(sr=sr, nchnls=nchnls, buffersize=buffersize,
-                           duplex=duplex, audio=audio, jackname=jackname)
+        _pyo_server.reinit(sr=sr, nchnls=nchnls, audio=audio, jackname=jackname,
+                                buffersize=1024, duplex=0, winhost=host)
+    _pyo_server.verbosity=0
+
+    host_results=[]
+    for host in host_apis:
+        try:
+            _pyo_server.reinit(sr=sr, nchnls=nchnls, audio=audio, jackname=jackname,
+                                buffersize=1024, duplex=0, winhost=host)
+            _pyo_server.boot().start()
+        except:
+            "ERROR: A host was not found!"
+
+    #####################################################################################
+
+    # set up the server
+    #if _pyo_server is None:
+    #    # init first time
+    #    _pyo_server = pyo.Server(sr=sr, nchnls=nchnls, buffersize=buffersize,
+    #                             duplex=duplex, audio=audio, jackname=jackname)#@FIX: added parameters
+    #                             #ichnls=ichnls, winhost=winhost, midi=midi)
+    #else:
+    #    # stop and reinit
+    #    _pyo_server.stop()
+    #    _pyo_server.reinit(sr=sr, nchnls=nchnls, buffersize=buffersize,
+    #                       duplex=duplex, audio=audio, jackname=jackname) #@FIX: added parameters
+                                 #ichnls=ichnls, winhost=winhost, midi=midi)
 
     # see if change in/out
+    ###if input_device:
+    ###    _pyo_server.setInputDevice(input_device)
+    ###if output_device:
+    ###    _pyo_server.setOutputDevice(output_device)
+
+    # boot it and start it
+    #_pyo_server.boot()
+    #_pyo_server.start()
+
+    #@FIX: Setinput and setoutput should be after start/boot
     if input_device:
         _pyo_server.setInputDevice(input_device)
     if output_device:
         _pyo_server.setOutputDevice(output_device)
-
-    # boot it and start it
-    _pyo_server.boot()
-    _pyo_server.start()
 
     return _pyo_server
 
@@ -453,8 +493,8 @@ class RecordSoundFile(Wait):
 
 if __name__ == '__main__':
 
-    from .experiment import Experiment
-    from .state import Parallel, Wait, Serial, Meanwhile, UntilDone, Loop
+    from experiment import Experiment
+    from state import Parallel, Wait, Serial, Meanwhile, UntilDone, Loop
 
     exp = Experiment()
 
