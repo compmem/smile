@@ -19,7 +19,7 @@ class Scale(object):
         self._scale_factor_ref = Ref.getattr(self, "_scale_factor")
         self.scale_down = False
         self.scale_up = False
-        self._scale_box = [800, 600]
+        self._scale_box = None
 
     def _set_scale_box(self, scale_box=None, scale_up, scale_down):
         self._scale_box = scale_box
@@ -27,28 +27,28 @@ class Scale(object):
         self.scale_down = scale_down
 
     def _calc_scale_factor(self, width, height):
+        if self._scale_box is not None:
+            if self.scale_down == True:
+                if (dp(self._scale_box[1]) > height) & (dp(self._scale_box[0]) > width):
+                    if (height / dp(self._scale_box[1])) < (width / dp(self._scale_box[0])):
+                        self._scale_factor = height / dp(self._scale_box[1])
+                    else:
+                        self._scale_factor = height / dp(self._scale_box[1])
+                elif dp(self._scale_box[1]) > height:
+                    self._scale_factor = height / dp(self._scale_box[1])
+                elif dp(self._scale_box[0]) > width:
+                    self._scale_factor = width / dp(self._scale_box[0])
 
-        if self.scale_down == True:
-            if (dp(self._scale_box[1]) > height) & (dp(self._scale_box[0]) > width):
-                if (height / dp(self._scale_box[1])) < (width / dp(self._scale_box[0])):
+            if self.scale_up == True:
+                if (dp(self._scale_box[1]) < height) & (dp(self._scale_box[0]) < width):
+                    if (height / dp(self._scale_box[1])) > (width / dp(self._scale_box[0])):
+                        self._scale_factor = height / dp(self._scale_box[1])
+                    else:
+                        self._scale_factor = height / dp(self._scale_box[1])
+                elif dp(self._scale_box[1]) < height:
                     self._scale_factor = height / dp(self._scale_box[1])
-                else:
-                    self._scale_factor = height / dp(self._scale_box[1])
-            elif dp(self._scale_box[1]) > height:
-                self._scale_factor = height / dp(self._scale_box[1])
-            elif dp(self._scale_box[0]) > width:
-                self._scale_factor = width / dp(self._scale_box[0])
-
-        if self.scale_up == True:
-            if (dp(self._scale_box[1]) < height) & (dp(self._scale_box[0]) < width):
-                if (height / dp(self._scale_box[1])) > (width / dp(self._scale_box[0])):
-                    self._scale_factor = height / dp(self._scale_box[1])
-                else:
-                    self._scale_factor = height / dp(self._scale_box[1])
-            elif dp(self._scale_box[1]) < height:
-                self._scale_factor = height / dp(self._scale_box[1])
-            elif dp(self._scale_box[0]) < width:
-                self._scale_factor = width / dp(self._scale_box[1])
+                elif dp(self._scale_box[0]) < width:
+                    self._scale_factor = width / dp(self._scale_box[1])
 
     def __call__(self, val):
         return Ref(dp, val) * self._scale_factor_ref
