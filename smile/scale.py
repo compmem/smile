@@ -21,7 +21,7 @@ class Scale(object):
         self.scale_up = False
         self._scale_box = None
 
-    def _set_scale_box(self, scale_box=None, scale_up, scale_down):
+    def _set_scale_box(self, scale_up=False, scale_down=False, scale_box=None):
         self._scale_box = scale_box
         self.scale_up = scale_up
         self.scale_down = scale_down
