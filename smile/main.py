@@ -35,6 +35,7 @@ import kivy.clock
 from event import event_time
 from clock import clock
 from video import normalize_color_spec
+from scale import scale
 
 
 _kivy_clock = kivy.clock.Clock
@@ -126,6 +127,7 @@ class SmileApp(App):
         # set width and height
         self.exp._screen._set_width(Window.width)
         self.exp._screen._set_height(Window.height)
+        scale._calc_scale_factor(Window.width, Window.height)
 
         return self.wid
 

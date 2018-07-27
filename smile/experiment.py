@@ -27,6 +27,7 @@ from ref import Ref
 from clock import clock
 from log import LogWriter, log2csv
 from event import event_time
+from scale import scale
 
 _kivy_clock = kivy.clock.Clock
 
@@ -291,8 +292,9 @@ class Experiment(object):
     equal to 55.
 
     """
-    def __init__(self, fullscreen=None, resolution=None, background_color=None,
-                 name="SMILE", debug=False):
+    def __init__(self, fullscreen=None, resolution=None,
+                 scale_box=[800, 600], scale_up=False, scale_down=True,
+                 background_color=None, name="SMILE", debug=False):
 
         self._platform = platform
         self._exp_name = name
@@ -304,6 +306,10 @@ class Experiment(object):
         if fullscreen is not None:
             self._fullscreen = fullscreen
         self._resolution = self._resolution or resolution
+
+        # set scale box
+        scale._set_scale_box(scale_box=scale_box, scale_up=scale_up,
+                             scale_down=scale_down)
 
         # process background color
         self._background_color = background_color
