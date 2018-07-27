@@ -52,53 +52,23 @@ with UntilDone():
         KeyPress()
 Wait(1.)
 
-# MovingDots allows us to to play with many different sizing and positioning
-# parameters. The scale of the dots, the radius of the apature, the speed of the
-# dots, all of these things are perfect for using scale.
-with Parallel():
-    md1 = MovingDots(scale=s(20), radius=s(RADIUS), speed=s(100))
-    # Please note the md1.top + s(50). If you want to do relative positioning,
-    # then you must use scale if you want the relative distance between things
-    # to be equal.
-    Label(text="20: "+Ref(str,s(20)), y=md1.top + s(50), font_size=s(40))
-with UntilDone():
-    if platform == "android":
-        with ButtonPress():
-            Button(size=exp.screen.size, background_color=(0, 0, 0, 0))
-    else:
-        KeyPress()
-Wait(1.)
 
-# The following are 3 more examples of what it would look like if we scaled
-# different parameters in a moving dot stimulus.
-with Parallel():
-    md2 = MovingDots(scale=s(10), radius=s(RADIUS), speed=s(100))
-    Label(text="10: "+Ref(str,s(10)), y=md2.top + s(50), font_size=s(40))
-with UntilDone():
-    if platform == "android":
-        with ButtonPress():
-            Button(size=exp.screen.size, background_color=(0, 0, 0, 0))
-    else:
-        KeyPress()
-Wait(1.)
-with Parallel():
-    md3 = MovingDots(scale=s(5), radius=s(RADIUS), speed=s(100))
-    Label(text="5: "+Ref(str,s(5)), y=md3.top + s(50), font_size=s(40))
-with UntilDone():
-    if platform == "android":
-        with ButtonPress():
-            Button(size=exp.screen.size, background_color=(0, 0, 0, 0))
-    else:
-        KeyPress()
-Wait(1.)
-with Parallel():
-    md4 = MovingDots(scale=s(1), radius=s(RADIUS), speed=s(100))
-    Label(text="1: "+Ref(str,s(1)), y=md4.top + s(50), font_size=s(40))
-with UntilDone():
-    if platform == "android":
-        with ButtonPress():
-            Button(size=exp.screen.size, background_color=(0, 0, 0, 0))
-    else:
-        KeyPress()
-Wait(1.)
+with Loop([20, 10, 5, 1]) as lp:
+    # MovingDots allows us to to play with many different sizing and positioning
+    # parameters. The scale of the dots, the radius of the apature, the speed of the
+    # dots, all of these things are perfect for using scale.
+    with Parallel():
+        md1 = MovingDots(scale=s(lp.current), radius=s(RADIUS), speed=s(100))
+        # Please note the md1.top + s(50). If you want to do relative positioning,
+        # then you must use scale if you want the relative distance between things
+        # to be equal.
+        Label(text="20: "+Ref(str,s(lp.current)), y=md1.top + s(50), font_size=s(40))
+    with UntilDone():
+        if platform == "android":
+            with ButtonPress():
+                Button(size=exp.screen.size, background_color=(0, 0, 0, 0))
+        else:
+            KeyPress()
+    Wait(1.)
+
 exp.run()
