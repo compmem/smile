@@ -11,8 +11,6 @@ from state import CallbackState, Wait, Parallel, Loop
 from video import Label
 from clock import clock
 
-import sys
-
 try:
     from pylsl import StreamInfo, StreamOutlet
     _got_pylsl = True
@@ -82,7 +80,7 @@ def init_lsl_outlet(server_name, server_type, nchans,
             _lsl_outlets[unique_identifier] = StreamOutlet(info)
             return _lsl_outlets[unique_identifier]
     else:
-        print("Unable to setup LSL server!")
+        print("Unable to setup LSL server! No sync pulses will be made.")
         return None
 
 
@@ -146,8 +144,6 @@ class LSLPush(CallbackState):
             else:
                 self._server.push_sample(self._push_val)
             self._push_time = clock.now()
-        else:
-            print("Unable to send push. No server.")
 
 
 
