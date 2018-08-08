@@ -548,8 +548,16 @@ class SmileApp(App):
             stopTouchApp()
         Func(end_it)
         """
+        self.exp.finish()
+
+        rtn=super(SmileApp, self).stop(*largs)
         self.root_window.close()
-        return super(SmileApp, self). stop(*largs)
+
+        return rtn
+
+        #@FIX
+        #self.root_window.close()
+        #return super(SmileApp, self).stop(*largs)
 
 if __name__ == '__main__':
     SmileApp().start()
