@@ -151,6 +151,10 @@ class KeyPress(KeyState):
         self._correct = False
         self._rt = None
 
+        #print(self._init_correct_resp)
+        #import os
+        #print(os.path.isfile("log_Ref_('_correct',)_0.slog"))
+
         # append log vars
         self._log_attrs.extend(['keys', 'correct_resp', 'base_time',
                                 'pressed', 'press_time',
@@ -161,7 +165,7 @@ class KeyPress(KeyState):
         # reset defaults
         self._pressed = NotAvailable
         self._press_time = NotAvailable
-        self._correct = NotAvailable
+        
         self._rt = NotAvailable
         if self._base_time is None:
             self._base_time = self._start_time

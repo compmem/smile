@@ -95,6 +95,7 @@ class Ref(object):
         # ***Must be a set to support proper boolean comparisons***
         self.change_callbacks = set()
 
+
         # recursively find Refs this Ref depends on
         for dep in iter_deps((pargs, kwargs)):
             # see if dep doesn't use cache
@@ -102,13 +103,36 @@ class Ref(object):
                 # override our cache state
                 self.use_cache = False
                 break
-
+    
+    #@FIX: changed map to list() for testing purposes
     def __repr__(self):
         return "Ref(%s)" % ", ".join([repr(self.func)] +
-                                     map(repr, self.pargs) +
+                                     (map(repr, self.pargs)) +
                                      ["%s=%r" % (name, value) for
                                       name, value in
                                       self.kwargs.items()])
+
+    #@FIX: added __str__ & __unicode__ methods
+    #If str() is called, then runs it through unicode()
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
+    #Unicode is called when creating the filename
+    #Illegal filename characters for Windows: * . " / \ [ ] : ; | = < > 
+    def __unicode__(self):
+        #self._current_state = None
+        #self._root_executor = self._root_state._clone(None)
+        #print("Type(self): ",type(self))
+        #print("Self.pargs :",self.pargs)
+        #print("Self.func :",self.func)
+        #print("THIS VALUE IS: ", val(Ref(self.func, self.pargs)))
+
+        name = "Ref_" + str(val(Ref(self.func, self.pargs)))
+        name.replace("(", "")
+        name.replace(")", "")
+
+        return name
+
 
     @staticmethod
     def getattr(obj, name):
@@ -189,6 +213,7 @@ class Ref(object):
 
         # evaluate all possible Refs
         value = val(val(self.func)(*val(self.pargs), **val(self.kwargs)))
+        #print("value: ", value)
 
         # save the cache if wanted
         if self.use_cache:
@@ -201,6 +226,7 @@ class Ref(object):
         """Add callback that's called when this value changes.
         """
         #print "add_change_callback %s, %r, %r, %r" % (self, func, pargs, kwargs)
+        #print(func)
         # if this is the first callback
         if not len(self.change_callbacks):
             # set up dependency callbacks
@@ -235,6 +261,7 @@ class Ref(object):
 
     # delayed operators...
     def __call__(self, *pargs, **kwargs):
+        #return Ref(_apply, self, pargs, kwargs)
         return Ref(apply, self, pargs, kwargs)
 
     def __setitem__(self, index, value):
@@ -342,19 +369,32 @@ def shuffle(iterable):
 def val(obj):
     try:
         # handle all types of Refs
+        #print("val!")
         if isinstance(obj, Ref):
+            #print("obj, ref")
+            #print(obj.eval())
             return obj.eval()
         elif isinstance(obj, list):
+            #print("list")
+            #print([val(value) for value in obj])
             return [val(value) for value in obj]
         elif isinstance(obj, tuple):
+            #print("tuple")
+            #print(tuple(val(value) for value in obj))
             return tuple(val(value) for value in obj)
         elif isinstance(obj, dict):
+            #print("dict")
+            #print({val(key) : val(value) for key, value in obj.items()})
             return {val(key) : val(value) for key, value in obj.items()}
         elif isinstance(obj, slice):
+            #print("slice")
+            #print(slice(val(obj.start), val(obj.stop), val(obj.step)))
             return slice(val(obj.start), val(obj.stop), val(obj.step))
         elif obj is NotAvailable:
             raise NotAvailableError("'val' produced NotAvailable result.")
         else:
+            #print("obj")
+            #print(obj)
             return obj
     except NotAvailableError:
         raise NotAvailableError("val(%r) produced NotAvailable result" % repr(obj))

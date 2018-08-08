@@ -113,6 +113,7 @@ class StateClass(type):
                                       {"_state_class": cls})
 
 
+#class State(object):
 class State(object):
     """Base State object for the hierarchical state machine.
 
@@ -175,11 +176,12 @@ class State(object):
         if use_state_class or issubclass(cls, StateBuilder):
             # If this is already a StateBuilder or if we got the
             # use_state_class flag, create the object as normal.
+            #return super(State, cls)
             return super(State, cls).__new__(cls, *pargs, **kwargs)
         else:
             # Otherwise, instantiate with the StateBuilder mixin instead.
-            return cls._builder_class.__new__(cls._builder_class,
-                                              *pargs, **kwargs)
+            #return StateClass(cls).__new__(cls, *pargs, **kwargs)
+            return cls._builder_class.__new__(cls._builder_class,*pargs, **kwargs)
 
     def __init__(self, parent=None, duration=None, save_log=True, name=None,
                  blocking=True):
@@ -190,6 +192,9 @@ class State(object):
 
         # If true, we write a log entry every time this state finalizes.
         self.__save_log = save_log
+
+        #@FIX: added self._callback_time for logging callback states
+        self._callback_time= None
 
         # The custom name for this state.
         self._name = name
@@ -298,7 +303,9 @@ class State(object):
         # list to cause additional attributes to be logged.
         self._log_attrs = ['instantiation_filename', 'instantiation_lineno',
                            'name', 'start_time', 'end_time', 'enter_time',
-                           'leave_time', 'finalize_time']
+                           'leave_time', 'finalize_time', 
+                           #@FIX: added callback_time
+                           'callback_time']
 
         # Concerning state cloning...
 
@@ -530,6 +537,7 @@ class State(object):
     @property
     def current_clone(self):  # TODO: new doc string!
         # if we are a clone, just return self
+
         if self.__original_state != self:
             # we must be a clone, so return self
             return self
@@ -554,6 +562,12 @@ class State(object):
 
         """
         # Return the named attribute from the current clone.
+
+        #@FIX added if statement, if Ref
+        if (type(name)) == tuple:
+            for n in name:
+                return getattr(self.current_clone, n)
+
         return getattr(self.current_clone, name)
 
     def get_attribute_ref(self, name):
@@ -606,6 +620,9 @@ class State(object):
             When the state will start, some time in the future.
 
         """
+        #@FIX: set initial time
+        #self._callback_time = NotAvailable
+
         # set trace
         self.claim_exceptions()
 
@@ -647,6 +664,9 @@ class State(object):
         # evaluate the '_init_' Refs...
         for name, value in self._refs_for_init_attrs.items():
             try:
+                #@FIX: added if statement to evaluate Ref immediately
+                if (type(self._name) == Ref):
+                    self._name=val(self._name)
                 setattr(self, name, val(value))
             except NotAvailableError:
                 raise NotAvailableError(
@@ -748,6 +768,7 @@ class State(object):
         if not self._started and cancel_time < self._start_time:
             self._unschedule_start()
             if self._end_time is not None:
+                print("self._end_time is not None")
                 self._unschedule_end()
             self._start_time = cancel_time
             self._end_time = cancel_time
@@ -783,6 +804,10 @@ class State(object):
         """Write a record to the state log for the current execution of the
         state.
         """
+        #@DELETE
+        #x={name : getattr(self, "_" + name) for name in self._log_attrs}
+        #if ('callback_time' in x.keys()):
+        #    print(x['callback_time'])
         self._exp.write_to_state_log(
             type(self).__name__,
             {name : getattr(self, "_" + name) for name in self._log_attrs})
@@ -949,7 +974,12 @@ class ParentState(State):
         """
         super(ParentState, self).begin_log()
         for child in self._children:
-            child.begin_log()
+            #@FIX: added if else statement to check for Ref 
+            #@FIX: might need to double check on the bound method check --> may need to change to Ref
+            if ('LogBuilder' in str(type(child))) and ('bound method' in str(child)):
+                pass
+            else:
+                child.begin_log()
 
     def end_log(self, to_csv=False):
         """Close per-class state logs for this state and all its children.
@@ -2211,6 +2241,11 @@ class Log(AutoFinalizeState):
         self.__log_filename = None
         self.__log_writer = None
 
+        #print("NAME TYPE: ", type(name))
+        #print(self._init_log_dict)
+        #print(self._init_log_items)
+        #print(self.__log_filename)
+
     def begin_log(self):
         """Set up per-class AND per-instance logs.
         """
@@ -2223,7 +2258,6 @@ class Log(AutoFinalizeState):
                 self._instantiation_lineno)
         else:
             title = "log_%s" % self._name
-
         if self.__log_writer is not None:
             self.__log_writer.close()
         if self.__log_filename is not None:
@@ -2248,19 +2282,51 @@ class Log(AutoFinalizeState):
         record = self._log_items.copy()
         record["log_time"] = self._start_time
         if self._log_dict is None:
-            self.__log_writer.write_record(record)
+            #@FIX: added try/except block
+            try:
+                self.__log_writer.write_record(record)
+            except AttributeError:
+                #The file doesn't exist (is a Ref), then create the file and log
+                self.begin_log()
+                self.__log_writer.write_record(record)
+
+                #Custom end_log since this is not a child of the ParentState
+                self.end_log()
+
         elif isinstance(self._log_dict, dict):
-            record.update(self._log_dict)
-            self.__log_writer.write_record(record)
+            #@FIX added try/except block
+            try:
+                record.update(self._log_dict)
+                self.__log_writer.write_record(record)
+            except AttributeError:
+                self.begin_log()
+                record.update(self._log_dict)
+                self.__log_writer.write_record(record)
+                self.end_log()
         elif type(self._log_dict) in (tuple, list):
             for dict_ in self._log_dict:
                 if not isinstance(dict_, dict):
                     raise ValueError(
                         "log_dict list/tuple must contain only dicts.")
-                record.update(dict_)
-                self.__log_writer.write_record(record)
+                #@FIX: add try/except block
+                try:
+                    record.update(dict_)
+                    self.__log_writer.write_record(record)
+                except:
+                    self.begin_log()
+                    record.update(dict_)
+                    self.__log_writer.write_record(record)
+                    self.end_log()
         else:
             raise ValueError("Invalid log_dict value: %r" % self._log_dict)
+
+        #@FIX: for testing purposes.
+        #print("FILENAME IS: ", self.__log_filename)
+        #print("LOG DICT: ", self._init_log_dict)
+        #print("LOG ITEMS: ", self._init_log_items)
+        #print("RECORD: ", self._log_items.copy())
+        #print('\n')
+
         self._started = True
         self._ended = True
         clock.schedule(self.leave)
@@ -2587,6 +2653,16 @@ class CallbackState(AutoFinalizeState):
                                             blocking=blocking)
         self._init_repeat_interval = repeat_interval
 
+        #@FIX: added _event_time and callback attribute
+        #self._callback_time=None
+        #self._log_attrs.extend(["callback_time"])
+
+    #@FIX: added _enter method
+    '''def _enter(self):
+                    super(CallbackState, self)._enter()
+                    self._callback_time = NotAvailable'''
+
+
     def _schedule_start(self):
         clock.schedule(self.callback, event_time=self._start_time,
                        repeat_interval=self._repeat_interval)
@@ -2613,6 +2689,18 @@ class CallbackState(AutoFinalizeState):
     def callback(self):
         """Call the custom callback method.
         """
+        #@FIX: added callback state logging
+        '''self.claim_exceptions()
+                                self._start=True
+                        
+                                before = clock.now()
+                                #self._exp._app.screenshot(self._filename)
+                                self._callback()
+                                after = clock.now()
+                                self._callback_time = {"time": before, "error": after - before}'''
+
+        #self.save_log()
+
         self.claim_exceptions()
         self._start = True
         self._callback()
@@ -2745,6 +2833,7 @@ class Debug(CallbackState):
 
         # set up the state
         self._init_kwargs = kwargs
+        #print("INIT KWARGS: ", self._init_kwargs)
 
     def _callback(self):
         id_strs = [
