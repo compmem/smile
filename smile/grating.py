@@ -5,7 +5,7 @@
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from video import WidgetState
+from .video import WidgetState
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ListProperty, StringProperty
 from kivy.graphics import Rectangle, BindTexture, Callback
@@ -15,6 +15,9 @@ from kivy.graphics.opengl import GL_ONE_MINUS_SRC_ALPHA
 from kivy.graphics.opengl import GL_ONE_MINUS_DST_ALPHA
 import math
 from itertools import chain
+
+#@FIX: import six
+import six
 
 
 # cache so we don't regenerate masks
@@ -220,7 +223,9 @@ class Grating(Widget):
         grating_buf = list(chain.from_iterable([self._calc_color(x)
                                                 for x in range(self._period)]))
         # make an array from the buffer
-        grating_arr = b''.join(map(chr, grating_buf))
+        #@FIX: changed
+        #grating_arr = b''.join(list(map(chr, grating_buf)))
+        grating_arr = b''.join(list(map(lambda x: six.int2byte(x), grating_buf)))
 
         # blit the array to the texture
         self._texture.blit_buffer(grating_arr, colorfmt='rgb',
@@ -241,8 +246,8 @@ class Grating(Widget):
 
         # creation of texture, half the width and height, will be reflected to
         # completely cover the grating texture
-        self._mask_texture = Texture.create(size=(self.width / 2,
-                                                  self.height / 2),
+        self._mask_texture = Texture.create(size=(self.width // 2,
+                                                  self.height // 2),
                                             colorfmt='rgba',
                                             bufferfmt='ubyte')
 
@@ -261,28 +266,31 @@ class Grating(Widget):
                 mask_buf =\
                     list(chain.from_iterable([
                         self._calc_gaussian_mask(rx, ry)
-                        for rx in range(self.width / 2)
-                        for ry in range(self.height / 2)]))
+                        #@FIX: changed / to //
+                        for rx in range(self.width // 2)
+                        for ry in range(self.height // 2)]))
             elif self.envelope[0].lower() == 'l':
                 mask_buf =\
                     list(chain.from_iterable([
                         self._calc_linear_mask(rx, ry)
-                        for rx in range(self.width / 2)
-                        for ry in range(self.height / 2)]))
+                        for rx in range(self.width // 2)
+                        for ry in range(self.height // 2)]))
             elif self.envelope[0].lower() == 'c':
                 mask_buf =\
                     list(chain.from_iterable([
                         self._calc_circular_mask(rx, ry)
-                        for rx in range(self.width / 2)
-                        for ry in range(self.height / 2)]))
+                        for rx in range(self.width // 2)
+                        for ry in range(self.height // 2)]))
             else:
                 mask_buf =\
                     list(chain.from_iterable([
                         self._calc_undefined_mask(rx, ry)
-                        for rx in range(self.width / 2)
-                        for ry in range(self.height / 2)]))
+                        for rx in range(self.width // 2)
+                        for ry in range(self.height // 2)]))
             # turn into an array
-            mask_arr = b''.join(map(chr, mask_buf))
+            #@FIX: updated byte
+            #mask_arr = b''.join(map(chr, mask_buf))
+            mask_arr = b''.join(list(map(lambda x: six.int2byte(x), mask_buf)))
             # print mask_arr
             # add it to the cache
             _mask_cache[mask_id] = mask_arr
@@ -313,10 +321,10 @@ class Grating(Widget):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
-    from state import UntilDone, Wait, Parallel, Serial
-    from keyboard import KeyPress
-    from video import Label
+    from .experiment import Experiment
+    from .state import UntilDone, Wait, Parallel, Serial
+    from .keyboard import KeyPress
+    from .video import Label
 
     exp = Experiment(background_color="#4F33FF")
 

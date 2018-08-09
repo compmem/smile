@@ -8,8 +8,8 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 # SMILE components
-from experiment import Experiment
-from state import (
+from .experiment import Experiment
+from .state import (
     Parallel,
     Meanwhile,
     UntilDone,
@@ -29,15 +29,15 @@ from state import (
     ResetClock,
     Debug,
     PrintTraceback)
-from keyboard import Key, KeyPress, KeyRecord
-from mouse import (
+from .keyboard import Key, KeyPress, KeyRecord
+from .mouse import (
     MouseWithin,
     MousePos,
     MouseButton,
     MouseCursor,
     MouseRecord,
     MousePress)
-from video import (
+from .video import (
     Screenshot,
     Bezier,
     Mesh,
@@ -76,11 +76,10 @@ from video import (
     Animate,
     BlockingFlips,
     NonBlockingFlips)
-from dotbox import DotBox, DynamicDotBox
-from moving_dots import MovingDots
-from grating import Grating
-from ref import Ref, val, jitter, shuffle
+from .dotbox import DotBox, DynamicDotBox
+from .moving_dots import MovingDots
+from .grating import Grating
+from .ref import Ref, val, jitter, shuffle
 #from smile.audio import Beep, SoundFile, RecordSoundFile
-from freekey import FreeKey
-from questionnaire import Questionnaire
-from scale import scale
+from .freekey import FreeKey
+from .questionnaire import Questionnaire

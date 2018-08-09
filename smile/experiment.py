@@ -16,20 +16,20 @@ import time
 import threading
 
 # kivy imports
-import kivy_overrides
+import smile.kivy_overrides as kivy_overrides
 import kivy
 import kivy.base
 from kivy.utils import platform
 import kivy.clock
 
-# local imports
-from state import Serial, AutoFinalizeState, Log
-from ref import Ref
-from clock import clock
-from log import LogWriter, log2csv
-from event import event_time
-from scale import scale
-import version
+
+from .state import Serial, AutoFinalizeState, 
+from .ref import Ref
+from .clock import clock
+from .log import LogWriter, log2csv
+from .event import event_time
+from .scale import scale
+import smile.version as version
 
 
 _kivy_clock = kivy.clock.Clock
@@ -295,10 +295,15 @@ class Experiment(object):
     equal to 55.
 
     """
+<<<<<<< HEAD
     def __init__(self, fullscreen=None, resolution=None,
                  scale_box=None, scale_up=False, scale_down=False,
                  background_color=None, name="SMILE", debug=False, Touch=None,
                  show_splash=True):
+=======
+    def __init__(self, fullscreen=None, resolution=None, background_color=None,
+                 name="SMILE", debug=False):
+>>>>>>> Python 3 Changes
 
         self._platform = platform
         self._exp_name = name
@@ -310,10 +315,6 @@ class Experiment(object):
         if fullscreen is not None:
             self._fullscreen = fullscreen
         self._resolution = self._resolution or resolution
-
-        # set scale box
-        scale._set_scale_box(scale_box=scale_box, scale_up=scale_up,
-                             scale_down=scale_down)
 
         # process background color
         self._background_color = background_color
@@ -497,7 +498,8 @@ class Experiment(object):
                                                     time.gmtime()))
         with self._reserved_data_filenames_lock:
             self._reserved_data_filenames |= set(os.listdir(self._session_dir))
-            for distinguisher in xrange(256):
+            #--@FIX: xrange --> range
+            for distinguisher in range(256):
                 if ext is None:
                     filename = "%s_%d" % (title, distinguisher)
                 else:
@@ -595,7 +597,7 @@ class Experiment(object):
             # self._root_executor.enter(clock.now() + 0.25)
 
             # kivy main loop
-            from main import SmileApp
+            from .main import SmileApp
             self._app = SmileApp(self)
             self._app.run()
 

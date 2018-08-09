@@ -12,7 +12,7 @@ from __future__ import print_function
 import os
 
 # kivy imports
-import kivy_overrides
+import smile.kivy_overrides as kivy_overrides
 import kivy
 import kivy.base
 from kivy.app import App
@@ -32,10 +32,9 @@ from kivy.utils import platform
 import kivy.clock
 
 # local imports
-from event import event_time
-from clock import clock
-from video import normalize_color_spec
-from scale import scale
+from .event import event_time
+from .clock import clock
+from .video import normalize_color_spec
 
 
 _kivy_clock = kivy.clock.Clock
@@ -127,7 +126,6 @@ class SmileApp(App):
         # set width and height
         self.exp._screen._set_width(Window.width)
         self.exp._screen._set_height(Window.height)
-        scale._calc_scale_factor(Window.width, Window.height)
 
         return self.wid
 
@@ -367,8 +365,9 @@ class SmileApp(App):
         if block:
             # draw a transparent point
             # position
-            glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,
-                                  "\x00\x00\x00\x0a\x00\x00\x00\x0a")
+            #@FIX: changed the pointer value to a 0 for testing
+            glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, 0,0)
+                                  #"\x00\x00\x00\x0a\x00\x00\x00\x0a")
             # color
             glVertexAttrib4f(3, 0.0, 0.0, 0.0, 0.0)
             glDrawArrays(GL_POINTS, 0, 1)
