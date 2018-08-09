@@ -3517,7 +3517,7 @@ And this is a reference to top_::
 $ print("Hello world")
 
     """
-    RstDocument(text=text, duration=5.0, size=exp.screen.size)
+    #RstDocument(text=text, duration=5.0, size=exp.screen.size)
 
     with ButtonPress():
         button = Button(text="Click to continue", size=(exp.screen.width / 4,

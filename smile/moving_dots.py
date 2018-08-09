@@ -197,7 +197,10 @@ class _MovingDotsWidget(Widget):
                 self.__dots[i].lifespan_variance = current_params['lifespan_variance']
 
             tot_coh += num_coh
-
+        print("HELLOIAM")
+        print("tot_coh", tot_coh)
+        print("self.num_dots: ", self.num_dots)
+        print("__dots", len(self.__dots))
         # For all remaining dots, give them a 0 direction and 360 direction
         # variance. Keep all remaining props as the default params
         if tot_coh < self.num_dots:
