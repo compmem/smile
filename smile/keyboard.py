@@ -9,11 +9,11 @@
 
 import os.path, os
 
-from state import CallbackState
-from ref import val, NotAvailable
-from clock import clock
-from experiment import Experiment
-from log import LogWriter, log2csv
+from .state import CallbackState
+from .ref import val, NotAvailable
+from .clock import clock
+from .experiment import Experiment
+from .log import LogWriter, log2csv
 
 
 def Key(name):
@@ -151,25 +151,17 @@ class KeyPress(KeyState):
         self._correct = False
         self._rt = None
 
-        #print(self._init_correct_resp)
-        #import os
-        #print(os.path.isfile("log_Ref_('_correct',)_0.slog"))
-
         # append log vars
         self._log_attrs.extend(['keys', 'correct_resp', 'base_time',
                                 'pressed', 'press_time',
                                 'correct', 'rt'])
-    #@FIX: added getCorrect(self) method
-    def getCorrect(self):
-        return self._init_correct_resp
 
     def _enter(self):
         super(KeyPress, self)._enter()
         # reset defaults
         self._pressed = NotAvailable
         self._press_time = NotAvailable
-        #@FIX
-        #self._correct = NotAvailable
+        self._correct = NotAvailable
         self._rt = NotAvailable
         if self._base_time is None:
             self._base_time = self._start_time
@@ -181,10 +173,6 @@ class KeyPress(KeyState):
             self._correct_resp = []
         elif type(self._correct_resp) not in (list, tuple):
             self._correct_resp = [self._correct_resp]
-
-        #@FIX
-        if self._correct == NotAvailable or self._correct is None:
-            self._correct = False
 
     def _on_key_down(self, keycode, text, modifiers, event_time):
         sym_str = keycode[1].upper()
@@ -291,8 +279,8 @@ class KeyRecord(KeyState):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
-    from state import Wait, Debug, Loop, UntilDone, Log, Meanwhile
+    from .experiment import Experiment
+    from .state import Wait, Debug, Loop, UntilDone, Log, Meanwhile
 
     exp = Experiment()
     with Meanwhile():

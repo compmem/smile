@@ -11,17 +11,18 @@ from __future__ import print_function
 import operator
 import os
 
-import kivy_overrides
+import smile.kivy_overrides as kivy_overrides
 import kivy.graphics
 from kivy.core.image import Image
 
-from state import CallbackState, Record
-from ref import Ref, val, NotAvailable
-from experiment import Experiment
-from video import VisualState
+from .state import CallbackState, Record
+from .ref import Ref, val, NotAvailable
+from .experiment import Experiment
+from .video import VisualState
 
 
-def MouseWithin(widget):
+#@FIX: added pos parameter
+def MouseWithin(widget, pos=None):
     """An easy shortcut to wait for a mouse to be within a widget.
 
     This function returns True if the mouse position is within a given widget.
@@ -54,10 +55,14 @@ def MouseWithin(widget):
     participant that they did the correct thing.
 
     """
-    pos = Experiment._last_instance().screen.mouse_pos
-    return ((pos[0] >= widget.x) & (pos[1] >= widget.y) &
-            (pos[0] <= widget.right) & (pos[1] <= widget.top))
-
+    #@FIX: check for positional argument
+    if pos==None:
+        mousePos = Experiment._last_instance().screen.mouse_pos
+    else: 
+        mousePos=pos
+    
+    return ((mousePos[0] >= widget.x) & (mousePos[1] >= widget.y) &
+            (mousePos[0] <= widget.right) & (mousePos[1] <= widget.top))
 
 def MousePos(widget=None):
     """Returns the position of the mouse.
@@ -76,7 +81,6 @@ def MousePos(widget=None):
                         Ref(map, operator.sub, pos, widget.pos),
                         None)
 
-
 def MouseButton(widget=None):
     """Returns a Reference to the next mouse button to be pressed.
 
@@ -90,7 +94,9 @@ def MouseButton(widget=None):
     if widget is None:
         return button
     else:
-        return Ref.cond(MouseWithin(widget), button, None)
+        #@FIX: Changed to only return a button
+        #return Ref.cond(MouseWithin(widget), button, None)
+        return button
 
 
 def MouseRecord(widget=None, name="MouseRecord"):
@@ -172,12 +178,14 @@ class MouseCursor(VisualState):
 
         self._log_attrs.extend(["filename", "offset"])
 
+
     def _enter(self):
         super(MouseCursor, self)._enter()
         self.__pos_ref = self._exp.screen.mouse_pos
         texture = Image(self._filename).texture
         self.__instruction = kivy.graphics.Rectangle(texture=texture,
                                                      size=texture.size)
+
 
     def show(self):
         try:
@@ -370,8 +378,8 @@ class MousePress(CallbackState):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
-    from state import Wait, Debug, Loop, Meanwhile, Record, Log, Parallel
+    from .experiment import Experiment
+    from .state import Wait, Debug, Loop, Meanwhile, Record, Log, Parallel
 
     def print_dt(state, *args):
         print(args)

@@ -15,18 +15,18 @@ import time
 import threading
 
 # kivy imports
-import kivy_overrides
+import smile.kivy_overrides as kivy_overrides
 import kivy
 import kivy.base
 from kivy.utils import platform
 import kivy.clock
 
 # local imports
-from state import Serial, AutoFinalizeState
-from ref import Ref
-from clock import clock
-from log import LogWriter, log2csv
-from event import event_time
+from .state import Serial, AutoFinalizeState
+from .ref import Ref
+from .clock import clock
+from .log import LogWriter, log2csv
+from .event import event_time
 
 #--EDITED 6.14.18--
 #from state import StateClass
@@ -334,7 +334,6 @@ class Experiment(object):
         self._reserved_data_filenames_lock = threading.Lock()
         self._state_loggers = {}
 
-
     def _change_smile_subj(self, subj_id):
         kconfig = kivy_overrides._get_config()
 
@@ -372,7 +371,6 @@ class Experiment(object):
     def get_var(self, name):
         """Get a user variable of this ParentState.
         """
-
         return self._vars[name]
 
     def attribute_update_state(self, name, value, index=None):
@@ -443,7 +441,6 @@ class Experiment(object):
         # set whether to log csv
         self._csv = args.csv
 
-
     def reserve_data_filename(self, title, ext=None, use_timestamp=False):
         """
         Construct a unique filename for a data file in the log directory.  The
@@ -460,10 +457,10 @@ class Experiment(object):
         if use_timestamp:
             title = "%s_%s" % (title, time.strftime("%Y%m%d%H%M%S",
                                                     time.gmtime()))
-
         with self._reserved_data_filenames_lock:
             self._reserved_data_filenames |= set(os.listdir(self._session_dir))
-            for distinguisher in xrange(256):
+            #--@FIX: xrange --> range
+            for distinguisher in range(256):
                 if ext is None:
                     filename = "%s_%d" % (title, distinguisher)
                 else:
@@ -561,7 +558,7 @@ class Experiment(object):
             # self._root_executor.enter(clock.now() + 0.25)
 
             # kivy main loop
-            from main import SmileApp
+            from .main import SmileApp
             self._app = SmileApp(self)
             self._app.run()
 
@@ -618,9 +615,6 @@ class Set(AutoFinalizeState):
         self._init_index = index
 
         self._log_attrs.extend(['var_name', 'value', 'index'])
-
-        import ref
-
 
     def _enter(self):
         self._exp.set_var(self._var_name, self._value, self._index)
