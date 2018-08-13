@@ -75,9 +75,7 @@ def calc_density(height, width, heightcm, widthcm):
     return (((height/heightcm)+(width/widthcm)) * 2.54 / 2.0) / 96.
 
 @Subroutine
-def ConfigWindow(self,
-                 params,
-                 TOUCH=False):
+def ConfigWindow(self, params):
 
     self.params = params
     self.canceled = True
@@ -228,42 +226,42 @@ def ConfigWindow(self,
 
 
 @Subroutine
-def SubjectInput(self,
-                 SHOW_SPLASH=True,
-                 TOUCH=False):
+def Splash(self, TOUCH=False):
     if TOUCH:
         cont_key_str = "the screen"
     else:
         cont_key_str = "any key"
 
-    if SHOW_SPLASH:
+    with Parallel():
+        rout = Rectangle(width=s(INTRO_WIDTH) + s(20),
+                         height=s(INTRO_HEIGHT) + s(20),
+                         color=INFO_OUTLINE_COLOR)
+        Rectangle(width=s(INTRO_WIDTH),
+                  height=s(INTRO_HEIGHT),
+                  color=INFO_COLOR)
+        ssi = Image(source=os.path.join(os.path.dirname(__file__),
+                                        LOGO_IMG),
+                    allow_stretch=True,
+                    width=s(LOGO_WIDTH),keep_ratio=False,
+                    height=s(LOGO_HEIGHT))
+        Label(text="SMILE\nbrought to you by the",
+              multiline=True, halign="center", bottom=ssi.top + s(50),
+              font_size=s(SSI_FONT_SIZE))
+        Label(text="UVA Computational Memory Lab\nPress %s to continue"%(cont_key_str),
+              top=ssi.bottom - s(50),
+              multiline=True, halign="center",
+              font_size=s(SSI_FONT_SIZE))
+    with UntilDone():
         with Parallel():
-            rout = Rectangle(width=s(INTRO_WIDTH) + s(20),
-                             height=s(INTRO_HEIGHT) + s(20),
-                             color=INFO_OUTLINE_COLOR)
-            Rectangle(width=s(INTRO_WIDTH),
-                      height=s(INTRO_HEIGHT),
-                      color=INFO_COLOR)
-            ssi = Image(source=os.path.join(os.path.dirname(__file__),
-                                            LOGO_IMG),
-                        allow_stretch=True,
-                        width=s(LOGO_WIDTH),keep_ratio=False,
-                        height=s(LOGO_HEIGHT))
-            Label(text="SMILE\nbrought to you by the",
-                  multiline=True, halign="center", bottom=ssi.top + s(50),
-                  font_size=s(SSI_FONT_SIZE))
-            Label(text="UVA Computational Memory Lab\nPress %s to continue"%(cont_key_str),
-                  top=ssi.bottom - s(50),
-                  multiline=True, halign="center",
-                  font_size=s(SSI_FONT_SIZE))
-        with UntilDone():
-            with Parallel():
-                kp = KeyPress(blocking=False)
-                with Serial(blocking=False):
-                    with ButtonPress() as bp:
-                        Button(size=self.exp.screen.size, text="", left=0,
-                               bottom=0, background_color=(0, 0, 0, 0))
+            kp = KeyPress(blocking=False)
+            with Serial(blocking=False):
+                with ButtonPress() as bp:
+                    Button(size=self.exp.screen.size, text="", left=0,
+                           bottom=0, background_color=(0, 0, 0, 0))
 
+
+@Subroutine
+def InputSubject(self):
 
     if KOConfig.getdefaultint("SMILE", "LOCKEDSUBJID", 0):
         self.text=KOConfig.getdefault("SMILE", "SUBJID", "subj000")
@@ -278,8 +276,7 @@ def SubjectInput(self,
     # Experiment start
     with Loop(conditional=self.keep_looping):
         with Parallel():
-            if not TOUCH:
-                MouseCursor()
+            MouseCursor()
             recOut = Rectangle(width=s(INFO_WIDTH) + s(20),
                                height=s(INFO_HEIGHT) + s(20),
                                color=INFO_OUTLINE_COLOR)
@@ -332,7 +329,7 @@ def SubjectInput(self,
 
         with Elif(bp.pressed == "G"):
             resy = Func(KO._get_config)
-            mC = ConfigWindow(resy.result, TOUCH=TOUCH)
+            mC = ConfigWindow(resy.result)
             with If(mC.canceled == False):
                 Debug(s=mC.density)
                 Func(KO._set_config, locked=mC.locked, framerate=mC.framerate,
@@ -353,8 +350,9 @@ if __name__ == "__main__":
 
     from experiment import Experiment
 
-    exp = Experiment(background_color=(.35, .35, .35, 1.0))
+    exp = Experiment(background_color=(.35, .35, .35, 1.0),
+                     TOUCH=False)
 
-    SubjectInput(TOUCH=False)
+    InputSubject()
 
     exp.run()

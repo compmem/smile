@@ -294,7 +294,8 @@ class Experiment(object):
     """
     def __init__(self, fullscreen=None, resolution=None,
                  scale_box=[800, 600], scale_up=False, scale_down=True,
-                 background_color=None, name="SMILE", debug=False):
+                 background_color=None, name="SMILE", debug=False, TOUCH=False,
+                 show_splash=True):
 
         self._platform = platform
         self._exp_name = name
@@ -324,10 +325,16 @@ class Experiment(object):
 
         # set up initial root state and parent stack
         # interacts with Meanwhile and UntilDone at top of experiment
-        Serial(name="EXPERIMENT BODY", parent=self)
+        ss = Serial(name="EXPERIMENT BODY", parent=self)
+
+
         self._root_state.set_instantiation_context(self)
         self._parents = [self._root_state]
 
+        if show_splash:
+            from startup import Splash
+            Splash(TOUCH=TOUCH, parent=ss)
+            
         # place to save experimental variables
         self._vars = {}
         self.__issued_refs = weakref.WeakValueDictionary()
