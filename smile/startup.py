@@ -226,8 +226,8 @@ def ConfigWindow(self, params):
 
 
 @Subroutine
-def Splash(self, TOUCH=False):
-    if TOUCH:
+def Splash(self, Touch=False):
+    if Touch:
         cont_key_str = "the screen"
     else:
         cont_key_str = "any key"
@@ -351,7 +351,7 @@ if __name__ == "__main__":
     from experiment import Experiment
 
     exp = Experiment(background_color=(.35, .35, .35, 1.0),
-                     TOUCH=False)
+                     Touch=False)
 
     InputSubject()
 
