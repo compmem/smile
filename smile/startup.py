@@ -13,6 +13,7 @@ import os
 
 SHOW_SPLASH = True
 LOGO_IMG = "logo.png"
+SMILE_IMG = "face-smile.png"
 LOGO_WIDTH = 639
 LOGO_HEIGHT = 100
 INFO_WIDTH = 500
@@ -29,8 +30,6 @@ INFO_FONT_SIZE = 30
 SSI_FONT_SIZE = 40
 CHECK_HEIGHT = 25
 CHECK_WIDTH = 25
-
-
 
 
 @Subroutine
@@ -245,7 +244,9 @@ def SubjectInput(self,
             Rectangle(width=s(INTRO_WIDTH),
                       height=s(INTRO_HEIGHT),
                       color=INFO_COLOR)
-            ssi = Image(source=LOGO_IMG, allow_stretch=True,
+            ssi = Image(source=os.path.join(os.path.dirname(__file__),
+                                            LOGO_IMG),
+                        allow_stretch=True,
                         width=s(LOGO_WIDTH),keep_ratio=False,
                         height=s(LOGO_HEIGHT))
             Label(text="This app brought to you by the \nUVA Computational Memory Lab",
@@ -312,7 +313,8 @@ def SubjectInput(self,
                            left=recin.left + s(20),
                            background_normal="",
                            background_color=INFO_OUTLINE_COLOR)
-            Image(source="face-smile.png",
+            Image(source=os.path.join(os.path.dirname(__file__),
+                                            SMILE_IMG),
                   height=s(250), width=s(250),
                   keep_ratio=False, allow_stretch=True,
                   center_x=recin.center_x, opacity=.25,
