@@ -294,7 +294,7 @@ class Experiment(object):
     """
     def __init__(self, fullscreen=None, resolution=None,
                  scale_box=[800, 600], scale_up=False, scale_down=True,
-                 background_color=None, name="SMILE", debug=False, TOUCH=False,
+                 background_color=None, name="SMILE", debug=False, TOUCH=None,
                  show_splash=True):
 
         self._platform = platform
@@ -330,11 +330,13 @@ class Experiment(object):
 
         self._root_state.set_instantiation_context(self)
         self._parents = [self._root_state]
+        if TOUCH is None:
+            TOUCH = (platform == "android") or (platform == "ios")
 
         if show_splash:
             from startup import Splash
             Splash(TOUCH=TOUCH, parent=ss)
-            
+
         # place to save experimental variables
         self._vars = {}
         self.__issued_refs = weakref.WeakValueDictionary()
