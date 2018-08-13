@@ -11,7 +11,6 @@ import kivy_overrides as KO
 
 import os
 
-SHOW_SPLASH = True
 LOGO_IMG = "logo.png"
 SMILE_IMG = "face-smile.png"
 LOGO_WIDTH = 639
@@ -230,6 +229,7 @@ def ConfigWindow(self,
 
 @Subroutine
 def SubjectInput(self,
+                 SHOW_SPLASH=True,
                  TOUCH=False):
     if TOUCH:
         cont_key_str = "the screen"
@@ -249,10 +249,12 @@ def SubjectInput(self,
                         allow_stretch=True,
                         width=s(LOGO_WIDTH),keep_ratio=False,
                         height=s(LOGO_HEIGHT))
-            Label(text="This app brought to you by the \nUVA Computational Memory Lab",
+            Label(text="SMILE\nbrought to you by the",
                   multiline=True, halign="center", bottom=ssi.top + s(50),
                   font_size=s(SSI_FONT_SIZE))
-            Label(text="Press %s to continue"%(cont_key_str), top=ssi.bottom - s(50),
+            Label(text="UVA Computational Memory Lab\nPress %s to continue"%(cont_key_str),
+                  top=ssi.bottom - s(50),
+                  multiline=True, halign="center",
                   font_size=s(SSI_FONT_SIZE))
         with UntilDone():
             with Parallel():
