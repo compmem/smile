@@ -55,6 +55,7 @@ if args.fullscreen:
 else:
     Config.set("graphics", "fullscreen", "auto")
 
+
 # handle resolution
 if args.resolution:
     width, height = map(int, args.resolution.split("x"))
@@ -70,6 +71,9 @@ Config.set('graphics', 'show_cursor', 0)
 # we don't want to be able to resize
 Config.set('graphics', 'resizable', 0)
 
+density = Config.getdefault("SMILE", "DENSITY", "1.0")
+os.environ['KIVY_METRICS_DENSITY'] = density
+
 # handle supported kivy versions
 import kivy
 
@@ -78,7 +82,8 @@ EXACT_KIVY_VERSIONS = (
     "1.9.0",
     "1.9.1-dev0",
     "1.9.1",
-    "1.10.0")
+    "1.10.0",
+    "1.10.1.dev0")
 if kivy.__version__ not in EXACT_KIVY_VERSIONS:
     raise ImportError("kivy version must be one of %r, got %r" %
                       (EXACT_KIVY_VERSIONS, kivy.__version__))
@@ -120,6 +125,7 @@ def _get_config():
     font_name = Config.getdefault("SMILE", "FONTNAME", "Roboto")
     font_size = float(Config.getdefault("SMILE", "FONTSIZE", 45.))
     fullscreen = Config.getdefault("SMILE", "FULLSCREEN", "auto")
+    density = Config.getdefault("SMILE", "DENSITY", "1.0")
     if platform == "android" or platform == "ios":
         data_dir = Config.getdefault("SMILE", "DEFAULT_DATA_DIR",
                                      "/sdcard/SMILE/data")
@@ -128,6 +134,7 @@ def _get_config():
                                      os.path.join(".", "data"))
 
     return_dict = {"fullscreen": fullscreen, "locked": locked,
+                   "density": density,
                    "font_size": font_size, "font_name": font_name,
                    "frame_rate": frame_rate, "default_data_dir": data_dir}
 
@@ -139,7 +146,8 @@ def _set_config(fullscreen=None,
                 framerate=None,
                 fontname=None,
                 fontsize=None,
-                data_dir=None):
+                data_dir=None,
+                density=None):
     if fullscreen is not None:
         Config.set("SMILE", "FULLSCREEN", fullscreen)
     if locked is not None:
@@ -152,4 +160,6 @@ def _set_config(fullscreen=None,
         Config.set("SMILE", "FONTSIZE", fontsize)
     if data_dir is not None:
         Config.set("SMILE", "DEFAULT_DATA_DIR", data_dir)
+    if density is not None:
+        Config.set("SMILE", "DENSITY", density)
     Config.write()

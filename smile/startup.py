@@ -1,7 +1,8 @@
 from state import Subroutine, Parallel, Serial, Loop, If, Else, Elif, \
-                  UntilDone, ResetClock, Func
+                  UntilDone, ResetClock, Func, Wait, Debug
 from video import Rectangle, ProgressBar, Label, UpdateWidget, \
                   CheckBox, TextInput, ButtonPress, Button, Image
+from keyboard import KeyPress
 from ref import Ref
 from mouse import MouseCursor
 from scale import scale as s
@@ -10,13 +11,30 @@ import kivy_overrides as KO
 
 import os
 
+SHOW_SPLASH = True
+LOGO_IMG = "logo.png"
+LOGO_WIDTH = 300
+LOGO_HEIGHT = 75
+INFO_WIDTH = 500
+INFO_HEIGHT = 600
+INFO_OUTLINE_COLOR = [51./255., 107./255., 135./255.]
+INFO_COLOR = [144./255., 175./255., 197./255.]
+INFO_BUTTON_WIDTH = 200
+INFO_BUTTON_HEIGHT = 50
+INTRO_WIDTH = 700
+INTRO_HEIGHT = 500
+TEXT_INPUT_WIDTH = 300
+TEXT_INPUT_HEIGHT = 50
+INFO_FONT_SIZE = 30
+SSI_FONT_SIZE = 40
+CHECK_HEIGHT = 25
+CHECK_WIDTH = 25
+
+
+
+
 @Subroutine
 def FrameTest(self,
-              INFO_WIDTH=500,
-              INFO_HEIGHT=600,
-              INFO_OUTLINE_COLOR=[51./255., 107./255., 135./255.],
-              INFO_COLOR=[144./255., 175./255., 197./255.],
-              INFO_FONT_SIZE=30,
               num_flips=500,
               to_skip=5,
               ):
@@ -59,28 +77,15 @@ def FrameTest(self,
 @Subroutine
 def ConfigWindow(self,
                  params,
-                 INFO_WIDTH=500,
-                 INFO_HEIGHT=600,
-                 INFO_OUTLINE_COLOR=[51./255., 107./255., 135./255.],
-                 INFO_COLOR=[144./255., 175./255., 197./255.],
-                 INFO_BUTTON_WIDTH=200,
-                 INFO_BUTTON_HEIGHT=50,
-                 INTRO_WIDTH=700,
-                 INTRO_HEIGHT=500,
-                 TEXT_INPUT_WIDTH=300,
-                 TEXT_INPUT_HEIGHT=50,
-                 INFO_FONT_SIZE=30,
-                 CHECK_HEIGHT=25,
-                 CHECK_WIDTH=25,
-                 CONT_KEY=["SPACEBAR"],
                  TOUCH=False):
 
     self.params = params
     self.canceled = True
     self.keep_looping = True
+
     self.lock_state = Ref.cond(self.params["locked"], "down", "normal")
     self.frameText = Ref(str, self.params['frame_rate'])
-
+    self.density = Ref(str, self.params['density'])
     with Loop(conditional=self.keep_looping):
         with Parallel():
             with If(self.exp._platform != "android"):
@@ -133,11 +138,37 @@ def ConfigWindow(self,
                                    background_normal="",
                                    center_y=timeLabel.center_y,
                                    left=timeLabel.right + s(20))
-            timeLabel = Label(text="Density: "%(),
-                              top=timeInput.bottom - s(40),
-                              left=recin.left + s(20),
-                              font_size=s(INFO_FONT_SIZE))
-
+            densityLabel = Label(text="Density: ",
+                                 top=timeInput.bottom - s(40),
+                                 left=recin.left + s(20),
+                                 font_size=s(INFO_FONT_SIZE))
+            densityText = TextInput(text=self.density,
+                                    font_size=s(INFO_FONT_SIZE),
+                                    width=s(TEXT_INPUT_WIDTH)/3.,
+                                    height=s(TEXT_INPUT_HEIGHT),
+                                    left=densityLabel.right + s(20),
+                                    center_y=densityLabel.center_y,
+                                    multiline=False)
+            hcmText = TextInput(font_size=s(INFO_FONT_SIZE),
+                                width=s(TEXT_INPUT_WIDTH)/4.,
+                                height=s(TEXT_INPUT_HEIGHT),
+                                left=recin.left + s(20),
+                                top=densityLabel.bottom - s(10),
+                                multiline=False)
+            wcmText = TextInput(font_size=s(INFO_FONT_SIZE),
+                                width=s(TEXT_INPUT_WIDTH)/4.,
+                                height=s(TEXT_INPUT_HEIGHT),
+                                left=hcmText.right + s(20),
+                                center_y=hcmText.center_y,
+                                multiline=False)
+            density_button = Button(name="calc_den", text="Calc Density",
+                                   font_size=s(INFO_FONT_SIZE),
+                                   height=s(INFO_BUTTON_HEIGHT),
+                                   width=s(INFO_BUTTON_WIDTH),
+                                   background_color=INFO_OUTLINE_COLOR,
+                                   background_normal="",
+                                   center_y=hcmText.center_y,
+                                   left=wcmText.right + s(20))
 
             # CONTINUE BUTTONS
             cancel_button = Button(text="Cancel", name="cancel",
@@ -160,39 +191,69 @@ def ConfigWindow(self,
         with UntilDone():
             bp = ButtonPress(buttons=[cancel_button,
                                       app_button,
-                                      timing_button])
+                                      timing_button,
+                                      density_button])
+            Wait(.5)
 
         with If(bp.pressed == "apply"):
             self.locked = Ref.cond(cb_l.state == "down", 1, 0)
             self.exp.flip_interval = 1./Ref(float, timeInput.text)
             self.framerate = Ref(float, timeInput.text)
+            with If(densityText.text == params['density']):
+                self.density = None
+            with Else():
+                self.density = densityText.text
             self.canceled = False
             self.keep_looping = False
+        with Elif(bp.pressed == "calc_den"):
+            cd = Func(calc_density, height=self.exp.screen.height,
+                      width=self.exp.screen.width,
+                      heightcm=Ref(int, hcmText.text),
+                      widthcm=Ref(int, wcmText.text))
+            self.density = Ref(str,cd.result)
         with Elif(bp.pressed == "timing"):
             ft = FrameTest()
             self.frameText = ft.framerate
         with Else():
             self.keep_looping = False
 
+
+def calc_density(height, width, heightcm, widthcm):
+
+    return (((height/heightcm)+(width/widthcm)) * 2.54 / 2.0) / 96.
+
+
 @Subroutine
 def SubjectInput(self,
-                 SHOW_SPLASH=True,
-                 INFO_WIDTH=500,
-                 INFO_HEIGHT=600,
-                 INFO_OUTLINE_COLOR=[51./255., 107./255., 135./255.],
-                 INFO_COLOR=[144./255., 175./255., 197./255.],
-                 INFO_BUTTON_WIDTH=200,
-                 INFO_BUTTON_HEIGHT=50,
-                 INTRO_WIDTH=700,
-                 INTRO_HEIGHT=500,
-                 TEXT_INPUT_WIDTH=300,
-                 TEXT_INPUT_HEIGHT=50,
-                 INFO_FONT_SIZE=30,
-                 CONT_KEY=["SPACEBAR"],
                  TOUCH=False):
-                 
-    if SHOW_SPLASH:
+    if TOUCH:
+        cont_key_str = "the screen"
+    else:
+        cont_key_str = "any key"
 
+    if SHOW_SPLASH:
+        with Parallel():
+            rout = Rectangle(width=s(INTRO_WIDTH) + s(20),
+                             height=s(INTRO_HEIGHT) + s(20),
+                             color=INFO_OUTLINE_COLOR)
+            Rectangle(width=s(INTRO_WIDTH),
+                      height=s(INTRO_HEIGHT),
+                      color=INFO_COLOR)
+            ssi = Image(source=LOGO_IMG, allow_stretch=True,
+                        width=s(LOGO_WIDTH),keep_ratio=False,
+                        height=s(LOGO_HEIGHT))
+            Label(text="This app brought to you by the \nUVA Computational Memory Lab",
+                  multiline=True, halign="center", bottom=ssi.top + s(50),
+                  font_size=s(SSI_FONT_SIZE))
+            Label(text="Press %s to continue"%(cont_key_str), top=ssi.bottom - s(50),
+                  font_size=s(SSI_FONT_SIZE))
+        with UntilDone():
+            with Parallel():
+                kp = KeyPress(blocking=False)
+                with Serial(blocking=False):
+                    with ButtonPress() as bp:
+                        Button(size=self.exp.screen.size, text="", left=0,
+                               bottom=0, background_color=(0, 0, 0, 0))
 
 
     if KOConfig.getdefaultint("SMILE", "LOCKEDSUBJID", 0):
@@ -214,7 +275,7 @@ def SubjectInput(self,
                                height=s(INFO_HEIGHT) + s(20),
                                color=INFO_OUTLINE_COLOR)
             recin = Rectangle(width=s(INFO_WIDTH),
-                               height=s(INFO_HEIGHT),
+                              height=s(INFO_HEIGHT),
                               color=INFO_COLOR)
             lbl = Label(text="Cognitive Battery", center_x=recin.center_x,
                         top=recin.top - s(10),
@@ -225,8 +286,9 @@ def SubjectInput(self,
                               center_x=recin.center_x,
                               top=lbl.bottom - s(20),
                               multiline=False, text=self.text,
-                              disabled=self.disabled,
+                              readonly=self.disabled,
                               hint_text="Subject ID")
+            #NOTE: Addin an image that is a lock if locked.
             bc = Button(text="Continue", font_size=s(INFO_FONT_SIZE),
                         height=s(INFO_BUTTON_HEIGHT),
                         width=s(INFO_BUTTON_WIDTH),
@@ -251,6 +313,8 @@ def SubjectInput(self,
                   center_y=recin.center_y - s(15))
         with UntilDone():
             bp = ButtonPress(buttons=[bc, bconf])
+            Wait(.5)
+
         self.text = txtIn.text
         with If(bp.pressed == "C"):
             new_dir = Func(self.exp._change_smile_subj, Ref(str, txtIn.text))
@@ -258,9 +322,11 @@ def SubjectInput(self,
 
         with Elif(bp.pressed == "G"):
             resy = Func(KO._get_config)
-            mC = ConfigWindow(resy.result, )
+            mC = ConfigWindow(resy.result, TOUCH=TOUCH)
             with If(mC.canceled == False):
-                Func(KO._set_config, locked=mC.locked, framerate=mC.framerate)
+                Debug(s=mC.density)
+                Func(KO._set_config, locked=mC.locked, framerate=mC.framerate,
+                    density=mC.density)
                 with If(mC.locked):
                     self.disabled = True
                     with If((txtIn.text == "") | (txtIn.text == None)):
