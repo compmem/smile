@@ -13,8 +13,8 @@ import os
 
 SHOW_SPLASH = True
 LOGO_IMG = "logo.png"
-LOGO_WIDTH = 300
-LOGO_HEIGHT = 75
+LOGO_WIDTH = 639
+LOGO_HEIGHT = 100
 INFO_WIDTH = 500
 INFO_HEIGHT = 600
 INFO_OUTLINE_COLOR = [51./255., 107./255., 135./255.]
@@ -24,7 +24,7 @@ INFO_BUTTON_HEIGHT = 50
 INTRO_WIDTH = 700
 INTRO_HEIGHT = 500
 TEXT_INPUT_WIDTH = 300
-TEXT_INPUT_HEIGHT = 50
+TEXT_INPUT_HEIGHT = 40
 INFO_FONT_SIZE = 30
 SSI_FONT_SIZE = 40
 CHECK_HEIGHT = 25
@@ -50,7 +50,7 @@ def FrameTest(self,
                                   color=INFO_OUTLINE_COLOR)
         recin = Rectangle(height=s(INFO_HEIGHT),
                           width=s(INFO_WIDTH),
-                          color=[144./255.,175./255.,197./255.],
+                          color=INFO_COLOR,
                           center_y=config_window.center_y)
         pb = ProgressBar(max=self.tot_flips, width=config_window.width*2/3,
                          height=s(50),
@@ -73,6 +73,8 @@ def FrameTest(self,
             ResetClock(self.last_flip)
     self.framerate = lbl.text
 
+def calc_density(height, width, heightcm, widthcm):
+    return (((height/heightcm)+(width/widthcm)) * 2.54 / 2.0) / 96.
 
 @Subroutine
 def ConfigWindow(self,
@@ -138,7 +140,8 @@ def ConfigWindow(self,
                                    background_normal="",
                                    center_y=timeLabel.center_y,
                                    left=timeLabel.right + s(20))
-            densityLabel = Label(text="Density: ",
+
+            densityLabel = Label(text="Density:",
                                  top=timeInput.bottom - s(40),
                                  left=recin.left + s(20),
                                  font_size=s(INFO_FONT_SIZE))
@@ -149,17 +152,25 @@ def ConfigWindow(self,
                                     left=densityLabel.right + s(20),
                                     center_y=densityLabel.center_y,
                                     multiline=False)
+            hcmLabel = Label(text="Height(cm):",
+                             top=densityLabel.bottom - s(20),
+                             left=recin.left + s(20),
+                             font_size=s(INFO_FONT_SIZE))
             hcmText = TextInput(font_size=s(INFO_FONT_SIZE),
                                 width=s(TEXT_INPUT_WIDTH)/4.,
                                 height=s(TEXT_INPUT_HEIGHT),
-                                left=recin.left + s(20),
-                                top=densityLabel.bottom - s(10),
+                                left=hcmLabel.right + s(10),
+                                center_y=hcmLabel.center_y,
                                 multiline=False)
+            wcmLabel = Label(text="Width(cm):",
+                             top=hcmLabel.bottom - s(20),
+                             left=recin.left + s(20),
+                             font_size=s(INFO_FONT_SIZE))
             wcmText = TextInput(font_size=s(INFO_FONT_SIZE),
                                 width=s(TEXT_INPUT_WIDTH)/4.,
                                 height=s(TEXT_INPUT_HEIGHT),
-                                left=hcmText.right + s(20),
-                                center_y=hcmText.center_y,
+                                left=wcmLabel.right + s(10),
+                                center_y=wcmLabel.center_y,
                                 multiline=False)
             density_button = Button(name="calc_den", text="Calc Density",
                                    font_size=s(INFO_FONT_SIZE),
@@ -167,8 +178,8 @@ def ConfigWindow(self,
                                    width=s(INFO_BUTTON_WIDTH),
                                    background_color=INFO_OUTLINE_COLOR,
                                    background_normal="",
-                                   center_y=hcmText.center_y,
-                                   left=wcmText.right + s(20))
+                                   center_y=(hcmText.center_y + wcmText.center_y)/2.,
+                                   left=hcmText.right + s(10))
 
             # CONTINUE BUTTONS
             cancel_button = Button(text="Cancel", name="cancel",
@@ -208,19 +219,14 @@ def ConfigWindow(self,
         with Elif(bp.pressed == "calc_den"):
             cd = Func(calc_density, height=self.exp.screen.height,
                       width=self.exp.screen.width,
-                      heightcm=Ref(int, hcmText.text),
-                      widthcm=Ref(int, wcmText.text))
+                      heightcm=Ref(float, hcmText.text),
+                      widthcm=Ref(float, wcmText.text))
             self.density = Ref(str,cd.result)
         with Elif(bp.pressed == "timing"):
             ft = FrameTest()
             self.frameText = ft.framerate
         with Else():
             self.keep_looping = False
-
-
-def calc_density(height, width, heightcm, widthcm):
-
-    return (((height/heightcm)+(width/widthcm)) * 2.54 / 2.0) / 96.
 
 
 @Subroutine
@@ -306,7 +312,7 @@ def SubjectInput(self,
                            left=recin.left + s(20),
                            background_normal="",
                            background_color=INFO_OUTLINE_COLOR)
-            Image(source=os.path.join("assets","face-smile.png"),
+            Image(source="face-smile.png",
                   height=s(250), width=s(250),
                   keep_ratio=False, allow_stretch=True,
                   center_x=recin.center_x, opacity=.25,

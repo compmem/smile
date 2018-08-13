@@ -72,7 +72,7 @@ Config.set('graphics', 'show_cursor', 0)
 Config.set('graphics', 'resizable', 0)
 
 density = Config.getdefault("SMILE", "DENSITY", "1.0")
-os.environ['KIVY_METRICS_DENSITY'] = density
+#os.environ['KIVY_METRICS_DENSITY'] = density
 
 # handle supported kivy versions
 import kivy
