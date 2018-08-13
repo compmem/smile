@@ -71,8 +71,9 @@ Config.set('graphics', 'show_cursor', 0)
 # we don't want to be able to resize
 Config.set('graphics', 'resizable', 0)
 
-density = Config.getdefault("SMILE", "DENSITY", "1.0")
-#os.environ['KIVY_METRICS_DENSITY'] = density
+density = Config.getdefault("SMILE", "DENSITY", "0.0")
+if density != "0.0"
+    os.environ['KIVY_METRICS_DENSITY'] = density
 
 # handle supported kivy versions
 import kivy
