@@ -1,3 +1,14 @@
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+#
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
+#
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+
+from kivy_overrides import Config as KOConfig
+import kivy_overrides as KO
 from state import Subroutine, Parallel, Serial, Loop, If, Else, Elif, \
                   UntilDone, ResetClock, Func, Wait, Debug
 from video import Rectangle, ProgressBar, Label, UpdateWidget, \
@@ -6,11 +17,11 @@ from keyboard import KeyPress
 from ref import Ref
 from mouse import MouseCursor
 from scale import scale as s
-from kivy_overrides import Config as KOConfig
-import kivy_overrides as KO
 
 import os
 
+
+# general config for splash and settings
 LOGO_IMG = "logo.png"
 SMILE_IMG = "face-smile.png"
 LOGO_WIDTH = 639
@@ -34,8 +45,7 @@ CHECK_WIDTH = 25
 @Subroutine
 def FrameTest(self,
               num_flips=500,
-              to_skip=5,
-              ):
+              to_skip=5):
 
     self.tot_flips = num_flips + to_skip
     self.diff_sum = 0.0
@@ -147,34 +157,38 @@ def ConfigWindow(self, params):
                                     left=densityLabel.right + s(20),
                                     center_y=densityLabel.center_y,
                                     multiline=False)
-            hcmLabel = Label(text="Height(cm):",
+            wcmLabel = Label(text="Width (cm):",
                              top=densityLabel.bottom - s(20),
                              left=recin.left + s(20),
                              font_size=s(INFO_FONT_SIZE))
-            hcmText = TextInput(font_size=s(INFO_FONT_SIZE),
-                                width=s(TEXT_INPUT_WIDTH)/4.,
-                                height=s(TEXT_INPUT_HEIGHT),
-                                left=hcmLabel.right + s(10),
-                                center_y=hcmLabel.center_y,
-                                multiline=False)
-            wcmLabel = Label(text="Width(cm):",
-                             top=hcmLabel.bottom - s(20),
+            hcmLabel = Label(text="Height (cm):",
+                             top=wcmLabel.bottom - s(20),
                              left=recin.left + s(20),
                              font_size=s(INFO_FONT_SIZE))
             wcmText = TextInput(font_size=s(INFO_FONT_SIZE),
                                 width=s(TEXT_INPUT_WIDTH)/4.,
                                 height=s(TEXT_INPUT_HEIGHT),
-                                left=wcmLabel.right + s(10),
+                                left=Ref(max,
+                                         wcmLabel.right,
+                                         hcmLabel.right) + s(10),
                                 center_y=wcmLabel.center_y,
                                 multiline=False)
+            hcmText = TextInput(font_size=s(INFO_FONT_SIZE),
+                                width=s(TEXT_INPUT_WIDTH)/4.,
+                                height=s(TEXT_INPUT_HEIGHT),
+                                left=Ref(max,
+                                         wcmLabel.right,
+                                         hcmLabel.right) + s(10),
+                                center_y=hcmLabel.center_y,
+                                multiline=False)
             density_button = Button(name="calc_den", text="Calc Density",
-                                   font_size=s(INFO_FONT_SIZE),
-                                   height=s(INFO_BUTTON_HEIGHT),
-                                   width=s(INFO_BUTTON_WIDTH),
-                                   background_color=INFO_OUTLINE_COLOR,
-                                   background_normal="",
-                                   center_y=(hcmText.center_y + wcmText.center_y)/2.,
-                                   left=hcmText.right + s(10))
+                                    font_size=s(INFO_FONT_SIZE),
+                                    height=s(INFO_BUTTON_HEIGHT),
+                                    width=s(INFO_BUTTON_WIDTH),
+                                    background_color=INFO_OUTLINE_COLOR,
+                                    background_normal="",
+                                    center_y=(hcmText.center_y + wcmText.center_y)/2.,
+                                    right=timing_button.right)
 
             # CONTINUE BUTTONS
             cancel_button = Button(text="Cancel", name="cancel",
@@ -199,7 +213,7 @@ def ConfigWindow(self, params):
                                       app_button,
                                       timing_button,
                                       density_button])
-            Wait(.5)
+            Wait(.25)
 
         with If(bp.pressed == "apply"):
             self.locked = Ref.cond(cb_l.state == "down", 1, 0)
@@ -241,13 +255,35 @@ def Splash(self, Touch=False):
         ssi = Image(source=os.path.join(os.path.dirname(__file__),
                                         LOGO_IMG),
                     allow_stretch=True,
-                    width=s(LOGO_WIDTH),keep_ratio=False,
-                    height=s(LOGO_HEIGHT))
-        Label(text="SMILE\nbrought to you by the",
-              multiline=True, halign="center", bottom=ssi.top + s(50),
+                    width=s(LOGO_WIDTH),
+                    height=s(LOGO_HEIGHT),
+                    keep_ratio=False)
+        sl = Label(text="SMILE",
+                   halign="center", bottom=ssi.top + s(75),
+                   font_size=s(SSI_FONT_SIZE)*2)
+        Image(source=os.path.join(os.path.dirname(__file__),
+                                  SMILE_IMG),
+              allow_stretch=True,
+              opacity=.5,
+              right=sl.left - s(10),
+              center_y=sl.center_y,
+              width=sl.height,
+              height=sl.height,
+              keep_ratio=False)
+        Image(source=os.path.join(os.path.dirname(__file__),
+                                  SMILE_IMG),
+              allow_stretch=True,
+              opacity=.5,
+              left=sl.right + s(10),
+              center_y=sl.center_y,
+              width=sl.height,
+              height=sl.height,
+              keep_ratio=False)
+        Label(text="brought to you by the",
+              halign="center", top=sl.bottom,
               font_size=s(SSI_FONT_SIZE))
-        Label(text="UVA Computational Memory Lab\nPress %s to continue"%(cont_key_str),
-              top=ssi.bottom - s(50),
+        Label(text="UVA Computational Memory Lab\n\nPress %s to continue"%(cont_key_str),
+              top=ssi.bottom,
               multiline=True, halign="center",
               font_size=s(SSI_FONT_SIZE))
     with UntilDone():
@@ -260,8 +296,8 @@ def Splash(self, Touch=False):
 
 
 @Subroutine
-def InputSubject(self):
-
+def InputSubject(self, exp_title="SMILE Experiment"):
+    # get the config for whether we've locked the subject
     if KOConfig.getdefaultint("SMILE", "LOCKEDSUBJID", 0):
         self.text=KOConfig.getdefault("SMILE", "SUBJID", "subj000")
         self.disabled = True
@@ -282,7 +318,7 @@ def InputSubject(self):
             recin = Rectangle(width=s(INFO_WIDTH),
                               height=s(INFO_HEIGHT),
                               color=INFO_COLOR)
-            lbl = Label(text="Cognitive Battery", center_x=recin.center_x,
+            lbl = Label(text=exp_title, center_x=recin.center_x,
                         top=recin.top - s(10),
                         font_size=s(INFO_FONT_SIZE))
             txtIn = TextInput(width=s(TEXT_INPUT_WIDTH),
@@ -319,7 +355,7 @@ def InputSubject(self):
                   center_y=recin.center_y - s(15))
         with UntilDone():
             bp = ButtonPress(buttons=[bc, bconf])
-            Wait(.5)
+            Wait(.25)
 
         self.text = txtIn.text
         with If(bp.pressed == "C"):
@@ -330,9 +366,9 @@ def InputSubject(self):
             resy = Func(KO._get_config)
             mC = ConfigWindow(resy.result)
             with If(mC.canceled == False):
-                Debug(s=mC.density)
+                # Debug(s=mC.density)
                 Func(KO._set_config, locked=mC.locked, framerate=mC.framerate,
-                    density=mC.density)
+                     density=mC.density)
                 with If(mC.locked):
                     self.disabled = True
                     with If((txtIn.text == "") | (txtIn.text == None)):
