@@ -86,8 +86,7 @@ def ConfigWindow(self, params):
     self.density = Ref(str, self.params['density'])
     with Loop(conditional=self.keep_looping):
         with Parallel():
-            with If(self.exp._platform != "android"):
-                MouseCursor()
+            MouseCursor()
             config_window = Rectangle(height=s(INFO_HEIGHT) + s(20),
                                       width=s(INFO_WIDTH) + s(20),
                                       color=INFO_OUTLINE_COLOR)
