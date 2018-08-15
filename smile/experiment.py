@@ -9,6 +9,7 @@
 
 # import main modules
 import os
+import platform as pf
 
 import weakref
 import time
@@ -22,7 +23,7 @@ from kivy.utils import platform
 import kivy.clock
 
 # local imports
-from state import Serial, AutoFinalizeState
+from state import Serial, AutoFinalizeState, Log
 from ref import Ref
 from clock import clock
 from log import LogWriter, log2csv
@@ -336,6 +337,15 @@ class Experiment(object):
         if show_splash:
             from startup import Splash
             Splash(Touch=Touch, parent=ss)
+
+        Log(name="sysinfo",
+            expname=name,
+            processor=pf.processor(),
+            python_version=pf.python_version(),
+            platform=pf.platform(),
+            system=pf.system(),
+            screen_size=self.screen.size,
+            parent=ss)
 
         # place to save experimental variables
         self._vars = {}
