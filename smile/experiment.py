@@ -360,7 +360,7 @@ class Experiment(object):
             author=version.__author__,
             email=version.__email__,
             date_last_update=version.__date__,
-            uname=pf.uname,
+            uname=pf.uname(),
             parent=ss,
             )
 
