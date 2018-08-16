@@ -9,7 +9,6 @@
 
 # import main modules
 import os
-import platform as pf
 
 import weakref
 import time
@@ -22,14 +21,16 @@ import kivy.base
 from kivy.utils import platform
 import kivy.clock
 
-
-from .state import Serial, AutoFinalizeState, 
+# local imports
+from .state import Serial, AutoFinalizeState
 from .ref import Ref
 from .clock import clock
 from .log import LogWriter, log2csv
 from .event import event_time
 from .scale import scale
-import smile.version as version
+
+#--EDITED 6.14.18--
+#from state import StateClass
 
 
 _kivy_clock = kivy.clock.Clock
@@ -295,15 +296,10 @@ class Experiment(object):
     equal to 55.
 
     """
-<<<<<<< HEAD
     def __init__(self, fullscreen=None, resolution=None,
-                 scale_box=None, scale_up=False, scale_down=False,
+                 scale_box=[800, 600], scale_up=False, scale_down=True,
                  background_color=None, name="SMILE", debug=False, Touch=None,
                  show_splash=True):
-=======
-    def __init__(self, fullscreen=None, resolution=None, background_color=None,
-                 name="SMILE", debug=False):
->>>>>>> Python 3 Changes
 
         self._platform = platform
         self._exp_name = name
@@ -338,32 +334,8 @@ class Experiment(object):
             Touch = (platform == "android") or (platform == "ios")
 
         if show_splash:
-            from startup import Splash
+            from .startup import Splash
             Splash(Touch=Touch, parent=ss)
-
-        Log(kivy_overrides._get_config(),
-            name="sysinfo",
-            fullscreen=self._fullscreen,
-            data_time=self._session,
-            debug=self._debug,
-            resolution=self._resolution,
-            background_color=self._background_color,
-            scale_box=scale_box,
-            scale_up=scale_up,
-            scale_down=scale_down,
-            expname=name,
-            processor=pf.processor(),
-            python_version=pf.python_version(),
-            platform=pf.platform(),
-            system=pf.system(),
-            screen_size=self.screen.size,
-            version=version.__version__,
-            author=version.__author__,
-            email=version.__email__,
-            date_last_update=version.__date__,
-            uname=pf.uname(),
-            parent=ss,
-            )
 
         # place to save experimental variables
         self._vars = {}

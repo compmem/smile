@@ -157,7 +157,7 @@ class MouseCursor(VisualState):
     stack = []
 
     def __init__(self, filename=None, offset=None, duration=None, parent=None,
-                 save_log=True, name=None, blocking=True):
+                 save_log=True, name=None, blocking=True, scale=0):
         super(MouseCursor, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
@@ -178,14 +178,26 @@ class MouseCursor(VisualState):
 
         self._log_attrs.extend(["filename", "offset"])
 
+        #@FIX: added scale
+        if scale==0:
+            self.__scale = scale
+        else:
+            self.__scale=scale
+            self._init_offset=tuple([self.__scale*x for x in self._init_offset])
+
 
     def _enter(self):
         super(MouseCursor, self)._enter()
         self.__pos_ref = self._exp.screen.mouse_pos
         texture = Image(self._filename).texture
-        self.__instruction = kivy.graphics.Rectangle(texture=texture,
-                                                     size=texture.size)
 
+        #@FIX: added if else statement to check for scaling
+        if self.__scale==0:
+            self.__instruction = kivy.graphics.Rectangle(texture=texture,
+                                                     size=texture.size)
+        else:
+            self.__instruction = kivy.graphics.Rectangle(texture=texture,
+                                                     size=tuple([self.__scale*x for x in texture.size]))
 
     def show(self):
         try:

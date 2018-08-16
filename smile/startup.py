@@ -7,16 +7,16 @@
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from kivy_overrides import Config as KOConfig
-import kivy_overrides as KO
-from state import Subroutine, Parallel, Serial, Loop, If, Else, Elif, \
+from .kivy_overrides import Config as KOConfig
+import smile.kivy_overrides as KO
+from .state import Subroutine, Parallel, Serial, Loop, If, Else, Elif, \
                   UntilDone, ResetClock, Func, Wait, Debug
-from video import Rectangle, ProgressBar, Label, UpdateWidget, \
+from .video import Rectangle, ProgressBar, Label, UpdateWidget, \
                   CheckBox, TextInput, ButtonPress, Button, Image
-from keyboard import KeyPress
-from ref import Ref
-from mouse import MouseCursor
-from scale import scale as s
+from .keyboard import KeyPress
+from .ref import Ref
+from .mouse import MouseCursor
+from .scale import scale as s
 
 import os
 
@@ -383,7 +383,7 @@ def InputSubject(self, exp_title="SMILE Experiment"):
 if __name__ == "__main__":
 
 
-    from experiment import Experiment
+    from .experiment import Experiment
 
     exp = Experiment(background_color=(.35, .35, .35, 1.0),
                      Touch=False)
