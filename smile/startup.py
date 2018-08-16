@@ -40,6 +40,11 @@ INFO_FONT_SIZE = 30
 SSI_FONT_SIZE = 40
 CHECK_HEIGHT = 25
 CHECK_WIDTH = 25
+LOCK_ON = "lock.png"
+LOCK_OFF = "unlock.png"
+LOCK_HEIGHT = 50
+LOCK_WIDTH = 50
+
 
 
 def set_flip_interval(fps):
@@ -93,13 +98,13 @@ def calc_density(height, width, heightcm, widthcm):
 
 @Subroutine
 def ConfigWindow(self):
+
     resy = Func(KO._get_config)
 
     self.params = resy.result
     self.canceled = True
     self.keep_looping = True
 
-    self.lock_state = Ref.cond(self.params["locked"], "down", "normal")
     self.frameText = Ref(str, self.params['frame_rate'])
     self.density = Ref(str, self.params['density'])
     with Loop(conditional=self.keep_looping):
@@ -116,30 +121,12 @@ def ConfigWindow(self):
                           font_size=s(INFO_FONT_SIZE),
                           top=config_window.top - s(50))
 
-            # SUBJECT ID LOCK
-
-            lRec = Rectangle(color="GRAY",
-                             left=recin.left + s(20),
-                             top=title.bottom - s(40),
-                             height=s(CHECK_HEIGHT),
-                             width=s(CHECK_WIDTH))
-            cb_l = CheckBox(name="tog_lock", state=self.lock_state,
-                            center_y=lRec.center_y,
-                            center_x=lRec.center_x,
-                            height=s(CHECK_HEIGHT),
-                            width=s(CHECK_WIDTH),
-                            allow_stretch=True, keep_ratio=False)
-            lbl_lock = Label(text="Lock the Subject ID",
-                             center_y=lRec.center_y,
-                             left=lRec.right + s(50),
-                             font_size=s(INFO_FONT_SIZE))
-
             timeInput = TextInput(text=self.frameText,
                                   font_size=s(INFO_FONT_SIZE),
                                   width=s(TEXT_INPUT_WIDTH)/3.,
                                   height=s(TEXT_INPUT_HEIGHT),
                                   left=recin.left + s(20),
-                                  top=lRec.bottom - s(40),
+                                  top=title.bottom - s(40),
                                   multiline=False)
             timeLabel = Label(text="Framerate",
                               center_y=timeInput.center_y,
@@ -224,7 +211,6 @@ def ConfigWindow(self):
             Wait(.25)
 
         with If(bp.pressed == "apply"):
-            self.locked = Ref.cond(cb_l.state == "down", 1, 0)
             self.exp.flip_interval = 1./Ref(float, timeInput.text)
             self.framerate = Ref(float, timeInput.text)
             with If(densityText.text == self.params['density']):
@@ -235,7 +221,7 @@ def ConfigWindow(self):
 
             Func(set_flip_interval, self.framerate)
 
-            Func(KO._set_config, locked=self.locked, framerate=self.framerate,
+            Func(KO._set_config, framerate=self.framerate,
                  density=self.density)
         with Elif(bp.pressed == "calc_den"):
             cd = Func(calc_density, height=self.exp.screen.height,
@@ -308,14 +294,19 @@ def Splash(self, Touch=False):
 
 
 @Subroutine
-def InputSubject(self, exp_title="SMILE Experiment"):
+def InputSubject(self, exp_title="SMILE Experiment",
+                 lock_password="LockUp"):
+
     # get the config for whether we've locked the subject
     if KOConfig.getdefaultint("SMILE", "LOCKEDSUBJID", 0):
         self.text=KOConfig.getdefault("SMILE", "SUBJID", "subj000")
         self.disabled = True
+        self.LOCK_IMG = LOCK_ON
     else:
         self.text = ""
         self.disabled = False
+        self.LOCK_IMG = LOCK_OFF
+
 
     # SETUP SCREEN!
     self.keep_looping = True
@@ -339,9 +330,58 @@ def InputSubject(self, exp_title="SMILE Experiment"):
                               center_x=recin.center_x,
                               top=lbl.bottom - s(20),
                               multiline=False, text=self.text,
-                              readonly=self.disabled,
+                              disabled=self.disabled,
                               hint_text="Subject ID")
             #NOTE: Addin an image that is a lock if locked.
+            with Loop():
+                with ButtonPress():
+                    Button(background_normal=self.LOCK_IMG,
+                           left=txtIn.right, center_y=txtIn.center_y,
+                           height=s(LOCK_HEIGHT),width=s(LOCK_WIDTH),
+                           allow_stretch=True, keep_ratio=False)
+                with If(self.LOCK_IMG == LOCK_ON):
+                    with Parallel():
+                        Rectangle(size=recin.size,
+                                  center=recin.center,
+                                  color=recin.color)
+                        pwi = TextInput(width=s(TEXT_INPUT_WIDTH),
+                                        height=s(TEXT_INPUT_HEIGHT),
+                                        font_size=s(INFO_FONT_SIZE),
+                                        multiline=False,
+                                        hint_text="Lock Password",
+                                        center=recin.center)
+                    with UntilDone():
+                        with ButtonPress() as pwbp:
+                            Button(name="con", text="Continue",
+                                   font_size=s(INFO_FONT_SIZE),
+                                   height=s(INFO_BUTTON_HEIGHT),
+                                   width=pwi.width/2., right=pwi.right,
+                                   top=pwi.bottom - s(5))
+                            Button(name="can", text="Cancel",
+                                   font_size=s(INFO_FONT_SIZE),
+                                   height=s(INFO_BUTTON_HEIGHT),
+                                   width=pwi.width/2., left=pwi.left,
+                                   top=pwi.bottom - s(5))
+                    with If((pwi.text == lock_password) & (pwbp.pressed == "con")):
+                        self.LOCK_IMG = LOCK_OFF
+                        Func(KOConfig.set, "SMILE", "LOCKEDSUBJID", 0)
+                        Func(KOConfig.write)
+                        UpdateWidget(txtIn, disabled=False)
+                    with Else():
+                        Label(text="WRONG PASSWORD", duration=1.0,
+                              font_size=s(INFO_FONT_SIZE),
+                              color="RED")
+                with Else():
+                    self.LOCK_IMG = LOCK_ON
+                    Func(KOConfig.set, "SMILE", "LOCKEDSUBJID", 1)
+                    with If((txtIn.text == "") | (txtIn.text == None)):
+                        self.text = "SUBJ000"
+                        Func(KOConfig.set, "SMILE", "SUBJID", "SUBJ000")
+                    with Else():
+                        Func(KOConfig.set, "SMILE", "SUBJID", txtIn.text)
+                    Func(KOConfig.write)
+                    UpdateWidget(txtIn, disabled=True)
+
             bc = Button(text="Continue", font_size=s(INFO_FONT_SIZE),
                         height=s(INFO_BUTTON_HEIGHT),
                         width=s(INFO_BUTTON_WIDTH),
@@ -376,17 +416,6 @@ def InputSubject(self, exp_title="SMILE Experiment"):
 
         with Elif(bp.pressed == "G"):
             mC = ConfigWindow()
-            with If(mC.canceled == False):
-                with If(mC.locked):
-                    self.disabled = True
-                    with If((txtIn.text == "") | (txtIn.text == None)):
-                        self.text = "SUBJ000"
-                        Func(KOConfig.set, "SMILE", "SUBJID", "SUBJ000")
-                    with Else():
-                        Func(KOConfig.set, "SMILE", "SUBJID", txtIn.text)
-                    Func(KOConfig.write)
-                with Else():
-                    self.disabled = False
 
 if __name__ == "__main__":
 

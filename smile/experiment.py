@@ -340,7 +340,7 @@ class Experiment(object):
             from startup import Splash
             Splash(Touch=Touch, parent=ss)
 
-        if self._config:
+        if self._monitor:
             from startup import ConfigWindow
             ConfigWindow(parent=ss)
 
@@ -465,10 +465,10 @@ class Experiment(object):
         if not os.path.exists(self._session_dir):
             os.makedirs(self._session_dir)
 
-        if args.config:
-            self._config = True
+        if args.monitor:
+            self._monitor = True
         else:
-            self._config = None
+            self._monitor = None
 
         # check for fullscreen
         if args.fullscreen:
