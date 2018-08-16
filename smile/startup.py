@@ -52,7 +52,7 @@ def FrameTest(self,
               num_flips=200,
               to_skip=5):
 
-    Func(set_flip_interval, 120.)
+    Func(set_flip_interval, 200.)
     self.tot_flips = num_flips + to_skip
     self.diff_sum = 0.0
     self.last_flip = 0
@@ -233,6 +233,9 @@ def ConfigWindow(self):
             with Else():
                 self.density = densityText.text
             self.keep_looping = False
+
+            Func(set_flip_interval, self.framerate)
+
             Func(KO._set_config, locked=self.locked, framerate=self.framerate,
                  density=self.density)
         with Elif(bp.pressed == "calc_den"):
@@ -395,10 +398,5 @@ if __name__ == "__main__":
                      Touch=False)
 
     InputSubject()
-    lbl = Label(text="hello", duration=.00001)
-    Wait(until=lbl.disappear_time)
-    Debug(a=lbl.appear_time,
-          d=lbl.disappear_time,
-          dur=lbl.disappear_time['time']-lbl.appear_time['time'])
 
     exp.run()
