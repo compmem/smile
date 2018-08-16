@@ -31,7 +31,9 @@ parser.add_argument("-i", "--info",
 parser.add_argument("-c", "--csv",
                     help="perform automatic conversion of SMILE logs to csv",
                     action='store_true')
-
+parser.add_argument("-con", "--config",
+                    help="bring up the config screen first",
+                    action='store_true')
 # do the parsing
 args = parser.parse_args(sys_argv)
 

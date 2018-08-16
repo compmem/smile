@@ -35,18 +35,24 @@ INFO_BUTTON_HEIGHT = 50
 INTRO_WIDTH = 700
 INTRO_HEIGHT = 500
 TEXT_INPUT_WIDTH = 300
-TEXT_INPUT_HEIGHT = 40
+TEXT_INPUT_HEIGHT = 50
 INFO_FONT_SIZE = 30
 SSI_FONT_SIZE = 40
 CHECK_HEIGHT = 25
 CHECK_WIDTH = 25
 
 
+def set_flip_interval(fps):
+    from experiment import Experiment
+    exp = Experiment._last_instance()
+    exp._app.flip_interval = 1./fps
+
 @Subroutine
 def FrameTest(self,
-              num_flips=500,
+              num_flips=200,
               to_skip=5):
 
+    Func(set_flip_interval, 120.)
     self.tot_flips = num_flips + to_skip
     self.diff_sum = 0.0
     self.last_flip = 0
@@ -81,13 +87,16 @@ def FrameTest(self,
             ResetClock(self.last_flip)
     self.framerate = lbl.text
 
+    Func(set_flip_interval, Ref(float,lbl.text))
+
 def calc_density(height, width, heightcm, widthcm):
     return (((height/heightcm)+(width/widthcm)) * 2.54 / 2.0) / 96.
 
 @Subroutine
-def ConfigWindow(self, params):
+def ConfigWindow(self):
+    resy = Func(KO._get_config)
 
-    self.params = params
+    self.params = resy.result
     self.canceled = True
     self.keep_looping = True
 
@@ -219,12 +228,13 @@ def ConfigWindow(self, params):
             self.locked = Ref.cond(cb_l.state == "down", 1, 0)
             self.exp.flip_interval = 1./Ref(float, timeInput.text)
             self.framerate = Ref(float, timeInput.text)
-            with If(densityText.text == params['density']):
+            with If(densityText.text == self.params['density']):
                 self.density = None
             with Else():
                 self.density = densityText.text
-            self.canceled = False
             self.keep_looping = False
+            Func(KO._set_config, locked=self.locked, framerate=self.framerate,
+                 density=self.density)
         with Elif(bp.pressed == "calc_den"):
             cd = Func(calc_density, height=self.exp.screen.height,
                       width=self.exp.screen.width,
@@ -363,12 +373,8 @@ def InputSubject(self, exp_title="SMILE Experiment"):
             self.keep_looping = False
 
         with Elif(bp.pressed == "G"):
-            resy = Func(KO._get_config)
-            mC = ConfigWindow(resy.result)
+            mC = ConfigWindow()
             with If(mC.canceled == False):
-                # Debug(s=mC.density)
-                Func(KO._set_config, locked=mC.locked, framerate=mC.framerate,
-                     density=mC.density)
                 with If(mC.locked):
                     self.disabled = True
                     with If((txtIn.text == "") | (txtIn.text == None)):
@@ -389,5 +395,10 @@ if __name__ == "__main__":
                      Touch=False)
 
     InputSubject()
+    lbl = Label(text="hello", duration=.00001)
+    Wait(until=lbl.disappear_time)
+    Debug(a=lbl.appear_time,
+          d=lbl.disappear_time,
+          dur=lbl.disappear_time['time']-lbl.appear_time['time'])
 
     exp.run()
