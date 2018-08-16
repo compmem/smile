@@ -8,15 +8,16 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 
-from keyboard import KeyPress
-from state import Loop, If, Elif, Else, Subroutine
-from state import UntilDone, Wait, ResetClock
-from ref import Ref
-from clock import clock
-from video import Label
+from .keyboard import KeyPress
+from .state import Loop, If, Elif, Else, Subroutine
+from .state import UntilDone, Wait, ResetClock
+from .ref import Ref
+from .clock import clock
+from .video import Label
 
 # set the allowable keys (A-Z)
-asciiplus = [str(unichr(i)) for i in range(65,65+26)]
+#@FIX: unichr -> chr
+asciiplus = [str(chr(i)) for i in range(65,65+26)]
 asciiplus += ['ENTER','BACKSPACE','SPACEBAR']
 asciiplus += ['%d'%i for i in range(10)]
 
@@ -172,9 +173,9 @@ def FreeKey(self, lbl, max_duration=10.0, max_resp=100, base_time=None):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
-    from state import Wait, Debug
-    from video import Label
+    from .experiment import Experiment
+    from .state import Wait, Debug
+    from .video import Label
 
     exp = Experiment()
 

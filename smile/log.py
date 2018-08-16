@@ -30,8 +30,9 @@ class LogWriter(object):
         A list of strings that contains the fields you wish to write.
 
     """
-
     def __init__(self, filename):
+        #@FIX: added self.filename so it can be used in write_record
+        self.filename=filename
         self._file = gzip.open(filename, "wb")
         self._pickler = pickle.Pickler(self._file, -1)
 
@@ -47,6 +48,13 @@ class LogWriter(object):
         # data must be a dict
         if not isinstance(data, dict):
             raise ValueError("data to log must be a dict instance.")
+
+        #@FIX: added if statement
+        if "name" in data.keys(): #checks to see if name is in the dict so that line 55 doesn't cause errors
+            if "Ref" in str(data['name']): #looks for any instances of Ref
+                import ref
+                data['name'] = ref.val(data['name'])
+
         self._pickler.dump(data)
         self._pickler.clear_memo()
 

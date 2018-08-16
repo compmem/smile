@@ -8,10 +8,10 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import sys
-from state import Wait, State, Loop, Done, Log, Subroutine
-from clock import clock
-from event import event_time
-from ref import NotAvailable
+from smile.state import Wait, State, Loop, Done, Log, Subroutine
+from smile.clock import clock
+from smile.event import event_time
+from smile.ref import NotAvailable
 
 # Interface Class for Docstrings
 class PulseInterface(object):
@@ -351,8 +351,8 @@ def JitteredPulses(self, code=1, width=0.010, port=0,
 
 
 if __name__ == '__main__':
-    from experiment import Experiment
-    from state import Meanwhile, Debug
+    from .experiment import Experiment
+    from .state import Meanwhile, Debug
 
     # set up default experiment
     exp = Experiment()

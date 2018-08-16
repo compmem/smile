@@ -7,17 +7,10 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from state import CallbackState, Wait, Parallel, Loop
-from video import Label
-from clock import clock
-
-try:
-    from pylsl import StreamInfo, StreamOutlet
-    _got_pylsl = True
-except ImportError:
-    print("Unable to import pylsl!")
-    _got_pylsl = False
-
+from .state import CallbackState, Wait, Parallel, Loop
+from .video import Label
+from .clock import clock
+from .pylsl import StreamInfo, StreamOutlet
 
 _lsl_outlets = {}
 
@@ -64,24 +57,21 @@ def init_lsl_outlet(server_name, server_type, nchans,
     *LSLPush* state.
 
     """
-    if _got_pylsl:
-        global _lsl_outlets
+    global _lsl_outlets
 
-        s = "_"
-        unique_identifier = s.join([server_name, server_type, str(nchans),
-                                    str(suggested_freq), str(channel_format),
-                                    str(unique_id)])
+    s = "_"
+    unique_identifier = s.join([server_name, server_type, str(nchans),
+                                str(suggested_freq), str(channel_format),
+                                str(unique_id)])
 
-        if unique_identifier in _lsl_outlets.keys():
-            return _lsl_outlets[unique_identifier]
-        else:
-            info = StreamInfo(server_name, server_type, nchans, suggested_freq,
-                              channel_format, unique_id)
-            _lsl_outlets[unique_identifier] = StreamOutlet(info)
-            return _lsl_outlets[unique_identifier]
+    if unique_identifier in _lsl_outlets.keys():
+        return _lsl_outlets[unique_identifier]
     else:
-        print("Unable to setup LSL server! No sync pulses will be made.")
-        return None
+        info = StreamInfo(server_name, server_type, nchans, suggested_freq,
+                          channel_format, unique_id)
+        _lsl_outlets[unique_identifier] = StreamOutlet(info)
+        return _lsl_outlets[unique_identifier]
+
 
 
 class LSLPush(CallbackState):
@@ -138,18 +128,17 @@ class LSLPush(CallbackState):
 
 
     def _callback(self):
-        if self._server is not None:
-            if type(self._push_val) != list:
-                self._server.push_sample([self._push_val])
-            else:
-                self._server.push_sample(self._push_val)
-            self._push_time = clock.now()
+        if type(self._push_val) != list:
+            self._server.push_sample([self._push_val])
+        else:
+            self._server.push_sample(self._push_val)
+        self._push_time = clock.now()
 
 
 
 if __name__ == "__main__":
 
-    from experiment import Experiment
+    from .experiment import Experiment
 
     exp = Experiment()
 

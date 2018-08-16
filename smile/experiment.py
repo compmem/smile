@@ -9,27 +9,28 @@
 
 # import main modules
 import os
-import platform as pf
 
 import weakref
 import time
 import threading
 
 # kivy imports
-import kivy_overrides
+import smile.kivy_overrides as kivy_overrides
 import kivy
 import kivy.base
 from kivy.utils import platform
 import kivy.clock
 
 # local imports
-from state import Serial, AutoFinalizeState, Log
-from ref import Ref
-from clock import clock
-from log import LogWriter, log2csv
-from event import event_time
-from scale import scale
-import version
+from .state import Serial, AutoFinalizeState
+from .ref import Ref
+from .clock import clock
+from .log import LogWriter, log2csv
+from .event import event_time
+from .scale import scale
+
+#--EDITED 6.14.18--
+#from state import StateClass
 
 
 _kivy_clock = kivy.clock.Clock
@@ -296,7 +297,7 @@ class Experiment(object):
 
     """
     def __init__(self, fullscreen=None, resolution=None,
-                 scale_box=None, scale_up=False, scale_down=False,
+                 scale_box=[800, 600], scale_up=False, scale_down=True,
                  background_color=None, name="SMILE", debug=False, Touch=None,
                  show_splash=True):
 
@@ -310,10 +311,6 @@ class Experiment(object):
         if fullscreen is not None:
             self._fullscreen = fullscreen
         self._resolution = self._resolution or resolution
-
-        # set scale box
-        scale._set_scale_box(scale_box=scale_box, scale_up=scale_up,
-                             scale_down=scale_down)
 
         # process background color
         self._background_color = background_color
@@ -337,32 +334,8 @@ class Experiment(object):
             Touch = (platform == "android") or (platform == "ios")
 
         if show_splash:
-            from startup import Splash
+            from .startup import Splash
             Splash(Touch=Touch, parent=ss)
-
-        Log(kivy_overrides._get_config(),
-            name="sysinfo",
-            fullscreen=self._fullscreen,
-            data_time=self._session,
-            debug=self._debug,
-            resolution=self._resolution,
-            background_color=self._background_color,
-            scale_box=scale_box,
-            scale_up=scale_up,
-            scale_down=scale_down,
-            expname=name,
-            processor=pf.processor(),
-            python_version=pf.python_version(),
-            platform=pf.platform(),
-            system=pf.system(),
-            screen_size=self.screen.size,
-            version=version.__version__,
-            author=version.__author__,
-            email=version.__email__,
-            date_last_update=version.__date__,
-            uname=pf.uname(),
-            parent=ss,
-            )
 
         # place to save experimental variables
         self._vars = {}
@@ -497,7 +470,8 @@ class Experiment(object):
                                                     time.gmtime()))
         with self._reserved_data_filenames_lock:
             self._reserved_data_filenames |= set(os.listdir(self._session_dir))
-            for distinguisher in xrange(256):
+            #--@FIX: xrange --> range
+            for distinguisher in range(256):
                 if ext is None:
                     filename = "%s_%d" % (title, distinguisher)
                 else:
@@ -595,7 +569,7 @@ class Experiment(object):
             # self._root_executor.enter(clock.now() + 0.25)
 
             # kivy main loop
-            from main import SmileApp
+            from .main import SmileApp
             self._app = SmileApp(self)
             self._app.run()
 

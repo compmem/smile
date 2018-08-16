@@ -9,11 +9,11 @@
 
 import os.path, os
 
-from state import CallbackState
-from ref import val, NotAvailable
-from clock import clock
-from experiment import Experiment
-from log import LogWriter, log2csv
+from .state import CallbackState
+from .ref import val, NotAvailable
+from .clock import clock
+from .experiment import Experiment
+from .log import LogWriter, log2csv
 
 
 def Key(name):
@@ -279,8 +279,8 @@ class KeyRecord(KeyState):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
-    from state import Wait, Debug, Loop, UntilDone, Log, Meanwhile
+    from .experiment import Experiment
+    from .state import Wait, Debug, Loop, UntilDone, Log, Meanwhile
 
     exp = Experiment()
     with Meanwhile():
