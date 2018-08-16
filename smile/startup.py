@@ -87,7 +87,6 @@ def FrameTest(self,
             ResetClock(self.last_flip)
     self.framerate = lbl.text
 
-    Func(set_flip_interval, Ref(float,lbl.text))
 
 def calc_density(height, width, heightcm, widthcm):
     return (((height/heightcm)+(width/widthcm)) * 2.54 / 2.0) / 96.
