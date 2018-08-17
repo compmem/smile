@@ -345,7 +345,7 @@ class Experiment(object):
             ConfigWindow(parent=ss)
 
         self._sysinfo_slog = os.path.join(self._session_dir,
-                                          "log_sysinfo_0.slog")
+                                          "sysinfo.slog")
         self._sysinfo = kivy_overrides._get_config()
         self._sysinfo.update({"fullscreen":self._fullscreen,
                               "data_time":self._session,
