@@ -344,29 +344,30 @@ class Experiment(object):
             from startup import ConfigWindow
             ConfigWindow(parent=ss)
 
-        Log(kivy_overrides._get_config(),
-            name="sysinfo",
-            fullscreen=self._fullscreen,
-            data_time=self._session,
-            debug=self._debug,
-            resolution=self._resolution,
-            background_color=self._background_color,
-            scale_box=scale_box,
-            scale_up=scale_up,
-            scale_down=scale_down,
-            expname=name,
-            processor=pf.processor(),
-            python_version=pf.python_version(),
-            platform=pf.platform(),
-            system=pf.system(),
-            screen_size=self.screen.size,
-            version=version.__version__,
-            author=version.__author__,
-            email=version.__email__,
-            date_last_update=version.__date__,
-            uname=pf.uname(),
-            parent=ss,
-            )
+        self._sysinfo_slog = os.path.join(self._session_dir,
+                                          "log_sysinfo_0.slog")
+        self._sysinfo_logger = LogWriter(filename=os.path.join(self._session_dir,
+                                                               "log_sysinfo_0.slog"))
+        self._sysinfo = kivy_overrides._get_config()
+        self._sysinfo.update({"fullscreen":self._fullscreen,
+                              "data_time":self._session,
+                              "debug":self._debug,
+                              "resolution":self._resolution,
+                              "background_color":self._background_color,
+                              "scale_box":scale_box,
+                              "scale_up":scale_up,
+                              "scale_down":scale_down,
+                              "expname":name,
+                              "processor":pf.processor(),
+                              "python_version":pf.python_version(),
+                              "platform":pf.platform(),
+                              "system":pf.system(),
+                              "version":version.__version__,
+                              "author":version.__author__,
+                              "email":version.__email__,
+                              "date_last_update":version.__date__,
+                              "uname":pf.uname()})
+
 
         # place to save experimental variables
         self._vars = {}
@@ -379,12 +380,7 @@ class Experiment(object):
     def _change_smile_subj(self, subj_id):
         kconfig = kivy_overrides._get_config()
 
-        for filename, logger in self._state_loggers.itervalues():
-            logger.close()
-            os.remove(filename)
-
         self._subject = subj_id
-
         self._subject_dir = os.path.join(kconfig['default_data_dir'],
                                          self._exp_name, subj_id)
 
@@ -394,6 +390,14 @@ class Experiment(object):
 
         if not os.path.isdir(self._session_dir):
             os.makedirs(self._session_dir)
+
+        os.rename(self._sysinfo_slog, os.path.join(self._session_dir,
+                                                   "log_sysinfo_0.slog"))
+
+        for filename, logger in self._state_loggers.itervalues():
+            logger.close()
+            os.remove(filename)
+
 
         self._reserved_data_filenames = set(os.listdir(self._session_dir))
         self._reserved_data_filenames_lock = threading.Lock()
@@ -539,6 +543,10 @@ class Experiment(object):
 
     def write_to_state_log(self, state_class_name, record):
         self._state_loggers[state_class_name][1].write_record(record)
+
+    def _write_sysinfo(self):
+        self._sysinfo_logger.write_record(data=self._sysinfo)
+        self._sysinfo_logger.close()
 
     @property
     def screen(self):
