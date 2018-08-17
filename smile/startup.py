@@ -22,7 +22,7 @@ import os
 
 
 # general config for splash and settings
-LOGO_IMG =  "logo.png"
+LOGO_IMG = "logo.png"
 SMILE_IMG = "face-smile.png"
 LOGO_WIDTH = 639
 LOGO_HEIGHT = 100
@@ -40,10 +40,8 @@ INFO_FONT_SIZE = 30
 SSI_FONT_SIZE = 40
 CHECK_HEIGHT = 25
 CHECK_WIDTH = 25
-LOCK_ON = os.path.join(os.path.dirname(__file__),
-                                "lock.png")
-LOCK_OFF = os.path.join(os.path.dirname(__file__),
-                                "unlock.png")
+LOCK_ON = "lock.png"
+LOCK_OFF = "unlock.png"
 LOCK_HEIGHT = 40
 LOCK_WIDTH = 40
 
@@ -301,6 +299,9 @@ def Splash(self, Touch=False):
 def InputSubject(self, exp_title="DefaultExperiment"):
     KOConfig.adddefaultsection("SMILE_" + self._exp._exp_name)
 
+    self.LOCK_ON = Ref(os.path.join, os.path.dirname(__file__), LOCK_ON)
+    self.LOCK_OFF = Ref(os.path.join, os.path.dirname(__file__), LOCK_OFF)
+
     # get the config for whether we've locked the subject
     if KOConfig.getdefault("SMILE_" + self._exp._exp_name, "LOCK_SUBJ_PASSWORD", "") != "":
         self.text = KOConfig.getdefault("SMILE_" + self._exp._exp_name,
@@ -310,12 +311,12 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                                  "LOCK_SUBJ_PASSWORD",
                                                  "")
         self.disabled = True
-        self.LOCK_IMG = LOCK_ON
+        self.LOCK_IMG = self.LOCK_ON
     else:
         self.text = ""
         self.lock_password = ""
         self.disabled = False
-        self.LOCK_IMG = LOCK_OFF
+        self.LOCK_IMG = self.LOCK_OFF
 
     # SETUP SCREEN!
     self.keep_looping = True
