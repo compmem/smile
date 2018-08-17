@@ -380,7 +380,7 @@ class SmileApp(App):
             self.last_flip = event_time(clock.now(), 0.0)
         else:
             # we didn't block, so set to predicted flip time
-            self.last_flip = event_time(self._next_flip_time, 0.0)
+            self.last_flip = event_time(max(self._next_flip_time, clock.now()), 0.0)
 
         # update flip times
         self._next_flip_time = self.last_flip['time'] + self.flip_interval

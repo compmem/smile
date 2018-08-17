@@ -340,6 +340,10 @@ class Experiment(object):
             from startup import Splash
             Splash(Touch=Touch, parent=ss)
 
+        if self._monitor:
+            from startup import ConfigWindow
+            ConfigWindow(parent=ss)
+
         Log(kivy_overrides._get_config(),
             name="sysinfo",
             fullscreen=self._fullscreen,
@@ -460,6 +464,11 @@ class Experiment(object):
 
         if not os.path.exists(self._session_dir):
             os.makedirs(self._session_dir)
+
+        if args.monitor:
+            self._monitor = True
+        else:
+            self._monitor = None
 
         # check for fullscreen
         if args.fullscreen:
