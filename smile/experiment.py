@@ -346,8 +346,6 @@ class Experiment(object):
 
         self._sysinfo_slog = os.path.join(self._session_dir,
                                           "log_sysinfo_0.slog")
-        self._sysinfo_logger = LogWriter(filename=os.path.join(self._session_dir,
-                                                               "log_sysinfo_0.slog"))
         self._sysinfo = kivy_overrides._get_config()
         self._sysinfo.update({"fullscreen":self._fullscreen,
                               "data_time":self._session,
@@ -360,7 +358,6 @@ class Experiment(object):
                               "expname":name,
                               "processor":pf.processor(),
                               "python_version":pf.python_version(),
-                              "platform":pf.platform(),
                               "system":pf.system(),
                               "version":version.__version__,
                               "author":version.__author__,
@@ -544,9 +541,13 @@ class Experiment(object):
     def write_to_state_log(self, state_class_name, record):
         self._state_loggers[state_class_name][1].write_record(record)
 
-    def _write_sysinfo(self):
-        self._sysinfo_logger.write_record(data=self._sysinfo)
-        self._sysinfo_logger.close()
+    def _write_sysinfo(self, filename=None):
+        if filename is None:
+            filename = self._sysinfo_slog
+
+        sysinfo_logger = LogWriter(filename=filename)
+        sysinfo_logger.write_record(data=self._sysinfo)
+        sysinfo_logger.close()
 
     @property
     def screen(self):
