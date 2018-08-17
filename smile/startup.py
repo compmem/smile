@@ -295,14 +295,14 @@ def Splash(self, Touch=False):
 
 @Subroutine
 def InputSubject(self, exp_title="DefaultExperiment"):
-    KOConfig.adddefaultsection(exp_title)
+    KOConfig.adddefaultsection("SMILE_" + self._exp._exp_name)
 
     # get the config for whether we've locked the subject
-    if KOConfig.getdefault(exp_title, "LOCK_SUBJ_PASSWORD", "") != "":
-        self.text = KOConfig.getdefault(exp_title,
+    if KOConfig.getdefault("SMILE_" + self._exp._exp_name, "LOCK_SUBJ_PASSWORD", "") != "":
+        self.text = KOConfig.getdefault("SMILE_" + self._exp._exp_name,
                                        "LOCK_SUBJ",
                                        "subj000")
-        self.lock_password = KOConfig.getdefault(exp_title,
+        self.lock_password = KOConfig.getdefault("SMILE_" + self._exp._exp_name,
                                                  "LOCK_SUBJ_PASSWORD",
                                                  "")
         self.disabled = True
@@ -340,20 +340,25 @@ def InputSubject(self, exp_title="DefaultExperiment"):
             with Loop():
                 with ButtonPress():
                     Button(background_normal=self.LOCK_IMG,
-                           left=txtIn.right, center_y=txtIn.center_y,
-                           height=s(LOCK_HEIGHT),width=s(LOCK_WIDTH),
+                           left=txtIn.right + s(10), center_y=txtIn.center_y,
+                           height=s(LOCK_HEIGHT), width=s(LOCK_WIDTH),
                            allow_stretch=True, keep_ratio=False)
                 with If(self.LOCK_IMG == LOCK_ON):
                     with Parallel():
                         Rectangle(size=recin.size,
                                   center=recin.center,
                                   color=recin.color)
+                        lblOFF = Label(text="Enter your lock password to unlock",
+                                      width=s(TEXT_INPUT_WIDTH),
+                                      height=s(TEXT_INPUT_HEIGHT),
+                                      font_size=s(INFO_FONT_SIZE),
+                                      center_y=recin.center_y + s(20))
                         pwiOFF = TextInput(width=s(TEXT_INPUT_WIDTH),
-                                        height=s(TEXT_INPUT_HEIGHT),
-                                        font_size=s(INFO_FONT_SIZE),
-                                        multiline=False,
-                                        hint_text="Enter your lock password",
-                                        center=recin.center)
+                                           height=s(TEXT_INPUT_HEIGHT),
+                                           font_size=s(INFO_FONT_SIZE),
+                                           multiline=False,
+                                           hint_text="password",
+                                           top=lblOFF.bottom - s(1))
                     with UntilDone():
                         with ButtonPress() as pwbpOFF:
                             Button(name="con", text="Continue",
@@ -370,7 +375,7 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                    top=pwiOFF.bottom - s(5))
                     with If((pwiOFF.text == self.lock_password) & (pwbpOFF.pressed == "con")):
                         self.LOCK_IMG = LOCK_OFF
-                        Func(KOConfig.set, exp_title, "LOCK_SUBJ_PASSWORD", "")
+                        Func(KOConfig.set, "SMILE_" + self._exp._exp_name, "LOCK_SUBJ_PASSWORD", "")
                         Func(KOConfig.write)
                         UpdateWidget(txtIn, disabled=False)
                     with Else():
@@ -382,12 +387,17 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                         Rectangle(size=recin.size,
                                   center=recin.center,
                                   color=recin.color)
+                        lblON = Label(text="Enter your lock password to lock",
+                                       width=s(TEXT_INPUT_WIDTH),
+                                       height=s(TEXT_INPUT_HEIGHT),
+                                       font_size=s(INFO_FONT_SIZE),
+                                       center_y=recin.center_y + s(20))
                         pwiON = TextInput(width=s(TEXT_INPUT_WIDTH),
-                                        height=s(TEXT_INPUT_HEIGHT),
-                                        font_size=s(INFO_FONT_SIZE),
-                                        multiline=False,
-                                        hint_text="Pick a lock password",
-                                        center=recin.center)
+                                          height=s(TEXT_INPUT_HEIGHT),
+                                          font_size=s(INFO_FONT_SIZE),
+                                          multiline=False,
+                                          hint_text="password",
+                                          top=lblON.bottom - s(1))
                     with UntilDone():
                         with ButtonPress() as pwbpON:
                             Button(name="con", text="Continue",
@@ -405,13 +415,13 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                     with If(pwbpON.pressed == "con"):
                         with If((pwiON.text != "") & (pwiON.text != None)):
                             self.LOCK_IMG = LOCK_ON
-                            Func(KOConfig.set, exp_title, "LOCK_SUBJ_PASSWORD", pwiON.text)
+                            Func(KOConfig.set, "SMILE_" + self._exp._exp_name, "LOCK_SUBJ_PASSWORD", pwiON.text)
                             self.lock_password = pwiON.text
                             with If((txtIn.text == "") | (txtIn.text == None)):
                                 self.text = "SUBJ000"
-                                Func(KOConfig.set, exp_title, "LOCK_SUBJ", "SUBJ000")
+                                Func(KOConfig.set, "SMILE_" + self._exp._exp_name, "LOCK_SUBJ", "SUBJ000")
                             with Else():
-                                Func(KOConfig.set, exp_title, "LOCK_SUBJ", txtIn.text)
+                                Func(KOConfig.set, "SMILE_" + self._exp._exp_name, "LOCK_SUBJ", txtIn.text)
                             Func(KOConfig.write)
                             UpdateWidget(txtIn, disabled=True)
 
@@ -456,8 +466,9 @@ if __name__ == "__main__":
     from experiment import Experiment
 
     exp = Experiment(background_color=(.35, .35, .35, 1.0),
-                     Touch=False, debug=True)
+                     Touch=False, debug=True,
+                     name="SmileExperiment")
 
-    InputSubject()
+    InputSubject(exp_title="Smile Experiment")
 
     exp.run()
