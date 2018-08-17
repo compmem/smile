@@ -22,7 +22,7 @@ import os
 
 
 # general config for splash and settings
-LOGO_IMG = "logo.png"
+LOGO_IMG =  "logo.png"
 SMILE_IMG = "face-smile.png"
 LOGO_WIDTH = 639
 LOGO_HEIGHT = 100
@@ -40,8 +40,10 @@ INFO_FONT_SIZE = 30
 SSI_FONT_SIZE = 40
 CHECK_HEIGHT = 25
 CHECK_WIDTH = 25
-LOCK_ON = "lock.png"
-LOCK_OFF = "unlock.png"
+LOCK_ON = os.path.join(os.path.dirname(__file__),
+                                "lock.png")
+LOCK_OFF = os.path.join(os.path.dirname(__file__),
+                                "unlock.png")
 LOCK_HEIGHT = 40
 LOCK_WIDTH = 40
 
