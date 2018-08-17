@@ -76,6 +76,8 @@ def FrameTest(self,
                          center_y=recin.center_y, center_x=recin.center_x)
         lbl = Label(text='???', top=pb.bottom, font_size=s(INFO_FONT_SIZE),
                     center_x=recin.center_x)
+        Label(text="Testing frame rate ...", bottom=pb.top + s(10),
+              font_size=s(INFO_FONT_SIZE))
     with UntilDone():
         with Loop(self.tot_flips) as loop:
             # skip the first 5
@@ -366,14 +368,14 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                    height=s(INFO_BUTTON_HEIGHT),
                                    width=pwiOFF.width/2., right=pwiOFF.right,
                                    background_color=INFO_OUTLINE_COLOR,
-                                   background_normal=""
+                                   background_normal="",
                                    top=pwiOFF.bottom - s(5))
                             Button(name="can", text="Cancel",
                                    font_size=s(INFO_FONT_SIZE),
                                    height=s(INFO_BUTTON_HEIGHT),
                                    width=pwiOFF.width/2., left=pwiOFF.left,
                                    background_color=INFO_OUTLINE_COLOR,
-                                   background_normal=""
+                                   background_normal="",
                                    top=pwiOFF.bottom - s(5))
                     with If((pwiOFF.text == self.lock_password) & (pwbpOFF.pressed == "con")):
                         self.LOCK_IMG = LOCK_OFF
@@ -405,16 +407,16 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                             Button(name="con", text="Continue",
                                    font_size=s(INFO_FONT_SIZE),
                                    height=s(INFO_BUTTON_HEIGHT),
-                                   width=pwiON.width/2., right=pwiON.right,
+                                   width=pwiON.width/2.2, right=pwiON.right,
                                    background_color=INFO_OUTLINE_COLOR,
-                                   background_normal=""
+                                   background_normal="",
                                    top=pwiON.bottom - s(5))
                             Button(name="can", text="Cancel",
                                    font_size=s(INFO_FONT_SIZE),
                                    height=s(INFO_BUTTON_HEIGHT),
-                                   width=pwiON.width/2., left=pwiON.left,
+                                   width=pwiON.width/2.2, left=pwiON.left,
                                    background_color=INFO_OUTLINE_COLOR,
-                                   background_normal=""
+                                   background_normal="",
                                    top=pwiON.bottom - s(5))
                     with If(pwbpON.pressed == "con"):
                         with If((pwiON.text != "") & (pwiON.text != None)):
