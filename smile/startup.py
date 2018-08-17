@@ -369,14 +369,14 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                             Button(name="con", text="Continue",
                                    font_size=s(INFO_FONT_SIZE),
                                    height=s(INFO_BUTTON_HEIGHT),
-                                   width=pwiOFF.width/2., right=pwiOFF.right,
+                                   width=pwiOFF.width/2.2, right=pwiOFF.right,
                                    background_color=INFO_OUTLINE_COLOR,
                                    background_normal="",
                                    top=pwiOFF.bottom - s(5))
                             Button(name="can", text="Cancel",
                                    font_size=s(INFO_FONT_SIZE),
                                    height=s(INFO_BUTTON_HEIGHT),
-                                   width=pwiOFF.width/2., left=pwiOFF.left,
+                                   width=pwiOFF.width/2.2, left=pwiOFF.left,
                                    background_color=INFO_OUTLINE_COLOR,
                                    background_normal="",
                                    top=pwiOFF.bottom - s(5))
