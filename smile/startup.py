@@ -299,6 +299,9 @@ def Splash(self, Touch=False):
 def InputSubject(self, exp_title="DefaultExperiment"):
     KOConfig.adddefaultsection("SMILE_" + self._exp._exp_name)
 
+    self.LOCK_ON = Ref(os.path.join, os.path.dirname(__file__), LOCK_ON)
+    self.LOCK_OFF = Ref(os.path.join, os.path.dirname(__file__), LOCK_OFF)
+
     # get the config for whether we've locked the subject
     if KOConfig.getdefault("SMILE_" + self._exp._exp_name, "LOCK_SUBJ_PASSWORD", "") != "":
         self.text = KOConfig.getdefault("SMILE_" + self._exp._exp_name,
@@ -308,12 +311,12 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                                  "LOCK_SUBJ_PASSWORD",
                                                  "")
         self.disabled = True
-        self.LOCK_IMG = LOCK_ON
+        self.LOCK_IMG = self.LOCK_ON
     else:
         self.text = ""
         self.lock_password = ""
         self.disabled = False
-        self.LOCK_IMG = LOCK_OFF
+        self.LOCK_IMG = self.LOCK_OFF
 
     # SETUP SCREEN!
     self.keep_looping = True
@@ -366,14 +369,14 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                             Button(name="con", text="Continue",
                                    font_size=s(INFO_FONT_SIZE),
                                    height=s(INFO_BUTTON_HEIGHT),
-                                   width=pwiOFF.width/2., right=pwiOFF.right,
+                                   width=pwiOFF.width/2.2, right=pwiOFF.right,
                                    background_color=INFO_OUTLINE_COLOR,
                                    background_normal="",
                                    top=pwiOFF.bottom - s(5))
                             Button(name="can", text="Cancel",
                                    font_size=s(INFO_FONT_SIZE),
                                    height=s(INFO_BUTTON_HEIGHT),
-                                   width=pwiOFF.width/2., left=pwiOFF.left,
+                                   width=pwiOFF.width/2.2, left=pwiOFF.left,
                                    background_color=INFO_OUTLINE_COLOR,
                                    background_normal="",
                                    top=pwiOFF.bottom - s(5))
