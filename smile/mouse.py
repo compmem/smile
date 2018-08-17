@@ -160,18 +160,14 @@ class MouseCursor(VisualState):
         if filename is None:
             self._init_filename = os.path.join(os.path.dirname(__file__),
                                                "crosshairs_50x50.png")
-            self._init_scale = scale
-            if offset is None:
-                self._init_offset=(25*self._init_scale,25*self._init_scale)
-            else:
-                self._init_offset=offset
         else:
             self._init_filename = filename
-            self._init_scale = scale
-            if offset is None:
-                self._init_offset=(25*self._init_scale,25*self._init_scale)
-            else:
-                self._init_offset=offset
+        
+        self._init_scale = scale
+        if offset is None:
+            self._init_offset=(25*self._init_scale,25*self._init_scale)
+        else:
+            self._init_offset=offset
 
         self.__texture = None
         self.__instruction = None
