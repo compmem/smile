@@ -150,8 +150,8 @@ class MouseCursor(VisualState):
     """
     stack = []
 
-    def __init__(self, filename=None, offset=None, duration=None, parent=None,
-                 save_log=True, name=None, blocking=True, scale=1.0):
+    def __init__(self, filename=None, offset=None, scale=1.0, duration=None, parent=None,
+                 save_log=True, name=None, blocking=True):
         super(MouseCursor, self).__init__(parent=parent,
                                           duration=duration,
                                           save_log=save_log,
@@ -160,10 +160,12 @@ class MouseCursor(VisualState):
         if filename is None:
             self._init_filename = os.path.join(os.path.dirname(__file__),
                                                "crosshairs_50x50.png")
-            self._init_offset = (25, 25)
+            self._init_scale = scale
+            self._init_offset = (25*self._init_scale, 25*self._init_scale)
         else:
             self._init_filename = filename
-            self._init_offset = offset
+            self._init_scale = scale
+            self._init_offset = (25*self._init_offset, 25*self._init_offset)
 
         self.__texture = None
         self.__instruction = None
@@ -172,15 +174,12 @@ class MouseCursor(VisualState):
 
         self._log_attrs.extend(["filename", "offset"])
 
-        self.__scale=scale
-        self._init_offset=tuple([self.__scale*x for x in self._init_offset])
-
     def _enter(self):
         super(MouseCursor, self)._enter()
         self.__pos_ref = self._exp.screen.mouse_pos
         texture = Image(self._filename).texture
         self.__instruction = kivy.graphics.Rectangle(texture=texture,
-                                                     size=tuple([self.__scale*x for x in texture.size]))
+                                                     size=tuple([self._scale*x for x in texture.size]))
 
     def show(self):
         try:
