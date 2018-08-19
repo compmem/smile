@@ -345,8 +345,7 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                 with ButtonPress():
                     Button(background_normal=self.LOCK_IMG,
                            left=txtIn.right, center_y=txtIn.center_y,
-                           height=txtIn.height, width=txtIn.height,
-                           allow_stretch=True, keep_ratio=False)
+                           height=txtIn.height, allow_stretch=True)
                 with If(self.LOCK_IMG == LOCK_ON):
                     with Parallel():
                         Rectangle(size=recin.size,
