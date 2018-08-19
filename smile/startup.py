@@ -42,8 +42,7 @@ CHECK_HEIGHT = 25
 CHECK_WIDTH = 25
 LOCK_ON = "lock.png"
 LOCK_OFF = "unlock.png"
-LOCK_HEIGHT = 40
-LOCK_WIDTH = 40
+
 
 
 
@@ -345,9 +344,8 @@ def InputSubject(self, exp_title="DefaultExperiment"):
             with Loop():
                 with ButtonPress():
                     Button(background_normal=self.LOCK_IMG,
-                           left=txtIn.right + s(10), center_y=txtIn.center_y,
-                           height=s(LOCK_HEIGHT), width=s(LOCK_WIDTH),
-                           allow_stretch=True, keep_ratio=False)
+                           left=txtIn.right, center_y=txtIn.center_y,
+                           height=txtIn.height, allow_stretch=True)
                 with If(self.LOCK_IMG == LOCK_ON):
                     with Parallel():
                         Rectangle(size=recin.size,
@@ -362,7 +360,7 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                            height=s(TEXT_INPUT_HEIGHT),
                                            font_size=s(INFO_FONT_SIZE),
                                            multiline=False,
-                                           hint_text="password",
+                                           hint_text="Password",
                                            top=lblOFF.bottom - s(1))
                     with UntilDone():
                         with ButtonPress() as pwbpOFF:
@@ -403,7 +401,7 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                           height=s(TEXT_INPUT_HEIGHT),
                                           font_size=s(INFO_FONT_SIZE),
                                           multiline=False,
-                                          hint_text="password",
+                                          hint_text="Password",
                                           top=lblON.bottom - s(1))
                     with UntilDone():
                         with ButtonPress() as pwbpON:
