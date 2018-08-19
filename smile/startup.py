@@ -474,7 +474,7 @@ if __name__ == "__main__":
 
     exp = Experiment(background_color=(.35, .35, .35, 1.0),
                      Touch=False, debug=True,
-                     name="SmileExperiment")#, scale_down=True, scale_box=(1200, 900))
+                     name="SmileExperiment")
 
     InputSubject(exp_title="Smile Experiment")
 
