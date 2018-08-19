@@ -17,6 +17,7 @@ from keyboard import KeyPress
 from ref import Ref
 from mouse import MouseCursor
 from scale import scale as s
+import version
 
 import os
 
@@ -38,6 +39,7 @@ TEXT_INPUT_WIDTH = 300
 TEXT_INPUT_HEIGHT = 50
 INFO_FONT_SIZE = 30
 SSI_FONT_SIZE = 40
+VERSION_FONT_SIZE=30
 CHECK_HEIGHT = 25
 CHECK_WIDTH = 25
 LOCK_ON = "lock.png"
@@ -111,6 +113,8 @@ def ConfigWindow(self):
     with Loop(conditional=self.keep_looping):
         with Parallel():
             MouseCursor()
+            Label(text=version.__version__, font=s(VERSION_FONT_SIZE),
+                  right=self.exp.screen.width, bottom=0,)
             config_window = Rectangle(height=s(INFO_HEIGHT) + s(20),
                                       width=s(INFO_WIDTH) + s(20),
                                       color=INFO_OUTLINE_COLOR)
