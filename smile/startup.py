@@ -42,8 +42,7 @@ CHECK_HEIGHT = 25
 CHECK_WIDTH = 25
 LOCK_ON = "lock.png"
 LOCK_OFF = "unlock.png"
-LOCK_HEIGHT = 40
-LOCK_WIDTH = 40
+
 
 
 
@@ -345,8 +344,8 @@ def InputSubject(self, exp_title="DefaultExperiment"):
             with Loop():
                 with ButtonPress():
                     Button(background_normal=self.LOCK_IMG,
-                           left=txtIn.right + s(10), center_y=txtIn.center_y,
-                           height=s(LOCK_HEIGHT), width=s(LOCK_WIDTH),
+                           left=txtIn.right, center_y=txtIn.center_y,
+                           height=txtIn.height, width=txtIn.height,
                            allow_stretch=True, keep_ratio=False)
                 with If(self.LOCK_IMG == LOCK_ON):
                     with Parallel():
@@ -476,7 +475,7 @@ if __name__ == "__main__":
 
     exp = Experiment(background_color=(.35, .35, .35, 1.0),
                      Touch=False, debug=True,
-                     name="SmileExperiment")
+                     name="SmileExperiment")#, scale_down=True, scale_box=(1200, 900))
 
     InputSubject(exp_title="Smile Experiment")
 
