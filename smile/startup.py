@@ -360,7 +360,7 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                            height=s(TEXT_INPUT_HEIGHT),
                                            font_size=s(INFO_FONT_SIZE),
                                            multiline=False,
-                                           hint_text="password",
+                                           hint_text="Password",
                                            top=lblOFF.bottom - s(1))
                     with UntilDone():
                         with ButtonPress() as pwbpOFF:
@@ -401,7 +401,7 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                           height=s(TEXT_INPUT_HEIGHT),
                                           font_size=s(INFO_FONT_SIZE),
                                           multiline=False,
-                                          hint_text="password",
+                                          hint_text="Password",
                                           top=lblON.bottom - s(1))
                     with UntilDone():
                         with ButtonPress() as pwbpON:
