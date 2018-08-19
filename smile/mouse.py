@@ -19,6 +19,7 @@ from state import CallbackState, Record
 from ref import Ref, val, NotAvailable
 from experiment import Experiment
 from video import VisualState
+from scale import scale as apply_scale
 
 
 def MouseWithin(widget):
@@ -150,7 +151,8 @@ class MouseCursor(VisualState):
     """
     stack = []
 
-    def __init__(self, filename=None, offset=None, scale=1.0, duration=None, parent=None,
+    def __init__(self, filename=None, offset=None, scale=None,
+                 duration=None, parent=None,
                  save_log=True, name=None, blocking=True):
         super(MouseCursor, self).__init__(parent=parent,
                                           duration=duration,
@@ -162,7 +164,10 @@ class MouseCursor(VisualState):
                                                "crosshairs_50x50.png")
         else:
             self._init_filename = filename
-        
+
+        if scale is None:
+            # default to scale with the screen
+            scale = apply_scale(1.0)
         self._init_scale = scale
         if offset is None:
             self._init_offset=(25*self._init_scale,25*self._init_scale)
