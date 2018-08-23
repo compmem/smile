@@ -3434,17 +3434,26 @@ class ButtonPress(CallbackState):
 
     def button_callback(self):
         self.claim_exceptions()
-        pressed_list = self.__pressed_ref.eval()
-        if not len(pressed_list):
-            return
-        button = pressed_list[0]
+        from mouse import MouseWithin, MousePos
+        import ref
 
-        # make sure not a disabled button
-        if self.__buttons[self._button_names.index(button)].disabled.eval():
+        # when clicked, check if mouse is within a button
+        button=None
+        for i in self.__buttons:
+            if (MouseWithin(i)):
+                button=i
+                break
+
+        # return if mouse is not within a button
+        if button is None:
+            return
+
+        # make sure button is not disabled.
+        if self.__buttons[self._button_names.index(button.name)].disabled.eval():
             return
 
         # process the button
-        self._pressed = button
+        self._pressed = button 
         self._press_time = self._exp._app.event_time
 
         # calc RT if something pressed

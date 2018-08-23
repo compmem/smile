@@ -55,9 +55,11 @@ def MouseWithin(widget):
     participant that they did the correct thing.
 
     """
+    import ref
     pos = Experiment._last_instance().screen.mouse_pos
-    return ((pos[0] >= widget.x) & (pos[1] >= widget.y) &
-            (pos[0] <= widget.right) & (pos[1] <= widget.top))
+
+    return ((ref.val(pos[0]) >= ref.val(widget.x)) & (ref.val(pos[1]) >= ref.val(widget.y)) &
+            (ref.val(pos[0]) <= ref.val(widget.right)) & (ref.val(pos[1]) <= ref.val(widget.top)))
 
 
 def MousePos(widget=None):
@@ -91,7 +93,7 @@ def MouseButton(widget=None):
     if widget is None:
         return button
     else:
-        return Ref.cond(MouseWithin(widget), button, None)
+        return button
 
 
 def MouseRecord(widget=None, name="MouseRecord"):
