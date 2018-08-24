@@ -89,7 +89,10 @@ def MouseButton(widget=None):
 
     """
     button = Experiment._last_instance().screen.mouse_button
-    return button
+    if widget is None:
+        return button
+    else:
+        return Ref.cond(MouseWithin(widget), button, None)
 
 
 def MouseRecord(widget=None, name="MouseRecord"):
