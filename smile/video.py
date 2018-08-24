@@ -3419,7 +3419,7 @@ class ButtonPress(CallbackState):
         self.__pressed_ref = Ref(
             lambda lst: [name for name, mouse_button in lst if
                          mouse_button is not None],
-            [(button._name, MouseButton(button)) for button in
+            [(button._name, MouseButton()) for button in
              self.__buttons])
         super(ButtonPress, self)._enter()
 
@@ -3434,13 +3434,12 @@ class ButtonPress(CallbackState):
 
     def button_callback(self):
         self.claim_exceptions()
-        from mouse import MouseWithin, MousePos
-        import ref
+        from mouse import MouseWithin
 
         # when clicked, check if mouse is within a button
         button=None
         for i in self.__buttons:
-            if (MouseWithin(i)):
+            if (MouseWithin(i).eval()):
                 button=i
                 break
 
