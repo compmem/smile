@@ -3094,6 +3094,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
     def unshow(self):
         super(Video, self).unshow()
         self._widget.state = "stop"
+        self._widget.unload()
 
 
 import kivy.uix.image
