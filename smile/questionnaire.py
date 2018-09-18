@@ -293,7 +293,7 @@ class _Questionnaire(StackLayout):
     def slider_change(self, s, instance, value):
         if value >= 0:
         #this to avoid 'maximum recursion depth exceeded' error
-            s.value=value
+            s.value = value
 
 
 class Questionnaire(WidgetState.wrap(_Questionnaire)):
@@ -312,12 +312,14 @@ class Questionnaire(WidgetState.wrap(_Questionnaire)):
         super(Questionnaire, self).unshow()
 
     def finalize(self):
-        fn = os.path.join(self._exp.session_dir, "log_" + self.__name + ".slog")
-        lw = LogWriter(filename=fn)
+        fn = "log_" + self.__name
+        new_fn = self._exp.reserve_data_filename(title=fn, ext="slog")
+        lw = LogWriter(filename=new_fn)
         for x in self._questionnaire:
             lw.write_record(x)
         lw.close()
         super(Questionnaire, self).finalize()
+
 
 if __name__ == '__main__':
     from experiment import Experiment
