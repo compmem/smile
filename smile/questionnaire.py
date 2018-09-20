@@ -6,6 +6,14 @@
 #   copyright and license terms.
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+#ex: set sts=4 ts=4 sw=4 et:
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+#
+#   See the COPYING file distributed along with the smile package for the
+#   copyright and license terms.
+#
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from video import WidgetState
 from clock import clock
@@ -38,17 +46,24 @@ class _Questionnaire(StackLayout):
     ans_font_size = NumericProperty(17)
     default_height = NumericProperty(150)
     space = NumericProperty(100)
+    column_ratio = ListProperty([.4, .6])
     results = ListProperty([])
 
-    def __init__(self, **kwargs):
+    def __init__(self, width=None, height=None, y=0, **kwargs):
+        if width == None:
+            width = Window.width
+        if height == None:
+            height = Window.height
         super(_Questionnaire, self).__init__(orientation='lr-tb',
-                                             size=(Window.width, Window.height))
+                                             bottom=y,
+                                             size=(width, height), **kwargs)
         self.questions = []
         self.MC_List = []
         self.CA_List = []
         self.TI_List = []
         self.CT_List = []
         self.LI_List = []
+        self.y = y
         self.width = self.get_width()
 
     def get_width(self, *args):
@@ -106,7 +121,7 @@ class _Questionnaire(StackLayout):
         CA_Count = 0
         MC_Count = 0
         LI_Count = 0
-        scrlv = ScrollView(size_hint=(1.00, 0.95))
+        scrlv = ScrollView(size_hint=(1., 0.95))
         if self.click_and_drag == False:
             self.scroll_type = ['bars']
         if self.columns == 1:
@@ -114,8 +129,7 @@ class _Questionnaire(StackLayout):
                                  row_default_height=self.default_height,
                                  row_force_default=True, spacing=self.space)
         else:
-            layout2 = GridLayout(cols=2, size_hint_y=None,
-                                 size_hint_x=1.00, spacing=self.space,
+            layout2 = GridLayout(cols=2, size_hint=(1., None), spacing=self.space,
                                  row_default_height=self.default_height,
                                  row_force_default=True)
         layout2.bind(minimum_height=layout2.setter('height'))
@@ -140,12 +154,14 @@ class _Questionnaire(StackLayout):
                     quest["halign"] = 'center'
                 btn = Label(text=str(quest_count) + ". " + quest["question"],
                             size_hint_y=None, valign='middle',
-                            font_size=quest_fs, halign=quest["halign"], markup=True)
-                btn.text_size=(.95*self.width/2, None)
+                            size_hint_x=self.column_ratio[0],
+                            font_size=quest_fs, halign=quest["halign"],
+                            markup=True)
+                btn.text_size=(self.column_ratio[0]*self.width*.95, None)
                 layout2.add_widget(btn)
 
             if quest["type"] == "TI":
-                textinput = TextInput()
+                textinput = TextInput(size_hint_x=self.column_ratio[1],)
                 layout2.add_widget(textinput)
                 self.TI_List.append({"number":i, "quest":quest["question"],
                                      "widget":textinput})
@@ -154,7 +170,7 @@ class _Questionnaire(StackLayout):
             elif quest["type"] == "CA":
                 CA_Count = CA_Count + 1
                 self.CA_List.append([])
-                blayout = FloatLayout()
+                blayout = FloatLayout(size_hint_x=self.column_ratio[1],)
                 points = quest["ans"]
                 numPoints = len(points)
                 if numPoints == 1:
@@ -190,7 +206,8 @@ class _Questionnaire(StackLayout):
             elif quest["type"] == "MC":
                 MC_Count = MC_Count + 1
                 self.MC_List.append([])
-                blayout = BoxLayout(orientation='horizontal')
+                blayout = BoxLayout(orientation='horizontal',
+                                    size_hint_x=self.column_ratio[1],)
                 for j in range(0, len(quest["ans"])):
                     tb = ToggleButton(text=quest["ans"][j],
                                       font_size=ans_fs,
@@ -208,8 +225,9 @@ class _Questionnaire(StackLayout):
             elif quest["type"] == "CT":
                 points = quest["ans"]
                 numPoints = len(points)
-                FL = FloatLayout(size_hint=(1, 1), pos_hint={'center_x':.5,
-                                                             'center_y':.5})
+                FL = FloatLayout(size_hint=(self.column_ratio[1], 1),
+                                 pos_hint={'center_x':.5,
+                                           'center_y':.5})
                 my_slider = Slider(min=int(quest["min"]), max=int(quest["max"]),
                                    value=(int(quest["min"]) + int(quest["max"]))/2,
                                    size_hint=(.5, None),
@@ -237,7 +255,7 @@ class _Questionnaire(StackLayout):
             elif quest["type"] == "LI":
                 LI_Count = LI_Count + 1
                 self.LI_List.append([])
-                blayout = FloatLayout()
+                blayout = FloatLayout(size_hint_x=self.column_ratio[1])
                 points = quest["ans"]
                 numPoints = len(points)
                 if numPoints == 1:
@@ -276,17 +294,18 @@ class _Questionnaire(StackLayout):
                     quest["halign"] = 'center'
                 btn = Label(text=str(quest["text"]), size_hint_y=None,
                             valign='middle', font_size=quest_fs,
+                            size_hint_x=self.column_ratio[0],
                             halign=quest["halign"], markup=True)
                 btn.text_size = (.95*self.width/2, None)
-                dummy = Label(text="")
+                dummy = Label(text="", size_hint_x=self.column_ratio[1])
                 layout2.add_widget(btn)
                 layout2.add_widget(dummy)
 
             else:
                 layout2.add_widget(Label(text="hi", font_size=ans_fs))
 
-        layout2.add_widget(Label(text=""))
-        layout2.add_widget(Label(text=""))
+        layout2.add_widget(Label(text="", size_hint_x=self.column_ratio[0],))
+        layout2.add_widget(Label(text="", size_hint_x=self.column_ratio[1],))
         scrlv.add_widget(layout2)
         self.add_widget(scrlv)
 
@@ -319,7 +338,6 @@ class Questionnaire(WidgetState.wrap(_Questionnaire)):
             lw.write_record(x)
         lw.close()
         super(Questionnaire, self).finalize()
-
 
 if __name__ == '__main__':
     from experiment import Experiment
