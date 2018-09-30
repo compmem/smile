@@ -56,6 +56,7 @@ def MouseWithin(widget):
 
     """
     pos = Experiment._last_instance().screen.mouse_pos
+
     return ((pos[0] >= widget.x) & (pos[1] >= widget.y) &
             (pos[0] <= widget.right) & (pos[1] <= widget.top))
 
