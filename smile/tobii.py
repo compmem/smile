@@ -9,21 +9,20 @@
 from smile.clock import *
 from smile.clock import Clock
 from smile.log import LogWriter
-
 import tobii_research as tr
-from tobii_research_addons import *
 
+#import tobii_research_addons
+# from tba import vectormath, ScreenBasedCalibrationValidation
+from tobii_research_addons import *
 import ctypes, os
 import time
 import numpy as np
 import pickle
-
-
 class TobiiProTracker():
 
     """
 
-    Helper class for calibrating, validating, and recording TobiiPro data.
+    Helper class for calibrating and recording TobiiPro data.
 
     """
     def __init__(self, tracker_id=None):
@@ -60,8 +59,8 @@ class TobiiProTracker():
 
     def _on_gaze_data(self, gaze_data):
         # add times for sync
-        # gaze_data.update({'smile_time': clock.now(),
-        #                   'tracker_time': tr.get_system_time_stamp()})
+        gaze_data.update({'smile_time': clock.now(),
+                          'tracker_time': tr.get_system_time_stamp()})
 
         # append data to stream
         self.gaze.append(gaze_data)
@@ -111,7 +110,6 @@ class TobiiProTracker():
             self._log_file = None
     ############################################################################
     # Calibration Code
-
     def calibration_mode_on(self):
         self.calibration = tr.ScreenBasedCalibration(self.eyetracker)
         self.calibration.enter_calibration_mode()
@@ -124,26 +122,22 @@ class TobiiProTracker():
 
     def calibration_mode_off(self):
         self.calibration.leave_calibration_mode()
-
     def calibration_save(self,filename='saved_calibration.bin'):
         # Save the calibration to file.
         with open(filename, "wb") as f:
             calibration_data = self.eyetracker.retrieve_calibration_data()
             # None is returned on empty calibration.
             if calibration_data is not None:
-                print("Saving calibration to file for eye tracker with serial \
-                      number {0}.".format(self.eyetracker.serial_number))
+                print("Saving calibration to file for eye tracker with serial number {0}.".format(self.eyetracker.serial_number))
                 f.write(self.eyetracker.retrieve_calibration_data())
             else:
-                print("No calibration available for eye tracker with serial \
-                      number {0}.".format(self.eyetracker.serial_number))
+                print("No calibration available for eye tracker with serial number {0}.".format(self.eyetracker.serial_number))
     ############################################################################
     # Validation Code
 
-    def validation_outcome(self,
-                           save=True,
-                           filename='validation_data.p'):
+    def validation_outcome(self):
         # Store validation data, both overal and for each validation point
+
         # output list
         self.validation_data = []
         self.timeouts = []
@@ -202,15 +196,14 @@ class TobiiProTracker():
             x['avg_gaze_point_y'] = float(np.average(ys))
             print(x['avg_gaze_point_x'])
             self.validation_data.append(x)
+        pickle.dump(self.validation_data,open('validation_data.p','wb'))
 
-        # Save validation data to pickle file
-        if save == True:
-            pickle.dump(self.validation_data,open(filename,'wb'))
-
-    def validation_mode_on(self,
-                           sample_count=200,
-                           timeout_ms=1000):
+    def validation_mode_on(self):
         # Turn on Validation Mode
+        # using these values for now; will put these arguments in config file
+        sample_count = 200
+        timeout_ms = 1000
+
         self.validation = ScreenBasedCalibrationValidation(self.eyetracker,
                                                             sample_count,
                                                             timeout_ms)
