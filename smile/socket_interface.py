@@ -13,8 +13,8 @@ from clock import clock
 
 import socket
 
-
 _sockets = {}
+
 
 def init_socket_outlet(uniq_ID, server, port):
 
@@ -24,12 +24,15 @@ def init_socket_outlet(uniq_ID, server, port):
 
     if unique_identifier in _sockets.keys():
         return _sockets[unique_identifier]
+
     else:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         try:
             rtn = sock.connect((server, port))
             _sockets[unique_identifier] = sock
             return _sockets[unique_identifier]
+
         except:
             sys.stdout.write("[ERROR  ] [SOCKET      ] Unable to establish a Connection. TCP pulses disabled for this Socket")
             return None
@@ -53,12 +56,10 @@ class SocketPush(CallbackState):
         self._log_attrs.extend(['rtn', 'msg', 'send_time'])
 
     def _callback(self):
+
         if self._socket is not None:
             self._rtn = self._socket.send(self._msg)
             self._send_time = clock.now()
-
-
-
 
 
 if __name__ == "__main__":
@@ -85,9 +86,9 @@ if __name__ == "__main__":
             # Create the push state
             push_out = SocketPush(socket=OUTLET, msg="<TRIGGER>55</TRIGGER>")
 
-            # Log like this if you want.
+            # Log send_time if you want easy access
             #Log(name="MARKERS",
-            #    push_time=push_out.push_time)
+            #    push_time=push_out.send_time)
 
             Wait(1.)
 
