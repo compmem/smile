@@ -7,17 +7,17 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from state import CallbackState, Wait, Parallel, Loop
-from video import Label
+from state import CallbackState
 from clock import clock
 
+import sys
 import socket
 
 _sockets = {}
 
 
 def init_socket_outlet(uniq_ID, server, port):
-    """Sends a Marker to a specified LSL.
+    """Sets up a socket that allows for TCP messaging.
 
     A *SocketPush* state will use a pre-initialized Socket to send out a
     marker to the specific server and port. Once created, the socket will be
@@ -26,18 +26,16 @@ def init_socket_outlet(uniq_ID, server, port):
 
     Parameters
     ----------
-    unique_id : string (defaut = "SMILE_LSL_OUT", optional)
-        Unique identifier of the device or source of the data, if available
-        (such as the serial number).
+    unique_id : string
+        Unique identifier for this socket. Used only to differenciate this
+        socket from other sockets initialized with this funciton.
     server : string
         Host name. For a local TCP process, use the string "localhost"
     port : int
         A port number for the server.
 
-
     Returns a Socket that is to be used in conjunction with the *SocketPush*
     state. Will return None if the connection could not be established.
-
     """
 
 
@@ -57,7 +55,7 @@ def init_socket_outlet(uniq_ID, server, port):
             return _sockets[unique_identifier]
 
         except:
-            sys.stdout.write("[ERROR  ] [SOCKET      ] Unable to establish a Connection. TCP pulses disabled for this Socket")
+            sys.stdout.write("[ERROR  ] [SOCKET      ] Unable to establish a connection for the socket at server %s and the port %i"%(server, port))
             return None
 
 
@@ -126,6 +124,8 @@ class SocketPush(CallbackState):
 if __name__ == "__main__":
 
     from experiment import Experiment
+    from state import Wait, Parallel, Loop
+    from video import Label
 
     # Initialize the outlet
     OUTLET = init_socket_outlet(uniq_ID='SocketMarket', server='localhost',
