@@ -3395,7 +3395,7 @@ class ButtonPress(CallbackState):
             self.__buttons = buttons
         self._button_names = None
         self._init_correct_resp = correct_resp
-        self._init_base_time = None
+        self._init_base_time = base_time
 
         self._pressed = ''
         self._press_time = None
