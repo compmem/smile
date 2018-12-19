@@ -17,17 +17,17 @@ _sockets = {}
 
 
 def init_socket_outlet(uniq_ID, server, port):
-    """Sets up a socket that allows for TCP messaging.
+    """Set up a socket that allows for TCP messaging.
 
     A *SocketPush* state will use a pre-initialized Socket to send out a
     marker to the specific server and port. Once created, the socket will be
-    added to a dictionary of sockets (_sockets) where the key is a string joined
-    by an *_*. EX **markersocket_127.0.0.1_1234**.
+    added to a dictionary of sockets (_sockets) where the key is a string
+    joined by an *_*. EX **markersocket_127.0.0.1_1234**.
 
     Parameters
     ----------
     unique_id : string
-        Unique identifier for this socket. Used only to differenciate this
+        Unique identifier for this socket. Used only to differentiate this
         socket from other sockets initialized with this function.
     server : string
         Host name. For a local TCP process, use the string "localhost"
@@ -36,9 +36,8 @@ def init_socket_outlet(uniq_ID, server, port):
 
     Returns a Socket that is to be used in conjunction with the *SocketPush*
     state. Will return None if the connection could not be established.
+
     """
-
-
     global _sockets
 
     unique_identifier = "_".join([uniq_ID, server, str(port)])
@@ -50,18 +49,19 @@ def init_socket_outlet(uniq_ID, server, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:
-            rtn = sock.connect((server, port))
+            sock.connect((server, port))
             _sockets[unique_identifier] = sock
             return _sockets[unique_identifier]
 
-        except:
-            sys.stdout.write("[ERROR  ] [SOCKET      ] Unable to establish a " +
-                                      "connection for the socket at server %s and the port %i\n" % (server, port))
+        except :
+            sys.stdout.write("[ERROR  ] [SOCKET      ] Unable to establish a" +
+                             " connection for the socket at server %s and " +
+                             "the port %i\n" % (server, port))
             return None
 
 
 class SocketPush(CallbackState):
-    """Pushes a message to the provided socket.
+    """Push a message to the provided socket.
 
     A state that uses a preinitialized Socket to send a message to a specific
     server and port.
@@ -94,7 +94,6 @@ class SocketPush(CallbackState):
 
     """
 
-
     def __init__(self, socket, msg,  **kwargs):
         super(SocketPush, self).__init__(parent=kwargs.pop("parent", None),
                                          repeat_interval=kwargs.pop("repeat_interval", None),
@@ -109,7 +108,6 @@ class SocketPush(CallbackState):
 
         self._log_attrs.extend(['rtn', 'msg', 'send_time', "port", "server"])
 
-
     def _enter(self):
         if self._socket is not None:
             self._server = self._socket.getsockname()[0]
@@ -117,7 +115,6 @@ class SocketPush(CallbackState):
         else:
             self._server = None
             self._port = None
-
 
     def _callback(self):
         if self._socket is not None:
@@ -152,8 +149,8 @@ if __name__ == "__main__":
             push_out = SocketPush(socket=OUTLET, msg="<TRIGGER>55</TRIGGER>")
 
             # Log send_time if you want easy access
-            #Log(name="MARKERS",
-            #    push_time=push_out.send_time)
+            # Log(name="MARKERS",
+            #     push_time=push_out.send_time)
 
             Wait(1.)
 
