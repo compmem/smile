@@ -55,8 +55,8 @@ def init_socket_outlet(uniq_ID, server, port):
 
         except :
             sys.stdout.write("[ERROR  ] [SOCKET      ] Unable to establish a" +
-                             " connection for the socket at server %s and " +
-                             "the port %i\n" % (server, port))
+                             " connection for the socket at server" +
+                             " %s and the port %i\n" % (server, port))
             return None
 
 
