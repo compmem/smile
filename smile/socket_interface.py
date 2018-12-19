@@ -28,7 +28,7 @@ def init_socket_outlet(uniq_ID, server, port):
     ----------
     unique_id : string
         Unique identifier for this socket. Used only to differenciate this
-        socket from other sockets initialized with this funciton.
+        socket from other sockets initialized with this function.
     server : string
         Host name. For a local TCP process, use the string "localhost"
     port : int
