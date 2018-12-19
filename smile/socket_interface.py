@@ -55,7 +55,7 @@ def init_socket_outlet(uniq_ID, server, port):
             return _sockets[unique_identifier]
 
         except:
-            sys.stdout.write("[ERROR  ] [SOCKET      ] Unable to establish a " + 
+            sys.stdout.write("[ERROR  ] [SOCKET      ] Unable to establish a " +
                                       "connection for the socket at server %s and the port %i\n" % (server, port))
             return None
 
@@ -103,18 +103,21 @@ class SocketPush(CallbackState):
                                          name=kwargs.pop("name", None),
                                          blocking=kwargs.pop("blocking", True))
         self._init_socket = socket
-        if socket is not None:
-            self._init_server = socket.getsockname()[0]
-            self._init_port = socket.getsockname()[1]
-        else:
-            self._init_server = None
-            self._init_port = None
-
         self._init_msg = msg
         self._rtn = None
         self._send_time = None
 
         self._log_attrs.extend(['rtn', 'msg', 'send_time', "port", "server"])
+
+
+    def _enter(self):
+        if self._socket is not None:
+            self._server = self._socket.getsockname()[0]
+            self._port = self._socket.getsockname()[1]
+        else:
+            self._server = None
+            self._port = None
+
 
     def _callback(self):
         if self._socket is not None:
