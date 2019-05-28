@@ -3078,7 +3078,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
     def show(self):
         if "state" not in self._constructor_param_names:
             self._widget.state = "play"
-        self._widget._video._update(0)  # prevent white flash at start
+        self._widget._video.seek(0)  # prevent white flash at start
         if self._widget.width == 0 and self._widget.height == 0:
             if not self._widget._video.texture:
                 # gotta wait for the texture to load (up to 1ms)
