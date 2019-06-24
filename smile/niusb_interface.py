@@ -24,7 +24,7 @@ try:
     from nidaqmx.task import Task
     _got_nidaqmx = True
 except ImportError:
-    print("Unable to import pylsl!")
+    print("Unable to import nidaqmx!")
     _got_nidaqmx = False
 
 
