@@ -13,6 +13,10 @@
 #   by the state parameters. tasks must be setup before hand and passed into
 #   the state much like the servers.
 #
+#   NOTE: We are calculating the timing of a NI Pulse based on when the call
+#   to write returns. This is due to the fack that write will block until the
+#   value in the NIUSB is updated.
+#
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from state import State
@@ -31,8 +35,8 @@ except ImportError:
 _ni_tasks = {}
 
 
-def init_task(task_name="TASKING", min_val=0.0, max_val=1.0,
-              chan_path='Dev0/ao0', chan_des="mychan"):
+def init_task(task_name="ttl_pulse", min_val=0.0, max_val=1.0,
+              chan_path='Dev1/ao0', chan_des="mychan"):
     if _got_nidaqmx:
         global _ni_tasks
 
@@ -80,12 +84,11 @@ class NIPulse(State):
         # push it outlet
         global _got_nidaqmx
         if _got_nidaqmx:
-            start = clock.now()
             if type(self._push_vals == list):
                 self._task.write(self._push_vals)
             else:
                 self._task.write([self.push_vals])
-            end = clock.now()
+            ev = clock.now()
 
 
         else:
@@ -97,9 +100,8 @@ class NIPulse(State):
             return
 
         # set the pulse time
-        time_err = (end - start)/2.
-        self._pulse_on = event_time(start + time_err,
-                                    time_err)
+        self._pulse_on = event_time(ev,
+                                    0.0)
 
         # schedule leaving (as soon as this method is done)
         clock.schedule(self.leave)
@@ -118,14 +120,13 @@ class NIPulse(State):
             self._ended = True
 
     def _pulse_off_callback(self):
-        start = clock.now()
         self._task.write([0.0])
-        end = clock.now()
-
+        ev = clock.now()
+        
         # set the pulse time
-        time_err = (end - start)/2.
-        self._pulse_off = event_time(start+time_err,
-                                     time_err)
+        self._pulse_off = event_time(ev,
+                                    0.0)
+
 
         # let's schedule finalizing
         self._ended = True
