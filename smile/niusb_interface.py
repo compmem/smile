@@ -140,9 +140,9 @@ if __name__ == "__main__":
     exp = Experiment()
 
     # Initialize the outlet
-    task1 = init_task(task_name="TASKING1", min_val=0.0, max_val=1.0,
+    task1 = init_task(task_name="Task1", min_val=0.0, max_val=1.0,
                       chan_path='Dev1/ao0', chan_des="mychan1")
-    task2 = init_task(task_name="TASKING2", min_val=0.0, max_val=1.0,
+    task2 = init_task(task_name="Task2", min_val=0.0, max_val=1.0,
                       chan_path='Dev1/ao1', chan_des="mychan2")
 
     NIPulse(task1, push_vals=[1.0], width=0.10,)
