@@ -24,6 +24,8 @@ from event import event_time
 from clock import clock
 from ref import NotAvailable
 
+import sys
+
 try:
     from nidaqmx.task import Task
     _got_nidaqmx = True
@@ -31,25 +33,28 @@ except ImportError:
     print("Unable to import nidaqmx!")
     _got_nidaqmx = False
 
-
 _ni_tasks = {}
 
 
 def init_task(task_name="ttl_pulse", min_val=0.0, max_val=1.0,
               chan_path='Dev1/ao0', chan_des="mychan"):
-    if _got_nidaqmx:
-        global _ni_tasks
+    try:
+        if _got_nidaqmx:
+            global _ni_tasks
 
-        if task_name in _ni_tasks.keys():
-            return _ni_tasks[task_name]
+            if task_name in _ni_tasks.keys():
+                return _ni_tasks[task_name]
+            else:
+                _ni_tasks[task_name] = Task(task_name)
+                _ni_tasks[task_name].ao_channels.add_ao_voltage_chan(chan_path,
+                                                                     chan_des,
+                                                                     min_val,
+                                                                     max_val)
+                return _ni_tasks[task_name]
         else:
-            _ni_tasks[task_name] = Task(task_name)
-            _ni_tasks[task_name].ao_channels.add_ao_voltage_chan(chan_path,
-                                                                 chan_des,
-                                                                 min_val,
-                                                                 max_val)
-            return _ni_tasks[task_name]
-    else:
+            print("Unable to setup ni Task! No sync pulses will be made.")
+            return None
+    except:
         print("Unable to setup ni Task! No sync pulses will be made.")
         return None
 
@@ -84,13 +89,23 @@ class NIPulse(State):
         # push it outlet
         global _got_nidaqmx
         if _got_nidaqmx:
-            if type(self._push_vals == list):
-                self._task.write(self._push_vals)
-            else:
-                self._task.write([self.push_vals])
-            ev = clock.now()
-
-
+            try:
+                
+                if type(self._push_vals == list):
+                    self._task.write(self._push_vals)
+                else:
+                    self._task.write([self.push_vals])
+                ev = clock.now()
+                
+            except:  # eventually figure out which errors to catch
+                sys.stderr.write("\nWARNING: The NIDAQMX module could not send pulses,\n" +
+                                 "\tso no ttl pulsing will be generated.\n\n")
+                self._pulse_on = None
+                self._pulse_off = None
+                self._ended = True
+                clock.schedule(self.leave)
+                clock.schedule(self.finalize)
+                return
         else:
             self._pulse_on = None
             self._pulse_off = None
