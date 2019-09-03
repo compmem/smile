@@ -2200,7 +2200,8 @@ class Log(AutoFinalizeState):
     **log_dict_food**, **key_reaction_time**, and **key_pressed**.
 
     """
-    def __init__(self, log_dict=None, parent=None, name=None, **kwargs):
+    def __init__(self, log_dict=None, parent=None, name=None, flush=True,
+                 **kwargs):
         # init the parent class
         super(Log, self).__init__(parent=parent,
                                   name=name,
@@ -2208,6 +2209,7 @@ class Log(AutoFinalizeState):
                                   save_log=False)
         self._init_log_dict = log_dict
         self._init_log_items = kwargs
+        self._flush = flush
         self.__log_filename = None
         self.__log_writer = None
 
@@ -2261,6 +2263,10 @@ class Log(AutoFinalizeState):
                 self.__log_writer.write_record(record)
         else:
             raise ValueError("Invalid log_dict value: %r" % self._log_dict)
+        if self._flush:
+            self.__log_writer._file.flush()
+            os.fsync(self.__log_writer._file)
+            self._exp._flush_state_loggers()
         self._started = True
         self._ended = True
         clock.schedule(self.leave)
