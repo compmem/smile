@@ -541,6 +541,12 @@ class Experiment(object):
     def write_to_state_log(self, state_class_name, record):
         self._state_loggers[state_class_name][1].write_record(record)
 
+    def _flush_state_loggers(self):
+        # Fix this for py3
+        for key in self._state_loggers.keys():
+            self._state_loggers[key][1]._file.flush()
+            os.fsync(self._state_loggers[key][1]._file)
+
     def _write_sysinfo(self, filename=None):
         if filename is None:
             filename = self._sysinfo_slog
