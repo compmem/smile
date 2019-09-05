@@ -542,6 +542,7 @@ class Experiment(object):
         self._state_loggers[state_class_name][1].write_record(record)
 
     def _flush_state_loggers(self):
+        # Fix this for py3
         for key in self._state_loggers.keys():
             self._state_loggers[key][1]._file.flush()
             os.fsync(self._state_loggers[key][1]._file)
