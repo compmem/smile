@@ -98,7 +98,7 @@ class LogReader(object):
 
             # return it
             return rec
-        except EOFError, IOError:
+        except (EOFError, IOError):
             return None
 
     def close(self):

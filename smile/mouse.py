@@ -11,18 +11,18 @@ from __future__ import print_function
 import operator
 import os
 
-import kivy_overrides
+import smile.kivy_overrides as kivy_overrides
 import kivy.graphics
 from kivy.core.image import Image
 
-from state import CallbackState, Record
-from ref import Ref, val, NotAvailable
-from experiment import Experiment
-from video import VisualState
-from scale import scale as apply_scale
+from .state import CallbackState, Record
+from .ref import Ref, val, NotAvailable
+from .experiment import Experiment
+from .video import VisualState
+from .scale import scale as apply_scale
 
 
-def MouseWithin(widget):
+def MouseWithin(widget, pos=None):
     """An easy shortcut to wait for a mouse to be within a widget.
 
     This function returns True if the mouse position is within a given widget.
@@ -55,9 +55,13 @@ def MouseWithin(widget):
     participant that they did the correct thing.
 
     """
-    pos = Experiment._last_instance().screen.mouse_pos
-    return ((pos[0] >= widget.x) & (pos[1] >= widget.y) &
-            (pos[0] <= widget.right) & (pos[1] <= widget.top))
+    if pos is None:
+        mousePos = Experiment._last_instance().screen.mouse_pos
+    else:
+        mousePos = pos
+
+    return ((mousePos[0] >= widget.x) & (mousePos[1] >= widget.y) &
+            (mousePos[0] <= widget.right) & (mousePos[1] <= widget.top))
 
 
 def MousePos(widget=None):

@@ -10,8 +10,8 @@
 import os
 import time
 
-from state import Wait
-from clock import clock
+from .state import Wait
+from .clock import clock
 
 # add in system site-packages if necessary
 try:
@@ -19,9 +19,9 @@ try:
 except ImportError:
     import sys
     if sys.platform == 'darwin':
-        os_sp_dir = '/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages'
+        os_sp_dir='/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages'
     elif sys.platform.startswith('win'):
-        os_sp_dir = 'C:\Python27\Lib\site-packages'
+        os_sp_dir = 'C:\Python36-32\Lib\site-packages'
     else:
         raise ImportError("Could not import pyo and no special pyo path for "
                           "this platform (%s)." % sys.platform)
@@ -42,7 +42,7 @@ _pyo_server = None
 
 
 #TODO: compensate for buffer lag where possible?
-
+from pyo import Server, pa_get_input_devices
 def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
                       audio='portaudio', jackname='pyo',
                       input_device=None, output_device=None):
@@ -50,6 +50,11 @@ def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
     global _pyo_server
 
     # eventually read defaults from a config file
+
+    if sys.platform == "win32":
+        host_apis = ["mme", "directsound", "asio", "wasapi", "wdm-ks"]
+
+    input_names, input_indexes=pa_get_input_devices()
 
     # set up the server
     if _pyo_server is None:

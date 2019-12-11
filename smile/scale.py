@@ -7,7 +7,7 @@
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from ref import Ref
+from .ref import Ref
 from kivy.metrics import dp
 
 class Scale(object):

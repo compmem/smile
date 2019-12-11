@@ -7,13 +7,14 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-import os.path, os
+import os.path
+import os
 
-from state import CallbackState
-from ref import val, NotAvailable
-from clock import clock
-from experiment import Experiment
-from log import LogWriter, log2csv
+from .state import CallbackState
+from .ref import val, NotAvailable
+from .clock import clock
+from .experiment import Experiment
+from .log import LogWriter, log2csv
 
 
 def Key(name):
