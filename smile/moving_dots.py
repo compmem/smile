@@ -4,7 +4,7 @@
 #   copyright and license terms.
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
-from video import WidgetState
+from .video import WidgetState
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.graphics import Color, Point

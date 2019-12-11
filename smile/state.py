@@ -19,6 +19,7 @@ from os import fsync, remove
 
 import smile.kivy_overrides as kivy_overrides
 from .ref import Ref, shuffle, val, NotAvailable, NotAvailableError
+from smile.ref import jitter as Jitter
 from .log import LogWriter, log2csv
 from .clock import clock
 
@@ -2412,7 +2413,7 @@ class Wait(State):
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
                  save_log=True, name=None, blocking=True):
         if duration is not None and jitter is not None:
-            duration = ref.jitter(duration, jitter)
+            duration = Jitter(duration, jitter)  # This is the jitter function from ref.py as Jitter
 
         # init the parent class
         super(Wait, self).__init__(parent=parent,

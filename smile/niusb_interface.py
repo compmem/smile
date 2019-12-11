@@ -19,10 +19,10 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from state import State
-from event import event_time
-from clock import clock
-from ref import NotAvailable
+from .state import State
+from .event import event_time
+from .clock import clock
+from .ref import NotAvailable
 
 try:
     from nidaqmx.task import Task
@@ -122,7 +122,7 @@ class NIPulse(State):
     def _pulse_off_callback(self):
         self._task.write([0.0])
         ev = clock.now()
-        
+
         # set the pulse time
         self._pulse_off = event_time(ev,
                                     0.0)
@@ -134,9 +134,9 @@ class NIPulse(State):
 
 if __name__ == "__main__":
 
-    from experiment import Experiment
-    from state import Wait, Parallel, Loop, Debug
-    from video import Label
+    from .experiment import Experiment
+    from .state import Wait, Parallel, Loop, Debug
+    from .video import Label
     exp = Experiment()
 
     # Initialize the outlet

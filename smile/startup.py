@@ -300,17 +300,17 @@ def Splash(self, Touch=False):
 
 @Subroutine
 def InputSubject(self, exp_title="DefaultExperiment"):
-    KOConfig.adddefaultsection("SMILE_" + self._exp._exp_name)
+    KOConfig.adddefaultsection("SMILE" + self._exp._exp_name)
 
     self.LOCK_ON = Ref(os.path.join, os.path.dirname(__file__), LOCK_ON)
     self.LOCK_OFF = Ref(os.path.join, os.path.dirname(__file__), LOCK_OFF)
 
     # get the config for whether we've locked the subject
-    if KOConfig.getdefault("SMILE_" + self._exp._exp_name, "LOCK_SUBJ_PASSWORD", "") != "":
-        self.text = KOConfig.getdefault("SMILE_" + self._exp._exp_name,
-                                       "LOCK_SUBJ",
+    if KOConfig.getdefault("SMILE" + self._exp._exp_name, "LOCKSUBJPASSWORD", "") != "":
+        self.text = KOConfig.getdefault("SMILE" + self._exp._exp_name,
+                                       "LOCKSUBJ",
                                        "subj000")
-        self.lock_password = KOConfig.getdefault("SMILE_" + self._exp._exp_name,
+        self.lock_password = KOConfig.getdefault("SMILE" + self._exp._exp_name,
                                                  "LOCK_SUBJ_PASSWORD",
                                                  "")
         self.disabled = True
@@ -384,7 +384,7 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                    top=pwiOFF.bottom - s(5))
                     with If((pwiOFF.text == self.lock_password) & (pwbpOFF.pressed == "con")):
                         self.LOCK_IMG = LOCK_OFF
-                        Func(KOConfig.set, "SMILE_" + self._exp._exp_name, "LOCK_SUBJ_PASSWORD", "")
+                        Func(KOConfig.set, "SMILE" + self._exp._exp_name, "LOCKSUBJPASSWORD", "")
                         Func(KOConfig.write)
                         UpdateWidget(txtIn, disabled=False)
                     with Else():
@@ -426,13 +426,13 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                     with If(pwbpON.pressed == "con"):
                         with If((pwiON.text != "") & (pwiON.text != None)):
                             self.LOCK_IMG = LOCK_ON
-                            Func(KOConfig.set, "SMILE_" + self._exp._exp_name, "LOCK_SUBJ_PASSWORD", pwiON.text)
+                            Func(KOConfig.set, "SMILE" + self._exp._exp_name, "LOCKSUBJPASSWORD", pwiON.text)
                             self.lock_password = pwiON.text
                             with If((txtIn.text == "") | (txtIn.text == None)):
                                 self.text = "SUBJ000"
-                                Func(KOConfig.set, "SMILE_" + self._exp._exp_name, "LOCK_SUBJ", "SUBJ000")
+                                Func(KOConfig.set, "SMILE" + self._exp._exp_name, "LOCKSUBJ", "SUBJ000")
                             with Else():
-                                Func(KOConfig.set, "SMILE_" + self._exp._exp_name, "LOCK_SUBJ", txtIn.text)
+                                Func(KOConfig.set, "SMILE" + self._exp._exp_name, "LOCKSUBJ", txtIn.text)
                             Func(KOConfig.write)
                             UpdateWidget(txtIn, disabled=True)
 

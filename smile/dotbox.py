@@ -7,10 +7,10 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from video import WidgetState, BlockingFlips, NonBlockingFlips
-from state import Wait, Meanwhile, Parallel, Loop, Subroutine
-from state import If, Else
-from ref import jitter
+from .video import WidgetState, BlockingFlips, NonBlockingFlips
+from .state import Wait, Meanwhile, Parallel, Loop, Subroutine
+from .state import If, Else
+from .ref import jitter
 
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ListProperty
@@ -155,8 +155,8 @@ def DynamicDotBox(self, duration=None,
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
-    from state import UntilDone, Serial
+    from .experiment import Experiment
+    from .state import UntilDone, Serial
 
     exp = Experiment(background_color="#330000")
 
@@ -186,4 +186,3 @@ if __name__ == '__main__':
 
     Wait(2.0)
     exp.run(trace=False)
-

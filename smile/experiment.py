@@ -391,7 +391,8 @@ class Experiment(object):
         os.rename(self._sysinfo_slog, os.path.join(self._session_dir,
                                                    "log_sysinfo_0.slog"))
 
-        for filename, logger in self._state_loggers.itervalues():
+        for dict_key, items in iter(self._state_loggers.items()):
+            filename, logger = items
             logger.close()
             os.remove(filename)
 

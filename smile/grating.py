@@ -5,7 +5,7 @@
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from video import WidgetState
+from .video import WidgetState
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ListProperty, StringProperty
 from kivy.graphics import Rectangle, BindTexture, Callback
@@ -313,10 +313,10 @@ class Grating(Widget):
 
 if __name__ == '__main__':
 
-    from experiment import Experiment
-    from state import UntilDone, Wait, Parallel, Serial
-    from keyboard import KeyPress
-    from video import Label
+    from .experiment import Experiment
+    from .state import UntilDone, Wait, Parallel, Serial
+    from .keyboard import KeyPress
+    from .video import Label
 
     exp = Experiment(background_color="#4F33FF")
 

@@ -8,10 +8,10 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import sys
-from state import Wait, State, Loop, Done, Log, Subroutine
-from clock import clock
-from event import event_time
-from ref import NotAvailable
+from .state import Wait, State, Loop, Done, Log, Subroutine
+from .clock import clock
+from .event import event_time
+from .ref import NotAvailable
 
 # Interface Class for Docstrings
 class PulseInterface(object):

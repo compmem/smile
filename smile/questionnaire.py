@@ -7,12 +7,12 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from video import (WidgetState, Label,
-                   ToggleButton, FloatLayout, ButtonPress,
-                   Button, Rectangle, TextInput, Slider)
-from state import (Loop, Parallel, If, Elif, Else, Serial,
-                   Func, UntilDone, Log, Subroutine,Debug)
-from ref import Ref
+from .video import (WidgetState, Label,
+                    ToggleButton, FloatLayout, ButtonPress,
+                    Button, Rectangle, TextInput, Slider)
+from .state import (Loop, Parallel, If, Elif, Else, Serial,
+                    Func, UntilDone, Log, Subroutine)
+from .ref import Ref
 import kivy.uix.scrollview
 import csv
 ScrollView = WidgetState.wrap(kivy.uix.scrollview.ScrollView)
