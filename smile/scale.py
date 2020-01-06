@@ -10,6 +10,7 @@
 from .ref import Ref
 from kivy.metrics import dp
 
+
 class Scale(object):
     """
     Utility to help scale depending on various screen sizes.

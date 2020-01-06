@@ -553,6 +553,3 @@ class SmileApp(App):
         """
         self.root_window.close()
         return super(SmileApp, self). stop(*largs)
-
-if __name__ == '__main__':
-    SmileApp().start()

@@ -16,7 +16,7 @@ from .clock import clock
 from .video import Label
 
 # set the allowable keys (A-Z)
-asciiplus = [str(unichr(i)) for i in range(65,65+26)]
+asciiplus = [str(chr(i)) for i in range(65,65+26)]
 asciiplus += ['ENTER','BACKSPACE','SPACEBAR']
 asciiplus += ['%d'%i for i in range(10)]
 

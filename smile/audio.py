@@ -9,6 +9,7 @@
 
 import os
 import time
+import sys
 
 from .state import Wait
 from .clock import clock
@@ -17,7 +18,6 @@ from .clock import clock
 try:
     import pyo
 except ImportError:
-    import sys
     if sys.platform == 'darwin':
         os_sp_dir='/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages'
     elif sys.platform.startswith('win'):
@@ -454,43 +454,3 @@ class RecordSoundFile(Wait):
         super(RecordSoundFile, self).cancel(cancel_time)
         clock.unschedule(self._stop_recording)
         clock.schedule(self._stop_recording, event_time=self._end_time)
-
-
-if __name__ == '__main__':
-
-    from experiment import Experiment
-    from state import Parallel, Wait, Serial, Meanwhile, UntilDone, Loop
-
-    exp = Experiment()
-
-    Wait(1.0)
-    with Loop([440, 500, 600, 880]) as l:
-        Beep(freq=l.current, volume=0.4, duration=1.0)
-
-    Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
-    Beep(freq=880, volume=0.1, duration=1.0)
-    with Parallel():
-        Beep(freq=440, volume=0.1, duration=2.0)
-        with Serial():
-            Wait(1.0)
-            Beep(freq=880, volume=0.1, duration=2.0)
-    Wait(1.0)
-    with Meanwhile():
-        Beep(freq=500, volume=0.1)
-    Beep(freq=900, volume=0.1, duration=1.0)
-    SoundFile("test_sound.wav")
-    SoundFile("test_sound.wav", stop=1.0)
-    Wait(1.0)
-    SoundFile("test_sound.wav", loop=True, duration=3.0)
-    Wait(1.0)
-    SoundFile("test_sound.wav", start=0.5)
-    rec = RecordSoundFile()
-    with UntilDone():
-        with Loop(3):
-            Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
-            Beep(freq=880, volume=0.1, duration=1.0)
-    Wait(1.0)
-    SoundFile(rec.filename)
-    Wait(1.0)
-
-    exp.run()

@@ -10,9 +10,9 @@
 from smile.kivy_overrides import Config as KOConfig
 import smile.kivy_overrides as KO
 from .state import Subroutine, Parallel, Serial, Loop, If, Else, Elif, \
-                  UntilDone, ResetClock, Func, Wait, Debug
+                  UntilDone, ResetClock, Func, Wait
 from .video import Rectangle, ProgressBar, Label, UpdateWidget, \
-                  CheckBox, TextInput, ButtonPress, Button, Image
+                   TextInput, ButtonPress, Button, Image
 from .keyboard import KeyPress
 from .ref import Ref
 from .mouse import MouseCursor
@@ -39,19 +39,18 @@ TEXT_INPUT_WIDTH = 300
 TEXT_INPUT_HEIGHT = 50
 INFO_FONT_SIZE = 30
 SSI_FONT_SIZE = 40
-VERSION_FONT_SIZE=30
+VERSION_FONT_SIZE = 30
 CHECK_HEIGHT = 25
 CHECK_WIDTH = 25
 LOCK_ON = "lock.png"
 LOCK_OFF = "unlock.png"
 
 
-
-
 def set_flip_interval(fps):
     from experiment import Experiment
     exp = Experiment._last_instance()
     exp._app.flip_interval = 1./fps
+
 
 @Subroutine
 def FrameTest(self,
@@ -430,7 +429,9 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                             self.lock_password = pwiON.text
                             with If((txtIn.text == "") | (txtIn.text == None)):
                                 self.text = "SUBJ000"
-                                Func(KOConfig.set, "SMILE" + self._exp._exp_name, "LOCKSUBJ", "SUBJ000")
+                                Func(KOConfig.set, "SMILE" +
+                                     self._exp._exp_name,
+                                     "LOCKSUBJ", "SUBJ000")
                             with Else():
                                 Func(KOConfig.set, "SMILE" + self._exp._exp_name, "LOCKSUBJ", txtIn.text)
                             Func(KOConfig.write)
@@ -454,7 +455,7 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                            background_normal="",
                            background_color=INFO_OUTLINE_COLOR)
             Image(source=os.path.join(os.path.dirname(__file__),
-                                            SMILE_IMG),
+                                      SMILE_IMG),
                   height=s(250), width=s(250),
                   keep_ratio=False, allow_stretch=True,
                   center_x=recin.center_x, opacity=.25,
@@ -470,16 +471,3 @@ def InputSubject(self, exp_title="DefaultExperiment"):
 
         with Elif(bp.pressed == "G"):
             mC = ConfigWindow()
-
-if __name__ == "__main__":
-
-
-    from experiment import Experiment
-
-    exp = Experiment(background_color=(.35, .35, .35, 1.0),
-                     Touch=False, debug=True,
-                     name="SmileExperiment")
-
-    InputSubject(exp_title="Smile Experiment")
-
-    exp.run()
