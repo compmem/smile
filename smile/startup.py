@@ -47,7 +47,7 @@ LOCK_OFF = "unlock.png"
 
 
 def set_flip_interval(fps):
-    from experiment import Experiment
+    from .experiment import Experiment
     exp = Experiment._last_instance()
     exp._app.flip_interval = 1./fps
 
