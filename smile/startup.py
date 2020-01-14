@@ -7,8 +7,8 @@
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from smile.kivy_overrides import Config as KOConfig
-import smile.kivy_overrides as KO
+from .kivy_overrides import Config as KOConfig
+from . import kivy_overrides as KO
 from .state import Subroutine, Parallel, Serial, Loop, If, Else, Elif, \
                   UntilDone, ResetClock, Func, Wait
 from .video import Rectangle, ProgressBar, Label, UpdateWidget, \
@@ -17,7 +17,7 @@ from .keyboard import KeyPress
 from .ref import Ref
 from .mouse import MouseCursor
 from .scale import scale as s
-import smile.version as version
+from . import version
 
 import os
 

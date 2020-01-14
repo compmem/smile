@@ -7,8 +7,8 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from state import CallbackState
-from clock import clock
+from .state import CallbackState
+from .clock import clock
 
 import sys
 import socket

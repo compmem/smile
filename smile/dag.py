@@ -8,7 +8,7 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import pydot
-from smile.state import ParentState, Serial, Parallel
+from .state import ParentState, Serial
 from utils import get_class_name
 
 class DAG(object):
@@ -20,7 +20,7 @@ class DAG(object):
         """
         # create the starting graph
         self.graph = pydot.Dot(graph_type='digraph',
-                               fontname=fontname, 
+                               fontname=fontname,
                                compound='true')
 
         # save edges
@@ -77,14 +77,14 @@ class DAG(object):
                     lhead = nodes[i]['uname'].get_name()
 
                 if ltail and lhead:
-                    self.edges.append(pydot.Edge(ledge, redge, 
+                    self.edges.append(pydot.Edge(ledge, redge,
                                                  ltail=ltail,
                                                  lhead=lhead))
                 elif ltail:
-                    self.edges.append(pydot.Edge(ledge, redge, 
+                    self.edges.append(pydot.Edge(ledge, redge,
                                                  ltail=ltail))
                 elif lhead:
-                    self.edges.append(pydot.Edge(ledge, redge, 
+                    self.edges.append(pydot.Edge(ledge, redge,
                                                  lhead=lhead))
                 else:
                     self.edges.append(pydot.Edge(ledge, redge))
@@ -109,6 +109,3 @@ class DAG(object):
 
     def write(self, filename, prog='dot', format='pdf'):
         self.graph.write(filename, prog=prog, format=format)
-
-
-

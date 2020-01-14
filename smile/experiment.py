@@ -29,7 +29,7 @@ from .clock import clock
 from .log import LogWriter, log2csv
 from .event import event_time
 from .scale import scale
-import smile.version as version
+from . import version
 
 
 _kivy_clock = kivy.clock.Clock

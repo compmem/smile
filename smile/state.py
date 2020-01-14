@@ -19,8 +19,8 @@ from os import fsync, remove
 
 from . import kivy_overrides
 from .ref import Ref, val, NotAvailable, NotAvailableError
-from smile.ref import jitter as Jitter
-from smile.ref import shuffle as Shuffle
+from .ref import jitter as Jitter
+from .ref import shuffle as Shuffle
 from .log import LogWriter, log2csv
 from .clock import clock
 
