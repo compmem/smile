@@ -8,11 +8,9 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from functools import partial
-from contextlib import contextmanager
 import weakref
-import operator
 
-import smile.kivy_overrides as kivy_overrides
+from . import kivy_overrides
 from .state import State, CallbackState, Parallel, ParentState
 from .ref import val, Ref, NotAvailable
 from .clock import clock

@@ -12,7 +12,7 @@ from __future__ import print_function
 import os
 
 # kivy imports
-import smile.kivy_overrides as kivy_overrides
+from . import kivy_overrides
 import kivy
 import kivy.base
 from kivy.app import App

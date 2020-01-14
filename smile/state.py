@@ -17,7 +17,7 @@ import weakref
 import os.path
 from os import fsync, remove
 
-import smile.kivy_overrides as kivy_overrides
+from . import kivy_overrides
 from .ref import Ref, val, NotAvailable, NotAvailableError
 from smile.ref import jitter as Jitter
 from smile.ref import shuffle as Shuffle

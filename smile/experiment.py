@@ -16,7 +16,7 @@ import time
 import threading
 
 # kivy imports
-import smile.kivy_overrides as kivy_overrides
+from . import kivy_overrides
 import kivy
 import kivy.base
 from kivy.utils import platform

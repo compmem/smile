@@ -11,7 +11,7 @@ from __future__ import print_function
 import operator
 import os
 
-import smile.kivy_overrides as kivy_overrides
+from . import kivy_overrides
 import kivy.graphics
 from kivy.core.image import Image
 
