@@ -10,7 +10,7 @@
 from distutils.core import setup
 
 setup(name='smile',
-      version='0.1.0',
+      version='0.9.0',
       packages=['smile'],
       package_dir={"smile": "smile"},
       package_data={"smile": ["face-smile.png",
