@@ -212,16 +212,16 @@ Func(print_actual_duration, s)
 Debug(name='before parallel')
 with Parallel() as p:
     Debug(name='in parallel')
-    with Loop(5) as l:
+    with Loop(5) as lv:
         with p.insert():
             with Serial():
-                Wait(l.i)
-                Debug(name='in insert after n second wait', n=l.i)
+                Wait(lv.i)
+                Debug(name='in insert after n second wait', n=lv.i)
             with Serial():
                 Wait(2.0)
-                Debug(name='in insert after 2s wait', n=l.i)
-            Debug(name='in insert', n=l.i)
-        p.insert(Debug(name='in insert #2', n=l.i))
+                Debug(name='in insert after 2s wait', n=lv.i)
+            Debug(name='in insert', n=lv.i)
+        p.insert(Debug(name='in insert #2', n=lv.i))
 Debug(name='after parallel')
 
 Wait(2.0)

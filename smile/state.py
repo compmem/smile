@@ -19,8 +19,10 @@ from os import fsync, remove
 
 from . import kivy_overrides
 from .ref import Ref, val, NotAvailable, NotAvailableError
-from .ref import jitter as Jitter
-from .ref import shuffle as Shuffle
+# Due to namespace issues, ref.jitter is imported as ref_jitter
+from .ref import jitter as ref_jitter
+# Due to namespace issues, ref.shuffle is imported as ref_shuffle
+from .ref import shuffle as ref_shuffle
 from .log import LogWriter, log2csv
 from .clock import clock
 
@@ -547,7 +549,7 @@ class State(object, metaclass=StateClass):
 
         """
         # Return the named attribute from the current clone.
-        return getattr(self.current_clone, name)  # CHECK THIS
+        return getattr(self.current_clone, name)
 
     def get_attribute_ref(self, name):
         internal_name = "_" + name
@@ -942,7 +944,7 @@ class ParentState(State):
         """
         super(ParentState, self).begin_log()
         for child in self._children:
-            child.begin_log()  # Check This
+            child.begin_log()
 
     def end_log(self, to_csv=False):
         """Close per-class state logs for this state and all its children.
@@ -1917,7 +1919,8 @@ class Loop(SequentialState):
                                    blocking=blocking)
 
         if shuffle:
-            self._init_iterable = Shuffle(iterable)
+            # Due to namespace issues, ref.shuffle is imported as ref_shuffle
+            self._init_iterable = ref_shuffle(iterable)
         else:
             self._init_iterable = iterable
         self._cond = conditional
@@ -2414,7 +2417,8 @@ class Wait(State):
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
                  save_log=True, name=None, blocking=True):
         if duration is not None and jitter is not None:
-            duration = Jitter(duration, jitter)  # This is the jitter function from ref.py as Jitter
+            # Due to namespace issues, ref.jitter is imported as ref_jitter
+            duration = ref_jitter(duration, jitter)
 
         # init the parent class
         super(Wait, self).__init__(parent=parent,

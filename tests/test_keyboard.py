@@ -1,7 +1,10 @@
 from smile.experiment import Experiment
 from smile.state import Wait, Debug, Loop, UntilDone, Log, Meanwhile
 from smile.keyboard import Key, KeyRecord, KeyPress
+
+
 exp = Experiment()
+
 with Meanwhile():
     KeyRecord(name="record_all_key_presses")
 
@@ -11,15 +14,16 @@ Wait(until=((Key("T") & Key("G") & Key("D")) |
 Debug(name='Key Press Test')
 
 exp.last_pressed = ''
-with Loop(conditional=(exp.last_pressed!='K')):
-    kp = KeyPress(keys=['J','K'], correct_resp='K')
+
+with Loop(conditional=(exp.last_pressed != 'K')):
+    kp = KeyPress(keys=['J', 'K'], correct_resp='K')
     Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
     exp.last_pressed = kp.pressed
     Log(pressed=kp.pressed, rt=kp.rt)
 
 KeyRecord()
 with UntilDone():
-    kp = KeyPress(keys=['J','K'], correct_resp='K')
+    kp = KeyPress(keys=['J', 'K'], correct_resp='K')
     Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
     Wait(1.0)
 

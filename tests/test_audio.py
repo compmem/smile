@@ -1,11 +1,11 @@
 from smile.experiment import Experiment
-from smile.state import Parallel, Wait, Serial, Meanwhile, UntilDone, Loop
+from smile.state import Parallel, Wait, Serial, Meanwhile, Loop
 from smile.audio import Beep, SoundFile, init_audio_server
 import os
 
-init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=0,
-                      audio='portaudio', jackname='pyo',
-                      input_device=None, output_device=None)
+init_audio_server(sr=44100, nchnls=1, buffersize=256, duplex=1,
+                  audio='portaudio', jackname='pyo',
+                  input_device=None, output_device=None)
 
 exp = Experiment()
 

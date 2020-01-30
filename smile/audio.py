@@ -7,9 +7,8 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-import os
-import time
 import sys
+import site
 
 from .state import Wait
 from .clock import clock
@@ -18,14 +17,16 @@ from .clock import clock
 try:
     import pyo
 except ImportError:
-    if sys.platform == 'darwin':
+    os_sp_dir = site.getsitepackages()[0]
+    """if sys.platform == 'darwin':
         os_sp_dir='/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages'
     elif sys.platform.startswith('win'):
         os_sp_dir = 'C:\Python36-32\Lib\site-packages'
     else:
         raise ImportError("Could not import pyo and no special pyo path for "
-                          "this platform (%s)." % sys.platform)
+                          "this platform (%s)." % sys.platform)"""
     if not os_sp_dir in sys.path:
+
         sys.path.append(os_sp_dir)
         import pyo
 

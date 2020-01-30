@@ -3,6 +3,6 @@ from smile.state import Func
 
 exp = Experiment()
 
-Func(print, "Your BUtt")
+Func(print, "Printing..........Success!")
 
 exp.run()

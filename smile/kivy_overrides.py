@@ -53,6 +53,7 @@ Config.set("graphics", "maxfps", 0)
 # preload fullscreen
 if args.fullscreen:
     # disable fullscreen
+    Config.set("graphics", "borderless", 0)
     Config.set("graphics", "fullscreen", False)
 else:
     Config.set("graphics", "borderless", 1)
