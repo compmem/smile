@@ -7,25 +7,26 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-import os
-import time
+import sys
+import site
 
-from state import Wait
-from clock import clock
+from .state import Wait
+from .clock import clock
 
 # add in system site-packages if necessary
 try:
     import pyo
 except ImportError:
-    import sys
-    if sys.platform == 'darwin':
-        os_sp_dir = '/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages'
+    os_sp_dir = site.getsitepackages()[0]
+    """if sys.platform == 'darwin':
+        os_sp_dir='/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages'
     elif sys.platform.startswith('win'):
-        os_sp_dir = 'C:\Python27\Lib\site-packages'
+        os_sp_dir = 'C:\Python36-32\Lib\site-packages'
     else:
         raise ImportError("Could not import pyo and no special pyo path for "
-                          "this platform (%s)." % sys.platform)
+                          "this platform (%s)." % sys.platform)"""
     if not os_sp_dir in sys.path:
+
         sys.path.append(os_sp_dir)
         import pyo
 
@@ -42,7 +43,7 @@ _pyo_server = None
 
 
 #TODO: compensate for buffer lag where possible?
-
+from pyo import Server, pa_get_input_devices
 def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
                       audio='portaudio', jackname='pyo',
                       input_device=None, output_device=None):
@@ -50,6 +51,11 @@ def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
     global _pyo_server
 
     # eventually read defaults from a config file
+
+    if sys.platform == "win32":
+        host_apis = ["mme", "directsound", "asio", "wasapi", "wdm-ks"]
+
+    input_names, input_indexes=pa_get_input_devices()
 
     # set up the server
     if _pyo_server is None:
@@ -449,43 +455,3 @@ class RecordSoundFile(Wait):
         super(RecordSoundFile, self).cancel(cancel_time)
         clock.unschedule(self._stop_recording)
         clock.schedule(self._stop_recording, event_time=self._end_time)
-
-
-if __name__ == '__main__':
-
-    from experiment import Experiment
-    from state import Parallel, Wait, Serial, Meanwhile, UntilDone, Loop
-
-    exp = Experiment()
-
-    Wait(1.0)
-    with Loop([440, 500, 600, 880]) as l:
-        Beep(freq=l.current, volume=0.4, duration=1.0)
-
-    Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
-    Beep(freq=880, volume=0.1, duration=1.0)
-    with Parallel():
-        Beep(freq=440, volume=0.1, duration=2.0)
-        with Serial():
-            Wait(1.0)
-            Beep(freq=880, volume=0.1, duration=2.0)
-    Wait(1.0)
-    with Meanwhile():
-        Beep(freq=500, volume=0.1)
-    Beep(freq=900, volume=0.1, duration=1.0)
-    SoundFile("test_sound.wav")
-    SoundFile("test_sound.wav", stop=1.0)
-    Wait(1.0)
-    SoundFile("test_sound.wav", loop=True, duration=3.0)
-    Wait(1.0)
-    SoundFile("test_sound.wav", start=0.5)
-    rec = RecordSoundFile()
-    with UntilDone():
-        with Loop(3):
-            Beep(freq=[440, 500, 600], volume=0.1, duration=1.0)
-            Beep(freq=880, volume=0.1, duration=1.0)
-    Wait(1.0)
-    SoundFile(rec.filename)
-    Wait(1.0)
-
-    exp.run()

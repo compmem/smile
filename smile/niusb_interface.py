@@ -19,10 +19,10 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from state import State
-from event import event_time
-from clock import clock
-from ref import NotAvailable
+from .state import State
+from .event import event_time
+from .clock import clock
+from .ref import NotAvailable
 
 try:
     from nidaqmx.task import Task
@@ -90,7 +90,6 @@ class NIPulse(State):
                 self._task.write([self.push_vals])
             ev = clock.now()
 
-
         else:
             self._pulse_on = None
             self._pulse_off = None
@@ -122,46 +121,11 @@ class NIPulse(State):
     def _pulse_off_callback(self):
         self._task.write([0.0])
         ev = clock.now()
-        
+
         # set the pulse time
         self._pulse_off = event_time(ev,
-                                    0.0)
-
+                                     0.0)
 
         # let's schedule finalizing
         self._ended = True
         clock.schedule(self.finalize)
-
-if __name__ == "__main__":
-
-    from experiment import Experiment
-    from state import Wait, Parallel, Loop, Debug
-    from video import Label
-    exp = Experiment()
-
-    # Initialize the outlet
-    task1 = init_task(task_name="Task1", min_val=0.0, max_val=1.0,
-                      chan_path='Dev1/ao0', chan_des="mychan1")
-    task2 = init_task(task_name="Task2", min_val=0.0, max_val=1.0,
-                      chan_path='Dev1/ao1', chan_des="mychan2")
-
-    NIPulse(task1, push_vals=[1.0], width=0.10,)
-    NIPulse(task2, push_vals=[.5], width=0.10,)
-
-    # Wait for the experiment to start!
-    Wait(2.)
-
-    with Parallel():
-
-        Label(text="We will now push 10 markers.", blocking=False)
-        with Loop(10, blocking=False):
-
-            ni1 = NIPulse(task1, push_vals=[1.0], width=0.10,)
-            Wait(1.0)
-            ni2 = NIPulse(task2, push_vals=[.5], width=0.10,)
-
-            Wait(until=ni2.pulse_off)
-            Wait(1.)
-            Debug(a=ni1.pulse_on, b=ni2.pulse_off)
-
-    exp.run()

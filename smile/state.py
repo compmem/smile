@@ -14,14 +14,17 @@ from types import GeneratorType
 import copy
 import inspect
 import weakref
-import os.path, os
+import os.path
+from os import fsync, remove
 
-import kivy_overrides
-import ref
-from ref import Ref, val, NotAvailable, NotAvailableError
-#from utils import rindex, get_class_name
-from log import LogWriter, log2csv
-from clock import clock
+from . import kivy_overrides
+from .ref import Ref, val, NotAvailable, NotAvailableError
+# Due to namespace issues, ref.jitter is imported as ref_jitter
+from .ref import jitter as ref_jitter
+# Due to namespace issues, ref.shuffle is imported as ref_shuffle
+from .ref import shuffle as ref_shuffle
+from .log import LogWriter, log2csv
+from .clock import clock
 
 
 class StateConstructionError(RuntimeError):
@@ -113,7 +116,7 @@ class StateClass(type):
                                       {"_state_class": cls})
 
 
-class State(object):
+class State(object, metaclass=StateClass):
     """Base State object for the hierarchical state machine.
 
     This class contains all of the calls that are required of a state
@@ -165,21 +168,13 @@ class State(object):
 
     """
 
-    # Apply the StateClass metaclass
-    __metaclass__ = StateClass
-
     def __new__(cls, *pargs, **kwargs):
-        # Pull out the use_state_class argument
         use_state_class = kwargs.pop("use_state_class", False)
-
         if use_state_class or issubclass(cls, StateBuilder):
-            # If this is already a StateBuilder or if we got the
-            # use_state_class flag, create the object as normal.
-            return super(State, cls).__new__(cls, *pargs, **kwargs)
+            return super(State, cls).__new__(cls)
         else:
-            # Otherwise, instantiate with the StateBuilder mixin instead.
-            return cls._builder_class.__new__(cls._builder_class,
-                                              *pargs, **kwargs)
+            return cls._builder_class.__new__(cls._builder_class, *pargs,
+                                              **kwargs)
 
     def __init__(self, parent=None, duration=None, save_log=True, name=None,
                  blocking=True):
@@ -244,7 +239,7 @@ class State(object):
         # Record which source file and line number this constructor was called
         # from.
         # Associate this state with the most recently instantiated Experiment.
-        from experiment import Experiment
+        from .experiment import Experiment
         try:
             self._exp = Experiment._last_instance()
             self._debug = self._exp._debug
@@ -641,7 +636,7 @@ class State(object):
 
         # if we don't have the exp reference, get it now
         if self._exp is None:
-            from experiment import Experiment
+            from .experiment import Experiment
             self._exp = Experiment._last_instance()
 
         # evaluate the '_init_' Refs...
@@ -1283,7 +1278,7 @@ def _ParallelWithPrevious(name=None, parallel_name=None, blocking=True):
 
     """
     # get the exp reference
-    from experiment import Experiment
+    from .experiment import Experiment
     try:
         exp = Experiment._last_instance()
     except AttributeError:
@@ -1407,7 +1402,7 @@ class SequentialState(ParentState):
         try:
             # clone the children as they come, so just clone the first
             self.__current_child = (
-                self.__child_iterator.next()._clone(self))
+                next(self.__child_iterator)._clone(self))
             # schedule the child based on the current start time
             clock.schedule(partial(self.__current_child.enter,
                                    self._start_time))
@@ -1439,7 +1434,7 @@ class SequentialState(ParentState):
             try:
                 # clone the next child and schedule it
                 self.__current_child = (
-                    self.__child_iterator.next()._clone(self))
+                    next(self.__child_iterator)._clone(self))
                 clock.schedule(partial(self.__current_child.enter, next_time))
             except StopIteration:
                 # there are no more children, so set our end time and leave
@@ -1794,7 +1789,7 @@ def Else(name="ELSE BODY"):
     """Returns the else clause of the preceding If state. See *If*
     """
     # get the exp reference
-    from experiment import Experiment
+    from .experiment import Experiment
     try:
         exp = Experiment._last_instance()
     except AttributeError:
@@ -1924,7 +1919,8 @@ class Loop(SequentialState):
                                    blocking=blocking)
 
         if shuffle:
-            self._init_iterable = ref.shuffle(iterable)
+            # Due to namespace issues, ref.shuffle is imported as ref_shuffle
+            self._init_iterable = ref_shuffle(iterable)
         else:
             self._init_iterable = iterable
         self._cond = conditional
@@ -1961,7 +1957,7 @@ class Loop(SequentialState):
             else:
                 count = len(self._iterable)
 
-            for i in xrange(count):
+            for i in range(count):
                 yield i
 
     def _get_child_iterator(self):
@@ -2054,7 +2050,7 @@ class Record(State):
             title = "record_%s" % self._name
 
         if self.__log_filename is not None:
-            os.remove(self.__log_filename)
+            remove(self.__log_filename)
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
 
         if self.__log_writer is not None:
@@ -2229,7 +2225,7 @@ class Log(AutoFinalizeState):
         if self.__log_writer is not None:
             self.__log_writer.close()
         if self.__log_filename is not None:
-            os.remove(self.__log_filename)
+            remove(self.__log_filename)
 
         self.__log_filename = self._exp.reserve_data_filename(title, "slog")
         self.__log_writer = LogWriter(self.__log_filename)
@@ -2265,7 +2261,7 @@ class Log(AutoFinalizeState):
             raise ValueError("Invalid log_dict value: %r" % self._log_dict)
         if self._flush:
             self.__log_writer._file.flush()
-            os.fsync(self.__log_writer._file)
+            fsync(self.__log_writer._file)
             self._exp._flush_state_loggers()
         self._started = True
         self._ended = True
@@ -2421,7 +2417,8 @@ class Wait(State):
     def __init__(self, duration=None, jitter=None, until=None, parent=None,
                  save_log=True, name=None, blocking=True):
         if duration is not None and jitter is not None:
-            duration = ref.jitter(duration, jitter)
+            # Due to namespace issues, ref.jitter is imported as ref_jitter
+            duration = ref_jitter(duration, jitter)
 
         # init the parent class
         super(Wait, self).__init__(parent=parent,
@@ -2776,229 +2773,3 @@ class PrintTraceback(CallbackState):
 
     def _callback(self):
         self.print_traceback()
-
-
-if __name__ == '__main__':
-    from experiment import Experiment
-
-    def print_actual_duration(target):
-        print(val(target.end_time - target.start_time))
-
-    def print_periodic():
-        print("PERIODIC!")
-
-    @Subroutine
-    def DoTheThing(self, a, b, c=7, d="ssdfsd"):
-        PrintTraceback(name="inside DoTheThing")
-        self.foo = c * 2
-        Wait(1.0)
-        Debug(a=a, b=b, c=c, d=d, foo=self.foo,
-              screen_size=self.exp.screen.size, name="inside DoTheThing")
-
-    @Subroutine
-    def DoTheOtherThing(self):
-        Debug(name="before the yield")
-        with Serial():
-            yield
-        with Meanwhile():
-            PrintTraceback(name="during the yield")
-        Debug(name="after the yield")
-
-    exp = Experiment()
-
-    #with UntilDone():
-    #    Wait(5.0)
-    with Meanwhile():
-        with Loop():
-            Wait(5.0)
-            Func(print_periodic)
-
-    Debug(width=exp.screen.width, height=exp.screen.height)
-
-    with Loop(5) as loop:
-        Log(a=1, b=2, c=loop.i, name="aaa")
-    Log({"q": loop.i, "w": loop.i}, x=4, y=2, z=1, name="bbb")
-    Log([{"q": loop.i, "w": n} for n in xrange(5)], x=4, y=2, z=1, name="ccc")
-    #Log("sdfsd")  # This should cause an error
-
-    exp.for_the_thing = 3
-    dtt = DoTheThing(3, 4, name="first")
-    Debug(foo=dtt.foo, name="outside DoTheThing")
-    dtt = DoTheThing(3, 4, d="bbbbbbb", c=exp.for_the_thing)
-    Debug(foo=dtt.foo, name="outside DoTheThing")
-
-    with DoTheOtherThing():
-        PrintTraceback(name="top of body")
-        Wait(2.0)
-        PrintTraceback(name="bottom of body")
-
-    Wait(1.0)
-    dvt = _DelayedValueTest(1.0, 42)
-    Done(dvt)
-    Debug(dvt_out=dvt.value_out)
-
-    exp.bar = False
-    with Parallel():
-        with Serial():
-            Wait(2.0)
-            Func(lambda: None)  # force variable assignment to wait until correct time
-            exp.bar = True
-            Wait(2.0)
-            Func(lambda: None)  # force variable assignment to wait until correct time
-            exp.bar = False
-            Wait(1.0)
-        When(exp.bar, Debug(name="when test"))
-        with While(exp.bar):
-            with Loop():
-                Wait(0.2)
-                Debug(name="while test")
-        with Loop(blocking=False):
-            Wait(0.5)
-            Debug(name="non-blocking test")
-
-    exp.foo=1
-    Record(foo=exp.foo)#, name="rectest")
-    with UntilDone():
-        Debug(name="FOO!")
-        Wait(1.0)
-        Debug(name="FOO!")
-        exp.foo = 2
-        Debug(name="FOO!")
-        Wait(1.0)
-        Debug(name="FOO!")
-        exp.foo = 3
-        Debug(name="FOO!")
-        Wait(1.0)
-        Debug(name="FOO!")
-
-    with Parallel():
-        with Serial():
-            Debug(name="FOO!")
-            Wait(1.0)
-            Debug(name="FOO!")
-            exp.foo = 4
-            Debug(name="FOO!")
-            Wait(1.0)
-            Debug(name="FOO!")
-            exp.foo = 5
-            Debug(name="FOO!")
-            Wait(1.0)
-            Debug(name="FOO!")
-        with Serial():
-            Debug(name="FOO!!!")
-            Wait(until=exp.foo==5, name="wait until")
-            Debug(name="foo=5!")
-
-    with Loop(10) as loop:
-        with If(loop.current > 6):
-            Debug(name="True")
-        with Elif(loop.current > 4):
-            Debug(name="Trueish")
-        with Elif(loop.current > 2):
-            Debug(name="Falsish")
-        with Else():
-            Debug(name="False")
-
-    # with implied parents
-    block = [{'val': i} for i in range(3)]
-    exp.not_done = True
-    with Loop(conditional=exp.not_done) as outer:
-        Debug(i=outer.i)
-        with Loop(block, shuffle=True) as trial:
-            Debug(current_val=trial.current['val'])
-            Wait(1.0)
-            If(trial.current['val']==block[-1],
-               Wait(2.0))
-        with If(outer.i >= 3):
-            exp.not_done = False
-
-    block = range(3)
-    with Loop(block) as trial:
-        Debug(current=trial.current)
-        Wait(1.0)
-        If(trial.current==block[-1],
-           Wait(2.))
-
-
-    If(True,
-       Debug(name="True"),
-       Debug(name="False"))
-    Wait(1.0)
-    If(False,
-       Debug(name="True"),
-       Debug(name="False"))
-    Wait(2.0)
-    If(False, Debug(name="ACK!!!")) # won't do anything
-    Debug(name="two")
-    Wait(3.0)
-    with Parallel():
-        with Serial():
-            Wait(1.0)
-            Debug(name='three')
-        Debug(name='four')
-    Wait(2.0)
-
-    block = [{'text':'a'},{'text':'b'},{'text':'c'}]
-    with Loop(block) as trial:
-        Debug(current_text=trial.current['text'])
-        Wait(1.0)
-
-    Debug(name='before meanwhile 1')
-    Wait(1.0)
-    with Meanwhile(name="First Meanwhile") as mw:
-        Wait(15.0)
-    Debug(name='after meanwhile 1')
-    Func(print_actual_duration, mw)
-
-    Debug(name='before meanwhile 2')
-    Wait(5.0)
-    with Meanwhile() as mw:
-        PrintTraceback()
-        Wait(1.0)
-    Debug(name='after meanwhile 2')
-    Func(print_actual_duration, mw)
-
-    Debug(name='before untildone 1')
-    Wait(15.0)
-    with UntilDone(name="UntilDone #1") as ud:
-        Wait(1.0)
-        PrintTraceback()
-    Debug(name='after untildone 1')
-    Func(print_actual_duration, ud)
-
-    Debug(name='before untildone 2')
-    Wait(1.0)
-    with UntilDone() as ud:
-        Wait(5.0)
-    Debug(name='after untildone 2')
-    Func(print_actual_duration, ud)
-
-    with Serial() as s:
-        with Meanwhile():
-            Wait(100.0)
-        Wait(1.0)
-    Func(print_actual_duration, s)
-    with Serial() as s:
-        with UntilDone():
-            Wait(1.0)
-        Wait(100.0)
-    Func(print_actual_duration, s)
-
-    Debug(name='before parallel')
-    with Parallel() as p:
-        Debug(name='in parallel')
-        with Loop(5) as l:
-            with p.insert():
-                with Serial():
-                    Wait(l.i)
-                    Debug(name='in insert after n second wait', n=l.i)
-                with Serial():
-                    Wait(2.0)
-                    Debug(name='in insert after 2s wait', n=l.i)
-                Debug(name='in insert', n=l.i)
-            p.insert(Debug(name='in insert #2', n=l.i))
-    Debug(name='after parallel')
-
-    Wait(2.0)
-
-    exp.run(trace=False)

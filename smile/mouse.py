@@ -11,18 +11,18 @@ from __future__ import print_function
 import operator
 import os
 
-import kivy_overrides
+from . import kivy_overrides
 import kivy.graphics
 from kivy.core.image import Image
 
-from state import CallbackState, Record
-from ref import Ref, val, NotAvailable
-from experiment import Experiment
-from video import VisualState
-from scale import scale as apply_scale
+from .state import CallbackState, Record
+from .ref import Ref, val, NotAvailable
+from .experiment import Experiment
+from .video import VisualState
+from .scale import scale as apply_scale
 
 
-def MouseWithin(widget):
+def MouseWithin(widget, pos=None):
     """An easy shortcut to wait for a mouse to be within a widget.
 
     This function returns True if the mouse position is within a given widget.
@@ -55,9 +55,13 @@ def MouseWithin(widget):
     participant that they did the correct thing.
 
     """
-    pos = Experiment._last_instance().screen.mouse_pos
-    return ((pos[0] >= widget.x) & (pos[1] >= widget.y) &
-            (pos[0] <= widget.right) & (pos[1] <= widget.top))
+    if pos is None:
+        mousePos = Experiment._last_instance().screen.mouse_pos
+    else:
+        mousePos = pos
+
+    return ((mousePos[0] >= widget.x) & (mousePos[1] >= widget.y) &
+            (mousePos[0] <= widget.right) & (mousePos[1] <= widget.top))
 
 
 def MousePos(widget=None):
@@ -375,46 +379,3 @@ class MousePress(CallbackState):
             self._rt = None
         if self._pos is NotAvailable:
             self._pos = (None, None)
-
-
-if __name__ == '__main__':
-
-    from experiment import Experiment
-    from state import Wait, Debug, Loop, Meanwhile, Record, Log, Parallel
-
-    def print_dt(state, *args):
-        print(args)
-
-    exp = Experiment()
-
-    with Meanwhile():
-        #Record(pos=MousePos(), button=MouseButton())
-        with Parallel():
-            MouseRecord()
-            MouseCursor()
-
-    Wait(2.0)
-    MouseCursor("face-smile.png", (125, 125), duration=5.0)
-
-    Debug(name='Mouse Press Test')
-
-    exp.last_pressed = ''
-    with Loop(conditional=(exp.last_pressed!='RIGHT')):
-        kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')
-        Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
-        exp.last_pressed = kp.pressed
-        Log(pressed=kp.pressed, rt=kp.rt)
-
-    kp = MousePress(buttons=['LEFT','RIGHT'], correct_resp='RIGHT')
-    Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
-    Wait(1.0)
-
-    kp = MousePress()
-    Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
-    Wait(1.0)
-
-    kp = MousePress(duration=2.0)
-    Debug(pressed=kp.pressed, rt=kp.rt, correct=kp.correct)
-    Wait(1.0)
-
-    exp.run()

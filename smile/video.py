@@ -8,22 +8,33 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 from functools import partial
-from contextlib import contextmanager
 import weakref
-import operator
 
-import kivy_overrides
-from state import State, CallbackState, Parallel, ParentState
-from ref import val, Ref, NotAvailable
-from clock import clock
+from . import kivy_overrides
+from .state import State, CallbackState, Parallel, ParentState
+from .ref import val, Ref, NotAvailable
+from .clock import clock
 
 import kivy.metrics
 import kivy.graphics
 import kivy.uix.widget
 from kivy.properties import Property, ObjectProperty, ListProperty
 import kivy.clock
+from kivy.event import EventDispatcher
 _kivy_clock = kivy.clock.Clock
 
+
+# @FIX: added a blackhole class that will take excess parameters
+class BlackHole(object):
+    def __init__(self, **kwargs):
+        super(BlackHole, self).__init__()
+
+
+# @FIX: changed base inheritance of Widget in kivy.uix.widget.Widget.py
+# @FIX: imported EventDispatcher
+WidgetBase = kivy.uix.widget.WidgetMetaclass('WidgetBase',
+                                             (EventDispatcher, ), {})
+kivy.uix.widget.Widget.__bases__ = (WidgetBase, BlackHole,)
 
 color_name_table = {
     # subset from http://www.rapidtables.com/web/color/RGB_Color.htm
@@ -48,6 +59,7 @@ color_name_table = {
     "BROWN": (0.65, 0.16, 0.16, 1.0),
     "INDIGO": (0.29, 0.5, 0.0, 1.0)
     }
+
 def normalize_color_spec(spec):
     if isinstance(spec, tuple) or isinstance(spec, list):
         if len(spec) == 2:
@@ -537,7 +549,7 @@ class WidgetState(VisualState):
         self._init_rotate_origin = rotate_origin
         self._widget = None
         self.__parent_widget = None
-        self._constructor_param_names = params.keys()
+        self._constructor_param_names = list(params)
         self._init_constructor_params = params
         for name, value in params.items():
             setattr(self, "_init_" + name, value)
@@ -716,9 +728,9 @@ class WidgetState(VisualState):
         xy_pos_props = {"pos": "min", "center": "mid"}
         x_pos_props = {"x": "min", "center_x": "mid", "right": "max"}
         y_pos_props = {"y": "min", "center_y": "mid", "top": "max"}
-        pos_props = (xy_pos_props.keys() +
-                     x_pos_props.keys() +
-                     y_pos_props.keys())
+        pos_props = (list(xy_pos_props) +
+                     list(x_pos_props) +
+                     list(y_pos_props))
         new_x_pos_mode = None
         new_y_pos_mode = None
         for prop, mode in xy_pos_props.items():
@@ -1558,8 +1570,24 @@ widgets = [
 for widget in widgets:
     modname = "kivy.uix.%s" % widget.lower()
     exec("import %s" % modname)
+
+#@FIX: changed base class inheritance of:
+    #ProgressBar
+    #Label
+    #TextInput
+kivy.uix.progressbar.ProgressBar.__bases__ = (kivy.uix.widget.Widget,
+                                              BlackHole)
+kivy.uix.label.Label.__bases__ = (kivy.uix.widget.Widget, BlackHole)
+
+from kivy.uix.behaviors import FocusBehavior
+kivy.uix.textinput.TextInput.__bases__ = (kivy.uix.behaviors.FocusBehavior,
+                                          kivy.uix.widget.Widget, BlackHole)
+
+#@FIX: moved kivy wrapper exec
+for widget in widgets:
+    modname = "kivy.uix.%s" % widget.lower()
     exec("%s = WidgetState.wrap(%s.%s)" %
-         (widget, modname, widget))
+     (widget, modname, widget))
 
 Button.__doc__ = """
 A **WidgetState** that shows a button in the window.
@@ -3055,7 +3083,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         # force video to load immediately so that duration is available...
         _kivy_clock.unschedule(self._widget._do_video_load)
         self._widget._do_video_load()
-        self._widget._video.pause()
+        self._widget.state = "pause"
         if self._end_time is None:
             # we need the duration to set the end time
             if self._widget._video.duration == -1:
@@ -3098,6 +3126,9 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
 
 
 import kivy.uix.image
+kivy.uix.image.Image.__bases__ = (kivy.uix.widget.Widget, BlackHole,)
+
+
 class Image(WidgetState.wrap(kivy.uix.image.Image)):
     """A WidgetState subclass to present and image on the screen.
 
@@ -3416,12 +3447,12 @@ class ButtonPress(CallbackState):
             self._correct_resp = []
         elif type(self._correct_resp) not in (list, tuple):
             self._correct_resp = [self._correct_resp]
-        from mouse import MouseButton
+        from .mouse import MouseButton
         self.__pressed_ref = Ref(
             lambda lst: [name for name, mouse_button in lst if
                          mouse_button is not None],
             [(button._name, MouseButton(button)) for button in
-             self.__buttons])
+             self.__buttons])  # Check This
         super(ButtonPress, self)._enter()
 
     def _callback(self):
@@ -3434,13 +3465,13 @@ class ButtonPress(CallbackState):
         self.__pressed_ref.add_change_callback(self.button_callback)
 
     def button_callback(self):
+        from smile.mouse import MouseWithin, MouseButton
         self.claim_exceptions()
         pressed_list = self.__pressed_ref.eval()
         if not len(pressed_list):
             return
-        button = pressed_list[0]
 
-        # make sure not a disabled button
+        button = pressed_list[0]
         if self.__buttons[self._button_names.index(button)].disabled.eval():
             return
 
@@ -3486,205 +3517,3 @@ class ButtonPress(CallbackState):
         self.__buttons.extend(iter_nested_buttons(self.__parallel))
         self.__parallel = None
         return ret
-
-
-if __name__ == '__main__':
-    from experiment import Experiment
-    from state import Wait, Loop, Parallel, Meanwhile, UntilDone, Serial, Done, Debug
-    from mouse import MouseCursor
-    from math import sin, cos
-    from contextlib import nested
-
-    exp = Experiment(background_color="#330000")
-    Wait(2.0)
-
-    Video(source="test_video.mp4", duration=4.0)
-
-    pb = ProgressBar(max=100)
-    with UntilDone():
-        pb.slide(value=100, duration=2.0)
-
-    Image(source="face-smile.png", duration=5.0)
-
-    text = """
-.. _top:
-
-Hello world
-===========
-
-This is an **emphasized text**, some ``interpreted text``.
-And this is a reference to top_::
-
-$ print("Hello world")
-
-    """
-    RstDocument(text=text, duration=5.0, size=exp.screen.size)
-
-    with ButtonPress():
-        button = Button(text="Click to continue", size=(exp.screen.width / 4,
-                                                        exp.screen.height / 8))
-        slider = Slider(min=exp.screen.left, max=exp.screen.right,
-                        top=button.bottom, blocking=False)
-        rect = Rectangle(color="purple", width=50, height=50,
-                         center_top=exp.screen.left_top, blocking=False)
-        rect.animate(center_x=lambda t, initial: slider.value, blocking=False)
-        ti = TextInput(text="EDIT!", top=slider.bottom, blocking=False)
-        MouseCursor()
-    label = Label(text=ti.text, duration=5.0, font_size=50, color="white")
-    Done(label)
-    Debug(label_disappear_time=label.disappear_time)
-
-    Ellipse(color="white", width=100, height=100)
-    with UntilDone():
-        with Parallel():
-            BackgroundColor("blue", duration=6.0)
-            with Serial():
-                Wait(1.0)
-                BackgroundColor("green", duration=2.0)
-            with Serial():
-                Wait(2.0)
-                BackgroundColor("red", duration=2.0)
-            with Serial():
-                Wait(3.0)
-                BackgroundColor("yellow", duration=2.0)
-
-    rect = Rectangle(color="purple", width=50, height=50)
-    with UntilDone():
-        Wait(1.0)
-        rect.center = exp.screen.right_top
-        Wait(1.0)
-        rect.center = exp.screen.right_bottom
-        Wait(1.0)
-        rect.center = exp.screen.left_top
-        #Screenshot()
-        Wait(1.0)
-        #rect.center = exp.screen.left_bottom
-        rect.update(center=exp.screen.left_bottom, color="yellow")
-        Wait(1.0)
-        #rect.center = exp.screen.center
-        rect.update(center=exp.screen.center, color="purple")
-        Wait(1.0)
-        rect.slide(center=exp.screen.right_top, duration=2.0)
-        rect.slide(center=exp.screen.right_bottom, duration=2.0)
-        rect.slide(center=exp.screen.left_top, duration=2.0)
-        rect.slide(center=exp.screen.left_bottom, duration=2.0)
-        rect.slide(center=exp.screen.center, duration=2.0)
-
-    vid = Video(source="test_video.mp4", right_top=exp.screen.center,
-                allow_stretch=True, keep_ratio=False)
-    with Meanwhile():
-        vid.slide(center_x=exp.screen.width * 0.75,
-                  center_y=exp.screen.center_y,
-                  duration=1.0)#, interval=0.5)
-        #Screenshot("my_screenshot.png")
-        vid.animate(center_x=(lambda t, initial: exp.screen.center_x +
-                              cos(t / 3.0) * exp.screen.width * 0.25),
-                    center_y=(lambda t, initial: exp.screen.center_y +
-                              sin(t / 3.0) * exp.screen.width * 0.25),
-                    height=(lambda t, initial: initial + sin(t / 2.0) *
-                            initial * 0.5))#, interval=0.5)
-    with Loop(3) as loop:
-        Video(source="test_video.mp4", size=exp.screen.size,
-              allow_stretch=loop.i%2, duration=5.0)
-        #Screenshot(name="foo")
-
-    with ButtonPress():
-        Button(text="Click to continue", size=(exp.screen.width / 4,
-                                               exp.screen.height / 4))
-        MouseCursor()
-    with Meanwhile():
-        Triangle(points=[0, 0, 500, 500, 0, 500],
-                 color=(1.0, 1.0, 0.0, 0.5))
-
-    bez = Bezier(segments=200, color="yellow", loop=True,
-                 points=[0, 0, 200, 200, 200, 100, 100, 200, 500, 500])
-    with UntilDone():
-        bez.slide(points=[200, 200, 0, 0, 500, 500, 200, 100, 100, 200],
-                  color="blue", duration=5.0)
-        bez.slide(points=[500, 0, 0, 500, 600, 200, 100, 600, 300, 300],
-                  color="white", duration=5.0)
-
-    ellipse = Ellipse(right=exp.screen.left,
-                      center_y=exp.screen.center_y, width=25, height=25,
-                      angle_start=90.0, angle_end=460.0,
-                      color=(1.0, 1.0, 0.0), name="Pacman")
-    with UntilDone():
-        with Parallel(name="Pacman motion"):
-            ellipse.slide(left=exp.screen.right, duration=8.0, name="Pacman travel")
-            ellipse.animate(
-                angle_start=lambda t, initial: initial + (cos(t * 8) + 1) * 22.5,
-                angle_end=lambda t, initial: initial - (cos(t * 8) + 1) * 22.5,
-                duration=8.0, name="Pacman gobble")
-
-    with BoxLayout(width=500, height=500, top=exp.screen.top, duration=4.0):
-        rect = Rectangle(color=(1.0, 0.0, 0.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=3.0)
-        Rectangle(color="#00FF00", pos=(0, 0), size_hint=(1, 1), duration=2.0)
-        Rectangle(color=(0.0, 0.0, 1.0, 1.0), pos=(0, 0), size_hint=(1, 1), duration=1.0)
-        rect.slide(color=(1.0, 1.0, 1.0, 1.0), duration=3.0)
-
-    with Loop(range(3)):
-        Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
-                  duration=1.0)
-        Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0),
-                  duration=1.0)
-        Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
-                  duration=1.0)
-
-    with Parallel():
-        label = Label(text="SMILE!", duration=4.0, center_x=100, center_y=100,
-                      font_size=50)
-        label.slide(center_x=400, center_y=400, font_size=100, duration=4.0)
-        Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 0.0, 0.0, 1.0),
-                  duration=3.0)
-        Rectangle(x=50, y=50, width=50, height=50, color="lime",
-                  duration=2.0)
-        Rectangle(x=100, y=100, width=50, height=50, color=(0.0, 0.0, 1.0, 1.0),
-                  duration=1.0)
-
-    with Loop(range(3)):
-        Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
-                  duration=1.0)
-        #NOTE: This will flip between iterations, but the rectangle should remain on screen continuously.
-
-    Wait(1.0)
-    Rectangle(x=0, y=0, width=50, height=50, color=(1.0, 1.0, 1.0, 1.0),
-              duration=0.0)  #NOTE: This should flip once but display nothing
-    Wait(1.0)
-
-    Wait(1.0)
-    with Meanwhile():
-        Rectangle(x=50, y=50, width=50, height=50, color=(0.0, 1.0, 0.0, 1.0))
-
-    rect = Rectangle(x=0, y=0, width=50, height=50, color="brown")
-    with UntilDone():
-        rect.animate(x=lambda t, initial: t * 50, y=lambda t, initial: t * 25,
-                     duration=5.0)
-        with Meanwhile():
-            Rectangle(x=50, y=50, width=50, height=50, color=(0.5, 0.5, 0.5, 1.0))
-        with Parallel():
-            rect.animate(color=lambda t, initial: (1.0, 1.0 - t / 5.0, t / 5.0, 1.0),
-                         duration=5.0)
-            rect.animate(height=lambda t, initial: 50.0 + t * 25, duration=5.0)
-        Wait(1.0)
-        rect.animate(
-            height=lambda t, initial: (initial * (1.0 - t / 5.0) +
-                                       25 * (t / 5.0)),
-            duration=5.0, name="shrink vertically")
-        rect.slide(color=(0.0, 1.0, 1.0, 1.0), duration=10.0, name="color fade")
-        with Meanwhile():
-            rect.animate(x=lambda t, initial: initial + sin(t * 4) * 100,
-                         name="oscillate")
-        ellipse = Ellipse(x=75, y=50, width=50, height=50,
-                          color="orange")
-        with UntilDone():
-            rect.slide(color="pink", x=0, y=0,
-                       width=100, height=100, duration=5.0)
-            ellipse.slide(color=("orange", 0.0), duration=5.0)
-            rect.slide(color=("pink", 0.0), duration=5.0)
-    img = Image(source="face-smile.png", size=(10, 10), allow_stretch=True,
-                keep_ratio=False, mipmap=True)
-    with UntilDone():
-        img.slide(size=(100, 200), duration=5.0)
-
-    Wait(2.0)
-    exp.run(trace=False)

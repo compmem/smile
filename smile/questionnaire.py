@@ -7,12 +7,12 @@
 #
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
-from video import (WidgetState, Label,
-                   ToggleButton, FloatLayout, ButtonPress,
-                   Button, Rectangle, TextInput, Slider)
-from state import (Loop, Parallel, If, Elif, Else, Serial,
-                   Func, UntilDone, Log, Subroutine,Debug)
-from ref import Ref
+from .video import (WidgetState, Label,
+                    ToggleButton, FloatLayout, ButtonPress,
+                    Button, Rectangle, TextInput, Slider)
+from .state import (Loop, Parallel, If, Elif, Else, Serial,
+                    Func, UntilDone, Log, Subroutine)
+from .ref import Ref
 import kivy.uix.scrollview
 import csv
 ScrollView = WidgetState.wrap(kivy.uix.scrollview.ScrollView)
@@ -677,85 +677,3 @@ def Questionnaire(self,
         with If(save_logs):
             Log(self.results,
                 name="questionnaire",)
-
-
-if __name__ == "__main__":
-    from mouse import MouseCursor
-    bob = [{'type': "TITLE",
-            'question': "SMILE QUESTIONNAIRE"},
-           {'type': "LI",
-            'question': "How Happy Are You?",
-            'ans': ['Not Happy',
-                    '', '',
-                    'Meh',
-                    '', '',
-                    'Happy'],
-            'group_id': 'first_question'},
-           {'type': "LI",
-            'question': "How Old are you?",
-            'ans': ['<10', '12', '15', '<20'],
-            'group_id':'second_li_question'},
-           {'type': "LI",
-            'question': "To be or not to be?",
-            'ans': ['That is the Question.',
-                    'To be is to do.',
-                    'To do is to be.'],
-            'group_id': 'THIRD_li_question'},
-           {'type': "CT",
-            'question': "How many years have you lived in your current home?",
-            'ans': ['1', '5', '10'],
-            'max': 5,
-            'min': -5},
-           {'type': "CT",
-            'question': "Where left is Too much, and right is too little, and middle is just right, how much does your car cost?",
-            'ans': ['', '', ''],
-            'max': 10,
-            'min': -10},
-           {'type': "TI",
-            'question': "Choose your favorite name.",
-            'ans': ['Moe', 'Curly', 'Larry'],
-            'group_id': 'second_ans_question'},
-           {'type': "TI",
-            'question': "If you could do anything in the world right now, what would it be?",
-            'multiline': 1},
-           {'type': "TI",
-            'question': "Tell me about your life.",
-            'multiline': 3},
-           {'type': "TI",
-            'question': "Tell me about your breakfest",
-            'multiline': 2},
-           {'type': "MC",
-            'question': "Choose your Favorite Jim Carry Movie!",
-            'ans': ['Eternal Sunshine of the Spotless Mind',
-                    'Yes Man',
-                    'A Series of Unfortunate Events',
-                    'I Love You, Phillip Morris!'],
-            'group_id': 'third_ans_question'},
-           {'type': "CA",
-            'question': "Choose the all that apply!",
-            'ans': ['I am an Adult', 'I have a pet', 'I own a house'],
-            'group_id': 'choose_question_one'},
-           {'type': "TITLE",
-            'question': "SMILE QUESTIONNAIRE 2 "},
-           {'type': "LI",
-            'question': "How Happy is your family?",
-            'ans': ['Not Happy',
-                    '', '',
-                    'Meh',
-                    '', '',
-                    'Happy'],
-            'group_id': 'first_question'},
-           {'type': "LI",
-            'question': "How Old is your mother?",
-            'ans': ['10', '12', '15', '20'],
-            'group_id': 'second_li_question'}]
-
-    from experiment import Experiment
-    exp = Experiment()
-    with Parallel():
-        tt = Questionnaire(loq=bob,
-                           height=800,
-                           width=600,
-                           x=50, y=50,)
-        MouseCursor(blocking=False)
-    exp.run()

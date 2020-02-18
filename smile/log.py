@@ -98,7 +98,7 @@ class LogReader(object):
 
             # return it
             return rec
-        except EOFError, IOError:
+        except (EOFError, IOError):
             return None
 
     def close(self):
@@ -150,7 +150,7 @@ def _root_to_files(log_filename):
     else:
         # try appending numbers
         log_files = []
-        for distinguisher in xrange(256):
+        for distinguisher in range(256):
             filename = "%s_%d.slog" % (log_filename,
                                        distinguisher)
             if os.path.exists(filename):

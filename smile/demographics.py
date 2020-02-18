@@ -1,4 +1,4 @@
-from smile.common import *
+from .common import *
 
 # Standard Demographics Logging
 

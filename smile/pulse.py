@@ -8,10 +8,11 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 import sys
-from state import Wait, State, Loop, Done, Log, Subroutine
-from clock import clock
-from event import event_time
-from ref import NotAvailable
+from .state import Wait, State, Loop, Done, Log, Subroutine
+from .clock import clock
+from .event import event_time
+from .ref import NotAvailable
+
 
 # Interface Class for Docstrings
 class PulseInterface(object):
@@ -32,8 +33,10 @@ class PulseInterface(object):
         It is recommended that if you are using a windows system to look up
         what your port number is via device manager. """
         return
+
     def setData(self, data):
         return
+
 
 # PI set to none for if the creation of a Parallel Interface fails.
 PI = None
@@ -63,6 +66,7 @@ elif sys.platform.startswith('win'):
     # same folder as the experiment.
     try:
         from ctypes import windll
+
         class ParallelInpout32(PulseInterface):
             def __init__(self, address):
                 """Setup the port"""
@@ -79,6 +83,7 @@ elif sys.platform.startswith('win'):
                 _inp = self._port.Inp32(self.base + 2)
                 self._port.Out32(self.base + 2,
                                  int(_inp & ~(0x00100000)))
+
             def setData(self, data):
                 """Write Data"""
                 self._port.Out32(self.base, data)
@@ -101,6 +106,7 @@ SI = None
 # Find out what platform to import for
 try:
     import serial
+
     class SerialPySerial(PulseInterface):
         """Serial sync pulsing via PySerial.
 
@@ -114,6 +120,7 @@ try:
 
             self._port = serial.Serial(port=address, baudrate=baud,
                                        bytesize=data_size, stopbits=stop_size)
+
         def setData(self, data):
             """Write Data, Must be an iterable object"""
             self._port.write(data)
@@ -122,6 +129,7 @@ try:
 except:
     sys.stderr.write("\nWARNING: The serial module pyserial could not load,\n" +
                      "\tso no serial sync pulsing will be available.\n\n")
+
 
 class Pulse(State):
     """
@@ -348,30 +356,3 @@ def JitteredPulses(self, code=1, width=0.010, port=0,
             pulse_off=pulse.pulse_off,
             pulse_port=pulse.port,
             pulse_width=pulse.width)
-
-
-if __name__ == '__main__':
-    from experiment import Experiment
-    from state import Meanwhile, Debug
-
-    # set up default experiment
-    exp = Experiment()
-
-    # test running pulses whilst the rest of the experiment is going
-    with Meanwhile():
-        with Loop():
-            pulse = Pulse(code='S1')
-            Wait(duration=1.0, jitter=1.0)
-            Log(name='pulse',
-                pulse_on=pulse.pulse_on,
-                pulse_code=pulse.code,
-                pulse_off=pulse.pulse_off)
-
-    # First wait for a bit and send some pulses
-    Wait(10)
-
-    # print something
-    Debug(width=exp.screen.width, height=exp.screen.height)
-
-    # run the exp
-    exp.run(trace=False)

@@ -21,18 +21,31 @@ class NotAvailable(object):
     def __repr__(self):
         return "NotAvailable"
 
-    def __nonzero__(self):
+    def __bool__(self):
         return False
 
 # make a single instance used everywhere
 NotAvailable = NotAvailable()
 
+
 class NotAvailableError(ValueError):
     pass
+
 
 def pass_thru(obj):
     """Returns its only argument. Needed to delay the evaluation of a variable."""
     return obj
+
+
+def _apply(function, *pargs, **kwargs):
+    # @IMPORTANT: may need to check this again.
+    if len(kwargs) == 0:
+        return function(pargs)
+    elif kwargs is None:
+        return function(pargs)
+    else:
+        return function(pargs, kwargs)
+
 
 class Ref(object):
     """Delayed function call.
@@ -105,10 +118,22 @@ class Ref(object):
 
     def __repr__(self):
         return "Ref(%s)" % ", ".join([repr(self.func)] +
-                                     map(repr, self.pargs) +
+                                     list(map(repr, self.pargs)) +
                                      ["%s=%r" % (name, value) for
                                       name, value in
                                       self.kwargs.items()])
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
+    # Unicode is called when creating the filename
+    # Illegal filename characters for Windows: * . " / \ [ ] : ; | = < >
+    def __unicode__(self):
+        name = "Ref_" + str(val(Ref(self.func, self.pargs)))
+        name.replace("(", "")
+        name.replace(")", "")
+
+        return name
 
     @staticmethod
     def getattr(obj, name):
@@ -235,7 +260,7 @@ class Ref(object):
 
     # delayed operators...
     def __call__(self, *pargs, **kwargs):
-        return Ref(apply, self, pargs, kwargs)
+        return Ref(_apply, self, pargs, kwargs)
 
     def __setitem__(self, index, value):
         if self._parent_state is None:
@@ -246,85 +271,133 @@ class Ref(object):
                                                          value,
                                                          index=index)
 
+    def __hash__(self):
+        return object.__hash__(self)
+
     def __getitem__(self, index):
         return Ref(operator.getitem, self, index)
 
     def __getattr__(self, attr):
         return Ref(getattr, self, attr)
+
     def __lt__(self, other):
         return Ref(operator.lt, self, other)
+
     def __le__(self, other):
         return Ref(operator.le, self, other)
+
     def __gt__(self, other):
         return Ref(operator.gt, self, other)
+
     def __ge__(self, other):
         return Ref(operator.ge, self, other)
+
     def __eq__(self, other):
         return Ref(operator.eq, self, other)
+
     def __ne__(self, other):
         return Ref(operator.ne, self, other)
+
     def __and__(self, other):
         return Ref(operator.and_, self, other)
+
     def __rand__(self, other):
         return Ref(operator.and_, other, self)
+
     def __or__(self, other):
         return Ref(operator.or_, self, other)
+
     def __ror__(self, other):
         return Ref(operator.or_, other, self)
+
     def __xor__(self, other):
         return Ref(operator.xor, self. other)
+
     def __rxor__(self, other):
         return Ref(operator.xor, other, self)
+
     def __invert__(self):
         return Ref(operator.invert, self)
+
     def __add__(self, other):
         return Ref(operator.add, self, other)
+
     def __radd__(self, other):
         return Ref(operator.add, other, self)
+
     def __sub__(self, other):
         return Ref(operator.sub, self, other)
+
     def __rsub__(self, other):
         return Ref(operator.sub, other, self)
+
     def __pow__(self, other, modulo=None):
         return Ref(pow, self, other, modulo)
+
     def __rpow__(self, other):
         return Ref(operator.pow, other, self)
+
     def __mul__(self, other):
         return Ref(operator.mul, self, other)
+
     def __rmul__(self, other):
         return Ref(operator.mul, other, self)
+
     def __div__(self, other):
-        #NOTE: using lambda to be sensitive to __future__.division
-        return Ref(lambda a, b: a / b, self, other)
+        # NOTE: using lambda to be sensitive to __future__.division
+        return Ref(lambda a, b: a // b, self, other)
+
     def __rdiv__(self, other):
-        #NOTE: using lambda to be sensitive to __future__.division
+        # NOTE: using lambda to be sensitive to __future__.division
+        return Ref(lambda a, b: a // b, other, self)
+
+    def __truediv__(self, other):
+        # NOTE: using lambda to be sensitive to __future__.division
+        return Ref(lambda a, b: a / b, self, other)
+
+    def __rtruediv__(self, other):
+        # NOTE: using lambda to be sensitive to __future__.division
         return Ref(lambda a, b: a / b, other, self)
+
     def __floordiv__(self, other):
         return Ref(operator.floordiv, self, other)
+
     def __rfloordiv__(self, other):
         return Ref(operator.floordiv, other, self)
+
     def __mod__(self, other):
         return Ref(operator.mod, self, other)
+
     def __rmod__(self, other):
         return Ref(operator.mod, other, self)
+
     def __divmod__(self, other):
-        return Ref(divmod, self,other)
+        return Ref(divmod, self, other)
+
     def __rdivmod__(self, other):
         return Ref(divmod, other, self)
+
     def __pos__(self):
         return Ref(operator.pos, self)
+
     def __neg__(self):
         return Ref(operator.neg, self)
+
     def __contains__(self, key):
         return Ref(operator.contains, self, key)
+
     def __lshift(self, other):
         return Ref(operator.lshift, self, other)
+
     def __rlshift(self, other):
         return Ref(operator.lshift, other, self)
+
     def __rshift(self, other):
         return Ref(operator.rshift, self, other)
+
     def __rrshift(self, other):
         return Ref(operator.rshift, other, self)
+
     def __abs__(self):
         return Ref(abs, self)
 
@@ -332,12 +405,16 @@ class Ref(object):
 def jitter(lower, jitter_mag):
     return Ref(random.uniform, lower, lower + jitter_mag, use_cache=False)
 
+
 def _shuffle(iterable):
     lst = list(iterable)
     random.shuffle(lst)
     return lst
+
+
 def shuffle(iterable):
     return Ref(_shuffle, iterable, use_cache=False)
+
 
 def val(obj):
     try:
@@ -349,7 +426,7 @@ def val(obj):
         elif isinstance(obj, tuple):
             return tuple(val(value) for value in obj)
         elif isinstance(obj, dict):
-            return {val(key) : val(value) for key, value in obj.items()}
+            return {val(key): val(value) for key, value in obj.items()}
         elif isinstance(obj, slice):
             return slice(val(obj.start), val(obj.stop), val(obj.step))
         elif obj is NotAvailable:
@@ -357,7 +434,8 @@ def val(obj):
         else:
             return obj
     except NotAvailableError:
-        raise NotAvailableError("val(%r) produced NotAvailable result" % repr(obj))
+        raise NotAvailableError("val(%r) produced NotAvailable result" %
+                                repr(obj))
 
 
 def iter_deps(obj):
@@ -381,70 +459,3 @@ def iter_deps(obj):
             yield dep
         for dep in iter_deps(obj.step):
             yield dep
-
-
-if __name__ == '__main__':
-
-    import math
-    x = [0.0]
-    r = Ref(math.cos, Ref.getitem(x, 0))
-    print(x[0], val(r))
-    x[0] += .5
-    print(x[0], val(r))
-
-    r = Ref.object(str)(Ref.object(x)[0])
-    x[0] += .75
-    print(x[0], val(r))
-
-    r = (Ref.object(x)[0] > 0) & (Ref.object(x)[0] < 0)
-    print(x[0], val(r))
-    r = (Ref.object(x)[0] > 0) & (Ref.object(x)[0] >= 0)
-    x[0] -= 10.0
-    print(x[0], val(r))
-
-    y = [7]
-    ry = Ref.object(y)
-    print(y[0], val(ry[0] % 2), val(2 % ry[0]))
-    y[0] = 8
-    print(y[0], val(ry[0] % 2), val(2 % ry[0]))
-
-    class Jubba(object):
-        def __init__(self, val):
-            self.x = val
-
-        def __getitem__(self, index):
-            return Ref.getattr(self, index)
-
-    a = Jubba(5)
-    b = Ref.getattr(a, 'x')
-    br = Ref.object(a).x
-    print(val(b), val(br))
-    a.x += 42.0
-    print(val(b), val(br))
-
-    c = {'y': 6}
-    d = Ref.getitem(c, 'y')
-
-    e = [4, 3, 2]
-    f = Ref.getitem(e, 2)
-
-    g = b+d+f
-    print(val(g))
-
-    a.x = 6
-    print(val(g))
-
-    c['y'] = 7
-    print(val(g))
-
-    e[2] = 3
-    print(val(g))
-
-    x = Jubba([])
-    y = Ref.getitem(x, 'x')
-    print(val(y))
-    y = y + [b]
-    print(val(y))
-    y = y + [d]
-    y = y + [f]
-    print(val(y))

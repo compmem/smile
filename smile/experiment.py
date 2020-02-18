@@ -16,20 +16,20 @@ import time
 import threading
 
 # kivy imports
-import kivy_overrides
+from . import kivy_overrides
 import kivy
 import kivy.base
 from kivy.utils import platform
 import kivy.clock
 
 # local imports
-from state import Serial, AutoFinalizeState, Log
-from ref import Ref
-from clock import clock
-from log import LogWriter, log2csv
-from event import event_time
-from scale import scale
-import version
+from .state import Serial, AutoFinalizeState
+from .ref import Ref
+from .clock import clock
+from .log import LogWriter, log2csv
+from .event import event_time
+from .scale import scale
+from . import version
 
 
 _kivy_clock = kivy.clock.Clock
@@ -337,11 +337,11 @@ class Experiment(object):
             Touch = (platform == "android") or (platform == "ios")
 
         if show_splash:
-            from startup import Splash
+            from .startup import Splash
             Splash(Touch=Touch, parent=ss)
 
         if self._monitor:
-            from startup import ConfigWindow
+            from .startup import ConfigWindow
             ConfigWindow(parent=ss)
 
         self._sysinfo_slog = os.path.join(self._session_dir,
@@ -391,7 +391,8 @@ class Experiment(object):
         os.rename(self._sysinfo_slog, os.path.join(self._session_dir,
                                                    "log_sysinfo_0.slog"))
 
-        for filename, logger in self._state_loggers.itervalues():
+        for dict_key, items in iter(self._state_loggers.items()):
+            filename, logger = items
             logger.close()
             os.remove(filename)
 
@@ -507,7 +508,7 @@ class Experiment(object):
                                                     time.gmtime()))
         with self._reserved_data_filenames_lock:
             self._reserved_data_filenames |= set(os.listdir(self._session_dir))
-            for distinguisher in xrange(256):
+            for distinguisher in range(256):
                 if ext is None:
                     filename = "%s_%d" % (title, distinguisher)
                 else:
@@ -619,7 +620,7 @@ class Experiment(object):
             # self._root_executor.enter(clock.now() + 0.25)
 
             # kivy main loop
-            from main import SmileApp
+            from .main import SmileApp
             self._app = SmileApp(self)
             self._app.run()
 
@@ -682,10 +683,3 @@ class Set(AutoFinalizeState):
         clock.schedule(self.leave)
         self._started = True
         self._ended = True
-
-
-if __name__ == '__main__':
-    # can't run inside this file
-    #exp = Experiment(fullscreen=False, pyglet_vsync=False)
-    #exp.run()
-    pass
