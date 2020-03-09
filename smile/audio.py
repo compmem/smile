@@ -12,73 +12,68 @@ import site
 
 from .state import Wait
 from .clock import clock
+from kivy.logger import Logger
 
 # add in system site-packages if necessary
 try:
     import pyo
+    _got_pyo = True
 except ImportError:
     os_sp_dir = site.getsitepackages()[0]
-    """if sys.platform == 'darwin':
-        os_sp_dir='/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages'
-    elif sys.platform.startswith('win'):
-        os_sp_dir = 'C:\Python36-32\Lib\site-packages'
-    else:
-        raise ImportError("Could not import pyo and no special pyo path for "
-                          "this platform (%s)." % sys.platform)"""
-    if not os_sp_dir in sys.path:
 
+    if not os_sp_dir in sys.path:
         sys.path.append(os_sp_dir)
+    try:
         import pyo
+        _got_pyo = True
+    except ImportError:
+        Logger.warning("SMILE: Unable to import PYO!")
+        Logger.warning("SMILE: Durations will be maintained, unless none are specified")
+        _got_pyo = False
 
 # need a single global sound server
 _pyo_server = None
-# if False:
-#     _pyo_server = pyo.Server(sr=48000, nchnls=2, buffersize=512, duplex=1)
-#     _pyo_server.setOutputDevice(9)
-#     _pyo_server.setInputDevice(9)
-#     _pyo_server.boot()
-# else:
-#     _pyo_server = pyo.Server().boot()
-# _pyo_server.start()
-
 
 #TODO: compensate for buffer lag where possible?
-from pyo import Server, pa_get_input_devices
 def init_audio_server(sr=44100, nchnls=2, buffersize=256, duplex=1,
                       audio='portaudio', jackname='pyo',
                       input_device=None, output_device=None):
     # grab the global server
-    global _pyo_server
+    global _pyo_server, _got_pyo
 
     # eventually read defaults from a config file
 
-    if sys.platform == "win32":
-        host_apis = ["mme", "directsound", "asio", "wasapi", "wdm-ks"]
+    # Only init if you imported pyo, otherwise stop
+    if _got_pyo:
 
-    input_names, input_indexes=pa_get_input_devices()
+        if sys.platform == "win32":
+            host_apis = ["mme", "directsound", "asio", "wasapi", "wdm-ks"]
 
-    # set up the server
-    if _pyo_server is None:
-        # init first time
-        _pyo_server = pyo.Server(sr=sr, nchnls=nchnls, buffersize=buffersize,
-                                 duplex=duplex, audio=audio, jackname=jackname)
-    else:
-        # stop and reinit
-        _pyo_server.stop()
-        _pyo_server.reinit(sr=sr, nchnls=nchnls, buffersize=buffersize,
-                           duplex=duplex, audio=audio, jackname=jackname)
+        input_names, input_indexes=pyo.pa_get_input_devices()
 
-    # see if change in/out
-    if input_device:
-        _pyo_server.setInputDevice(input_device)
-    if output_device:
-        _pyo_server.setOutputDevice(output_device)
+        # set up the server
+        if _pyo_server is None:
+            # init first time
+            _pyo_server = pyo.Server(sr=sr, nchnls=nchnls, buffersize=buffersize,
+                                     duplex=duplex, audio=audio, jackname=jackname)
+        else:
+            # stop and reinit
+            _pyo_server.stop()
+            _pyo_server.reinit(sr=sr, nchnls=nchnls, buffersize=buffersize,
+                               duplex=duplex, audio=audio, jackname=jackname)
 
-    # boot it and start it
-    _pyo_server.boot()
-    _pyo_server.start()
+        # see if change in/out
+        if input_device:
+            _pyo_server.setInputDevice(input_device)
+        if output_device:
+            _pyo_server.setOutputDevice(output_device)
+
+        # boot it and start it
+        _pyo_server.boot()
+        _pyo_server.start()
 
     return _pyo_server
+
 
 def default_init_audio_server():
     if _pyo_server is None:
@@ -181,10 +176,13 @@ class Beep(Wait):
 
     def _enter(self):
         super(Beep, self)._enter()
+        global _got_pyo
+
         default_init_audio_server()
         self._sound_start_time = None
         self._sound_stop_time = None
-        if self._start_time == self._end_time:
+
+        if (self._start_time == self._end_time) or (not _got_pyo):
             self.__fader = None
             self.__sine = None
         else:
@@ -306,33 +304,40 @@ class SoundFile(Wait):
 
     def _enter(self):
         super(SoundFile, self)._enter()
+        global _got_pyo
         default_init_audio_server()
+
         self._sound_start_time = None
         self._sound_stop_time = None
+        self.__snd = None
+        if _got_pyo:
+            # init the sound table (two steps to get mono in both speakers)
+            sndtab = pyo.SndTable(initchnls=_pyo_server.getNchnls())
+            sndtab.setSound(path=self._filename, start=self._start,
+                            stop=self._stop)
 
-        # init the sound table (two steps to get mono in both speakers)
-        sndtab = pyo.SndTable(initchnls=_pyo_server.getNchnls())
-        sndtab.setSound(path=self._filename, start=self._start,
-                        stop=self._stop)
+            # set the end time
+            if not self._loop:
+                self.cancel(self._start_time + sndtab.getDur())
 
-        # set the end time
-        if not self._loop:
-            self.cancel(self._start_time + sndtab.getDur())
+            # read in sound info
+            self.__snd = pyo.TableRead(sndtab, freq=sndtab.getRate(),
+                                       loop=self._loop,
+                                       mul=self._volume)
+            if self.__snd is None:
+                raise RuntimeError("Could not load sound file: %r" %
+                                   self._filename)
 
-        # read in sound info
-        self.__snd = pyo.TableRead(sndtab, freq=sndtab.getRate(),
-                                   loop=self._loop,
-                                   mul=self._volume)
-        if self.__snd is None:
-            raise RuntimeError("Could not load sound file: %r" %
-                               self._filename)
+            # schedule playing the sound
+            clock.schedule(self._start_sound, event_time=self._start_time)
 
-        # schedule playing the sound
-        clock.schedule(self._start_sound, event_time=self._start_time)
-
-        # schedule stopping the sound
-        if self._end_time is not None:
-                clock.schedule(self._stop_sound, event_time=self._end_time)
+            # schedule stopping the sound
+            if self._end_time is not None:
+                    clock.schedule(self._stop_sound, event_time=self._end_time)
+        else:
+            if (self._duration is None) & (not self._loop):
+                # Leave, much like an autofinalize state
+                self.cancel(clock.now())
 
     def _start_sound(self):
         self.__snd.out()
@@ -428,16 +433,22 @@ class RecordSoundFile(Wait):
         self._rec_start = None
         self._rec_stop = None
         super(RecordSoundFile, self)._enter()
+        global _got_pyo
         default_init_audio_server()
-        if self._filename is None:
-            self._filename = self._exp.reserve_data_filename(
-                "audio_%s" % self._name, "wav", use_timestamp=True)
+        if _got_pyo:
+            if self._filename is None:
+                self._filename = self._exp.reserve_data_filename(
+                    "audio_%s" % self._name, "wav", use_timestamp=True)
+            else:
+                self._filename = self._exp.reserve_data_filename(
+                    self._filename, "wav", use_timestamp=False)
+            clock.schedule(self._start_recording, event_time=self._start_time)
+            if self._end_time is not None:
+                clock.schedule(self._stop_recording, event_time=self._end_time)
         else:
-            self._filename = self._exp.reserve_data_filename(
-                self._filename, "wav", use_timestamp=False)
-        clock.schedule(self._start_recording, event_time=self._start_time)
-        if self._end_time is not None:
-            clock.schedule(self._stop_recording, event_time=self._end_time)
+            if self._duration is None:
+                # Leave, much like an autofinalize state
+                clock.schedule(self._leave)
 
     def _start_recording(self):
         self.__rec = pyo.Record(
