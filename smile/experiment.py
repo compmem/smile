@@ -618,10 +618,21 @@ class Experiment(object):
         try:
             # start the first state (that's the root state)
             # self._root_executor.enter(clock.now() + 0.25)
+            if self._app is None:
+                # instantiate the app and kivy main loop
+                from .main import SmileApp
+                self._app = SmileApp(self)
+            else:
+                # we have an app, so ensure the window is active
+                # it may not be active if the exp has already run
+                if self._app._Window.initialized == False:
+                    # do key steps from kivy to initialize the window
+                    self._app._Window.create_window()
+                    self._app._Window.register()
+                    self._app._Window.initialized = True
+                    self._app._Window.configure_keyboards()
 
-            # kivy main loop
-            from .main import SmileApp
-            self._app = SmileApp(self)
+            # start up the app
             self._app.run()
 
         except:
