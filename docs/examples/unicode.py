@@ -17,8 +17,8 @@ exp = Experiment()
 Wait(1.0)
 
 # Show a label
-Label(text=unichr(10025) + u" Unicode " + u"\u2729",
-      font_size=64, font_name='Arial Unicode')
+Label(text=chr(10025) + u" Unicode " + u"\u2729",
+      font_size=64, font_name='DejaVuSans')
 with UntilDone():
     KeyPress()
     
