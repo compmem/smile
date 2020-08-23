@@ -99,7 +99,13 @@ class SmileApp(App):
     def build(self):
         # set fullscreen and resolution
         if self.exp._fullscreen is not None:
+            # set based on the experiment preference
             Window.fullscreen = self.exp._fullscreen
+
+            if Window.fullscreen == False:
+                # make sure we have a border
+                Window.borderless = False
+
         if self.exp._resolution is not None:
             Window.system_size = self.exp._resolution
 
