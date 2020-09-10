@@ -116,12 +116,12 @@ class NIPulse(State):
         # write to end the pulse
         # must track data type to handle both analog and digital
         if type(self._push_vals) in (list, tuple):
-            if type(self._push_vals[0]) is boolean:
+            if type(self._push_vals[0]) is bool:
                 self._task.write([False]*len(self._push_vals))
             else:
                 self._task.write([0.0]*len(self._push_vals))
         else:
-            if type(self._push_vals) is boolean:
+            if type(self._push_vals) is bool:
                 self._task.write([False])
             else:
                 self._task.write([0.0])
