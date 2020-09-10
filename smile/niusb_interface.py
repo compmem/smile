@@ -35,6 +35,7 @@ from .clock import clock
 from .ref import NotAvailable
 
 try:
+    import nidaqmx
     from nidaqmx.task import Task
     _got_nidaqmx = True
 except ImportError:
