@@ -235,8 +235,12 @@ class Pulse(State):
         clock.unschedule(self._callback)
 
     def _callback(self):
+        # claim exceptions
+        self.claim_exceptions()
+
         # we've started
         self._started = True
+        
         # Pull in the global variables
         global PI
         global SI
@@ -300,6 +304,9 @@ class Pulse(State):
             clock.schedule(self.finalize)
 
     def _pulse_off_callback(self):
+        # claim exceptions
+        self.claim_exceptions()
+
         # turn off the code
         if self._sync_style == "parallel":
             start_time = clock.now()

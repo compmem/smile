@@ -2617,7 +2617,7 @@ class CallbackState(AutoFinalizeState):
         """Call the custom callback method.
         """
         self.claim_exceptions()
-        self._start = True
+        self._started = True
         self._callback()
 
 

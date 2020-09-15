@@ -71,8 +71,12 @@ class NIPulse(State):
         clock.unschedule(self._callback)
 
     def _callback(self):
+        # claim exceptions
+        self.claim_exceptions()
+
         # we've started
         self._started = True
+        
         # push it outlet
         if _got_nidaqmx:
             # send the values
@@ -114,6 +118,9 @@ class NIPulse(State):
             self._ended = True
 
     def _pulse_off_callback(self):
+        # claim exceptions
+        self.claim_exceptions()
+
         # write to end the pulse
         # must track data type to handle both analog and digital
         if type(self._push_vals) in (list, tuple):
