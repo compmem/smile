@@ -83,7 +83,7 @@ class NIPulse(State):
             if type(self._push_vals) in (list, tuple):
                 self._task.write(self._push_vals)
             else:
-                self._task.write([self.push_vals])
+                self._task.write([self._push_vals])
 
             # save the time
             ev = clock.now()
