@@ -29,7 +29,7 @@
 # write_center.do_channels.add_do_chan('Dev1/port0/line0',
 #                                      line_grouping=nidaqmx.constants.LineGrouping.CHAN_PER_LINE)
 
-from .state import State, CallbackState
+from .state import State, CallbackState, Subroutine
 from .event import event_time
 from .clock import clock
 from .ref import NotAvailable
