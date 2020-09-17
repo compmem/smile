@@ -50,9 +50,9 @@ class NIWrite(CallbackState):
                  duration=None, parent=None, save_log=True, name=None,
                  correct_resp=None, blocking=True):
         # init the parent class
-        super(NIChangeDetector, self).__init__(duration=duration, parent=parent,
-                                               save_log=save_log, name=name,
-                                               blocking=blocking)
+        super(NIWrite, self).__init__(duration=duration, parent=parent,
+                                      save_log=save_log, name=name,
+                                      blocking=blocking)
         self._init_task = task
         self._init_vals = vals
 
@@ -66,7 +66,7 @@ class NIWrite(CallbackState):
 
     def _enter(self):
         # call the parent class enter
-        super(NIChangeDetector, self)._enter()
+        super(NIWrite, self)._enter()
 
         # grab the task name
         self._task_name = self._task.name
@@ -104,7 +104,7 @@ class NIWrite(CallbackState):
         if self._write_time is NotAvailable:
             self._write_time = None
         # Unschedule callback
-        super(NIChangeDetector, self)._leave()
+        super(NIWrite, self)._leave()
 
 
 def _nipulse_endvals(start_vals):
