@@ -122,7 +122,8 @@ def NIPulse(self, task, vals=[1.0], duration=.1):
     # save the starting and determine ending vals
     self.start_vals = vals
     self.duration = duration
-    self.end_vals = Func(_nipulse_endvals, vals)
+    fvals = Func(_nipulse_endvals, vals)
+    self.end_vals = fvals.result
 
     # write the starting vals
     start_write = NIWrite(task, vals=self.start_vals, 
@@ -132,7 +133,7 @@ def NIPulse(self, task, vals=[1.0], duration=.1):
     Wait(self.duration)
 
     # turn off the pulse
-    end_write = NIWrite(task, vals=end_vals.result, 
+    end_write = NIWrite(task, vals=self.end_vals, 
                         name='OFF_PULSE')
 
     # save out the end times
