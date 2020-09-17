@@ -84,10 +84,10 @@ class NIWrite(CallbackState):
         # push it outlet
         if _got_nidaqmx:
             # send the values
-            if type(self._push_vals) in (list, tuple):
-                self._task.write(self._push_vals)
+            if type(self._vals) in (list, tuple):
+                self._task.write(self._vals)
             else:
-                self._task.write([self._push_vals])
+                self._task.write([self._vals])
 
             # save the time
             ev = clock.now()
