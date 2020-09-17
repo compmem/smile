@@ -42,33 +42,37 @@ except ImportError:
     print("Unable to import nidaqmx!")
     _got_nidaqmx = False
 
-
-class NIPulse(State):
-    """Send a pulse to analog or digital NI task channels."""
-    def __init__(self, task, push_vals=[5.0], width=0.010, **kwargs):
+    
+class NIWrite(CallbackState):
+    """Read data via from analog or digital NI Task channels.
+    """
+    def __init__(self, task, vals=[1.0],
+                 duration=None, parent=None, save_log=True, name=None,
+                 correct_resp=None, blocking=True):
         # init the parent class
-        super(NIPulse, self).__init__(parent=kwargs.pop("parent", None),
-                                      duration=kwargs.pop("duration", 0.0),
-                                      save_log=kwargs.pop("save_log", True),
-                                      name=kwargs.pop("name", None),
-                                      blocking=kwargs.pop("blocking", True))
-        # handle the values that could require initialization
+        super(NIChangeDetector, self).__init__(duration=duration, parent=parent,
+                                               save_log=save_log, name=name,
+                                               blocking=blocking)
         self._init_task = task
-        
-        self._init_push_vals = push_vals
-        self._init_width = width
-        self._pulse_on = NotAvailable
-        self._pulse_off = NotAvailable
+        self._init_vals = vals
+
         self._task_name = None
+        self._write_time = None
 
-        self._log_attrs.extend(['task_name', 'push_vals', 'pulse_on', 
-                                'pulse_off', 'width'])
+        
+        # append log vars
+        self._log_attrs.extend(['task_name', 'vals',
+                                'write_time'])
 
-    def _schedule_start(self):
-        clock.schedule(self._callback, event_time=self._start_time)
+    def _enter(self):
+        # call the parent class enter
+        super(NIChangeDetector, self)._enter()
 
-    def _unschedule_start(self):
-        clock.unschedule(self._callback)
+        # grab the task name
+        self._task_name = self._task.name
+        
+        # reset defaults
+        self._write_time = NotAvailable
 
     def _callback(self):
         # claim exceptions
@@ -87,71 +91,60 @@ class NIPulse(State):
 
             # save the time
             ev = clock.now()
+            
+            # set the pulse time
+            self._write_time = event_time(ev, 0.0)
         else:
-            self._pulse_on = None
-            self._pulse_off = None
-            self._ended = True
-            clock.schedule(self.leave)
-            clock.schedule(self.finalize)
-            return
+            self._write_time = None
 
-        # set the pulse time
-        self._pulse_on = event_time(ev, 0.0)
+        # let's leave b/c we're all done (use the event time)
+        self.cancel(self._change_time['time'])
+    
+    def _leave(self):
+        if self._write_time is NotAvailable:
+            self._write_time = None
+        # Unschedule callback
+        super(NIChangeDetector, self)._leave()
 
-        # save the task name
-        self._task_name = self._task.name
 
-        # schedule leaving (as soon as this method is done)
-        clock.schedule(self.leave)
+def _nipulse_endvals(start_vals):
+    # process the type of the end vals
+    # to match the start vals
+    if type(start_vals) is bool:
+        vals = [False]*len(start_vals)
+    else:
+        vals = [0.0]*len(start_vals)
+    return vals
 
-        # schedule the off time
-        if self._width > 0.0:
-            # we're gonna turn off ourselves
-            clock.schedule(self._pulse_off_callback,
-                           event_time=self._pulse_on['time']+self._width)
-        else:
-            # we're gonna leave it
-            self._pulse_off = None
 
-            # so we can finalize now, too
-            clock.schedule(self.finalize)
-            self._ended = True
+@Subroutine
+def NIPulse(task, vals=[1.0], duration=.1):
+    # save the starting and determine ending vals
+    self.start_vals = vals
+    self.duration = duration
+    self.end_vals = Func(_nipulse_endvals, vals)
 
-    def _pulse_off_callback(self):
-        # claim exceptions
-        self.claim_exceptions()
+    # write the starting vals
+    start_write = NIWrite(task, vals=self.start_vals, 
+                          name='ON_PULSE')
 
-        # write to end the pulse
-        # must track data type to handle both analog and digital
-        if type(self._push_vals) in (list, tuple):
-            if type(self._push_vals[0]) is bool:
-                self._task.write([False]*len(self._push_vals))
-            else:
-                self._task.write([0.0]*len(self._push_vals))
-        else:
-            if type(self._push_vals) is bool:
-                self._task.write([False])
-            else:
-                self._task.write([0.0])
+    # wait for specified pulse duration
+    Wait(self.duration)
 
-        # grab the current time
-        ev = clock.now()
+    # turn off the pulse
+    end_write = NIWrite(task, vals=end_vals.result, 
+                        name='OFF_PULSE')
 
-        # set the pulse time
-        self._pulse_off = event_time(ev, 0.0)
+    # save out the end times
+    Wait(until=end_write.write_time)
+    self.pulse_start_time = start_write.write_time
+    self.pulse_end_time = end_write.write_time
 
-        # stop the task
-        self._task.stop()
-        
-        # let's schedule finalizing
-        self._ended = True
-        clock.schedule(self.finalize)
-
-        
+       
 class NIChangeDetector(CallbackState):
     """Read data via from analog or digital NI Task channels.
     """
-    def __init__(self, task, tracked_indices=None, threshold=None, base_time=None,
+    def __init__(self, task, tracked_indiDoces=None, threshold=None, base_time=None,
                  duration=None, parent=None, save_log=True, name=None,
                  correct_resp=None, blocking=True):
         # init the parent class
@@ -205,9 +198,6 @@ class NIChangeDetector(CallbackState):
         elif type(self._correct_resp) not in (list, tuple):
             self._correct_resp = [self._correct_resp]
         
-        # start the nidaq
-        self._task.start()
-        
     def _callback(self):
         # calc trigger
         try:
@@ -247,7 +237,7 @@ class NIChangeDetector(CallbackState):
             return
         else:
             # Schedule this callback again to happen right away
-            clock.schedule(self.callback, event_time=clock.now())
+            clock.schedule(self.callback)
     
     def _leave(self):
         # handle the unset variables
@@ -261,9 +251,6 @@ class NIChangeDetector(CallbackState):
             self._rt = None
         if self._correct is NotAvailable:
             self._correct = False
-
-        # stop the task
-        self._task.stop()
 
         # Unschedule callback
         super(NIChangeDetector, self)._leave()
