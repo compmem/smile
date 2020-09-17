@@ -144,7 +144,7 @@ def NIPulse(task, vals=[1.0], duration=.1):
 class NIChangeDetector(CallbackState):
     """Read data via from analog or digital NI Task channels.
     """
-    def __init__(self, task, tracked_indiDoces=None, threshold=None, base_time=None,
+    def __init__(self, task, tracked_indices=None, threshold=None, base_time=None,
                  duration=None, parent=None, save_log=True, name=None,
                  correct_resp=None, blocking=True):
         # init the parent class
