@@ -98,7 +98,7 @@ class NIWrite(CallbackState):
             self._write_time = None
 
         # let's leave b/c we're all done (use the event time)
-        self.cancel(self._change_time['time'])
+        self.cancel(self._write_time['time'])
     
     def _leave(self):
         if self._write_time is NotAvailable:
