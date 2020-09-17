@@ -9,7 +9,7 @@
 
 import pydot
 from .state import ParentState, Serial
-from utils import get_class_name
+from .utils import get_class_name
 
 class DAG(object):
     """
