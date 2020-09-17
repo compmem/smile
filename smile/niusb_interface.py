@@ -118,7 +118,7 @@ def _nipulse_endvals(start_vals):
 
 
 @Subroutine
-def NIPulse(task, vals=[1.0], duration=.1):
+def NIPulse(self, task, vals=[1.0], duration=.1):
     # save the starting and determine ending vals
     self.start_vals = vals
     self.duration = duration
