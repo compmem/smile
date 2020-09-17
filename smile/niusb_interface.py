@@ -77,7 +77,7 @@ class NIWrite(CallbackState):
     def _callback(self):
         # claim exceptions
         self.claim_exceptions()
-
+        
         # we've started
         self._started = True
         
@@ -88,15 +88,12 @@ class NIWrite(CallbackState):
                 self._task.write(self._vals)
             else:
                 self._task.write([self._vals])
-
-            # save the time
-            ev = clock.now()
-            
-            # set the pulse time
-            self._write_time = event_time(ev, 0.0)
-        else:
-            self._write_time = None
-
+                
+        # save the time
+        ev = clock.now()
+        # set the pulse time
+        self._write_time = event_time(ev, 0.0)
+        
         # let's leave b/c we're all done (use the event time)
         self.cancel(self._write_time['time'])
     
@@ -183,7 +180,6 @@ class NIChangeDetector(CallbackState):
         self._values = NotAvailable
 
         self._change_time = NotAvailable
-        self._change_time = NotAvailable
         self._rt = NotAvailable
         self._correct = NotAvailable
 
@@ -238,7 +234,7 @@ class NIChangeDetector(CallbackState):
             return
         else:
             # Schedule this callback again to happen right away
-            clock.schedule(self.callback)
+            clock.schedule(self.callback, event_time=clock.now())
     
     def _leave(self):
         # handle the unset variables
@@ -257,4 +253,3 @@ class NIChangeDetector(CallbackState):
         super(NIChangeDetector, self)._leave()
 
         
-
