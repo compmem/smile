@@ -40,7 +40,7 @@ class DAG(object):
 
         # loop over children of cluster
         nodes = []
-        for i,c in enumerate(cluster.children):
+        for i,c in enumerate(cluster._children):
             if issubclass(c.__class__, ParentState):
                 # call recursively
                 uname,first_uname,last_uname = self._add_cluster(clust, c)

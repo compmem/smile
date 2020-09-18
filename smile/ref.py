@@ -124,7 +124,7 @@ class Ref(object):
                                       self.kwargs.items()])
 
     def __str__(self):
-        return unicode(self).encode('utf-8')
+        return str(self).encode('utf-8')
 
     # Unicode is called when creating the filename
     # Illegal filename characters for Windows: * . " / \ [ ] : ; | = < >
