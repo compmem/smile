@@ -446,7 +446,11 @@ class Experiment(object):
             return Set(name, value)
 
     def __dir__(self):
-        return super(Experiment, self).__dir__() + self._vars.keys()
+        if len(self._vars) > 0:
+            var_keys = list(self._vars.keys())
+        else:
+            var_keys = []
+        return super(Experiment, self).__dir__() + var_keys
 
     def _process_args(self):
         # get args from kivy_overrides
@@ -618,19 +622,18 @@ class Experiment(object):
         try:
             # start the first state (that's the root state)
             # self._root_executor.enter(clock.now() + 0.25)
-            if self._app is None:
-                # instantiate the app and kivy main loop
-                from .main import SmileApp
-                self._app = SmileApp(self)
-            else:
-                # we have an app, so ensure the window is active
-                # it may not be active if the exp has already run
-                if self._app._Window.initialized == False:
-                    # do key steps from kivy to initialize the window
-                    self._app._Window.create_window()
-                    self._app._Window.register()
-                    self._app._Window.initialized = True
-                    self._app._Window.configure_keyboards()
+            # we need to reset that window
+            import kivy.core.window
+            if kivy.core.window.Window.initialized == False:
+                # we've shut the window down, so need a new one
+                from kivy.core.window import core_select_lib, window_impl
+                kivy.core.window.Window = core_select_lib('window',
+                                                          window_impl,
+                                                          True)
+
+            # start up the app
+            from .main import SmileApp
+            self._app = SmileApp(self)
 
             # start up the app
             self._app.run()
