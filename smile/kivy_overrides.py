@@ -113,8 +113,8 @@ class SmileEventLoop(kivy.base.EventLoopBase):
 
         # don't loop if we don't have listeners !
         if (len(self.event_listeners) == 0) and (self.status != 'closed'):
-            kivy.base.Logger.error('Base: No event listeners have been created')
-            kivy.base.Logger.error('Base: Application will leave')
+            kivy.base.Logger.error('SMILE: No event listeners have been created')
+            kivy.base.Logger.error('SMILE: Application will leave')
             self.exit()
             return False
 
