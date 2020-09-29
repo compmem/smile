@@ -35,7 +35,8 @@ parser.add_argument("-m", "--monitor",
                     help="bring up the config screen first",
                     action='store_true')
 # do the parsing
-args = parser.parse_args(sys_argv)
+#args = parser.parse_args(sys_argv)
+args, unknown = parser.parse_known_args(sys_argv)
 
 from kivy.utils import platform
 
@@ -111,7 +112,7 @@ class SmileEventLoop(kivy.base.EventLoopBase):
             self._idle_callback(self)
 
         # don't loop if we don't have listeners !
-        if len(self.event_listeners) == 0:
+        if (len(self.event_listeners) == 0) and (self.status != 'closed'):
             kivy.base.Logger.error('Base: No event listeners have been created')
             kivy.base.Logger.error('Base: Application will leave')
             self.exit()
