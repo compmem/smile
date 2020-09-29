@@ -96,6 +96,13 @@ def FrameTest(self,
 
 
 def calc_density(height, width, heightcm, widthcm):
+    # try to convert heightcm and widthcm from str to float
+    try:
+        heightcm = float(heightcm)
+        widthcm = float(widthcm)
+    except ValueError:
+        # likely passed in non-numeric value, so return None
+        return None
     return (((height/heightcm)+(width/widthcm)) * 2.54 / 2.0) / 96.
 
 @Subroutine
@@ -228,11 +235,14 @@ def ConfigWindow(self):
             Func(KO._set_config, framerate=self.framerate,
                  density=self.density)
         with Elif(bp.pressed == "calc_den"):
+            # Test to ensure hcm and wcm are not empty
             cd = Func(calc_density, height=self.exp.screen.height,
                       width=self.exp.screen.width,
-                      heightcm=Ref(float, hcmText.text),
-                      widthcm=Ref(float, wcmText.text))
-            self.density = Ref(str,cd.result)
+                      heightcm=hcmText.text,
+                      widthcm=wcmText.text)
+            with If(cd.result != None):
+                # they provided valid data
+                self.density = Ref(str, cd.result)
         with Elif(bp.pressed == "timing"):
             ft = FrameTest()
             self.frameText = ft.framerate
