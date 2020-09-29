@@ -557,5 +557,6 @@ class SmileApp(App):
             stopTouchApp()
         Func(end_it)
         """
+        
         self.root_window.close()
-        return super(SmileApp, self). stop(*largs)
+        return super(SmileApp, self).stop(*largs)
