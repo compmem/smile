@@ -141,8 +141,7 @@ class SmileApp(App):
         return self.wid
 
     def _on_start(self, *pargs):
-        # print "on_start"
-        # self.exp._root_state.enter(clock.now() + 1.0)
+        # print('ON_START:', self.exp._root_executor)
         self.get_flip_interval()
         self.do_flip(block=True)
 
@@ -557,6 +556,18 @@ class SmileApp(App):
             stopTouchApp()
         Func(end_it)
         """
-        
+        # remove the idle callback (defined below)
+        kivy.base.EventLoop.set_idle_callback(None)
+
+        # get start of event loop
+        EventLoop.unbind(on_start=self._on_start)
+
+        # empty any remaining events
+        if len(clock._events) > 0:
+            clock._events = []
+
+        # close the window
         self.root_window.close()
+
+        # tell the super to stop
         return super(SmileApp, self).stop(*largs)

@@ -622,6 +622,7 @@ class Experiment(object):
         try:
             # start the first state (that's the root state)
             # self._root_executor.enter(clock.now() + 0.25)
+            
             # we need to reset that window
             import kivy.core.window
             if kivy.core.window.Window.initialized == False:
