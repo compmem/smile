@@ -15,9 +15,14 @@ class DAG(object):
     """
     Directed Acyclic Graph (DAG) of an experiment.
     """
-    def __init__(self, exp, fontname="Verdana"):
+    def __init__(self, base_state, fontname="Verdana"):
         """
         """
+        # process the base state
+        if get_class_name(base_state)[0] == 'Experiment':
+            # must grab the root state
+            base_state = base_state._root_state
+            
         # create the starting graph
         self.graph = pydot.Dot(graph_type='digraph',
                                fontname=fontname,
@@ -27,32 +32,42 @@ class DAG(object):
         self.edges = []
 
         # add all the states
-        self._add_cluster(self.graph, exp)
+        self._add_cluster(self.graph, base_state)
 
         # add those edges
         for e in self.edges:
             self.graph.add_edge(e)
 
     def _add_cluster(self, graph, cluster):
+        # get class name for state
+        name, cl_uname = get_class_name(cluster)
+
+        # strip Builder
+        name = name[:-7]
+
         # create the cluster
-        name,cl_uname = get_class_name(cluster)
         clust = pydot.Cluster(cl_uname, label=name)
 
         # loop over children of cluster
         nodes = []
-        for i,c in enumerate(cluster._children):
+        for i, c in enumerate(cluster._children):
             if issubclass(c.__class__, ParentState):
                 # call recursively
                 uname,first_uname,last_uname = self._add_cluster(clust, c)
 
                 # save in node list
-                if not uname is None:
+                if uname is not None:
                     nodes.append({'uname':uname,
                                   'first_uname': first_uname,
                                   'last_uname': last_uname})
             else:
+                # get class name for state
+                name, uname = get_class_name(c)
+
+                # strip Builder
+                name = name[:-7]
+
                 # add the child node
-                name,uname = get_class_name(c)
                 clust.add_node(pydot.Node(uname, label=name))
 
                 # save in node list (no children for first/last)
@@ -102,7 +117,7 @@ class DAG(object):
             else:
                 last_uname = nodes[-1]['uname']
         else:
-            clust, first_uname, last_uname = None,None,None
+            clust, first_uname, last_uname = None, None, None
 
         # return the cluster uname for connections
         return clust, first_uname, last_uname

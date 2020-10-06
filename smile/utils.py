@@ -24,7 +24,7 @@ def get_class_name(obj):
     name = str(obj.__class__)[8:-2].split('.')[-1]
     mem_id = str(id(obj))
     uname = name + "_" + mem_id
-    return name,uname
+    return name, uname
 
 
 #
