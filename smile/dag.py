@@ -124,3 +124,13 @@ class DAG(object):
 
     def write(self, filename, prog='dot', format='pdf'):
         self.graph.write(filename, prog=prog, format=format)
+
+    def view_png(self):
+        from IPython.display import Image, display
+        plt = Image(self.graph.create_png())
+        return display(plt)
+
+    def view_svg(self):
+        from IPython.display import SVG, display
+        plt = SVG(self.graph.create_svg())
+        return display(plt)
