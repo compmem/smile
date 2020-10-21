@@ -164,7 +164,10 @@ class SmileApp(App):
 
     def _on_key_down(self, keyboard, keycode, text, modifiers):
         if keycode[0] == 27 and "shift" in modifiers:
-            self.stop()
+            # Call cancel instead of stop to make sure everything
+            # cleans up properly. Once canceled, stop is called
+            # in idle_callback
+            self.exp._root_executor.cancel(self.event_time['time'])
             return
         name = keycode[1].upper()
         self.exp.screen._keys_down.add(name)
@@ -556,15 +559,16 @@ class SmileApp(App):
             stopTouchApp()
         Func(end_it)
         """
-        # remove the idle callback (defined below)
+        # remove the idle callback
         kivy.base.EventLoop.set_idle_callback(None)
 
-        # get start of event loop
+        # remove start of event loop
         EventLoop.unbind(on_start=self._on_start)
 
+        # PBS: May not be needed now that we cancel
         # empty any remaining events
-        if len(clock._events) > 0:
-            clock._events = []
+        #if len(clock._events) > 0:
+        #    clock._events = []
 
         # close the window
         self.root_window.close()
