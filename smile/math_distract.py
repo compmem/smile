@@ -139,7 +139,7 @@ def MathDistract(self,
             correct=kp.correct,
             resp=kp.pressed,
             rt=kp.rt,
-            trial_appear=curtrial.appear_time,
+            trial_appear=curtext.appear_time,
             press_time=kp.press_time)
     with UntilDone():
         Wait(duration)
