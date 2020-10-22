@@ -1,5 +1,5 @@
 from smile.common import *
-from smile.mathdistract import MathDistract
+from smile.math_distract import MathDistract
 
 
 
