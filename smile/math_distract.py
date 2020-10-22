@@ -114,7 +114,10 @@ def MathDistract(self,
         Label(text='+', duration=1.0, font_size=s(font_size), color='white')
         curtext = Label(text=trial.current['text'], font_size=s(font_size), color='white')
         with UntilDone():
-            kp = KeyPress(keys=(keys['True'],keys['False']), correct_resp=trial.current['correct_key'])
+            Wait(until=curtext.appear_time)
+            kp = KeyPress(keys=(keys['True'],keys['False']), 
+                          correct_resp=trial.current['correct_key'],
+                          base_time=curtext.appear_time['time'])
             # If visual_feedback is True, display a the words Correct! or Incorrect! in red or green
             # for the remainder of the trial duration.
             with If(visual_feedback):
@@ -135,6 +138,8 @@ def MathDistract(self,
             name='math_distract',
             correct=kp.correct,
             resp=kp.pressed,
-            rt=kp.rt)
+            rt=kp.rt,
+            trial_appear=curtrial.appear_time,
+            press_time=kp.press_time)
     with UntilDone():
         Wait(duration)
