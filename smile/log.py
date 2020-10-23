@@ -57,7 +57,7 @@ class LogWriter(object):
 class LogReader(object):
     """An object that handles reading from .slog files.
 
-    Passing in a filename, by calling **ReadRecord** you can read on
+    Passing in a filename, by calling **ReadRecord** you can read one
     row from the .slog file.
 
     Parameters

@@ -40,7 +40,7 @@ class Scale(object):
 
     As an example: lets say you were wanting to write an experiment that would be
     run on a large monitor, 1600x900, but also a phone, 1920x1080, with a pixel
-    density that was 4 time as much your monitor. Using just dp, the 600x600
+    density that was 4 times as much your monitor. Using just dp, the 600x600
     stimulus you would try to display would be 2400x2400 on the phone. That
     stimulus would be way to big to fit on a 1920x1080 screen, so you need to
     set scale_down to True, and set your scale box to be something appropriate.
@@ -48,9 +48,9 @@ class Scale(object):
     For this example, lets say our scale_box is 800x800 so that we have 200
     pixels of extra room around the stimulus. The limiting factor here is the
     height of the phone screen, so we calculate our scaling factor based on
-    that. dp(800) would end up being 3200 density pixels. To calculated the
-    scaling factor we just take the height of the screen and divide it by
-    the dp'd height of the scale_box. that would be 0.3375. So now, after
+    that. dp(800) would end up being 3200 density pixels. To calculate the
+    scaling factor, we take the height of the screen and divide it by
+    the dp'd height of the scale_box, which would be 0.3375. So now, after
     converting all of our numbers to density pixels, we multiply that by a
     scaling factor of 0.3375.
 
@@ -58,7 +58,7 @@ class Scale(object):
 
         2400*0.3375 = 810
 
-    Our stimulus would be 810x810 density pixels in size, and fit perfextly in
+    Our stimulus would be 810x810 density pixels in size, and fit perfectly in
     the center of our phone device. But the end user doesn't have to worry about
     any of this calculations if they set the scale_box to 800x800, scale_down
     to True, and wrapped the height and width of the stimulus with scale as

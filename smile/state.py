@@ -301,7 +301,7 @@ class State(object, metaclass=StateClass):
         # Subclasses should extend this list as needed.
         self._deepcopy_attrs = []
 
-        # This will allows be the originally constructed state, even in cloned
+        # This will be the originally constructed state, even in cloned
         # copies.
         self.__original_state = self
 
