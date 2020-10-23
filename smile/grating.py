@@ -219,8 +219,9 @@ class Grating(Widget):
         # fill the buffer for the texture
         grating_buf = list(chain.from_iterable([self._calc_color(x)
                                                 for x in range(self._period)]))
+
         # make an array from the buffer
-        grating_arr = b''.join(map(chr, grating_buf))
+        grating_arr = bytearray(grating_buf)
 
         # blit the array to the texture
         self._texture.blit_buffer(grating_arr, colorfmt='rgb',
@@ -261,28 +262,30 @@ class Grating(Widget):
                 mask_buf =\
                     list(chain.from_iterable([
                         self._calc_gaussian_mask(rx, ry)
-                        for rx in range(self.width / 2)
-                        for ry in range(self.height / 2)]))
+                        for rx in range(int(self.width / 2))
+                        for ry in range(int(self.height / 2))]))
             elif self.envelope[0].lower() == 'l':
                 mask_buf =\
                     list(chain.from_iterable([
                         self._calc_linear_mask(rx, ry)
-                        for rx in range(self.width / 2)
-                        for ry in range(self.height / 2)]))
+                        for rx in range(int(self.width / 2))
+                        for ry in range(int(self.height / 2))]))
             elif self.envelope[0].lower() == 'c':
                 mask_buf =\
                     list(chain.from_iterable([
                         self._calc_circular_mask(rx, ry)
-                        for rx in range(self.width / 2)
-                        for ry in range(self.height / 2)]))
+                        for rx in range(int(self.width / 2))
+                        for ry in range(int(self.height / 2))]))
             else:
                 mask_buf =\
                     list(chain.from_iterable([
                         self._calc_undefined_mask(rx, ry)
-                        for rx in range(self.width / 2)
-                        for ry in range(self.height / 2)]))
+                        for rx in range(int(self.width / 2))
+                        for ry in range(int(self.height / 2))]))
+
             # turn into an array
-            mask_arr = b''.join(map(chr, mask_buf))
+            mask_arr = bytearray(mask_buf)
+
             # print mask_arr
             # add it to the cache
             _mask_cache[mask_id] = mask_arr
