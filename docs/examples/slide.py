@@ -16,7 +16,7 @@ exp = Experiment()
 # initial wait
 Wait(.25)
 
-# Accept input for 5 seconds
+# Put up a circle and then slide it
 circ = Ellipse(color=(jitter(0, 1),
                       jitter(0, 1),
                       jitter(0, 1)))
