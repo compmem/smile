@@ -5,6 +5,7 @@
 #
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 from .video import WidgetState
+
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.graphics import Color, Point
@@ -210,10 +211,18 @@ class _MovingDotsWidget(Widget):
                 self.__dots[i].lifespan_variance = default_params['lifespan_variance']
 
     def start(self):
-        Clock.schedule_once(self._update, self.update_interval)
+        # reset update tracker on each start
+        self._dt_avg = 0.0
+        self._avg_n = 0.0
+
+        # set the state active
         self._active = True
 
+        # schedule the first update
+        Clock.schedule_once(self._update, self.update_interval)
+
     def stop(self):
+        Clock.unschedule(self._update)
         self._active = False
 
     def _update(self, dt):
@@ -244,6 +253,7 @@ class _MovingDotsWidget(Widget):
     @property
     def refresh_rate(self):
         return 1.0 / self._dt_avg
+
 
 class MovingDots(WidgetState.wrap(_MovingDotsWidget)):
     """
@@ -286,5 +296,5 @@ class MovingDots(WidgetState.wrap(_MovingDotsWidget)):
 
     def unshow(self):
         # custom unshow so that the widget doesn't run when not onscreen
-        super(MovingDots, self).unshow()
         self._widget.stop()
+        super(MovingDots, self).unshow()

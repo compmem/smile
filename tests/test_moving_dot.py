@@ -1,7 +1,7 @@
 from smile.experiment import Experiment
 from smile.state import UntilDone, Meanwhile, Wait, Loop, Debug
 from smile.keyboard import KeyPress
-from smile.moving_dot import MovingDots
+from smile.moving_dots import MovingDots
 
 # A testing set to show all the different things you can change when
 # setting motion_props during run-time.
