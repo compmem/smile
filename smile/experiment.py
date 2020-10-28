@@ -23,7 +23,7 @@ from kivy.utils import platform
 import kivy.clock
 
 # local imports
-from .state import Serial, AutoFinalizeState
+from .state import Serial, AutoFinalizeState, Wait
 from .ref import Ref
 from .clock import clock
 from .log import LogWriter, log2csv
@@ -312,7 +312,8 @@ class Experiment(object):
         self._resolution = self._resolution or resolution
 
         # set scale box
-        scale._set_scale_box(scale_box=scale_box, scale_up=scale_up,
+        scale._set_scale_box(scale_box=scale_box,
+                             scale_up=scale_up,
                              scale_down=scale_down)
 
         # process background color
@@ -330,9 +331,13 @@ class Experiment(object):
         # interacts with Meanwhile and UntilDone at top of experiment
         ss = Serial(name="EXPERIMENT BODY", parent=self)
 
-
         self._root_state.set_instantiation_context(self)
         self._parents = [self._root_state]
+
+        # Adding a wait ensures the window is created and sized before
+        # we try and place anything (this fixes the off-center splash)
+        Wait(0.25, parent=ss)
+
         if Touch is None:
             Touch = (platform == "android") or (platform == "ios")
 
