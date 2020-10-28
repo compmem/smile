@@ -135,7 +135,9 @@ class SmileApp(App):
         self.exp._screen._set_height(Window.height)
         scale._calc_scale_factor(Window.width, Window.height)
 
-        self.exp._sysinfo.update({"screen_size":[Window.width, Window.height],})
+        self.exp._sysinfo.update({"screen_size": [Window.width,
+                                                  Window.height],
+                                  "scale_factor": scale._scale_factor})
         self.exp._write_sysinfo()
 
         return self.wid

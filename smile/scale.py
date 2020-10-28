@@ -72,7 +72,8 @@ class Scale(object):
         self.scale_up = False
         self._scale_box = None
 
-    def _set_scale_box(self, scale_up=False, scale_down=False, scale_box=None):
+    def _set_scale_box(self, scale_box=None,
+                       scale_up=False, scale_down=False):
         self._scale_box = scale_box
         self.scale_up = scale_up
         self.scale_down = scale_down
@@ -80,31 +81,38 @@ class Scale(object):
     def _calc_scale_factor(self, width, height):
         # If they offered a scale box
         if self._scale_box is not None:
-            # If scale_down is True then check to see if you need to scale down
-            if self.scale_down == True:
-                # If both the density pixel height and width are bigger than the
-                # height and width of the screen, than check which one we
-                # should scale down.
-                if (dp(self._scale_box[1]) > height) & (dp(self._scale_box[0]) > width):
-                    if (height / dp(self._scale_box[1])) < (width / dp(self._scale_box[0])):
-                        self._scale_factor = height / dp(self._scale_box[1])
-                    else:
-                        self._scale_factor = height / dp(self._scale_box[1])
-                elif dp(self._scale_box[1]) > height:
-                    self._scale_factor = height / dp(self._scale_box[1])
-                elif dp(self._scale_box[0]) > width:
-                    self._scale_factor = width / dp(self._scale_box[0])
-            # If scale_up is True
-            if self.scale_up == True:
-                if (dp(self._scale_box[1]) < height) & (dp(self._scale_box[0]) < width):
-                    if (height / dp(self._scale_box[1])) > (width / dp(self._scale_box[0])):
-                        self._scale_factor = height / dp(self._scale_box[1])
-                    else:
-                        self._scale_factor = height / dp(self._scale_box[1])
-                elif dp(self._scale_box[1]) < height:
-                    self._scale_factor = height / dp(self._scale_box[1])
-                elif dp(self._scale_box[0]) < width:
-                    self._scale_factor = width / dp(self._scale_box[1])
+            # calc the scale factors
+            width_scale_factor = width / dp(self._scale_box[0])
+            height_scale_factor = height / dp(self._scale_box[1])
+
+            if not self.scale_down:
+                # don't let them scale down
+                width_scale_factor = max(width_scale_factor, 1.0)
+                height_scale_factor = max(height_scale_factor, 1.0)
+                
+            if not self.scale_up:
+                # don't let them scale up
+                width_scale_factor = min(width_scale_factor, 1.0)
+                height_scale_factor = min(height_scale_factor, 1.0)
+
+            # now pick which scale factor to use
+            if (width_scale_factor >= 1.0) and (height_scale_factor >= 1.0):
+                # trying to scale up, so
+                # pick the smaller of the two
+                self._scale_factor = min(width_scale_factor,
+                                         height_scale_factor)
+            elif (width_scale_factor <= 1.0) and (height_scale_factor <= 1.0):
+                # trying to scale down, so
+                # pick the larger of the two
+                self._scale_factor = max(width_scale_factor,
+                                         height_scale_factor)
+            else:
+                # trying to both increase and decrease, so
+                # decrease wins to ensure everything is on the screen
+                self._scale_factor = min(width_scale_factor,
+                                         height_scale_factor)
+        else:
+            self._scale_factor = 1.0
 
     def __call__(self, val):
         # Wrap the value in a ref. scale_factor is 1.0 by default, but we are
