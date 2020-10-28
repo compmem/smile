@@ -69,7 +69,7 @@ class LogReader(object):
     append_columns : dict
         Additional columns to add to each record.
     """
-    def __init__(self, filename, unwrap=False, protocol=-1, **append_columns):
+    def __init__(self, filename, unwrap=False, **append_columns):
         # set the file
         self._file = gzip.open(filename, "rb")
 
@@ -80,7 +80,7 @@ class LogReader(object):
         self._append_columns = append_columns
 
         # set up the unpickler
-        self._unpickler = pickle.Unpickler(self._file, protocol=protocol)
+        self._unpickler = pickle.Unpickler(self._file)
 
     def read_record(self):
         """Returns a dicitionary with the field names as keys.
