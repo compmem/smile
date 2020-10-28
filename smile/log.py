@@ -31,9 +31,9 @@ class LogWriter(object):
 
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, protocol=-1):
         self._file = gzip.open(filename, "wb")
-        self._pickler = pickle.Pickler(self._file, -1)
+        self._pickler = pickle.Pickler(self._file, protocol=protocol)
 
     def write_record(self, data):
         """Call this funciton to write a single row to the .slog file.
@@ -69,7 +69,7 @@ class LogReader(object):
     append_columns : dict
         Additional columns to add to each record.
     """
-    def __init__(self, filename, unwrap=False, **append_columns):
+    def __init__(self, filename, unwrap=False, protocol=-1, **append_columns):
         # set the file
         self._file = gzip.open(filename, "rb")
 
@@ -80,7 +80,7 @@ class LogReader(object):
         self._append_columns = append_columns
 
         # set up the unpickler
-        self._unpickler = pickle.Unpickler(self._file)
+        self._unpickler = pickle.Unpickler(self._file, protocol=protocol)
 
     def read_record(self):
         """Returns a dicitionary with the field names as keys.
