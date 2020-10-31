@@ -26,8 +26,8 @@ class LogWriter(object):
     ----------
     filename : string
         The filename that you would like to write to. Must end in .slog.
-    field_names : list
-        A list of strings that contains the fields you wish to write.
+    protocol : int
+        The pickle protocol to use. Defaults to -1 to pick highest.
 
     """
 
@@ -40,15 +40,15 @@ class LogWriter(object):
 
         Parameters
         ----------
-        data : list
-            This is a list of dictionaries where the keys are the
+        data : dict
+            This is a dictionary where the keys are the
             field names that you are writing out to the .slog file.
         """
         # data must be a dict
         if not isinstance(data, dict):
             raise ValueError("data to log must be a dict instance.")
         self._pickler.dump(data)
-        self._pickler.clear_memo()
+        self._pickler.memo.clear()
 
     def close(self):
         self._file.close()
