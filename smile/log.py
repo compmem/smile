@@ -27,13 +27,14 @@ class LogWriter(object):
     filename : string
         The filename that you would like to write to. Must end in .slog.
     protocol : int
-        The pickle protocol to use. Defaults to -1 to pick highest.
+        The pickle protocol to use. Defaults to 3.
 
     """
 
-    def __init__(self, filename, protocol=-1):
+    def __init__(self, filename, protocol=3):
         self._file = gzip.open(filename, "wb")
         self._pickler = pickle.Pickler(self._file, protocol=protocol)
+        self._pickler.fast = True
 
     def write_record(self, data):
         """Call this funciton to write a single row to the .slog file.
