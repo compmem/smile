@@ -8,7 +8,7 @@
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 #   NOTES: On Demand timing, the default, makes it so that the write() method
-#   doesn't return until all of the samples are written. 
+#   doesn't return until all of the samples are written.
 #
 #   NOTE: We are calculating the timing of a NI Pulse based on when the call
 #   to write returns. This is due to the fact that write will block until the
@@ -42,7 +42,7 @@ except ImportError:
     print("Unable to import nidaqmx!")
     _got_nidaqmx = False
 
-    
+
 class NIWrite(CallbackState):
     """Read data via from analog or digital NI Task channels.
     """
@@ -59,7 +59,7 @@ class NIWrite(CallbackState):
         self._task_name = None
         self._write_time = None
 
-        
+
         # append log vars
         self._log_attrs.extend(['task_name', 'vals',
                                 'write_time'])
@@ -70,17 +70,17 @@ class NIWrite(CallbackState):
 
         # grab the task name
         self._task_name = self._task.name
-        
+
         # reset defaults
         self._write_time = NotAvailable
 
     def _callback(self):
         # claim exceptions
         self.claim_exceptions()
-        
+
         # we've started
         self._started = True
-        
+
         # push it outlet
         if _got_nidaqmx:
             # send the values
@@ -88,15 +88,15 @@ class NIWrite(CallbackState):
                 self._task.write(self._vals)
             else:
                 self._task.write([self._vals])
-                
+
         # save the time
         ev = clock.now()
         # set the pulse time
         self._write_time = event_time(ev, 0.0)
-        
+
         # let's leave b/c we're all done (use the event time)
         self.cancel(self._write_time['time'])
-    
+
     def _leave(self):
         if self._write_time is NotAvailable:
             self._write_time = None
@@ -107,7 +107,10 @@ class NIWrite(CallbackState):
 def _nipulse_endvals(start_vals):
     # process the type of the end vals
     # to match the start vals
-    if type(start_vals) is bool:
+    if not (type(start_vals) is list):
+        start_vals = [start_vals]
+
+    if type(start_vals[0]) is bool:
         vals = [False]*len(start_vals)
     else:
         vals = [0.0]*len(start_vals)
@@ -123,14 +126,14 @@ def NIPulse(self, task, vals=[1.0], dur=.1):
     self.end_vals = fvals.result
 
     # write the starting vals
-    start_write = NIWrite(task, vals=self.start_vals, 
+    start_write = NIWrite(task, vals=self.start_vals,
                           name='ON_PULSE')
 
     # wait for specified pulse duration
     Wait(self.dur)
 
     # turn off the pulse
-    end_write = NIWrite(task, vals=self.end_vals, 
+    end_write = NIWrite(task, vals=self.end_vals,
                         name='OFF_PULSE')
 
     # save out the end times
@@ -138,7 +141,7 @@ def NIPulse(self, task, vals=[1.0], dur=.1):
     self.pulse_start_time = start_write.write_time
     self.pulse_end_time = end_write.write_time
 
-       
+
 class NIChangeDetector(CallbackState):
     """Read data via from analog or digital NI Task channels.
     """
@@ -161,7 +164,7 @@ class NIChangeDetector(CallbackState):
         self._change_time = None
         self._correct = False
         self._rt = None
-        
+
         # append log vars
         self._log_attrs.extend(['task_name', 'tracked_indices', 'correct_resp',
                                 'threshold', 'base_time', 'values',
@@ -174,7 +177,7 @@ class NIChangeDetector(CallbackState):
 
         # grab the task name
         self._task_name = self._task.name
-        
+
         # reset defaults
         self._changed_channels = NotAvailable
         self._values = NotAvailable
@@ -194,7 +197,7 @@ class NIChangeDetector(CallbackState):
             self._correct_resp = []
         elif type(self._correct_resp) not in (list, tuple):
             self._correct_resp = [self._correct_resp]
-        
+
     def _callback(self):
         # calc trigger
         try:
@@ -213,29 +216,29 @@ class NIChangeDetector(CallbackState):
                 trigger = False
         except:
             trigger = False
-        
+
         # evaluate trigger
         if trigger:
             # Test for correct
             # record event time, rt, channels passed threshold, etc
-            self._changed_channels = [i for i, t in zip(self._tracked_indices, 
+            self._changed_channels = [i for i, t in zip(self._tracked_indices,
                                                         above_thresh_bool) if t]
             self._values = vals
-            
-            self._correct = (len(set.intersection(set(self._changed_channels), 
-                                                  set(self._correct_resp))) 
+
+            self._correct = (len(set.intersection(set(self._changed_channels),
+                                                  set(self._correct_resp)))
                              > 0)
-                                 
+
             self._change_time = event_time(ev, 0.0)
             self._rt = self._change_time['time'] - self._base_time
-            
+
             # let's leave b/c we're all done (use the event time)
             self.cancel(self._change_time['time'])
             return
         else:
             # Schedule this callback again to happen right away
             clock.schedule(self.callback, event_time=clock.now())
-    
+
     def _leave(self):
         # handle the unset variables
         if self._values is NotAvailable:
@@ -251,5 +254,3 @@ class NIChangeDetector(CallbackState):
 
         # Unschedule callback
         super(NIChangeDetector, self)._leave()
-
-        
