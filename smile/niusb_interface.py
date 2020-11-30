@@ -110,7 +110,7 @@ def _nipulse_endvals(start_vals):
     if not (type(start_vals) is list):
         start_vals = [start_vals]
 
-    if type(start_vals) is bool:
+    if type(start_vals[0]) is bool:
         vals = [False]*len(start_vals)
     else:
         vals = [0.0]*len(start_vals)
