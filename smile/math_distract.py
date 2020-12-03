@@ -22,19 +22,15 @@ def _gen_questions(num_vars, max_num, min_num, max_probs, plus_and_minus, ans_mo
                 for x in range(num_vars-1):
                     if(random.randrange(2)==0):
                         total = total + factors[x+1]
-                        opperators.append('+')
+                        opperators.append(' + ')
                     else:
                         total = total - factors[x+1]
-                        opperators.append('-')
+                        opperators.append(' - ')
             else:
-                rand_element = random.randrange(2)
                 for x in range(num_vars-1):
-                    if rand_element:
-                        total = total + factors[x+1]
-                        opperators.append('+')
-                    else:
-                        total = total - factors[x+1]
-                        opperators.append('-')
+                    total = total + factors[x+1]
+                    opperators.append(' + ')
+                    
 
             last_prob = 0
             rand_per = random.random()
@@ -51,7 +47,7 @@ def _gen_questions(num_vars, max_num, min_num, max_probs, plus_and_minus, ans_mo
             temp = str(factors[0])
             for y in range(num_vars-1):
                 temp = temp + opperators[y] + str(factors[y+1])
-            temp = temp + '=' + str(new_total)
+            temp = temp + ' = ' + str(new_total)
             # Append the list of trials with the currently
             # generated stimuli
             trials.append({
@@ -91,7 +87,7 @@ def MathDistract(self,
       max_num - Max possible number for each variable.
       min_num - Min possible number for each varialbe.
       max_probs - Max number of problems.
-      plus_and_minus - True will have both plus and minus.
+      plus_and_minus - True will have a chance to have both plus and minus. False will have only Plus
       min_duration - Minimum duration of distractor.
       text_size - Vertical height of the text.
       correct_beep_dur - Duration of correct beep.
@@ -139,7 +135,7 @@ def MathDistract(self,
             correct=kp.correct,
             resp=kp.pressed,
             rt=kp.rt,
-            trial_appear=curtrial.appear_time,
+            trial_appear=curtext.appear_time,
             press_time=kp.press_time)
     with UntilDone():
         Wait(duration)
