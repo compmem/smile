@@ -1563,6 +1563,7 @@ widgets = [
     "RelativeLayout",
     "GridLayout",
     "PageLayout",
+    "Scatter",
     "ScatterLayout",
     "StackLayout",
     "ScrollView",
@@ -2524,7 +2525,102 @@ For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.PageLayout. <https://kivy.org/docs/api-kivy.uix.pagelayout.html>'_
 
 """
-ScatterLayout.__doc__ = """A **WidgetState** that allows for rotation, translation, and scalling.
+Scatter.__doc__ = """A **WidgetState** that allows for rotation, translation, and scaling.
+
+Use this **WidgetState** when you want to be able to use clicks and drags to
+control and adjust the size, rotation, or postion of its children.
+
+It has subtle differences from the ScatterLayout widget.
+
+Example
+-------
+
+::
+
+    from smile.common import *
+
+    exp = Experiment()
+
+    with Parallel():
+        MouseCursor()
+        with Scatter(width=100, height=100, left=exp.screen.left) as sc:
+            Rectangle(size=sc.size)
+        with Scatter(width=100, height=100, right=exp.screen.right) as sc:
+            Rectangle(size=sc.size)
+    with UntilDone():
+        KeyPress()
+
+    exp.run()
+
+Parameters
+----------
+duration : float (optional, default = None)
+    The duration of this state. Can be None. Will continue running until
+    canceled, or until the duration is over.
+parent : ParentState (optional)
+    The parent of this state, if None, it will be set automatically
+save_log : boolean (optinal, default = True)
+    If True, this state will save out all of the Logged Attributes.
+name : string (optinal)
+    The unique name to this state.
+blocking : boolean (optional, default = True)
+    If True, this state will prevent a *Parallel* state from ending. If
+    False, this state will be canceled if its *ParallelParent* finishes
+    running. Only relevent if within a *ParallelParent*.
+
+Positional Parameters
+---------------------
+All **WidgetState** States have the ability to set the positional variables
+as parameters when building the states. Please see **WidgetState** for the
+positional paramters you can set.
+
+Kivy Parameters and Properties
+------------------------------
+Below is the docstring attached to the Kivy widget that this WidgetState is
+based on. Any of the parameters listed below are able to be used by this
+WidgetState and can be passed into it the same way any other parameter can.
+Any of the internal properties that are readable by this Kivy Widget are
+readable during Experimental Run Time.
+
+pos : list (Parameter, optional, default=[screen.width/2, screen.height/2])
+    Position of the layout in format (x,y). If you pass in any of the
+    positional parameters of a WidgetState, like center_x or center_y, this
+    widget will fill in pos automatically.
+size : list (Parameter, optional, default=[50, 50])
+    Size of the layout in format (width, height). If you pass in any of the
+    positional parameters of a WidgetState, like width or height, this
+    widget will fill in size automatically.
+bbox : list (Property)
+    Bounding box of the widget in parent space: ((x, y), (w, h))
+do_rotation : boolean (Parameter, optional, default=True)
+    Allow roation.
+do_scale : boolean (Parameter, optional, default=True)
+    Allow scaling.
+do_translation_x : boolean (Parameter, optional, default=True)
+    Allow translation on the X axis.
+do_translation_y : boolean (Parameter, optional, default=True)
+    Allow translation on the Y axis.
+rotation : float (Parameter, optional, default=0.0)
+    Current rotation of the layout.
+scale : float (Parameter, optional, default=1.0)
+    Current scale of the layout.
+scale_max : float (Parameter, optional, default=1x10^20)
+    Maximum scaling factor allowed.
+scale_min : float (Parameter, optional, default=0.01)
+    Minimum scaling factor allowed.
+transform : matrix (Parameter, optional, default=The identity matrix)
+    Transformation matrix.
+transform_inv : matrix (Parameter, optional, default=The identity matrix)
+    Inverse of the transformation matrix.
+translation_touches : integer (Parameter, optional, default=1)
+    Determine whether translation was triggered by a single or multiple touches.
+    This only has effect when do_translation = True.
+
+For other parameters or properties that this Widget might have, refer to the
+Kivy documentation for 'kivy.uix.Scatter. <https://kivy.org/docs/api-kivy.uix.scatter.html>'_
+
+"""
+ScatterLayout.__doc__ = """A **WidgetState** that allows for rotation, translation, and scaling.
 
 Use this **WidgetState** when you want to be able to use clicks and drags to
 control and adjust the size, rotation, or postion of its children.

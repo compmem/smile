@@ -68,6 +68,7 @@ from .video import (
     GridLayout,
     PageLayout,
     RelativeLayout,
+    Scatter,
     ScatterLayout,
     StackLayout,
     ScrollView,
