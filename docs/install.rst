@@ -109,7 +109,7 @@ Installing SMILE on Mac
 The first step is to download and install Kivy. The following link will take you
 to the Mac-Kivy install guide.
 
-    -`Mac-Kivy Install Guide <http://kivy.org/docs/installation/installation-macosx.html>`_
+    -`Mac-Kivy Install Guide <https://kivy.org/doc/stable/installation/installation-osx.html>`_
 
 After you install Kivy, you must download and install SMILE. The following is a
 link to the SMILE download page, where you will download the zip, and extract
