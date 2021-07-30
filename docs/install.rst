@@ -17,7 +17,7 @@ Also, it is important to have pip installed to your python. Without pip
 you will not be able to run the commands needed to install SMILE. To install
 *pip*, click the link below and follow the instructions.
 
-    -`Get pip <https://pip.pypa.io/en/stable/installing/>`_
+    -`Get pip <https://pip.pypa.io/en/stable/installation/>`_
 
 
 The next thing you need to install after *pip* is *kivy*. *Kivy* is the display
