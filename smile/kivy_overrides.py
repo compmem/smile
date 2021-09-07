@@ -85,12 +85,12 @@ import kivy
 EXACT_KIVY_VERSIONS = (
     "1.8.0",
     "1.9.0",
-    "1.9.1-dev0",
     "1.9.1",
     "1.10.0",
-    "1.10.1.dev0",
     "1.10.1",
-    "1.11.1")
+    "1.11.0",
+    "1.11.1",
+    "2.0.0")
 if kivy.__version__ not in EXACT_KIVY_VERSIONS:
     raise ImportError("kivy version must be one of %r, got %r" %
                       (EXACT_KIVY_VERSIONS, kivy.__version__))
