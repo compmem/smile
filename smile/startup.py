@@ -10,7 +10,7 @@
 from .kivy_overrides import Config as KOConfig
 from . import kivy_overrides as KO
 from .state import Subroutine, Parallel, Serial, Loop, If, Else, Elif, \
-                  UntilDone, ResetClock, Func, Wait
+                  UntilDone, ResetClock, Func, Wait, Debug
 from .video import Rectangle, ProgressBar, Label, UpdateWidget, \
                    TextInput, ButtonPress, Button, Image
 from .keyboard import KeyPress
@@ -358,8 +358,9 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                 with ButtonPress():
                     Button(background_normal=self.LOCK_IMG,
                            left=txtIn.right, center_y=txtIn.center_y,
-                           height=txtIn.height, allow_stretch=True)
-                with If(self.LOCK_IMG == LOCK_ON):
+                           height=txtIn.height*1.5, width=txtIn.height*1.5,
+                           allow_stretch=True)
+                with If(self.LOCK_IMG == self.LOCK_ON):
                     with Parallel():
                         Rectangle(size=recin.size,
                                   center=recin.center,
@@ -392,7 +393,7 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                    background_normal="",
                                    top=pwiOFF.bottom - s(5))
                     with If((pwiOFF.text == self.lock_password) & (pwbpOFF.pressed == "con")):
-                        self.LOCK_IMG = LOCK_OFF
+                        self.LOCK_IMG = self.LOCK_OFF
                         Func(KOConfig.set, "SMILE" + self._exp._exp_name, "LOCKSUBJPASSWORD", "")
                         Func(KOConfig.write)
                         UpdateWidget(txtIn, disabled=False)
@@ -434,8 +435,9 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                    top=pwiON.bottom - s(5))
                     with If(pwbpON.pressed == "con"):
                         with If((pwiON.text != "") & (pwiON.text != None)):
-                            self.LOCK_IMG = LOCK_ON
-                            Func(KOConfig.set, "SMILE" + self._exp._exp_name, "LOCKSUBJPASSWORD", pwiON.text)
+                            self.LOCK_IMG = self.LOCK_ON
+                            Func(KOConfig.set, "SMILE" + self._exp._exp_name,
+                                 "LOCKSUBJPASSWORD", pwiON.text)
                             self.lock_password = pwiON.text
                             with If((txtIn.text == "") | (txtIn.text == None)):
                                 self.text = "SUBJ000"
@@ -443,7 +445,8 @@ def InputSubject(self, exp_title="DefaultExperiment"):
                                      self._exp._exp_name,
                                      "LOCKSUBJ", "SUBJ000")
                             with Else():
-                                Func(KOConfig.set, "SMILE" + self._exp._exp_name, "LOCKSUBJ", txtIn.text)
+                                Func(KOConfig.set, "SMILE" + self._exp._exp_name,
+                                     "LOCKSUBJ", txtIn.text)
                             Func(KOConfig.write)
                             UpdateWidget(txtIn, disabled=True)
 
