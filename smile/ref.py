@@ -37,14 +37,9 @@ def pass_thru(obj):
     return obj
 
 
-def _apply(function, *pargs, **kwargs):
-    # @IMPORTANT: may need to check this again.
-    if len(kwargs) == 0:
-        return function(pargs)
-    elif kwargs is None:
-        return function(pargs)
-    else:
-        return function(pargs, kwargs)
+def _apply(function, pargs, kwargs):
+    """Replacement for apply method from Python 2"""
+    return function(*pargs, **kwargs)
 
 
 class Ref(object):
