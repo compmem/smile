@@ -63,7 +63,7 @@ class DotBox(Widget):
 
     def _update_locs(self, *pargs):
         self._locs = [random.random()
-                      for i in xrange(int(self.num_dots)*2)]
+                      for i in range(int(self.num_dots)*2)]
         self._update()
 
     def _update_pointsize(self, *pargs):
