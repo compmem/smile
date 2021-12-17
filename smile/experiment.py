@@ -298,7 +298,14 @@ class Experiment(object):
     def __init__(self, fullscreen=None, resolution=None,
                  scale_box=None, scale_up=False, scale_down=False,
                  background_color=None, name="SMILE", debug=False, Touch=None,
+                 data_dir=None,
                  show_splash=True):
+        
+        self._sysinfo = {}
+        if (not (data_dir is None)) & os.path.isdir(data_dir):
+            self._sysinfo['DEFAULTDATADIR'] = data_dir
+        else:
+            self._sysinfo['DEFAULTDATADIR'] = kivy_overrides._get_config()['default_data_dir']
 
         self._platform = platform
         self._exp_name = name
@@ -351,7 +358,7 @@ class Experiment(object):
 
         self._sysinfo_slog = os.path.join(self._session_dir,
                                           "sysinfo.slog")
-        self._sysinfo = kivy_overrides._get_config()
+        self._sysinfo.update(kivy_overrides._get_config())
         self._sysinfo.update({"fullscreen":self._fullscreen,
                               "data_time":self._session,
                               "debug":self._debug,
@@ -371,6 +378,7 @@ class Experiment(object):
                               "uname":pf.uname()})
 
 
+
         # place to save experimental variables
         self._vars = {}
         self.__issued_refs = weakref.WeakValueDictionary()
@@ -380,13 +388,12 @@ class Experiment(object):
         self._state_loggers = {}
 
     def _change_smile_subj(self, subj_id):
-        kconfig = kivy_overrides._get_config()
+        #kconfig = kivy_overrides._get_config()
 
         self._subject = subj_id
-        self._subject_dir = os.path.join(kconfig['default_data_dir'],
+        self._subject_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
                                          self._exp_name, subj_id)
-
-        self._session_dir = os.path.join(kconfig['default_data_dir'],
+        self._session_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
                                          self._exp_name, subj_id,
                                          self._session)
 
@@ -461,15 +468,14 @@ class Experiment(object):
         # get args from kivy_overrides
         # and config variables from kivy
         args = kivy_overrides.args
-        kconfig = kivy_overrides._get_config()
+        #kconfig = kivy_overrides._get_config()
 
         # set up the subject and subj dir
         self._subject = args.subject
-
-        self._subject_dir = os.path.join(kconfig['default_data_dir'],
+        self._subject_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
                                          self._exp_name, self._subject)
 
-        self._session_dir = os.path.join(kconfig['default_data_dir'],
+        self._session_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
                                          self._exp_name, self._subject,
                                          self._session)
 
@@ -627,7 +633,7 @@ class Experiment(object):
         try:
             # start the first state (that's the root state)
             # self._root_executor.enter(clock.now() + 0.25)
-            
+
             # we need to reset that window
             import kivy.core.window
             if kivy.core.window.Window.initialized == False:
