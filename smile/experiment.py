@@ -298,14 +298,16 @@ class Experiment(object):
     def __init__(self, fullscreen=None, resolution=None,
                  scale_box=None, scale_up=False, scale_down=False,
                  background_color=None, name="SMILE", debug=False, Touch=None,
-                 data_dir=None,
+                 save_uname=False, data_dir=None,
                  show_splash=True):
         
         self._sysinfo = {}
-        if (not (data_dir is None)) & os.path.isdir(data_dir):
-            self._sysinfo['DEFAULTDATADIR'] = data_dir
-        else:
-            self._sysinfo['DEFAULTDATADIR'] = kivy_overrides._get_config()['default_data_dir']
+        self._sysinfo['DEFAULTDATADIR'] = kivy_overrides._get_config()['default_data_dir']
+        if not (data_dir is None):
+            if os.path.isdir(data_dir):
+                self._sysinfo['DEFAULTDATADIR'] = data_dir
+        
+            
 
         self._platform = platform
         self._exp_name = name
@@ -374,9 +376,10 @@ class Experiment(object):
                               "version":version.__version__,
                               "author":version.__author__,
                               "email":version.__email__,
-                              "date_last_update":version.__date__,
-                              "uname":pf.uname()})
-
+                              "date_last_update":version.__date__}
+                              )
+        if save_uname:
+            self._sysinfo.update({"uname":pf.uname()})
 
 
         # place to save experimental variables
