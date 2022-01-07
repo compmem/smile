@@ -675,12 +675,11 @@ class Experiment(object):
             with open(filename_crashlog, 'w') as f:
                 for t in tra:
                     f.write(t)
-
-            if self._cmd_traceback:
-                self._current_state.print_traceback(to_file=None)
-            else:
-                f = open(filename_smiletraceback, 'w')
-                if self._current_state is not None:
+            if self._current_state is not None:
+                if self._cmd_traceback:
+                    self._current_state.print_traceback(to_file=None)
+                else:
+                    f = open(filename_smiletraceback, 'w')
                     self._current_state.print_traceback(to_file=f)
 
             # raise the error
