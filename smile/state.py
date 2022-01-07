@@ -14,6 +14,7 @@ from types import GeneratorType
 import copy
 import inspect
 import weakref
+import sys
 import os.path
 from os import fsync, remove
 
@@ -442,9 +443,12 @@ class State(object, metaclass=StateClass):
                ", ".join(id_strs),
                msg))
 
-    def print_traceback(self, child=None, t=None):
+    def print_traceback(self, child=None, t=None, to_file=None):
         """Print a SMILE traceback on the console.
         """
+        if not (to_file is None):
+            og_stdout = sys.stdout
+            sys.stdout = to_file
         # Use the current time, if none is provided.
         if t is None:
             t = clock.now()
@@ -453,7 +457,7 @@ class State(object, metaclass=StateClass):
             print(" SMILE Traceback:")
         else:
             # Otherwise, let our parent print its traceback first.
-            self._parent.print_traceback(self, t)
+            self._parent.print_traceback(self, t, to_file)
 
         # Get a string for the parenthesized state name, or an empty string if
         # the state has no custom name...
@@ -499,7 +503,8 @@ class State(object, metaclass=StateClass):
                 print("     %s: %s" % (attr_name, tstr(value)))
             else:
                 print("     %s: %r" % (attr_name, value))
-
+        if not (to_file is None):
+            sys.stdout = og_stdout
     def claim_exceptions(self):
         # TODO: make this a context manager instead?
         # TODO: rename and change doc string
@@ -1140,8 +1145,8 @@ class Parallel(ParentState):
         self.__remaining = set()
         self.__blocking_remaining = set()
 
-    def print_traceback(self, child=None, t=None):
-        super(Parallel, self).print_traceback(child, t)
+    def print_traceback(self, child=None, t=None, to_file=None):
+        super(Parallel, self).print_traceback(child, t, to_file)
         if child is not None:
             if child._blocking:
                 print("     Blocking child...")

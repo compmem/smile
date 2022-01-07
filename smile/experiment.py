@@ -12,6 +12,7 @@ import os
 import platform as pf
 import traceback
 import sys
+from datetime import datetime
 
 import weakref
 import time
@@ -310,7 +311,7 @@ class Experiment(object):
                 self._sysinfo['DEFAULTDATADIR'] = data_dir
 
 
-        self.local_crashlog = local_crashlog
+        self._local_crashlog = local_crashlog
         self._platform = platform
         self._exp_name = name
         self._session = time.strftime("%Y%m%d_%H%M%S")
@@ -668,14 +669,20 @@ class Experiment(object):
             exc_type, exc_value, exc_traceback = sys.exc_info()
             tra =  traceback.format_exception(exc_type, exc_value,
                                               exc_traceback)
-            if self.local_crashlog:
-                filename = 'crash.log'
+            if self._local_crashlog:
+                filename_crashlog = 'smile_crashlog_{}.log'.format(datetime.now().strftime(self.session))
+                filename_smiletraceback = 'smile_traceback_{}.log'.format(datetime.now().strftime(self.session))
             else:
-                filename = os.path.join(self.session_dir, 'crash.log')
-
-            with open(filename, 'w') as f:
+                filename_crashlog = os.path.join(self.session_dir, 'smile_crashlog.log')
+                filename_smiletraceback = os.path.join(self.session_dir, 'smile_traceback.log')
+            print(self._local_crashlog, filename_crashlog, filename_smiletraceback)
+            with open(filename_crashlog, 'w') as f:
                 for t in tra:
                     f.write(t)
+
+            with open(filename_smiletraceback, 'w') as f:
+                if self._current_state is not None:
+                    self._current_state.print_traceback(to_file=f)
 
             # raise the error
             raise
