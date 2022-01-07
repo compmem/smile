@@ -10,6 +10,8 @@
 # import main modules
 import os
 import platform as pf
+import traceback
+import sys
 
 import weakref
 import time
@@ -298,17 +300,17 @@ class Experiment(object):
     def __init__(self, fullscreen=None, resolution=None,
                  scale_box=None, scale_up=False, scale_down=False,
                  background_color=None, name="SMILE", debug=False, Touch=None,
-                 save_uname=False, data_dir=None,
+                 save_uname=False, data_dir=None, local_crashlog=False,
                  show_splash=True):
-        
+
         self._sysinfo = {}
         self._sysinfo['DEFAULTDATADIR'] = kivy_overrides._get_config()['default_data_dir']
         if not (data_dir is None):
             if os.path.isdir(data_dir):
                 self._sysinfo['DEFAULTDATADIR'] = data_dir
-        
-            
 
+
+        self.local_crashlog = local_crashlog
         self._platform = platform
         self._exp_name = name
         self._session = time.strftime("%Y%m%d_%H%M%S")
@@ -651,6 +653,7 @@ class Experiment(object):
             self._app = SmileApp(self)
 
             # start up the app
+
             self._app.run()
 
         except:
@@ -661,6 +664,18 @@ class Experiment(object):
             # see if we can traceback
             if self._current_state is not None:
                 self._current_state.print_traceback()
+
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            tra =  traceback.format_exception(exc_type, exc_value,
+                                              exc_traceback)
+            if self.local_crashlog:
+                filename = 'crash.log'
+            else:
+                filename = os.path.join(self.session_dir, 'crash.log')
+
+            with open(filename, 'w') as f:
+                for t in tra:
+                    f.write(t)
 
             # raise the error
             raise
