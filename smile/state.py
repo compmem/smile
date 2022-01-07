@@ -14,6 +14,7 @@ from types import GeneratorType
 import copy
 import inspect
 import weakref
+import sys
 import os.path
 from os import fsync, remove
 
@@ -442,18 +443,20 @@ class State(object, metaclass=StateClass):
                ", ".join(id_strs),
                msg))
 
-    def print_traceback(self, child=None, t=None):
+    def print_traceback(self, child=None, t=None, to_file=None):
         """Print a SMILE traceback on the console.
         """
+        if to_file is None:
+            to_file = sys.stdout
         # Use the current time, if none is provided.
         if t is None:
             t = clock.now()
         if self._parent is None:
             # If we are the root of the state tree, print the header.
-            print(" SMILE Traceback:")
+            to_file.write(" SMILE Traceback:\n")
         else:
             # Otherwise, let our parent print its traceback first.
-            self._parent.print_traceback(self, t)
+            self._parent.print_traceback(self, t, to_file)
 
         # Get a string for the parenthesized state name, or an empty string if
         # the state has no custom name...
@@ -483,7 +486,7 @@ class State(object, metaclass=StateClass):
                 return "%fs ago%s" % (offset, error)
 
         # Print traceback state header.
-        print("   %s%s - file: %s, line: %d" %
+        to_file.write("   %s%s - file: %s, line: %d\n" %
               (type(self).__name__,
                name_spec,
                self._instantiation_filename,
@@ -496,9 +499,9 @@ class State(object, metaclass=StateClass):
             except NotAvailableError:
                 value = NotAvailable
             if attr_name.endswith("_time"):
-                print("     %s: %s" % (attr_name, tstr(value)))
+                to_file.write("     %s: %s\n" % (attr_name, tstr(value)))
             else:
-                print("     %s: %r" % (attr_name, value))
+                to_file.write("     %s: %r\n" % (attr_name, value))
 
     def claim_exceptions(self):
         # TODO: make this a context manager instead?
@@ -1140,13 +1143,13 @@ class Parallel(ParentState):
         self.__remaining = set()
         self.__blocking_remaining = set()
 
-    def print_traceback(self, child=None, t=None):
-        super(Parallel, self).print_traceback(child, t)
+    def print_traceback(self, child=None, t=None, to_file=None):
+        super(Parallel, self).print_traceback(child, t, to_file)
         if child is not None:
             if child._blocking:
-                print("     Blocking child...")
+                to_file.write("     Blocking child...\n")
             else:
-                print("     Non-blocking child...")
+                to_file.write("     Non-blocking child...\n")
 
     def _enter(self):
         super(Parallel, self)._enter()
