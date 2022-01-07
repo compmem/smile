@@ -12,7 +12,6 @@ import os
 import platform as pf
 import traceback
 import sys
-from datetime import datetime
 
 import weakref
 import time
@@ -670,8 +669,8 @@ class Experiment(object):
             tra =  traceback.format_exception(exc_type, exc_value,
                                               exc_traceback)
             if self._local_crashlog:
-                filename_crashlog = 'smile_crashlog_{}.log'.format(datetime.now().strftime(self.session))
-                filename_smiletraceback = 'smile_traceback_{}.log'.format(datetime.now().strftime(self.session))
+                filename_crashlog = 'smile_crashlog_{}.log'.format(self.session)
+                filename_smiletraceback = 'smile_traceback_{}.log'.format(self.session)
             else:
                 filename_crashlog = os.path.join(self.session_dir, 'smile_crashlog.log')
                 filename_smiletraceback = os.path.join(self.session_dir, 'smile_traceback.log')
