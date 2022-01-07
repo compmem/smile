@@ -679,8 +679,8 @@ class Experiment(object):
                 if self._cmd_traceback:
                     self._current_state.print_traceback(to_file=None)
                 else:
-                    f = open(filename_smiletraceback, 'w')
-                    self._current_state.print_traceback(to_file=f)
+                    with open(filename_smiletraceback, 'w') as f:
+                        self._current_state.print_traceback(to_file=f)
 
             # raise the error
             raise
