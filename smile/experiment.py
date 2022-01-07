@@ -301,6 +301,7 @@ class Experiment(object):
                  scale_box=None, scale_up=False, scale_down=False,
                  background_color=None, name="SMILE", debug=False, Touch=None,
                  save_uname=False, data_dir=None, local_crashlog=False,
+                 cmd_traceback=True,
                  show_splash=True):
 
         self._sysinfo = {}
@@ -309,7 +310,7 @@ class Experiment(object):
             if os.path.isdir(data_dir):
                 self._sysinfo['DEFAULTDATADIR'] = data_dir
 
-
+        self._cmd_traceback = cmd_traceback
         self._local_crashlog = local_crashlog
         self._platform = platform
         self._exp_name = name
@@ -661,10 +662,6 @@ class Experiment(object):
             self._root_state.end_log(self._csv)
             self.close_state_loggers(self._csv)
 
-            # see if we can traceback
-            if self._current_state is not None:
-                self._current_state.print_traceback()
-
             exc_type, exc_value, exc_traceback = sys.exc_info()
             tra =  traceback.format_exception(exc_type, exc_value,
                                               exc_traceback)
@@ -674,12 +671,15 @@ class Experiment(object):
             else:
                 filename_crashlog = os.path.join(self.session_dir, 'smile_crashlog.log')
                 filename_smiletraceback = os.path.join(self.session_dir, 'smile_traceback.log')
-            print(self._local_crashlog, filename_crashlog, filename_smiletraceback)
+
             with open(filename_crashlog, 'w') as f:
                 for t in tra:
                     f.write(t)
 
-            with open(filename_smiletraceback, 'w') as f:
+            if self._cmd_traceback:
+                self._current_state.print_traceback(to_file=None)
+            else:
+                f = open(filename_smiletraceback, 'w')
                 if self._current_state is not None:
                     self._current_state.print_traceback(to_file=f)
 
