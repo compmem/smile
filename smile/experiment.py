@@ -570,7 +570,7 @@ class Experiment(object):
     def _write_sysinfo(self, save_private=None, filename=None):
         if filename is None:
             filename = self._sysinfo_slog
-        if save_private:
+        if save_private is None:
             save_private = self._save_private_computer_info
         logged_info = self._sysinfo.copy()
         if not save_private:
