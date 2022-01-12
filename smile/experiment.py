@@ -396,9 +396,9 @@ class Experiment(object):
 
         self._subject = subj_id.strip()
         self._subject_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
-                                         self._exp_name, subj_id)
+                                         self._exp_name, self._subject)
         self._session_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
-                                         self._exp_name, subj_id,
+                                         self._exp_name, self._subject,
                                          self._session)
 
         if not os.path.isdir(self._session_dir):
