@@ -13,13 +13,14 @@ from .video import (WidgetState, Label,
 from .state import (Loop, Parallel, If, Elif, Else, Serial,
                     Func, UntilDone, Log, Subroutine)
 from .ref import Ref
+from .scale import scale as s
 import kivy.uix.scrollview
 import csv
 ScrollView = WidgetState.wrap(kivy.uix.scrollview.ScrollView)
 
 def_text_input_height = 30
 min_marg_dist = 20
-font_size = 15
+
 # CA : MULTIPLE CHOIC Choose All That Apply
 # TI : Text Input
 # MC : MULTIPLE CHOICE Choose One
@@ -133,7 +134,8 @@ def Questionnaire(self,
                   width=None,
                   x=None,
                   y=None,
-                  save_logs=True):
+                  save_logs=True,
+                  font_size=35):
 
     """Present a number of questions to a participant
 
@@ -374,7 +376,7 @@ def Questionnaire(self,
                                               bottom=self.new_bottom + min_marg_dist,
                                               text_size=(fl.width - 4*min_marg_dist,
                                                          None),
-                                              font_size=font_size,
+                                              font_size=s(font_size),
                                               save_log=False)
                             # Update the height of the rectangle, buttom,
                             # and height_count
@@ -419,7 +421,7 @@ def Questionnaire(self,
                                     # Create label to display the answer
                                     lilb = Label(text=self.cur_li_but,
                                                  center_x=litb.center_x,
-                                                 font_size=font_size*3/4,
+                                                 font_size=s(font_size)*3/4,
                                                  y=litb.top + (0.5*min_marg_dist),
                                                  save_log=False)
                                 # Append the temp list of buttons
@@ -452,7 +454,7 @@ def Questionnaire(self,
                                               left=2*min_marg_dist,
                                               bottom=self.new_bottom+min_marg_dist,
                                               text_size=(fl.width - 4*min_marg_dist, None),
-                                              font_size=font_size,
+                                              font_size=s(font_size),
                                               save_log=False)
                             # Update the height of the rectangle, buttom, and height_count
                             lirec.height = lilbf.height
@@ -520,7 +522,7 @@ def Questionnaire(self,
                                               bottom=self.new_bottom + min_marg_dist,
                                               text_size=(fl.width - 4*min_marg_dist,
                                                          None),
-                                              font_size=font_size,
+                                              font_size=s(font_size),
                                               save_log=False)
                             # Update the height of the rectangle, buttom,
                             # and height_count
@@ -532,7 +534,7 @@ def Questionnaire(self,
                         with Elif(self.q_type == "TI"):
                             with fullp.insert() as tiinsert:
                                 tif = TextInput(left=min_marg_dist,
-                                                font_size=font_size,
+                                                font_size=s(font_size),
                                                 bottom=self.new_bottom + min_marg_dist,
                                                 width=fl.width - 2*min_marg_dist,
                                                 height=self.question_info['multiline'] * def_text_input_height,
@@ -546,7 +548,7 @@ def Questionnaire(self,
                                 tilb = Label(text=self.question,
                                              left=2*min_marg_dist,
                                              bottom=tif.top+min_marg_dist,
-                                             font_size=font_size,
+                                             font_size=s(font_size),
                                              text_size=(fl.width - 4*min_marg_dist,
                                                         None),
                                              save_log=False)
@@ -572,17 +574,17 @@ def Questionnaire(self,
                                 slminlbf = Label(text=self.question_info['ans'][0],
                                                  left=slf.left,
                                                  bottom=slf.top - 1.7*min_marg_dist,
-                                                 font_size=font_size*3/4,
+                                                 font_size=s(font_size)*3/4,
                                                  save_log=False)
                                 slmidlbf = Label(text=self.question_info['ans'][1],
                                                  center_x=slf.center_x,
                                                  bottom=slf.top - 1.7*min_marg_dist,
-                                                 font_size=font_size*3/4,
+                                                 font_size=s(font_size)*3/4,
                                                  save_log=False)
                                 slmaxlbf = Label(text=self.question_info['ans'][2],
                                                  right=slf.right,
                                                  bottom=slf.top - 1.7*min_marg_dist,
-                                                 font_size=font_size*3/4,
+                                                 font_size=s(font_size)*3/4,
                                                  save_log=False)
                                 slrec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
                                                   left=1.5*min_marg_dist,
@@ -594,7 +596,7 @@ def Questionnaire(self,
                                               bottom=slminlbf.top + min_marg_dist,
                                               text_size=(fl.width - 4*min_marg_dist,
                                                          None),
-                                              font_size=font_size,
+                                              font_size=s(font_size),
                                               save_log=False)
                             self.CT_refs = self.CT_refs + [ctinsert.first]
                             self.questions = self.questions + [{"answers_index": Ref(len, self.CT_refs) - 1,
@@ -613,7 +615,7 @@ def Questionnaire(self,
                             with fullp.insert():
                                 fulltitlb = Label(text=self.question,
                                                   bottom=self.new_bottom + 2*min_marg_dist,
-                                                  font_size=font_size * 1.5,
+                                                  font_size=s(font_size) * 1.5,
                                                   center_x=self.width/2)
                             self.height_count = (self.height_count +
                                                  (fulltitlb.top - self.new_bottom) +

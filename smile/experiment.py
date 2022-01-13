@@ -300,9 +300,8 @@ class Experiment(object):
     def __init__(self, fullscreen=None, resolution=None,
                  scale_box=None, scale_up=False, scale_down=False,
                  background_color=None, name="SMILE", debug=False, Touch=None,
-                 save_uname=False, data_dir=None, local_crashlog=False,
-                 cmd_traceback=True,
-                 show_splash=True):
+                 save_private_computer_info=False, data_dir=None,
+                 local_crashlog=False, cmd_traceback=True, show_splash=True):
 
         self._sysinfo = {}
         self._sysinfo['DEFAULTDATADIR'] = kivy_overrides._get_config()['default_data_dir']
@@ -312,6 +311,7 @@ class Experiment(object):
 
         self._cmd_traceback = cmd_traceback
         self._local_crashlog = local_crashlog
+        self._save_private_computer_info = save_private_computer_info
         self._platform = platform
         self._exp_name = name
         self._session = time.strftime("%Y%m%d_%H%M%S")
@@ -379,11 +379,9 @@ class Experiment(object):
                               "version":version.__version__,
                               "author":version.__author__,
                               "email":version.__email__,
-                              "date_last_update":version.__date__}
+                              "date_last_update":version.__date__,
+                              "uname":pf.uname()}
                               )
-        if save_uname:
-            self._sysinfo.update({"uname":pf.uname()})
-
 
         # place to save experimental variables
         self._vars = {}
@@ -396,11 +394,11 @@ class Experiment(object):
     def _change_smile_subj(self, subj_id):
         #kconfig = kivy_overrides._get_config()
 
-        self._subject = subj_id
+        self._subject = subj_id.strip()
         self._subject_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
-                                         self._exp_name, subj_id)
+                                         self._exp_name, self._subject)
         self._session_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
-                                         self._exp_name, subj_id,
+                                         self._exp_name, self._subject,
                                          self._session)
 
         if not os.path.isdir(self._session_dir):
@@ -569,12 +567,18 @@ class Experiment(object):
             self._state_loggers[key][1]._file.flush()
             os.fsync(self._state_loggers[key][1]._file)
 
-    def _write_sysinfo(self, filename=None):
+    def _write_sysinfo(self, save_private=None, filename=None):
         if filename is None:
             filename = self._sysinfo_slog
+        if save_private is None:
+            save_private = self._save_private_computer_info
+        logged_info = self._sysinfo.copy()
+        if not save_private:
+            logged_info.pop('uname')
+            logged_info.pop('DEFAULTDATADIR')
 
         sysinfo_logger = LogWriter(filename=filename)
-        sysinfo_logger.write_record(data=self._sysinfo)
+        sysinfo_logger.write_record(data=logged_info)
         sysinfo_logger.close()
 
     @property
