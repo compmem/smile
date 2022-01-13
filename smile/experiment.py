@@ -394,7 +394,13 @@ class Experiment(object):
     def _change_smile_subj(self, subj_id):
         #kconfig = kivy_overrides._get_config()
 
-        self._subject = subj_id.strip()
+        if subj_id is None:
+           subj_id = ""
+        elif subj_id.strip() == "":
+            self._subject = "SUBJ0000"
+        else:
+            self._subject = subj_id.strip()
+        
         self._subject_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
                                          self._exp_name, self._subject)
         self._session_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
