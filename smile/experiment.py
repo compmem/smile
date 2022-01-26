@@ -311,9 +311,10 @@ class Experiment(object):
             if os.path.isdir(data_dir):
                 self._sysinfo['DEFAULTDATADIR'] = data_dir
         self._working_dir = '.'
-        if (working_dir is not None):
-            if os.path.isdir(working_dir):
-                self._working_dir = working_dir
+        # BGJNOTE: this needs to be automatic in the future, not passed in as a 
+        # parameter
+        if working_dir is not None and os.path.isdir(working_dir):
+            self._working_dir = working_dir
 
         self._cmd_traceback = cmd_traceback
         self._local_crashlog = local_crashlog
@@ -433,7 +434,7 @@ class Experiment(object):
 
     def clean_path(self, file_path):
         if os.path.exists(file_path):
-            return os.path.relpath(file_path, start=self._rel_wrk_dir)
+            return os.path.relpath(file_path, start=self._working_dir)
         else:
             # NOTE: If your file_path doesn't exist, then it will just be
             # erased from the logs, and replaced with CLEANED.
