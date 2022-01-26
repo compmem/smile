@@ -171,8 +171,7 @@ class State(object, metaclass=StateClass):
     # HIPAA compliance requires path names to be cleaned of any user names
     # so that we do not accidentally save any identifying information in our
     # data. Set an attribute name in self._to_be_cleaned_attrs if you want
-    # it cleaned relative to the working directory. All of these will Also
-    # be logged.
+    # it cleaned relative to the working directory.
     _to_be_cleaned_attrs = []
 
     def __new__(cls, *pargs, **kwargs):
@@ -530,7 +529,7 @@ class State(object, metaclass=StateClass):
             A list of string attribute names from this state
 
         """
-        return self._log_attrs + self._to_be_cleaned_attrs
+        return self._log_attrs
 
     @property
     def current_clone(self):  # TODO: new doc string!
@@ -788,7 +787,9 @@ class State(object, metaclass=StateClass):
         """Write a record to the state log for the current execution of the
         state.
         """
-        tempdict = {name : getattr(self, "_" + name) for name in self._log_attrs if not (name in self._to_be_cleaned_attrs)}
+        tempdict = {name : getattr(self, "_" + name)
+                    for name in self._log_attrs
+                    if not (name in self._to_be_cleaned_attrs)}
         for name in self._to_be_cleaned_attrs:
             if name in self._log_attrs:
                 tempdict[name] = self._exp.clean_path(getattr(self, "_" + name))
