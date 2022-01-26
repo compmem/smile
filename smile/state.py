@@ -787,12 +787,10 @@ class State(object, metaclass=StateClass):
         """Write a record to the state log for the current execution of the
         state.
         """
-        tempdict = {name : getattr(self, "_" + name)
-                    for name in self._log_attrs
-                    if not (name in self._to_be_cleaned_attrs)}
-        for name in self._to_be_cleaned_attrs:
-            if name in self._log_attrs:
-                tempdict[name] = self._exp.clean_path(getattr(self, "_" + name))
+        tempdict = {name: self._exp.clean_path(getattr(self, "_" + name))
+                    if name in self._to_be_cleaned_attrs
+                    else getattr(self, "_" + name)
+                    for name in self._log_attrs}
         self._exp.write_to_state_log(type(self).__name__,
                                      tempdict)
 
