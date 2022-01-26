@@ -15,9 +15,9 @@ import copy
 import inspect
 import weakref
 import sys
-import os.path
-from os import fsync, remove
 
+from os import fsync, remove
+import os.path
 from . import kivy_overrides
 from .ref import Ref, val, NotAvailable, NotAvailableError
 # Due to namespace issues, ref.jitter is imported as ref_jitter
@@ -168,6 +168,12 @@ class State(object, metaclass=StateClass):
         The time this state calls `finalize()`
 
     """
+    # HIPAA compliance requires path names to be cleaned of any user names
+    # so that we do not accidentally save any identifying information in our
+    # data. Set an attribute name in self._to_be_cleaned_attrs if you want
+    # it cleaned relative to the working directory. All of these will Also
+    # be logged.
+    _to_be_cleaned_attrs = []
 
     def __new__(cls, *pargs, **kwargs):
         use_state_class = kwargs.pop("use_state_class", False)
@@ -292,9 +298,10 @@ class State(object, metaclass=StateClass):
         # These are the names of attributes (minus leading underscores) which
         # will be logged at finalization time.  Subclasses should extend this
         # list to cause additional attributes to be logged.
-        self._log_attrs = ['instantiation_filename', 'instantiation_lineno',
+        self._log_attrs = ['instantiation_filename','instantiation_lineno',
                            'name', 'start_time', 'end_time', 'enter_time',
                            'leave_time', 'finalize_time']
+
 
         # Concerning state cloning...
 
@@ -523,7 +530,7 @@ class State(object, metaclass=StateClass):
             A list of string attribute names from this state
 
         """
-        return self._log_attrs
+        return self._log_attrs + self._to_be_cleaned_attrs
 
     @property
     def current_clone(self):  # TODO: new doc string!
@@ -781,9 +788,12 @@ class State(object, metaclass=StateClass):
         """Write a record to the state log for the current execution of the
         state.
         """
-        self._exp.write_to_state_log(
-            type(self).__name__,
-            {name : getattr(self, "_" + name) for name in self._log_attrs})
+        tempdict = {name : getattr(self, "_" + name) for name in self._log_attrs if not (name in self._to_be_cleaned_attrs)}
+        for name in self._to_be_cleaned_attrs:
+            if name in self._log_attrs:
+                tempdict[name] = self._exp.clean_path(getattr(self, "_" + name))
+        self._exp.write_to_state_log(type(self).__name__,
+                                     tempdict)
 
     def finalize(self):  #TODO: call a _finalize method?
         """Deactivate the state and perform any state logging.

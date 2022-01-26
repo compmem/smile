@@ -154,7 +154,7 @@ class MouseCursor(VisualState):
 
     """
     stack = []
-
+    _to_be_cleaned_attrs = ['filename']
     def __init__(self, filename=None, offset=None, scale=None,
                  duration=None, parent=None,
                  save_log=True, name=None, blocking=True):

@@ -16,6 +16,7 @@ import sys
 import weakref
 import time
 import threading
+import pathlib
 
 # kivy imports
 from . import kivy_overrides
@@ -301,6 +302,7 @@ class Experiment(object):
                  scale_box=None, scale_up=False, scale_down=False,
                  background_color=None, name="SMILE", debug=False, Touch=None,
                  save_private_computer_info=False, data_dir=None,
+                 rel_wrk_dir=None,
                  local_crashlog=False, cmd_traceback=True, show_splash=True):
 
         self._sysinfo = {}
@@ -308,6 +310,10 @@ class Experiment(object):
         if not (data_dir is None):
             if os.path.isdir(data_dir):
                 self._sysinfo['DEFAULTDATADIR'] = data_dir
+        self._rel_wrk_dir = '.'
+        if not (rel_wrk_dir is None):
+            if os.path.isdir(rel_wrk_dir):
+                self._rel_wrk_dir = rel_wrk_dir
 
         self._cmd_traceback = cmd_traceback
         self._local_crashlog = local_crashlog
@@ -400,7 +406,7 @@ class Experiment(object):
             self._subject = "SUBJ0000"
         else:
             self._subject = subj_id.strip()
-        
+
         self._subject_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
                                          self._exp_name, self._subject)
         self._session_dir = os.path.join(self._sysinfo['DEFAULTDATADIR'],
@@ -424,7 +430,11 @@ class Experiment(object):
         self._state_loggers = {}
         self._root_state.begin_log()
         return self._subject_dir
-
+    def clean_path(self, file_path):
+        if os.path.exists(file_path):
+            return os.path.relpath(file_path, start=self._rel_wrk_dir)
+        else:
+            return file_path
     def get_var_ref(self, name):
         try:
             return self.__issued_refs[name]

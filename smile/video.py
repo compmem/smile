@@ -550,7 +550,8 @@ class WidgetState(VisualState):
         self._widget = None
         self.__parent_widget = None
         self._constructor_param_names = list(params)
-        self._init_constructor_params = params
+
+        #self._init_constructor_params = params
         for name, value in params.items():
             setattr(self, "_init_" + name, value)
         if layout is None:
@@ -564,10 +565,10 @@ class WidgetState(VisualState):
         self.__x_pos_mode = None
         self.__y_pos_mode = None
 
+
         # set the log attrs
-        self._log_attrs.extend(['constructor_params',
-                                'index', 'rotate',
-                                'rotate_origin'])
+        self._log_attrs.extend(['index', 'rotate',
+                                'rotate_origin'] + list(params))
 
         self.__parallel = None
 
@@ -1036,11 +1037,13 @@ class UpdateWidget(VisualState):
 
     def get_log_fields(self):
         return ['instantiation_filename', 'instantiation_lineno', 'name',
-                'time', 'prop_name', 'prop_value']
+                'time', 'prop_name', 'prop_value'] + self._to_be_cleaned_attrs
 
     def save_log(self):
         class_name = type(self).__name__
         for name, value in self._values.items():
+            if name in self.__target._to_be_cleaned_attrs:
+                value = self._exp.clean_path(value)
             field_values = {
                 "instantiation_filename": self._instantiation_filename,
                 "instantiation_lineno": self._instantiation_lineno,
@@ -1589,7 +1592,8 @@ for widget in widgets:
     modname = "kivy.uix.%s" % widget.lower()
     exec("%s = WidgetState.wrap(%s.%s)" %
      (widget, modname, widget))
-
+Button._to_be_cleaned_attrs.extend(['background_disabled_up', 'background_disabled_down',
+                                    'background_up', 'background_down'])
 Button.__doc__ = """
 A **WidgetState** that shows a button in the window.
 
@@ -1668,7 +1672,10 @@ Kivy documentation for 'kivy.uix.button.
 <https://kivy.org/docs/api-kivy.uix.button.html>'_
 
 """
-
+Slider._to_be_cleaned_attrs.extend(['background_disabled_horizontal', 'background_disabled_vertical',
+                                    'background_horizontal', 'background_vertical',
+                                    'cursor_disabled_image', 'cursor_image',
+                                    ])
 Slider.__doc__ = """A **WidgetState** to display a Slider style input.
 
 This state will display a varying size Slider that can be used in conjunction
@@ -1737,7 +1744,8 @@ For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.slider. <https://kivy.org/docs/api-kivy.uix.slider.html>'_
 
 """
-
+TextInput._to_be_cleaned_attrs.extend(['background_active', 'background_disabled_normal',
+                                       'background_normal', ])
 TextInput.__doc__ = """A **WidgetState** that will display a box for typing text.
 
 With this **WidgetState**, you can display a box that allows participants to
@@ -1896,7 +1904,8 @@ Kivy documentation for 'kivy.uix.textinput.
 <https://kivy.org/docs/api-kivy.uix.textinput.html>'_
 
 """
-
+ToggleButton._to_be_cleaned_attrs.extend(['background_disabled_up', 'background_disabled_down',
+                                          'background_up', 'background_down'])
 ToggleButton.__doc__ = """A **WidgetState** that toggles on and off.
 
 This widget state can use all of the same parameters and properties of the
@@ -2049,7 +2058,10 @@ For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.codeinput. <https://kivy.org/docs/api-kivy.uix.codeinput.html>'_
 
 """
-
+CheckBox._to_be_cleaned_attrs.extend(['background_checkbox_disabled_normal', 'background_checkbox_disabled_down',
+                                    'background_checkbox_normal', 'background_checkbox_down'
+                                    'background_radio_disabled_normal', 'background_radio_disabled_down',
+                                    'background_radio_normal', 'background_radio_down'])
 CheckBox.__doc__ = """A **WidgetState** that is like a **ToggleButton**.
 
 The biggest differences in this and a **ToggleButton** is that within a group,
@@ -2904,7 +2916,7 @@ for widget in widgets:
 
 import kivy.uix.rst
 RstDocument = WidgetState.wrap(kivy.uix.rst.RstDocument)
-
+RstDocument._to_be_cleaned_attrs.append('source')
 RstDocument.__doc__="""A **WidgetState** for displaying RST documents.
 
 This **WidgetState** allows you to control the colors, fonts, and functions as
@@ -2996,6 +3008,7 @@ For other parameters or properties that this Widget might have, refer to the
 Kivy documentation for 'kivy.uix.rst. <https://kivy.org/docs/api-kivy.uix.rst.html>'_
 
 """
+
 
 import kivy.uix.filechooser
 FileChooserListView = WidgetState.wrap(kivy.uix.filechooser.FileChooserListView)
@@ -3219,6 +3232,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
         super(Video, self).unshow()
         self._widget.state = "stop"
         self._widget.unload()
+Video._to_be_cleaned_attrs.append('source')
 
 
 import kivy.uix.image
@@ -3286,6 +3300,8 @@ class Image(WidgetState.wrap(kivy.uix.image.Image)):
     """
     def _set_widget_defaults(self):
         self._widget.size = self._widget.texture_size
+
+Image._to_be_cleaned_attrs.append('source')
 
 import kivy.uix.label
 class Label(WidgetState.wrap(kivy.uix.label.Label)):
