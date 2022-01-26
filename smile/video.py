@@ -1037,7 +1037,7 @@ class UpdateWidget(VisualState):
 
     def get_log_fields(self):
         return ['instantiation_filename', 'instantiation_lineno', 'name',
-                'time', 'prop_name', 'prop_value'] + self._to_be_cleaned_attrs
+                'time', 'prop_name', 'prop_value']
 
     def save_log(self):
         class_name = type(self).__name__

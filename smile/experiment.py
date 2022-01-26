@@ -432,10 +432,12 @@ class Experiment(object):
         return self._subject_dir
 
     def clean_path(self, file_path):
-        try:
-            return os.path.relpath(file_path, start=self._working_dir)
-        except:
-            return file_path
+        if os.path.exists(file_path):
+            return os.path.relpath(file_path, start=self._rel_wrk_dir)
+        else:
+            # NOTE: If your file_path doesn't exist, then it will just be
+            # erased from the logs, and replaced with CLEANED.
+            return "CLEANED"
 
     def get_var_ref(self, name):
         try:
