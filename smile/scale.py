@@ -95,22 +95,8 @@ class Scale(object):
                 width_scale_factor = min(width_scale_factor, 1.0)
                 height_scale_factor = min(height_scale_factor, 1.0)
 
-            # now pick which scale factor to use
-            if (width_scale_factor >= 1.0) and (height_scale_factor >= 1.0):
-                # trying to scale up, so
-                # pick the smaller of the two
-                self._scale_factor = min(width_scale_factor,
-                                         height_scale_factor)
-            elif (width_scale_factor <= 1.0) and (height_scale_factor <= 1.0):
-                # trying to scale down, so
-                # pick the larger of the two
-                self._scale_factor = max(width_scale_factor,
-                                         height_scale_factor)
-            else:
-                # trying to both increase and decrease, so
-                # decrease wins to ensure everything is on the screen
-                self._scale_factor = min(width_scale_factor,
-                                         height_scale_factor)
+            self._scale_factor = min(width_scale_factor,
+                                     height_scale_factor)
         else:
             self._scale_factor = 1.0
 
