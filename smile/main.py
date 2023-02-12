@@ -116,9 +116,15 @@ class SmileApp(App):
         self.wid = FloatLayout()
         Window._system_keyboard.bind(on_key_down=self._on_key_down,
                                      on_key_up=self._on_key_up)
-        Window.bind(on_motion=self._on_motion,
-                    mouse_pos=self._on_mouse_pos,
-                    on_resize=self._on_resize)
+
+        if kivy.__version__ == "2.1.0":
+            Window.bind(on_motion=self._on_motion,
+                        mouse_pos=self._on_mouse_pos,
+                        on_resize=self._on_resize)
+        else:
+            Window.bind(on_motion=self._on_motion_legacy,
+                        mouse_pos=self._on_mouse_pos,
+                        on_resize=self._on_resize)
         self.current_touch = None
 
         # set starting times
@@ -197,7 +203,7 @@ class SmileApp(App):
                                    double=False, triple=False,
                                    event_time=self.event_time)
 
-    def _on_motion(self, window, etype, me):
+    def _on_motion_legacy(self, window, etype, me):
         if etype == "begin":
             # set the pos
             try:
@@ -248,6 +254,55 @@ class SmileApp(App):
                                    double=False, triple=False,
                                    event_time=self.dispatch_input_event_time)
 
+    def _on_motion(self, window, etype, me):
+        # set the pos
+        try:
+            w, h = Window._get_effective_size()
+        except AttributeError:
+            w, h = (Window.width, Window.height)
+        me.scale_for_screen(w, h, rotation=Window._rotation,
+                            smode=Window.softinput_mode,
+                            kheight=Window.keyboard_height)
+        if etype == "begin":
+            self.exp._screen._set_mouse_pos(tuple(int(round(x))
+                                                  for x in me.pos))
+
+            # set the button
+            try:
+                button = me.button
+                self.exp._screen._set_mouse_button(button)
+            except AttributeError:
+                if me.is_touch:
+                    # pretend that a touch event is a left button press
+                    self.exp._screen._set_mouse_button('left')
+                else:
+                    self.exp._screen._set_mouse_button(None)
+            self.current_touch = me
+            self._trigger_callback("MOTION", pos=me.pos,
+                                   button=self.exp._screen._mouse_button,
+                                   newly_pressed=True,
+                                   double=me.is_double_tap,
+                                   triple=me.is_triple_tap,
+                                   event_time=self.dispatch_input_event_time)
+        elif etype == "update":
+            self.exp._screen._set_mouse_pos(tuple(int(round(x))
+                                                  for x in me.pos))
+            self.current_touch = me
+            self._trigger_callback("MOTION", pos=me.pos,
+                                   button=self.exp._screen._mouse_button,
+                                   newly_pressed=False,
+                                   double=me.is_double_tap,
+                                   triple=me.is_triple_tap,
+                                   event_time=self.dispatch_input_event_time)
+        else:
+            self.exp._screen._set_mouse_button(None)
+            self.exp._screen._set_mouse_pos(tuple(int(round(x))
+                                                  for x in me.pos))
+            self.current_touch = None
+            self._trigger_callback("MOTION", pos=me.pos, button=None,
+                                   newly_pressed=False,
+                                   double=False, triple=False,
+                                   event_time=self.dispatch_input_event_time)
     def _idle_callback(self, event_loop):
         # record the time range
         self._new_time = clock.now()
