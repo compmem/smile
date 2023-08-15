@@ -75,6 +75,9 @@ Config.set('graphics', 'show_cursor', 0)
 # we don't want to be able to resize
 Config.set('graphics', 'resizable', 0)
 
+# ensure vsync
+Config.set('graphics', 'vsync', 1)
+
 density = Config.getdefault("SMILE", "DENSITY", "0.0")
 if density != "0.0":
     os.environ['KIVY_METRICS_DENSITY'] = density
@@ -91,7 +94,9 @@ EXACT_KIVY_VERSIONS = (
     "1.11.0",
     "1.11.1",
     "2.0.0",
-    "2.1.0")
+    "2.1.0",
+    "2.2.0",
+    "2.2.1")
 if kivy.__version__ not in EXACT_KIVY_VERSIONS:
     raise ImportError("kivy version must be one of %r, got %r" %
                       (EXACT_KIVY_VERSIONS, kivy.__version__))
