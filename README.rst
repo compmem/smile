@@ -37,7 +37,7 @@ Add a file to .git called post-checkout with the following.
     #!/bin/sh
     cat version.py | python versioning.py --clean | python versioning.py > version.py
 
-For more information visit `Mass Communicating <https://mass-communicating.com/code/2013/11/08/python-versions.html>`_
+For more information visit `Mass Communicating via the Wayback Machine<https://web.archive.org/web/20180823042433/https://mass-communicating.com/code/2013/11/08/python-versions.html>`_
 
 
 Documentation

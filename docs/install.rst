@@ -17,7 +17,7 @@ Also, it is important to have pip installed to your python. Without pip
 you will not be able to run the commands needed to install SMILE. To install
 *pip*, click the link below and follow the instructions.
 
-    -`Get pip <https://pip.pypa.io/en/stable/installing/>`_
+    -`Get pip <https://pip.pypa.io/en/stable/installation/>`_
 
 
 The next thing you need to install after *pip* is *kivy*. *Kivy* is the display
@@ -109,7 +109,7 @@ Installing SMILE on Mac
 The first step is to download and install Kivy. The following link will take you
 to the Mac-Kivy install guide.
 
-    -`Mac-Kivy Install Guide <http://kivy.org/docs/installation/installation-macosx.html>`_
+    -`Mac-Kivy Install Guide <https://kivy.org/doc/stable/installation/installation-osx.html>`_
 
 After you install Kivy, you must download and install SMILE. The following is a
 link to the SMILE download page, where you will download the zip, and extract
