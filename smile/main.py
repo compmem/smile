@@ -117,7 +117,8 @@ class SmileApp(App):
         Window._system_keyboard.bind(on_key_down=self._on_key_down,
                                      on_key_up=self._on_key_up)
 
-        if kivy.__version__ == "2.1.0":
+        # PBS: Fix this to be version > 2.1.0
+        if kivy.__version__ in ["2.1.0", "2.2.0", "2.2.1"]:
             Window.bind(on_motion=self._on_motion,
                         mouse_pos=self._on_mouse_pos,
                         on_resize=self._on_resize)
