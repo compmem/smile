@@ -15,7 +15,7 @@ exp = Experiment()
 Wait(1.0)
 
 with Parallel():
-    rect = Rectangle(bottom=exp.screen.center_bottom,
+    rect = Rectangle(center_bottom=exp.screen.center_bottom,
                      color='white')
     r2 = Rectangle(bottom=rect.top, color='purple')
     MouseCursor()
