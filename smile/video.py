@@ -3222,7 +3222,7 @@ class Video(WidgetState.wrap(kivy.uix.video.Video)):
                 for i in range(10):
                     if self._widget._video.texture:
                         break
-                    print('t')
+                    #print('t')
                     clock.usleep(100)
                     self._widget._video._update(0)
             self.live_change(size=self._widget._video.texture.size)
@@ -3560,11 +3560,20 @@ class ButtonPress(CallbackState):
         elif type(self._correct_resp) not in (list, tuple):
             self._correct_resp = [self._correct_resp]
         from .mouse import MouseButton
+
+        # reference to mouse button/click occurs within a widget
         self.__pressed_ref = Ref(
             lambda lst: [name for name, mouse_button in lst if
                          mouse_button is not None],
             [(button._name, MouseButton(button)) for button in
              self.__buttons])  # Check This
+
+        # reference for just a mouse/screen click
+        # when activated we'll check that it's inside the button with the
+        # pressed_ref
+        self.__mouse_button_ref = MouseButton()
+
+        # process the enter
         super(ButtonPress, self)._enter()
 
     def _callback(self):
@@ -3574,11 +3583,16 @@ class ButtonPress(CallbackState):
         self._press_time = NotAvailable
         self._correct = NotAvailable
         self._rt = NotAvailable
-        self.__pressed_ref.add_change_callback(self.button_callback)
+
+        # just track if a receive we click,
+        # then check button widgets in callback
+        self.__mouse_button_ref.add_change_callback(self.button_callback)
 
     def button_callback(self):
-        from smile.mouse import MouseWithin, MouseButton
+        from .mouse import MouseWithin, MouseButton
         self.claim_exceptions()
+
+        # determine if we clicked inside a button
         pressed_list = self.__pressed_ref.eval()
         if not len(pressed_list):
             return
