@@ -304,6 +304,7 @@ class SmileApp(App):
                                    newly_pressed=False,
                                    double=False, triple=False,
                                    event_time=self.dispatch_input_event_time)
+
     def _idle_callback(self, event_loop):
         # record the time range
         self._new_time = clock.now()
