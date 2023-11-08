@@ -114,18 +114,26 @@ class SmileApp(App):
 
         # base layout uses positional placement
         self.wid = FloatLayout()
+
+        # track key presses
         Window._system_keyboard.bind(on_key_down=self._on_key_down,
                                      on_key_up=self._on_key_up)
 
+        # common bindings for the Window
+        Window.bind(mouse_pos=self._on_mouse_pos,
+                    on_resize=self._on_resize,
+                    on_joy_axis=self._on_joy_axis,
+                    on_joy_hat=self._on_joy_hat,
+                    on_joy_button_down=self._on_joy_button_down,
+                    on_joy_button_up=self._on_joy_button_up)
+
+        # add on_motion fix depending on version
         # PBS: Fix this to be version > 2.1.0
         if kivy.__version__ in ["2.1.0", "2.2.0", "2.2.1"]:
-            Window.bind(on_motion=self._on_motion,
-                        mouse_pos=self._on_mouse_pos,
-                        on_resize=self._on_resize)
+            Window.bind(on_motion=self._on_motion)
         else:
-            Window.bind(on_motion=self._on_motion_legacy,
-                        mouse_pos=self._on_mouse_pos,
-                        on_resize=self._on_resize)
+            Window.bind(on_motion=self._on_motion_legacy)
+            
         self.current_touch = None
 
         # set starting times
@@ -304,6 +312,40 @@ class SmileApp(App):
                                    newly_pressed=False,
                                    double=False, triple=False,
                                    event_time=self.dispatch_input_event_time)
+    
+    def _on_joy_axis(self, window, stickid, axisid, value):
+        # currently ignoring stickid (so only one joystick will work)
+        self.exp._screen._set_joyaxis_value(axisid, value)
+        self._trigger_callback("JOYAXIS", stick_id=stickid,
+                               axisid=axisid, value=value,
+                               event_time=self.dispatch_input_event_time)
+        #print('joy_axis', stickid, axisid, value)
+        
+    def _on_joy_hat(self, window, stickid, hatid, value):
+        # currently ignoring stickid (so only one joystick will work)
+        self.exp._screen._set_joyhat_value(hatid, value)
+        self._trigger_callback("JOYHAT", stick_id=stickid,
+                               hatid=hatid, value=value,
+                               event_time=self.dispatch_input_event_time)
+        #print('joy_hat', stickid, hatid, value)
+
+    def _on_joy_button_down(self, window, stickid, buttonid):
+        # we currently ignore stickid
+        self.exp.screen._joybuttons_down.add(buttonid)
+        try:
+            self.exp.screen._issued_joybutton_refs[buttonid].dep_changed()
+        except KeyError:
+            pass
+        self._trigger_callback("JOYBUTTON_DOWN", buttonid, self.event_time)
+
+    def _on_joy_button_up(self, window, stickid, buttonid):
+        # we currently ignore stickid
+        self.exp.screen._joybuttons_down.discard(buttonid)
+        try:
+            self.exp.screen._issued_joybutton_refs[buttonid].dep_changed()
+        except KeyError:
+            pass
+        self._trigger_callback("JOYBUTTON_UP", buttonid, self.event_time)
 
     def _idle_callback(self, event_loop):
         # record the time range

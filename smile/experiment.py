@@ -101,6 +101,12 @@ class Screen(object):
         self._mouse_button_ref = Ref.getattr(self, "_mouse_button")
         self._keys_down = set()
         self._issued_key_refs = weakref.WeakValueDictionary()
+        self._joybuttons_down = set()
+        self._issued_joybutton_refs = weakref.WeakValueDictionary()
+        self._joyaxis_value = dict()
+        self._joyaxis_value_refs = dict()
+        self._joyhat_value = dict()
+        self._joyhat_value_refs = dict()
 
     @property
     def last_flip(self):
@@ -136,6 +142,59 @@ class Screen(object):
             ref = Ref(self._is_key_down, name)
             self._issued_key_refs[name] = ref
             return ref
+
+    def _is_joybutton_down(self, buttonid):
+        return buttonid in self._joybuttons_down
+
+    def _get_joybutton_ref(self, buttonid):
+        try:
+            return self._issued_joybutton_refs[buttonid]
+        except KeyError:
+            ref = Ref(self._is_joybutton_down, buttonid)
+            self._issued_joybutton_refs[buttonid] = ref
+            return ref
+
+    def get_joyaxis_value(self, axisid):
+        try:
+            # try to pull from existing ref
+            ref = self._joyaxis_value_refs[axisid]
+        except KeyError:
+            # no ref exists, so make it and try again
+            self._set_joyaxis_value(axisid, 0.0)
+            ref = self._joyaxis_value_refs[axisid]
+        return ref
+
+    def _set_joyaxis_value(self, axisid, value):
+        # first set the value
+        self._joyaxis_value[axisid] = value
+
+        # make sure the ref exists
+        try:
+            self._joyaxis_value_refs[axisid].dep_changed()
+        except KeyError:
+            self._joyaxis_value_refs[axisid] = Ref.getitem(self._joyaxis_value, axisid)
+            self._joyaxis_value_refs[axisid].dep_changed()
+
+    def get_joyhat_value(self, hatid):
+        try:
+            # try to pull from existing ref
+            ref = self._joyhat_value_refs[hatid]
+        except KeyError:
+            # no ref exists, so make it and try again
+            self._set_joyhat_value(hatid, 0.0)
+            ref = self._joyhat_value_refs[hatid]
+        return ref
+
+    def _set_joyhat_value(self, hatid, value):
+        # first set the value
+        self._joyhat_value[hatid] = value
+
+        # make sure the ref exists
+        try:
+            self._joyhat_value_refs[hatid].dep_changed()
+        except KeyError:
+            self._joyhat_value_refs[hatid] = Ref.getitem(self._joyhat_value, hatid)
+            self._joyhat_value_refs[hatid].dep_changed()
 
     @property
     def width(self):
