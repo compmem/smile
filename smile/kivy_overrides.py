@@ -1,6 +1,7 @@
 import sys
 import argparse
 import os
+from packaging import version
 
 if "kivy_overrides" not in sys.modules.keys() and \
    any([name.startswith("kivy") for name in sys.modules.keys() if
@@ -84,22 +85,18 @@ if density != "0.0":
 
 # handle supported kivy versions
 import kivy
+from kivy.logger import Logger
 
-EXACT_KIVY_VERSIONS = (
-    "1.8.0",
-    "1.9.0",
-    "1.9.1",
-    "1.10.0",
-    "1.10.1",
-    "1.11.0",
-    "1.11.1",
-    "2.0.0",
-    "2.1.0",
-    "2.2.0",
-    "2.2.1")
-if kivy.__version__ not in EXACT_KIVY_VERSIONS:
-    raise ImportError("kivy version must be one of %r, got %r" %
-                      (EXACT_KIVY_VERSIONS, kivy.__version__))
+KIVY_VERSION = kivy.__version__
+MIN_VERSION = "1.8.0"
+MAX_VERSION = "2.3.0"
+kivy_ver = version.parse(KIVY_VERSION)
+min_ver = version.parse(MIN_VERSION)
+max_ver = version.parse(MAX_VERSION)
+if not (min_ver <= kivy_ver <= max_ver):
+    Logger.warning(f"SMILE: Kivy Version {KIVY_VERSION} is outside " +
+                   f"the tested range ({MIN_VERSION} -- {MAX_VERSION}).")
+
 
 # provide custom event loop
 import kivy.base

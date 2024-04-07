@@ -30,6 +30,7 @@ from kivy.graphics.opengl import (
     GL_POINTS)
 from kivy.utils import platform
 import kivy.clock
+from packaging import version
 
 # local imports
 from .event import event_time
@@ -128,8 +129,10 @@ class SmileApp(App):
                     on_joy_button_up=self._on_joy_button_up)
 
         # add on_motion fix depending on version
-        # PBS: Fix this to be version > 2.1.0
-        if kivy.__version__ in ["2.1.0", "2.2.0", "2.2.1"]:
+        # motion was changed in version 2.1.0, requiring a workaround
+        kivy_version = version.parse(kivy.__version__)
+        new_motion_version = version.parse("2.1.0")
+        if kivy_version >= new_motion_version:
             Window.bind(on_motion=self._on_motion)
         else:
             Window.bind(on_motion=self._on_motion_legacy)
