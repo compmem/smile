@@ -11,3 +11,5 @@ data
 build-arch*
 dist
 MANIFEST
+.vscode
+smile.egg-info
