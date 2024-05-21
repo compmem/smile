@@ -13,6 +13,48 @@ it should make you happy.
 
 Prepare to SMILE...
 
+Installing SMILE
+================
+
+First you need Kivy, which is the primary dependency of SMILE
+Sometimes kivy has conflicts with some other packages, so we create a new virtual environment for working with SMILE:
+
+::
+
+    conda create -n smile    
+    conda activate smile
+
+Now we can install kivy:
+
+::
+
+    conda install -c conda-forge kivy
+
+
+If you plan on running SMILE from within Jupyter Notebook (only suggested for development and not data collection), you'll need to install that, too:
+
+::
+    
+    conda install notebook
+
+
+Then you can install SMILE right from the GitHub repository:
+
+::
+    
+    pip install --upgrade git+https://github.com/compmem/smile
+
+
+All together...
+
+::
+
+    conda create -n smile    
+    conda activate smile
+    conda install -c conda-forge kivy
+    pip install --upgrade git+https://github.com/compmem/smile
+
+
 
 Dependencies
 ============
@@ -44,3 +86,4 @@ Documentation
 =============
 
 For detailed documentation, please visit http://smile-docs.readthedocs.io/
+
