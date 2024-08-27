@@ -1932,9 +1932,9 @@ class Loop(SequentialState):
 
         if shuffle:
             # Due to namespace issues, ref.shuffle is imported as ref_shuffle
-            self._init_iterable = ref_shuffle(iterable)
+            self._iterable = ref_shuffle(iterable)
         else:
-            self._init_iterable = iterable
+            self._iterable = iterable
         self._cond = conditional
         self._outcome = True
 
