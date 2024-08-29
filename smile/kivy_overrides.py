@@ -66,6 +66,10 @@ if args.resolution:
     width, height = map(int, args.resolution.split("x"))
     Config.set("graphics", "width", width)
     Config.set("graphics", "height", height)
+    
+    # disable fullscreen to allow custom resolution
+    Config.set("graphics", "borderless", 0)
+    Config.set("graphics", "fullscreen", False)
 
 # prevent right-click multitouch with mouse
 Config.set("input", "mouse", "mouse,disable_multitouch")
