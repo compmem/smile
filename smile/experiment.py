@@ -291,7 +291,7 @@ class Experiment(object):
     are ready to start building your smile experiment. This is also
     the class that you save all of your experimental run time
     variables into. Experiment also gives you access to things like
-    screen size, resolution, and frame-rate during experimental run
+    screen size and frame-rate during experimental run
     time.
 
     When you have all of your smile code written, the last line you
@@ -305,9 +305,6 @@ class Experiment(object):
     ----------
     fullscreen : boolean (default = True)
         Set to False if you would like to not run in full-screen.
-    resolution : tuple
-        A tuple of integers that define the size of the experiment
-        window.
     background_color : string (default = 'BLACK')
         If given a string color name, see colors in video.py, the
         background of the window will be set to that color
@@ -357,8 +354,8 @@ class Experiment(object):
     equal to 55.
 
     """
-    def __init__(self, fullscreen=None, resolution=None,
-                 scale_box=None, scale_up=False, scale_down=False,
+    def __init__(self, fullscreen=None, scale_box=None, 
+                 scale_up=False, scale_down=False,
                  background_color=None, name="SMILE", debug=False, Touch=None,
                  save_private_computer_info=False, data_dir=None,
                  working_dir=None,
@@ -384,10 +381,9 @@ class Experiment(object):
         self._debug = debug
         self._process_args()
 
-        # handle fullscreen and resolution before Window is imported
+        # handle fullscreen before Window is imported
         if fullscreen is not None:
             self._fullscreen = fullscreen
-        self._resolution = self._resolution or resolution
 
         # set scale box
         scale._set_scale_box(scale_box=scale_box,
@@ -433,7 +429,6 @@ class Experiment(object):
         self._sysinfo.update({"fullscreen":self._fullscreen,
                               "data_time":self._session,
                               "debug":self._debug,
-                              "resolution":self._resolution,
                               "background_color":self._background_color,
                               "scale_box":scale_box,
                               "scale_up":scale_up,
@@ -576,12 +571,6 @@ class Experiment(object):
             self._fullscreen = False
         else:
             self._fullscreen = None
-
-        if args.resolution:
-            x, y = map(int, args.resolution.split("x"))
-            self._resolution = x, y
-        else:
-            self._resolution = None
 
         # set the additional info from command line (sometimes useful)
         self._info = args.info

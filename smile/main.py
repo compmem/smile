@@ -98,7 +98,7 @@ class SmileApp(App):
             func(*pargs, **kwargs)
 
     def build(self):
-        # set fullscreen and resolution
+        # set fullscreen
         if self.exp._fullscreen is not None:
             # set based on the experiment preference
             Window.fullscreen = self.exp._fullscreen
@@ -106,9 +106,6 @@ class SmileApp(App):
             if Window.fullscreen == False:
                 # make sure we have a border
                 Window.borderless = False
-
-        if self.exp._resolution is not None:
-            Window.system_size = self.exp._resolution
 
         # handle setting the bg color
         self.set_background_color()
