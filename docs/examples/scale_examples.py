@@ -24,7 +24,7 @@ from smile.scale import scale as s
 # NOTE If you want to test out what your code would look like on a different
 # monitor (that is smaller than the one you already have up), you can run the
 # following line in the command line:
-#                python your_code.py -f -r **width**x**height**
+#                python your_code.py -r **width**x**height**
 # Where width and height are replaced with the resolution of the monitor you
 # want to test.
 
