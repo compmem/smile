@@ -22,7 +22,7 @@ foreground = OrderedGroup(1)
 
 # create an experiment
 #exp = Experiment()
-exp = Experiment(screen_ind=0, resolution=(1024,768), pyglet_vsync=False)
+exp = Experiment(screen_ind=0, pyglet_vsync=False)
 
 # pulse vars
 DO_PULSE = True
