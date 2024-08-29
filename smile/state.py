@@ -1970,6 +1970,9 @@ class Loop(SequentialState):
                 count = len(self._iterable)
 
             for i in range(count):
+                self._outcome = val(self._cond)
+                if not self._outcome:
+                    break
                 yield i
 
     def _get_child_iterator(self):
