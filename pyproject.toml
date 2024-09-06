@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smile"
+version = "1.0.0"
+description = "State Machine Interface Library for Experiments"
+authors = [{ name = "Per B. Sederberg", email = "psederberg@gmail.com" }]
+maintainers = [{ name = "Per B. Sederberg", email = "psederberg@gmail.com" }]
+readme = { file = "README.rst", content-type = "text/x-rst" }
+license = { file = "license.txt" }
+requires-python = ">=3.6"
+dependencies = ["kivy", "packaging"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Researchers",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Operating System :: OS Independent",
+]
+
+keywords = ["state machine", "experiments"]
+
+[project.optional-dependencies]
+audio = ["pyo"]
+
+[project.urls]
+Documentation = "https://smile-docs.readthedocs.io/en/latest/#"
+Source = "https://github.com/compmem/smile"
+Tracker = "https://github.com/compmem/smile/issues"
+
+[tool.setuptools.package-data]
+smile = [
+    "face-smile.png",
+    "logo.png",
+    "test_sound.wav",
+    "test_video.mp4",
+    "lock.png",
+    "unlock.png",
+    "crosshairs*"
+]
