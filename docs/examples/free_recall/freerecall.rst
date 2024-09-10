@@ -50,32 +50,46 @@ instructions for the participant.
 .. code-block:: python
     :linenos:
 
-    #Names of the stimulus files
-    filenameL = "pools/living.txt"
-    filenameN = "pools/nonliving.txt"
+    from pathlib import Path
 
-    #Open the files and combine them
-    L = open(filenameL)
-    N = open(filenameN)
-    stimList = L.read().split('\n')
-    stimList.append(N.read().split('\n'))
+    # Get the directory where this script is located
+    script_dir = Path(__file__).parent.absolute()
 
-    #Open the instructions file
-    instruct_text = open('freekey_instructions.rst', 'r').read()
+    # Define paths to the stimulus files, relative to the script's location
+    POOLS_DIR = script_dir / "pools"
+    LIVING_TXT_PATH = POOLS_DIR / "living.txt"
+    NONLIVING_TXT_PATH = POOLS_DIR / "nonliving.txt"
 
-    #Define the Experimental Variables
-    ISI = 2
-    IBI = 2
-    STIMDUR = 2
-    PFI = 4
-    FONTSIZE = 40
-    RSTFONTSIZE = 30
-    RSTWIDTH = 900
+    # Open and combine the stimulus files with error handling
+    try:
+        living_list = LIVING_TXT_PATH.read_text().splitlines()
+        nonliving_list = NONLIVING_TXT_PATH.read_text().splitlines()
+    except FileNotFoundError as e:
+        print(f"Error: Stimulus file not found. {e}")
+        exit(1)
 
-    MINFKDUR = 20
+    stim_list = living_list + nonliving_list
 
-    NUMBLOCKS = 6
-    NUMPERBLOCK = [10,15,20]
+    # Open the instructions file, also relative to the script's location
+    INSTRUCTIONS_PATH = script_dir / 'freekey_instructions.rst'
+    try:
+        instruct_text = INSTRUCTIONS_PATH.read_text()
+    except FileNotFoundError as e:
+        print(f"Error: Instructions file not found. {e}")
+        exit(1)
+
+    # Define the Experimental Variables (Constants)
+    INTER_STIMULUS_INTERVAL = 2
+    INTER_BLOCK_INTERVAL = 2
+    STIMULUS_DURATION = 2
+    PRE_FREE_KEY_INTERVAL = 4
+    FONT_SIZE = 40
+    RST_FONT_SIZE = 30
+    RST_WIDTH = 900
+    MIN_FREE_KEY_DURATION = 20
+
+    NUM_BLOCKS = 6
+    NUM_PER_BLOCK = [10, 15, 20]
 
 Next we can take a look into our list gen. Simply, we generate a list of
 dictionaries where **study** points to a list of words and **duration** points
@@ -85,23 +99,29 @@ to the duration that the participants have to freely recall the words.
     :linenos:
 
     import random
+    from config import NUM_BLOCKS, stim_list, NUM_PER_BLOCK, MIN_FREE_KEY_DURATION
 
-    #Shuffle the stimulus
-    random.shuffle(stimList)
+    # Shuffle the stimulus list for randomness
+    random.shuffle(stim_list)
 
     blocks = []
-    #Loop NUMBLOCKS times
-    for i in range(NUMBLOCKS):
-        tempList = []
-        #For each block, loop either 10, 15, or 20 times
-        #Counter balanced to have equal numbers of each
-        for x in range(NUMPERBLOCK[i%len(NUMPERBLOCK)]):
-            tempList.append(stimList.pop())
-        #Create tempBlock
-        tempBlock = {"study":tempList,
-                     "duration":(MINFKDUR + 10*i%len(NUMPERBLOCK))}
-        blocks.append(tempBlock)
-    #Shuffle the newly created list of blocks
+    for block_index in range(NUM_BLOCKS):
+        study_items = []
+
+        # Select stimuli for the current block based on NUM_PER_BLOCK
+        num_items_in_block = NUM_PER_BLOCK[block_index % len(NUM_PER_BLOCK)]
+        for _ in range(num_items_in_block):
+            study_items.append(stim_list.pop())
+
+        # Create a block dictionary with study items and duration
+        block_duration = MIN_FREE_KEY_DURATION + \
+            10 * (block_index % len(NUM_PER_BLOCK))
+        blocks.append({
+            "study": study_items,
+            "duration": block_duration
+        })
+
+    # Shuffle the blocks to ensure random order of blocks
     random.shuffle(blocks)
 
 Finally we can get to the fun stuff! We now can start programming our SMILE
@@ -110,31 +130,37 @@ part of the experiment.
 
 .. code-block:: python
 
-    #Initialize the Experiment
-    exp = Experiment()
+    # Initialize the Experiment
+    exp = Experiment(debug=True)
 
-    #Show the instructions to the participant
-    RstDocument(text=instruct_text, base_font_size=RSTFONTSIZE, width=RSTWIDTH, height=exp.screen.height)
+    # Show the instructions to the participant
+    RstDocument(text=instruct_text, base_font_size=RST_FONT_SIZE,
+                width=RST_WIDTH, height=exp.screen.height)
     with UntilDone():
-        #When a KeyPress is detected, the UntilDone
-        #will cancel the RstDocument state
+        # When a KeyPress is detected, the UntilDone
+        # will cancel the RstDocument state
         KeyPress()
-    #Start the experiment Loop
+    # Start the experiment Loop
     with Loop(blocks) as block:
-        Wait(IBI)
+        Wait(INTER_BLOCK_INTERVAL)
         with Loop(block.current['study']) as study:
-            #Present the Fixation Cross
-            Label(text="+", duration=ISI, font_size=FONTSIZE)
-            #Present the study item
-            Label(text=study.current, duration=STIMDUR, font_size=FONTSIZE)
-        Wait(PFI)
-        #Start FreeKey
-        fk = FreeKey(Label(text="XXXXXXX", font_size=FONTSIZE), max_duration=block.current['duration'])
-        #Log everything!
-        Log(block,
+            # Present the Fixation Cross
+            Label(text="+", duration=INTER_STIMULUS_INTERVAL, font_size=FONT_SIZE)
+
+            # Present the study item and add debug information for current stimulus
+            Debug(study.current)
+            Label(text=study.current, duration=STIMULUS_DURATION, font_size=FONT_SIZE)
+
+        Wait(PRE_FREE_KEY_INTERVAL)
+
+        # Start FreeKey session
+        fk = FreeKey(Label(text="XXXXXXX", font_size=FONT_SIZE),
+                    max_duration=block.current['duration'])
+        # Log everything!
+        Log(block.current,
             name="FreeKey",
-            responses = fk.responses)
-    #Run the experiment
+            responses=fk.responses)
+    # Run the experiment
     exp.run()
 
 Analysis
@@ -193,40 +219,47 @@ free_recall.py in Full
 .. code-block:: python
     :linenos:
 
-    #freekey.py
     from smile.common import *
     from smile.freekey import FreeKey
 
-    #execute both the configuration file and the
-    #stimulus generation file
+    # BROKEN - ValueError
+
+    # execute both the configuration file and the
+    # stimulus generation file
     from config import *
     from gen_stim import *
 
-    #Initialize the Experiment
-    exp = Experiment()
+    # Initialize the Experiment
+    exp = Experiment(debug=True)
 
-    #Show the instructions to the participant
-    RstDocument(text=instruct_text, base_font_size=RSTFONTSIZE, width=RSTWIDTH, height=exp.screen.height)
+    # Show the instructions to the participant
+    RstDocument(text=instruct_text, base_font_size=RST_FONT_SIZE,
+                width=RST_WIDTH, height=exp.screen.height)
     with UntilDone():
-        #When a KeyPress is detected, the UntilDone
-        #will cancel the RstDocument state
+        # When a KeyPress is detected, the UntilDone
+        # will cancel the RstDocument state
         KeyPress()
-    #Start the experiment Loop
+    # Start the experiment Loop
     with Loop(blocks) as block:
-        Wait(IBI)
+        Wait(INTER_BLOCK_INTERVAL)
         with Loop(block.current['study']) as study:
-            #Present the Fixation Cross
-            Label(text="+", duration=ISI, font_size=FONTSIZE)
-            #Present the study item
-            Label(text=study.current, duration=STIMDUR, font_size=FONTSIZE)
-        Wait(PFI)
-        #Start FreeKey
-        fk = FreeKey(Label(text="XXXXXXX", font_size=FONTSIZE), max_duration=block.current['duration'])
-        #Log everything!
-        Log(block,
+            # Present the Fixation Cross
+            Label(text="+", duration=INTER_STIMULUS_INTERVAL, font_size=FONT_SIZE)
+
+            # Present the study item and add debug information for current stimulus
+            Debug(study.current)
+            Label(text=study.current, duration=STIMULUS_DURATION, font_size=FONT_SIZE)
+
+        Wait(PRE_FREE_KEY_INTERVAL)
+
+        # Start FreeKey session
+        fk = FreeKey(Label(text="XXXXXXX", font_size=FONT_SIZE),
+                    max_duration=block.current['duration'])
+        # Log everything!
+        Log(block.current,
             name="FreeKey",
-            responses = fk.responses)
-    #Run the experiment
+            responses=fk.responses)
+    # Run the experiment
     exp.run()
 
 config.py in Full
@@ -235,32 +268,46 @@ config.py in Full
 .. code-block:: python
     :linenos:
 
-    #Names of the stimulus files
-    filenameL = "pools/living.txt"
-    filenameN = "pools/nonliving.txt"
+    from pathlib import Path
 
-    #Open the files and combine them
-    L = open(filenameL)
-    N = open(filenameN)
-    stimList = L.read().split('\n')
-    stimList.append(N.read().split('\n'))
+    # Get the directory where this script is located
+    script_dir = Path(__file__).parent.absolute()
 
-    #Open the instructions file
-    instruct_text = open('freekey_instructions.rst', 'r').read()
+    # Define paths to the stimulus files, relative to the script's location
+    POOLS_DIR = script_dir / "pools"
+    LIVING_TXT_PATH = POOLS_DIR / "living.txt"
+    NONLIVING_TXT_PATH = POOLS_DIR / "nonliving.txt"
 
-    #Define the Experimental Variables
-    ISI = 2
-    IBI = 2
-    STIMDUR = 2
-    PFI = 4
-    FONTSIZE = 40
-    RSTFONTSIZE = 30
-    RSTWIDTH = 900
+    # Open and combine the stimulus files with error handling
+    try:
+        living_list = LIVING_TXT_PATH.read_text().splitlines()
+        nonliving_list = NONLIVING_TXT_PATH.read_text().splitlines()
+    except FileNotFoundError as e:
+        print(f"Error: Stimulus file not found. {e}")
+        exit(1)
 
-    MINFKDUR = 20
+    stim_list = living_list + nonliving_list
 
-    NUMBLOCKS = 6
-    NUMPERBLOCK = [10,15,20]
+    # Open the instructions file, also relative to the script's location
+    INSTRUCTIONS_PATH = script_dir / 'freekey_instructions.rst'
+    try:
+        instruct_text = INSTRUCTIONS_PATH.read_text()
+    except FileNotFoundError as e:
+        print(f"Error: Instructions file not found. {e}")
+        exit(1)
+
+    # Define the Experimental Variables (Constants)
+    INTER_STIMULUS_INTERVAL = 2
+    INTER_BLOCK_INTERVAL = 2
+    STIMULUS_DURATION = 2
+    PRE_FREE_KEY_INTERVAL = 4
+    FONT_SIZE = 40
+    RST_FONT_SIZE = 30
+    RST_WIDTH = 900
+    MIN_FREE_KEY_DURATION = 20
+
+    NUM_BLOCKS = 6
+    NUM_PER_BLOCK = [10, 15, 20]
 
 gen_stim.py in Full
 ===================
@@ -269,23 +316,29 @@ gen_stim.py in Full
     :linenos:
 
     import random
+    from config import NUM_BLOCKS, stim_list, NUM_PER_BLOCK, MIN_FREE_KEY_DURATION
 
-    #Shuffle the stimulus
-    random.shuffle(stimList)
+    # Shuffle the stimulus list for randomness
+    random.shuffle(stim_list)
 
     blocks = []
-    #Loop NUMBLOCKS times
-    for i in range(NUMBLOCKS):
-        tempList = []
-        #For each block, loop either 10, 15, or 20 times
-        #Counter balanced to have equal numbers of each
-        for x in range(NUMPERBLOCK[i%len(NUMPERBLOCK)]):
-            tempList.append(stimList.pop())
-        #Create tempBlock
-        tempBlock = {"study":tempList,
-                     "duration":(MINFKDUR + 10*i%len(NUMPERBLOCK))}
-        blocks.append(tempBlock)
-    #Shuffle the newly created list of blocks
+    for block_index in range(NUM_BLOCKS):
+        study_items = []
+
+        # Select stimuli for the current block based on NUM_PER_BLOCK
+        num_items_in_block = NUM_PER_BLOCK[block_index % len(NUM_PER_BLOCK)]
+        for _ in range(num_items_in_block):
+            study_items.append(stim_list.pop())
+
+        # Create a block dictionary with study items and duration
+        block_duration = MIN_FREE_KEY_DURATION + \
+            10 * (block_index % len(NUM_PER_BLOCK))
+        blocks.append({
+            "study": study_items,
+            "duration": block_duration
+        })
+
+    # Shuffle the blocks to ensure random order of blocks
     random.shuffle(blocks)
 
 CITATION
