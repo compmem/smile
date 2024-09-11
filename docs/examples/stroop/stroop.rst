@@ -28,112 +28,112 @@ to execute the config.py file and the gen_stim.py file.
     from config import *
     from gen_stim import *
 
-For this experiment we defined two functions that would generate our list of
-lists of dictionaries full of the information we need to run each trial of our
-experiment. The first is called `gen_lists()`. The following is `gen_stim.py`.
+The following is `gen_stim.py`.
 
 .. code-block:: python
     :linenos:
 
-    def gen_lists():
-        #First, let's define some variables.
-        num_of_blocks = 4 #This is an arbitrary number of blocks.
-        len_of_blocks = 24 #Once again, an arbitrary number of words in the block.
-        total_words = num_of_blocks * len_of_blocks #The total number of words.
-        dict_list = [] #The list to hold the dictionaries
-        sample_list = [] #This list will hold a few dictionaries in order to provide a sample.
+    from random import shuffle, randint, choice
+    from typing import List, Dict
+    from config import NUMBER_OF_BLOCKS, NUMBER_OF_TRIALS_PER_BLOCK
 
+
+    def randomize_color(word: str, index: int) -> str:
         """
-        We will be creating dictionaries with the following keys:
-            word		The actual word.
-            color		The color the word will be presented as.
-            matched		True or false (True if the word describes its own color, false otherwise.)
+        Randomly select a color from the available colors that does not match the given word.
 
+        Args:
+            word (str): The word representing the color.
+            index (int): The index used for color randomization.
+
+        Returns:
+            str: A mismatched color.
         """
-
-        #So, now we begin to create the lists.
-        for y in range (num_of_blocks):
-            for x in range(len_of_blocks/8):
-                block_list = []
-                #This block will create the matched word/color pairs.
-                r_trial = {'word':'red', 'color':'RED', 'matched':True}
-                block_list.append(r_trial)
-                sample_list.append(r_trial)
-                b_trial = {'word':'blue', 'color':'BLUE', 'matched':True}
-                block_list.append(b_trial)
-                sample_list.append(b_trial)
-                g_trial = {'word':'green', 'color':'GREEN', 'matched':True}
-                block_list.append(g_trial)
-                sample_list.append(g_trial)
-                o_trial = {'word':'orange', 'color':'ORANGE', 'matched':True}
-                block_list.append(o_trial)
-                sample_list.append(o_trial)
-
-                #This set of four will create the mismatched color lists.
-                rf_trial = {'word':'red', 'color':randomize_color('red', x%3), 'matched':False}
-                block_list.append(rf_trial)
-                sample_list.append(rf_trial)
-                bf_trial = {'word':'blue', 'color':randomize_color('blue', x%3), 'matched':False}
-                block_list.append(bf_trial)
-                sample_list.append(bf_trial)
-                gf_trial = {'word':'green', 'color':randomize_color('green', x%3), 'matched':False}
-                block_list.append(gf_trial)
-                sample_list.append(gf_trial)
-                of_trial = {'word':'orange', 'color':randomize_color('orange', x%3), 'matched':False}
-                block_list.append(of_trial)
-                sample_list.append(of_trial)
-
-                #And now we shuffle the lists to ensure randomness.
-                shuffle(block_list)
-                dict_list.append(block_list)
-        shuffle(dict_list)
-        return(dict_list, sample_list)
+        word_color_map = {
+            'red': ["BLUE", "GREEN", "ORANGE"],
+            'blue': ["RED", "GREEN", "ORANGE"],
+            'green': ["RED", "BLUE", "ORANGE"],
+            'orange': ["RED", "BLUE", "GREEN"]
+        }
+        return word_color_map[word][index % 3]
 
 
-Inside this function we call another function that we used to give us the color
-of the mismatched trials. This function is called `randomize_color()`.
-This function will return a string representative of the color that that text
-of this trial will be. The following is the rest of `gen_stim.py`.
+    def create_trial(word: str, matched: bool = True, color: str = None) -> Dict[str, str]:
+        """
+        Creates a trial dictionary with word, color, and matched status.
 
-.. code-block:: python
+        Args:
+            word (str): The word for the trial.
+            matched (bool): Whether the word matches the color.
+            color (str): Optional color to use for the trial, only for mismatched trials.
 
-    :lineno-start: 54
+        Returns:
+            dict: A dictionary representing a single trial.
+        """
+        trial_color = color if not matched else word.upper()
+        return {
+            'word': word,
+            'color': trial_color,
+            'matched': matched
+        }
 
-    #This function will essentially select a random color from blue, orange, green, and red from amongst the colors that the inputted word is not.
-    def randomize_color(sColor, iColor):
 
-        final_color = ''
-        if(sColor == 'red'):
-            if(iColor == 0):
-                final_color = 'BLUE'
-            elif(iColor == 1):
-                final_color = 'ORANGE'
-            else:
-                final_color = 'GREEN'
-        elif(sColor == 'blue'):
-            if(iColor == 0):
-                final_color = 'RED'
-            elif(iColor == 1):
-                final_color = 'GREEN'
-            else:
-                final_color = 'ORANGE'
-        elif(sColor == 'green'):
-            if(iColor == 0):
-                final_color = 'ORANGE'
-            elif(iColor == 1):
-                final_color = 'BLUE'
-            else:
-                final_color = 'RED'
-        elif(sColor == 'orange'):
-            if(iColor == 0):
-                final_color = 'RED'
-            elif(iColor == 1):
-                final_color = 'GREEN'
-            else:
-                final_color = 'BLUE'
-        return final_color
-    #Generate the Stimulus
-    trials, sample_list = gen_lists(NUM_BLOCKS, LEN_BLOCKS)
+    def generate_block(number_of_trials_per_block: int) -> List[Dict[str, str]]:
+        """
+        Generate a block of trials with a specified length.
+
+        Args:
+            number_of_trials_per_block (int): The desired number of trials in the block.
+
+        Returns:
+            List[Dict[str, str]]: A list of trial dictionaries.
+        """
+        block = []
+        words = ["red", "blue", "green", "orange"]
+
+        num_matched_trials = number_of_trials_per_block // 2
+
+        # Add matched trials
+        for _ in range(num_matched_trials):  # Half of the trials are matched
+            block.append(create_trial(choice(words), matched=True))
+
+        # Add mismatched trials
+        # Half of the trials are mismatched
+        for _ in range(number_of_trials_per_block - num_matched_trials):
+            random_word = choice(words)
+            block.append(create_trial(random_word, matched=False,
+                        color=randomize_color(random_word, randint(0, 2))))
+
+        shuffle(block)  # Shuffle the block for randomization
+        return block
+
+
+    def generate_blocks(num_of_blocks: int, number_of_trials_per_block: int) -> List[List[Dict[str, str]]]:
+        """
+        Generate a list of blocks, where each block contains a number of trials.
+
+        Each trial is represented as a dictionary with string keys and values.
+
+        Args:
+            num_of_blocks (int): The number of blocks to generate.
+            number_of_trials_per_block (int): The number of trials in each block.
+
+        Returns:
+            List[List[Dict[str, str]]]: A list of blocks, where each block is a list of trials. 
+            Each trial is represented as a dictionary with string keys and values.
+        """
+        blocks = []
+
+        for _ in range(num_of_blocks):
+            # Generate a block with the specified number of trials
+            block = generate_block(number_of_trials_per_block)
+            blocks.append(block)
+
+        shuffle(blocks)  # Shuffle the list of blocks to randomize their order
+        return blocks
+
+
+    BLOCKS = generate_blocks(NUMBER_OF_BLOCKS, NUMBER_OF_TRIALS_PER_BLOCK)
 
 Now that we have our list gen setup, let's run our list gen and setup our
 experiment variables. The following is `config.py`.
@@ -141,15 +141,18 @@ experiment variables. The following is `config.py`.
 .. code-block:: python
     :linenos:
 
-    #Read in the instructions
-    instruct_text = open('stroop_instructions.rst', 'r').read()
-    RST_FONT_SIZE = 30
-    RST_WIDTH = 900
-    NUM_BLOCKS = 4
-    LEN_BLOCKS = 24
+    from pathlib import Path
+    # Get the directory where this script is located
+    script_dir = Path(__file__).parent.absolute()
+    # Read in the instructions
+    INSTRUCT_TEXT = open(script_dir / 'stroop_instructions.rst', 'r').read()
+    NUMBER_OF_BLOCKS = 1
+    NUMBER_OF_TRIALS_PER_BLOCK = 2
     RECORD_DURATION = 2
     INTER_BLOCK_DURATION = 2
     INTER_STIMULUS_INTERVAL = 2
+    RST_FONT_SIZE = 30
+    RST_WIDTH = 900
 
 Now we can start building our stroop experiment. The first line we run is
 `exp = Experiment()` to tell **SMILE** that we are ready to start defining the
@@ -163,28 +166,28 @@ variables and the loops that drive our experiment.
 
 .. code-block:: python
 
-    #Define the Experiment Variable
+    # Define the Experiment Variable
     exp = Experiment()
 
-    #Show the instructions as an RstDocument Viewer on the screen
-    init_text = RstDocument(text=instruct_text, font_size=RST_FONT_SIZE, width=RST_WIDTH, top=exp.screen.top, height=exp.screen.height)
+    # Show the instructions as an RstDocument Viewer on the screen
+    init_text = RstDocument(text=INSTRUCT_TEXT, font_size=RST_FONT_SIZE,
+                            width=RST_WIDTH, top=exp.screen.top, height=exp.screen.height)
     with UntilDone():
-        #Once you press any key, the UntilDone will cancel the RstDocument,
-        #allowing the rest of the experiment to continue running.
+        # Once you press any key, the UntilDone will cancel the RstDocument,
+        # allowing the rest of the experiment to continue running.
         keypress = KeyPress()
 
-    #Initialize the block counter, only used because we need
-    #unique names for the .wav files later.
+    # Initialize the block counter, only used because we need
+    # unique names for the .wav files later.
     exp.block_number = 0
 
-    #Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
-    with Loop(trials) as block:
-        #Initialize the trial counter, only used because we need
-        #unique names for the .wav files later.
+    # Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
+    with Loop(BLOCKS) as block:
+        # Initialize the trial counter, only used because we need
+        # unique names for the .wav files later.
         exp.trial_number = 0
 
-        inter_stim = Label(text = '+', font_size = 80, duration = INTER_BLOCK_DURATION)
-        #Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
+        # Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
         with Loop(block.current) as trial:
 
 We have now declared our 2 loops. One is to loop over our blocks, and one is to
@@ -194,27 +197,27 @@ to define how our action states will work.
 
 .. code-block:: python
 
-            #Display the word, with the appropriate colored text
-            t = Label(text=trial.current['word'], font_size=48, color=trial.current['color'])
+            inter_stim = Label(text='+', font_size=80,
+                                duration=INTER_BLOCK_DURATION)
+            # Display the word, with the appropriate colored text
+            t = Label(text=trial.current['word'],
+                    font_size=48, color=trial.current['color'])
             with UntilDone():
-                #The Label will stay on the screen for as long as
-                #the RecordSoundFile state is active. The filename
-                #for this state is different for each trial in each block.
-                rec = RecordSoundFile(filename="b_" + Ref(str,exp.block_number) + "_t_" + Ref(str, exp.trial_number),
-                                      duration=RECORD_DURATION)
-            #Log the color and word that was presented on the screen,
-            #as well as the block and trial number
+                # The Label will stay on the screen for as long as
+                # the RecordSoundFile state is active. The filename
+                # for this state is different for each trial in each block.
+                rec = RecordSoundFile(filename="b_" + Ref(str, exp.block_number) + "_t_" + Ref(str, exp.trial_number),
+                                    duration=RECORD_DURATION)
+            # Log the color and word that was presented on the screen,
+            # as well as the block and trial number
             Log(name='Stroop', stim_word=trial.current['word'], stim_color=trial.current['color'],
                 block_num=exp.block_number, trial_num=exp.trial_number)
             Wait(INTER_STIMULUS_INTERVAL)
-            #Wait for a duration then present the fixation
-            #cross again.
-            inter_stim = Label(text = '+', font_size = 80, duration = INTER_BLOCK_DURATION)
-            #Increase the trial_number
+            # Increase the trial_number
             exp.trial_number += 1
-        #Increase the block_number
+        # Increase the block_number
         exp.block_number += 1
-    #Run the experiment!
+    # Run the experiment!
     exp.run()
 
 Analysis
@@ -267,61 +270,58 @@ stroop.py in Full
 .. code-block:: python
     :linenos:
 
-    from smile.common import *
+   from smile.common import *
     from smile.audio import RecordSoundFile
-    from random import *
-    from math import *
 
-    #execute both the configuration file and the
-    #stimulus generation file
+    # execute both the configuration file and the
+    # stimulus generation file
     from config import *
     from gen_stim import *
 
-
-    #Define the Experiment Variable
+    # Define the Experiment Variable
     exp = Experiment()
 
-    #Show the instructions as an RstDocument Viewer on the screen
-    init_text = RstDocument(text=instruct_text, font_size=RST_FONT_SIZE, width=RST_WIDTH, top=exp.screen.top, height=exp.screen.height)
+    # Show the instructions as an RstDocument Viewer on the screen
+    init_text = RstDocument(text=INSTRUCT_TEXT, font_size=RST_FONT_SIZE,
+                            width=RST_WIDTH, top=exp.screen.top, height=exp.screen.height)
     with UntilDone():
-        #Once you press any key, the UntilDone will cancel the RstDocument,
-        #allowing the rest of the experiment to continue running.
+        # Once you press any key, the UntilDone will cancel the RstDocument,
+        # allowing the rest of the experiment to continue running.
         keypress = KeyPress()
 
-    #Initialize the block counter, only used because we need
-    #unique names for the .wav files later.
+    # Initialize the block counter, only used because we need
+    # unique names for the .wav files later.
     exp.block_number = 0
 
-    #Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
-    with Loop(trials) as block:
-        #Initialize the trial counter, only used because we need
-        #unique names for the .wav files later.
+    # Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
+    with Loop(BLOCKS) as block:
+        # Initialize the trial counter, only used because we need
+        # unique names for the .wav files later.
         exp.trial_number = 0
 
-        inter_stim = Label(text = '+', font_size = 80, duration = INTER_BLOCK_DURATION)
-        #Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
+        # Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
         with Loop(block.current) as trial:
-            #Display the word, with the appropriate colored text
-            t = Label(text=trial.current['word'], font_size=48, color=trial.current['color'])
+            inter_stim = Label(text='+', font_size=80,
+                            duration=INTER_BLOCK_DURATION)
+            # Display the word, with the appropriate colored text
+            t = Label(text=trial.current['word'],
+                    font_size=48, color=trial.current['color'])
             with UntilDone():
-                #The Label will stay on the screen for as long as
-                #the RecordSoundFile state is active. The filename
-                #for this state is different for each trial in each block.
-                rec = RecordSoundFile(filename="b_" + Ref(str,exp.block_number) + "_t_" + Ref(str, exp.trial_number),
-                                      duration=RECORD_DURATION)
-            #Log the color and word that was presented on the screen,
-            #as well as the block and trial number
+                # The Label will stay on the screen for as long as
+                # the RecordSoundFile state is active. The filename
+                # for this state is different for each trial in each block.
+                rec = RecordSoundFile(filename="b_" + Ref(str, exp.block_number) + "_t_" + Ref(str, exp.trial_number),
+                                    duration=RECORD_DURATION)
+            # Log the color and word that was presented on the screen,
+            # as well as the block and trial number
             Log(name='Stroop', stim_word=trial.current['word'], stim_color=trial.current['color'],
                 block_num=exp.block_number, trial_num=exp.trial_number)
             Wait(INTER_STIMULUS_INTERVAL)
-            #Wait for a duration then present the fixation
-            #cross again.
-            inter_stim = Label(text = '+', font_size = 80, duration = INTER_BLOCK_DURATION)
-            #Increase the trial_number
+            # Increase the trial_number
             exp.trial_number += 1
-        #Increase the block_number
+        # Increase the block_number
         exp.block_number += 1
-    #Run the experiment!
+    # Run the experiment!
     exp.run()
 
 config.py in Full
@@ -330,14 +330,18 @@ config.py in Full
 .. code-block:: python
     :linenos:
 
-    instruct_text = open('stroop_instructions.rst', 'r').read()
-    RST_FONT_SIZE = 30
-    RST_WIDTH = 900
-    NUM_BLOCKS = 4
-    LEN_BLOCKS = 24
+    from pathlib import Path
+    # Get the directory where this script is located
+    script_dir = Path(__file__).parent.absolute()
+    # Read in the instructions
+    INSTRUCT_TEXT = open(script_dir / 'stroop_instructions.rst', 'r').read()
+    NUMBER_OF_BLOCKS = 1
+    NUMBER_OF_TRIALS_PER_BLOCK = 2
     RECORD_DURATION = 2
     INTER_BLOCK_DURATION = 2
     INTER_STIMULUS_INTERVAL = 2
+    RST_FONT_SIZE = 30
+    RST_WIDTH = 900
 
 gen_stim.py in Full
 ===================
@@ -345,95 +349,115 @@ gen_stim.py in Full
 .. code-block:: python
     :linenos:
 
-    def gen_lists(num_of_blocks, len_of_blocks):
-        #First, let's define some variables.
-        total_words = num_of_blocks * len_of_blocks #The total number of words.
-        dict_list = [] #The list to hold the dictionaries
-        sample_list = [] #This list will hold a few dictionaries in order to provide a sample.
+    from random import shuffle, randint, choice
+    from typing import List, Dict
+    from config import NUMBER_OF_BLOCKS, NUMBER_OF_TRIALS_PER_BLOCK
 
+
+    def randomize_color(word: str, index: int) -> str:
         """
-        We will be creating dictionaries with the following keys:
-            word		The actual word.
-            color		The color the word will be presented as.
-            matched		True or false (True if the word describes its own color, false otherwise.)
+        Randomly select a color from the available colors that does not match the given word.
 
+        Args:
+            word (str): The word representing the color.
+            index (int): The index used for color randomization.
+
+        Returns:
+            str: A mismatched color.
         """
-
-        #Now we begin to create the lists.
-        for y in range (num_of_blocks):
-            for x in range(len_of_blocks/8):
-                block_list = []
-                #This block will create the matched word/color pairs.
-                r_trial = {'word':'red', 'color':'RED', 'matched':True}
-                block_list.append(r_trial)
-                sample_list.append(r_trial)
-                b_trial = {'word':'blue', 'color':'BLUE', 'matched':True}
-                block_list.append(b_trial)
-                sample_list.append(b_trial)
-                g_trial = {'word':'green', 'color':'GREEN', 'matched':True}
-                block_list.append(g_trial)
-                sample_list.append(g_trial)
-                o_trial = {'word':'orange', 'color':'ORANGE', 'matched':True}
-                block_list.append(o_trial)
-                sample_list.append(o_trial)
-
-                #This set of four will create the mismatched color lists.
-                rf_trial = {'word':'red', 'color':randomize_color('red', x%3), 'matched':False}
-                block_list.append(rf_trial)
-                sample_list.append(rf_trial)
-                bf_trial = {'word':'blue', 'color':randomize_color('blue', x%3), 'matched':False}
-                block_list.append(bf_trial)
-                sample_list.append(bf_trial)
-                gf_trial = {'word':'green', 'color':randomize_color('green', x%3), 'matched':False}
-                block_list.append(gf_trial)
-                sample_list.append(gf_trial)
-                of_trial = {'word':'orange', 'color':randomize_color('orange', x%3), 'matched':False}
-                block_list.append(of_trial)
-                sample_list.append(of_trial)
-
-                #And now we shuffle the lists to ensure randomness.
-                shuffle(block_list)
-                dict_list.append(block_list)
-        shuffle(dict_list)
-        return(dict_list, sample_list)
+        word_color_map = {
+            'red': ["BLUE", "GREEN", "ORANGE"],
+            'blue': ["RED", "GREEN", "ORANGE"],
+            'green': ["RED", "BLUE", "ORANGE"],
+            'orange': ["RED", "BLUE", "GREEN"]
+        }
+        return word_color_map[word][index % 3]
 
 
+    def create_trial(word: str, matched: bool = True, color: str = None) -> Dict[str, str]:
+        """
+        Creates a trial dictionary with word, color, and matched status.
 
-    #This function will essentially select a random color from blue, orange, green, and red from amongst the colors that the inputted word is not.
-    def randomize_color(sColor, iColor):
+        Args:
+            word (str): The word for the trial.
+            matched (bool): Whether the word matches the color.
+            color (str): Optional color to use for the trial, only for mismatched trials.
 
-        final_color = ''
-        if(sColor == 'red'):
-            if(iColor == 0):
-                final_color = 'BLUE'
-            elif(iColor == 1):
-                final_color = 'ORANGE'
-            else:
-                final_color = 'GREEN'
-        elif(sColor == 'blue'):
-            if(iColor == 0):
-                final_color = 'RED'
-            elif(iColor == 1):
-                final_color = 'GREEN'
-            else:
-                final_color = 'ORANGE'
-        elif(sColor == 'green'):
-            if(iColor == 0):
-                final_color = 'ORANGE'
-            elif(iColor == 1):
-                final_color = 'BLUE'
-            else:
-                final_color = 'RED'
-        elif(sColor == 'orange'):
-            if(iColor == 0):
-                final_color = 'RED'
-            elif(iColor == 1):
-                final_color = 'GREEN'
-            else:
-                final_color = 'BLUE'
-        return final_color
-    #Generate the Stimulus
-    trials, sample_list = gen_lists(NUM_BLOCKS, LEN_BLOCKS)
+        Returns:
+            dict: A dictionary representing a single trial.
+        """
+        trial_color = color if not matched else word.upper()
+        return {
+            'word': word,
+            'color': trial_color,
+            'matched': matched
+        }
+
+
+    def generate_block(number_of_trials_per_block: int) -> List[Dict[str, str]]:
+        """
+        Generate a block of trials with a specified length.
+
+        Args:
+            number_of_trials_per_block (int): The desired number of trials in the block.
+
+        Returns:
+            List[Dict[str, str]]: A list of trial dictionaries.
+        """
+        block = []
+        words = ["red", "blue", "green", "orange"]
+
+        num_matched_trials = number_of_trials_per_block // 2
+
+        # Add matched trials
+        for _ in range(num_matched_trials):  # Half of the trials are matched
+            block.append(create_trial(choice(words), matched=True))
+
+        # Add mismatched trials
+        # Half of the trials are mismatched
+        for _ in range(number_of_trials_per_block - num_matched_trials):
+            random_word = choice(words)
+            block.append(create_trial(random_word, matched=False,
+                        color=randomize_color(random_word, randint(0, 2))))
+
+        shuffle(block)  # Shuffle the block for randomization
+        return block
+
+
+    def generate_blocks(num_of_blocks: int, number_of_trials_per_block: int) -> List[List[Dict[str, str]]]:
+        """
+        Generate a list of blocks, where each block contains a number of trials.
+
+        Each trial is represented as a dictionary with string keys and values.
+
+        Args:
+            num_of_blocks (int): The number of blocks to generate.
+            number_of_trials_per_block (int): The number of trials in each block.
+
+        Returns:
+            List[List[Dict[str, str]]]: A list of blocks, where each block is a list of trials. 
+            Each trial is represented as a dictionary with string keys and values.
+        """
+        blocks = []
+
+        for _ in range(num_of_blocks):
+            # Generate a block with the specified number of trials
+            block = generate_block(number_of_trials_per_block)
+            blocks.append(block)
+
+        shuffle(blocks)  # Shuffle the list of blocks to randomize their order
+        return blocks
+
+
+    BLOCKS = generate_blocks(NUMBER_OF_BLOCKS, NUMBER_OF_TRIALS_PER_BLOCK)
+
+
+    # Example usage
+    if __name__ == "__main__":
+        BLOCKS = generate_blocks(NUMBER_OF_BLOCKS, NUMBER_OF_TRIALS_PER_BLOCK)
+        print(len(BLOCKS))
+        print(BLOCKS)
+
 	
 CITATION
 ========

@@ -1,6 +1,7 @@
 from pathlib import Path
 # Get the directory where this script is located
 script_dir = Path(__file__).parent.absolute()
+# Read in the instructions
 INSTRUCT_TEXT = open(script_dir / 'stroop_instructions.rst', 'r').read()
 NUMBER_OF_BLOCKS = 1
 NUMBER_OF_TRIALS_PER_BLOCK = 2
