@@ -9,7 +9,7 @@ not you have seen this bold letter during this block.
 
 ::
 
-    If youve seen this letter in the current block, Press J.
+    If you have seen this letter in the current block, Press J.
 
 ::
 
