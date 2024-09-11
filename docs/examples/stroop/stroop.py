@@ -10,7 +10,7 @@ from gen_stim import *
 exp = Experiment()
 
 # Show the instructions as an RstDocument Viewer on the screen
-init_text = RstDocument(text=instruct_text, font_size=RST_FONT_SIZE,
+init_text = RstDocument(text=INSTRUCT_TEXT, font_size=RST_FONT_SIZE,
                         width=RST_WIDTH, top=exp.screen.top, height=exp.screen.height)
 with UntilDone():
     # Once you press any key, the UntilDone will cancel the RstDocument,
@@ -22,14 +22,15 @@ with UntilDone():
 exp.block_number = 0
 
 # Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
-with Loop(trials) as block:
+with Loop(BLOCKS) as block:
     # Initialize the trial counter, only used because we need
     # unique names for the .wav files later.
     exp.trial_number = 0
 
-    inter_stim = Label(text='+', font_size=80, duration=INTER_BLOCK_DURATION)
     # Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
     with Loop(block.current) as trial:
+        inter_stim = Label(text='+', font_size=80,
+                           duration=INTER_BLOCK_DURATION)
         # Display the word, with the appropriate colored text
         t = Label(text=trial.current['word'],
                   font_size=48, color=trial.current['color'])
@@ -44,10 +45,6 @@ with Loop(trials) as block:
         Log(name='Stroop', stim_word=trial.current['word'], stim_color=trial.current['color'],
             block_num=exp.block_number, trial_num=exp.trial_number)
         Wait(INTER_STIMULUS_INTERVAL)
-        # Wait for a duration then present the fixation
-        # cross again.
-        inter_stim = Label(text='+', font_size=80,
-                           duration=INTER_BLOCK_DURATION)
         # Increase the trial_number
         exp.trial_number += 1
     # Increase the block_number
