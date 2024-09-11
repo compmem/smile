@@ -40,6 +40,8 @@ with Loop(trials) as trial:
     with UntilDone():
         # wait some before accepting input
         Wait(RESP_DELAY)
+        # Wait until the test_stim label has the appear_time attribute
+        Wait(until=test_stim.appear_time)
         #After the KeyPress is detected, the UntilDone
         #cancels the Label test_stim and allows the
         #experiment to continue.
