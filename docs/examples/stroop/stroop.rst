@@ -133,7 +133,7 @@ of this trial will be. The following is the rest of `gen_stim.py`.
                 final_color = 'BLUE'
         return final_color
     #Generate the Stimulus
-    trials, sample_list = gen_lists(NUMBLOCKS, LENBLOCKS)
+    trials, sample_list = gen_lists(NUM_BLOCKS, LEN_BLOCKS)
 
 Now that we have our list gen setup, let's run our list gen and setup our
 experiment variables. The following is `config.py`.
@@ -143,13 +143,13 @@ experiment variables. The following is `config.py`.
 
     #Read in the instructions
     instruct_text = open('stroop_instructions.rst', 'r').read()
-    RSTFONTSIZE = 30
-    RSTWIDTH = 900
-    NUMBLOCKS = 4
-    LENBLOCKS = 24
-    recDuration = 2
-    interBlockDur = 2
-    interStimulusInterval = 2
+    RST_FONT_SIZE = 30
+    RST_WIDTH = 900
+    NUM_BLOCKS = 4
+    LEN_BLOCKS = 24
+    RECORD_DURATION = 2
+    INTER_BLOCK_DURATION = 2
+    INTER_STIMULUS_INTERVAL = 2
 
 Now we can start building our stroop experiment. The first line we run is
 `exp = Experiment()` to tell **SMILE** that we are ready to start defining the
@@ -167,7 +167,7 @@ variables and the loops that drive our experiment.
     exp = Experiment()
 
     #Show the instructions as an RstDocument Viewer on the screen
-    init_text = RstDocument(text=instruct_text, font_size=RSTFONTSIZE, width=RSTWIDTH, top=exp.screen.top, height=exp.screen.height)
+    init_text = RstDocument(text=instruct_text, font_size=RST_FONT_SIZE, width=RST_WIDTH, top=exp.screen.top, height=exp.screen.height)
     with UntilDone():
         #Once you press any key, the UntilDone will cancel the RstDocument,
         #allowing the rest of the experiment to continue running.
@@ -175,15 +175,15 @@ variables and the loops that drive our experiment.
 
     #Initialize the block counter, only used because we need
     #unique names for the .wav files later.
-    exp.blockNum = 0
+    exp.block_number = 0
 
     #Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
     with Loop(trials) as block:
         #Initialize the trial counter, only used because we need
         #unique names for the .wav files later.
-        exp.trialNum = 0
+        exp.trial_number = 0
 
-        inter_stim = Label(text = '+', font_size = 80, duration = interBlockDur)
+        inter_stim = Label(text = '+', font_size = 80, duration = INTER_BLOCK_DURATION)
         #Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
         with Loop(block.current) as trial:
 
@@ -200,20 +200,20 @@ to define how our action states will work.
                 #The Label will stay on the screen for as long as
                 #the RecordSoundFile state is active. The filename
                 #for this state is different for each trial in each block.
-                rec = RecordSoundFile(filename="b_" + Ref(str,exp.blockNum) + "_t_" + Ref(str, exp.trialNum),
-                                      duration=recDuration)
+                rec = RecordSoundFile(filename="b_" + Ref(str,exp.block_number) + "_t_" + Ref(str, exp.trial_number),
+                                      duration=RECORD_DURATION)
             #Log the color and word that was presented on the screen,
             #as well as the block and trial number
             Log(name='Stroop', stim_word=trial.current['word'], stim_color=trial.current['color'],
-                block_num=exp.blockNum, trial_num=exp.trialNum)
-            Wait(interStimulusInterval)
+                block_num=exp.block_number, trial_num=exp.trial_number)
+            Wait(INTER_STIMULUS_INTERVAL)
             #Wait for a duration then present the fixation
             #cross again.
-            inter_stim = Label(text = '+', font_size = 80, duration = interBlockDur)
-            #Increase the trialNum
-            exp.trialNum += 1
-        #Increase the blockNum
-        exp.blockNum += 1
+            inter_stim = Label(text = '+', font_size = 80, duration = INTER_BLOCK_DURATION)
+            #Increase the trial_number
+            exp.trial_number += 1
+        #Increase the block_number
+        exp.block_number += 1
     #Run the experiment!
     exp.run()
 
@@ -282,7 +282,7 @@ stroop.py in Full
     exp = Experiment()
 
     #Show the instructions as an RstDocument Viewer on the screen
-    init_text = RstDocument(text=instruct_text, font_size=RSTFONTSIZE, width=RSTWIDTH, top=exp.screen.top, height=exp.screen.height)
+    init_text = RstDocument(text=instruct_text, font_size=RST_FONT_SIZE, width=RST_WIDTH, top=exp.screen.top, height=exp.screen.height)
     with UntilDone():
         #Once you press any key, the UntilDone will cancel the RstDocument,
         #allowing the rest of the experiment to continue running.
@@ -290,15 +290,15 @@ stroop.py in Full
 
     #Initialize the block counter, only used because we need
     #unique names for the .wav files later.
-    exp.blockNum = 0
+    exp.block_number = 0
 
     #Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
     with Loop(trials) as block:
         #Initialize the trial counter, only used because we need
         #unique names for the .wav files later.
-        exp.trialNum = 0
+        exp.trial_number = 0
 
-        inter_stim = Label(text = '+', font_size = 80, duration = interBlockDur)
+        inter_stim = Label(text = '+', font_size = 80, duration = INTER_BLOCK_DURATION)
         #Initialize the Loop as "with Loop(list_like) as reference_variable_name:"
         with Loop(block.current) as trial:
             #Display the word, with the appropriate colored text
@@ -307,20 +307,20 @@ stroop.py in Full
                 #The Label will stay on the screen for as long as
                 #the RecordSoundFile state is active. The filename
                 #for this state is different for each trial in each block.
-                rec = RecordSoundFile(filename="b_" + Ref(str,exp.blockNum) + "_t_" + Ref(str, exp.trialNum),
-                                      duration=recDuration)
+                rec = RecordSoundFile(filename="b_" + Ref(str,exp.block_number) + "_t_" + Ref(str, exp.trial_number),
+                                      duration=RECORD_DURATION)
             #Log the color and word that was presented on the screen,
             #as well as the block and trial number
             Log(name='Stroop', stim_word=trial.current['word'], stim_color=trial.current['color'],
-                block_num=exp.blockNum, trial_num=exp.trialNum)
-            Wait(interStimulusInterval)
+                block_num=exp.block_number, trial_num=exp.trial_number)
+            Wait(INTER_STIMULUS_INTERVAL)
             #Wait for a duration then present the fixation
             #cross again.
-            inter_stim = Label(text = '+', font_size = 80, duration = interBlockDur)
-            #Increase the trialNum
-            exp.trialNum += 1
-        #Increase the blockNum
-        exp.blockNum += 1
+            inter_stim = Label(text = '+', font_size = 80, duration = INTER_BLOCK_DURATION)
+            #Increase the trial_number
+            exp.trial_number += 1
+        #Increase the block_number
+        exp.block_number += 1
     #Run the experiment!
     exp.run()
 
@@ -331,13 +331,13 @@ config.py in Full
     :linenos:
 
     instruct_text = open('stroop_instructions.rst', 'r').read()
-    RSTFONTSIZE = 30
-    RSTWIDTH = 900
-    NUMBLOCKS = 4
-    LENBLOCKS = 24
-    recDuration = 2
-    interBlockDur = 2
-    interStimulusInterval = 2
+    RST_FONT_SIZE = 30
+    RST_WIDTH = 900
+    NUM_BLOCKS = 4
+    LEN_BLOCKS = 24
+    RECORD_DURATION = 2
+    INTER_BLOCK_DURATION = 2
+    INTER_STIMULUS_INTERVAL = 2
 
 gen_stim.py in Full
 ===================
@@ -433,7 +433,7 @@ gen_stim.py in Full
                 final_color = 'BLUE'
         return final_color
     #Generate the Stimulus
-    trials, sample_list = gen_lists(NUMBLOCKS, LENBLOCKS)
+    trials, sample_list = gen_lists(NUM_BLOCKS, LEN_BLOCKS)
 	
 CITATION
 ========
