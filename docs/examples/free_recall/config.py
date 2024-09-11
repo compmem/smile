@@ -21,7 +21,7 @@ stim_list = living_list + nonliving_list
 # Open the instructions file, also relative to the script's location
 INSTRUCTIONS_PATH = script_dir / 'freekey_instructions.rst'
 try:
-    instruct_text = INSTRUCTIONS_PATH.read_text()
+    INSTRUCT_TEXT = INSTRUCTIONS_PATH.read_text()
 except FileNotFoundError as e:
     print(f"Error: Instructions file not found. {e}")
     exit(1)

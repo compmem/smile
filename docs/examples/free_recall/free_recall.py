@@ -10,7 +10,7 @@ from gen_stim import *
 exp = Experiment(debug=True)
 
 # Show the instructions to the participant
-RstDocument(text=instruct_text, base_font_size=RST_FONT_SIZE,
+RstDocument(text=INSTRUCT_TEXT, base_font_size=RST_FONT_SIZE,
             width=RST_WIDTH, height=exp.screen.height)
 with UntilDone():
     # When a KeyPress is detected, the UntilDone

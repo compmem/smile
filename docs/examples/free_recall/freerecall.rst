@@ -73,7 +73,7 @@ instructions for the participant.
     # Open the instructions file, also relative to the script's location
     INSTRUCTIONS_PATH = script_dir / 'freekey_instructions.rst'
     try:
-        instruct_text = INSTRUCTIONS_PATH.read_text()
+        INSTRUCT_TEXT = INSTRUCTIONS_PATH.read_text()
     except FileNotFoundError as e:
         print(f"Error: Instructions file not found. {e}")
         exit(1)
@@ -134,7 +134,7 @@ part of the experiment.
     exp = Experiment(debug=True)
 
     # Show the instructions to the participant
-    RstDocument(text=instruct_text, base_font_size=RST_FONT_SIZE,
+    RstDocument(text=INSTRUCT_TEXT, base_font_size=RST_FONT_SIZE,
                 width=RST_WIDTH, height=exp.screen.height)
     with UntilDone():
         # When a KeyPress is detected, the UntilDone
@@ -233,7 +233,7 @@ free_recall.py in Full
     exp = Experiment(debug=True)
 
     # Show the instructions to the participant
-    RstDocument(text=instruct_text, base_font_size=RST_FONT_SIZE,
+    RstDocument(text=INSTRUCT_TEXT, base_font_size=RST_FONT_SIZE,
                 width=RST_WIDTH, height=exp.screen.height)
     with UntilDone():
         # When a KeyPress is detected, the UntilDone
@@ -291,7 +291,7 @@ config.py in Full
     # Open the instructions file, also relative to the script's location
     INSTRUCTIONS_PATH = script_dir / 'freekey_instructions.rst'
     try:
-        instruct_text = INSTRUCTIONS_PATH.read_text()
+        INSTRUCT_TEXT = INSTRUCTIONS_PATH.read_text()
     except FileNotFoundError as e:
         print(f"Error: Instructions file not found. {e}")
         exit(1)
