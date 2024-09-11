@@ -9,7 +9,7 @@ from gen_stim import *
 # Define the experiment
 exp = Experiment()
 # Present the instructions to the participant
-init_text = RstDocument(text=instruct_text, width=RST_WIDTH,
+init_text = RstDocument(text=INSTRUCT_TEXT, width=RST_WIDTH,
                         font_size=RST_FONT_SIZE, top=exp.screen.top, height=exp.screen.height)
 with UntilDone():
     # Once the KeyPress is detected, the UntilDone

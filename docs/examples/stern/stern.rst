@@ -60,7 +60,7 @@ following is `config.py`
     # Get the directory where this script is located
     script_dir = Path(__file__).parent.absolute()
     # instructions written in another document
-    instruct_text = open(script_dir / 'stern_instructions.rst', 'r').read()
+    INSTRUCT_TEXT = open(script_dir / 'stern_instructions.rst', 'r').read()
 
     RST_FONT_SIZE = 30
     RST_WIDTH = 900
@@ -125,7 +125,7 @@ the following code explain what every few lines do.
     # Define the experiment
     exp = Experiment()
     # Present the instructions to the participant
-    init_text = RstDocument(text=instruct_text, width=RST_WIDTH,
+    init_text = RstDocument(text=INSTRUCT_TEXT, width=RST_WIDTH,
                             font_size=RST_FONT_SIZE, top=exp.screen.top, height=exp.screen.height)
     with UntilDone():
         # Once the KeyPress is detected, the UntilDone
@@ -248,7 +248,7 @@ stern.py in Full
     # Define the experiment
     exp = Experiment()
     # Present the instructions to the participant
-    init_text = RstDocument(text=instruct_text, width=RST_WIDTH,
+    init_text = RstDocument(text=INSTRUCT_TEXT, width=RST_WIDTH,
                             font_size=RST_FONT_SIZE, top=exp.screen.top, height=exp.screen.height)
     with UntilDone():
         # Once the KeyPress is detected, the UntilDone
@@ -322,7 +322,7 @@ config.py in Full
     # Get the directory where this script is located
     script_dir = Path(__file__).parent.absolute()
     # instructions written in another document
-    instruct_text = open(script_dir / 'stern_instructions.rst', 'r').read()
+    INSTRUCT_TEXT = open(script_dir / 'stern_instructions.rst', 'r').read()
 
     RST_FONT_SIZE = 30
     RST_WIDTH = 900

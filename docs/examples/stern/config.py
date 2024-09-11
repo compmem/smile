@@ -12,7 +12,7 @@ ITEMS = string.ascii_lowercase
 # Get the directory where this script is located
 script_dir = Path(__file__).parent.absolute()
 # instructions written in another document
-instruct_text = open(script_dir / 'stern_instructions.rst', 'r').read()
+INSTRUCT_TEXT = open(script_dir / 'stern_instructions.rst', 'r').read()
 
 RST_FONT_SIZE = 30
 RST_WIDTH = 900
