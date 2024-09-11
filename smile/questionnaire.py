@@ -1,5 +1,5 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
@@ -111,7 +111,7 @@ def csv2loq(filename: str) -> List[Dict[str, Any]]:
     List[Dict[str, Any]]
         A list of dictionaries, each representing a question with its attributes.
     """
-    def add_question_to_output(current_question: Optional[Dict[str, Any]], 
+    def add_question_to_output(current_question: Optional[Dict[str, Any]],
                                output_question_list: List[Dict[str, Any]]) -> None:
         """Helper function to append the current question to the output."""
         if current_question:
@@ -135,13 +135,18 @@ def csv2loq(filename: str) -> List[Dict[str, Any]]:
         # Iterate through each row of the CSV
         for item in reader:
             # Ensure default values for missing keys
-            question_type = item.get('type', '').strip()  # Default to empty string if missing
-            question_text = item.get('question', '').strip()  # Default to empty string if missing
-            answer = item.get('ans', '').strip()  # Default to empty string if missing
-            multiline_value = item.get('multiline', '').strip()  # Default to empty string if missing
+            # Default to empty string if missing
+            question_type = item.get('type', '').strip()
+            # Default to empty string if missing
+            question_text = item.get('question', '').strip()
+            # Default to empty string if missing
+            answer = item.get('ans', '').strip()
+            # Default to empty string if missing
+            multiline_value = item.get('multiline', '').strip()
 
             if question_type:
-                add_question_to_output(current_question, output_question_list)  # Add the previous question to output
+                # Add the previous question to output
+                add_question_to_output(current_question, output_question_list)
 
                 # Start a new question
                 current_question = {
@@ -154,7 +159,8 @@ def csv2loq(filename: str) -> List[Dict[str, Any]]:
 
                 # Handle multiline text input questions
                 if question_type == "TI":
-                    current_question["multiline"] = int(multiline_value) if multiline_value else 0
+                    current_question["multiline"] = int(
+                        multiline_value) if multiline_value else 0
 
                 # Append answer if available
                 if answer:
@@ -180,14 +186,13 @@ def Questionnaire(self,
                   y=None,
                   save_logs=True,
                   font_size=35):
-
     """Present a number of questions to a participant
 
-    Passing in a list of dictionairies with different keys will allow
+    Passing in a list of dictionaries with different keys will allow
     you to display the questions in the order that they show up in the
     list. Below you will see the parameters you can pass into this
     state, along with what keys you need for dictionaries of each type
-    of equestion that can be displayed with this state.
+    of question that can be displayed with this state.
 
     Parameters
     ----------
@@ -243,7 +248,7 @@ def Questionnaire(self,
 
     TI : Text Input
         This kind of question is a Text input question. With the
-        addtion of a multi-line key, you are able to dictate how many
+        addition of a multi-line key, you are able to dictate how many
         lines the Text Input Widget is tall.
 
         "type" : "CA"
@@ -296,7 +301,7 @@ def Questionnaire(self,
             Question to be displayed.
         "ans" : list
             A list of 2 to 10 strings. Can be empty strings. ans[i] is
-            displayed above the coorisponding radio button.
+            displayed above the corresponding radio button.
         "group_id" : string
             A unique string with no spaces to identify this question.
 
@@ -394,19 +399,21 @@ def Questionnaire(self,
                                                          save_log=False)
 
                                 # Append the temp list of buttons
-                                self.temp_tog_buttons = self.temp_tog_buttons + [tbinsert.last]
+                                self.temp_tog_buttons = self.temp_tog_buttons + \
+                                    [tbinsert.last]
                                 # Make sure the new bottom and height
                                 # is updated.
                                 self.new_bottom = mcvlb.top
 
                             # After the loop finishes, add the temp list of
                             # buttons to the Big list of lists of buttons.
-                            self.MC_refs = self.MC_refs + [self.temp_tog_buttons]
+                            self.MC_refs = self.MC_refs + \
+                                [self.temp_tog_buttons]
                             self.questions = self.questions + \
-                                             [{"answers_index": Ref(len, self.MC_refs) - 1,
-                                               "question": self.question,
-                                               "type": "MC",
-                                               "index": self.fullcount}]
+                                [{"answers_index": Ref(len, self.MC_refs) - 1,
+                                  "question": self.question,
+                                  "type": "MC",
+                                  "index": self.fullcount}]
                             # Add the question to the window aswell.
                             # Add the question to the window aswell.
                             with fullp.insert():
@@ -466,10 +473,12 @@ def Questionnaire(self,
                                     lilb = Label(text=self.cur_li_but,
                                                  center_x=litb.center_x,
                                                  font_size=s(font_size)*3/4,
-                                                 y=litb.top + (0.5*MIN_MARG_DIST),
+                                                 y=litb.top +
+                                                 (0.5*MIN_MARG_DIST),
                                                  save_log=False)
                                 # Append the temp list of buttons
-                                self.temp_li_buttons = self.temp_li_buttons + [liinsert.first]
+                                self.temp_li_buttons = self.temp_li_buttons + \
+                                    [liinsert.first]
 
                                 # Make sure the new bottom and
                                 # height is updated.
@@ -482,7 +491,8 @@ def Questionnaire(self,
                             # list of buttons to the big list of lists
                             # of buttons.
 
-                            self.LI_refs = self.LI_refs + [self.temp_li_buttons]
+                            self.LI_refs = self.LI_refs + \
+                                [self.temp_li_buttons]
                             self.questions = self.questions + [{"answers_index": Ref(len, self.LI_refs) - 1,
                                                                 "question": self.question,
                                                                 "type": "LI",
@@ -497,7 +507,8 @@ def Questionnaire(self,
                                 lilbf = Label(text=self.question,
                                               left=2*MIN_MARG_DIST,
                                               bottom=self.new_bottom+MIN_MARG_DIST,
-                                              text_size=(fl.width - 4*MIN_MARG_DIST, None),
+                                              text_size=(
+                                                  fl.width - 4*MIN_MARG_DIST, None),
                                               font_size=s(font_size),
                                               save_log=False)
                             # Update the height of the rectangle, buttom, and height_count
@@ -541,17 +552,20 @@ def Questionnaire(self,
                                                          save_log=False)
 
                                 # Append the temp list of buttons
-                                self.temp_ca_buttons = self.temp_ca_buttons + [cainsert.last]
+                                self.temp_ca_buttons = self.temp_ca_buttons + \
+                                    [cainsert.last]
                                 # Make sure the new bottom and
                                 # height is updated.
                                 self.new_bottom = cavlb.top
 
                             # After the loop finishes, add the temp list of
                             # buttons to the Big list of lists of buttons.
-                            self.CA_refs = self.CA_refs + [self.temp_ca_buttons]
+                            self.CA_refs = self.CA_refs + \
+                                [self.temp_ca_buttons]
 
                             self.questions = self.questions + [Ref(dict,
-                                                               answers_index=Ref(len,self.CA_refs) - 1,
+                                                               answers_index=Ref(
+                                                                   len, self.CA_refs) - 1,
                                                                question=self.question, type="CA",
                                                                index=self.fullcount)]
                             # Add the question to the window aswell.
@@ -581,7 +595,8 @@ def Questionnaire(self,
                                                 font_size=s(font_size),
                                                 bottom=self.new_bottom + MIN_MARG_DIST,
                                                 width=fl.width - 2*MIN_MARG_DIST,
-                                                height=self.question_info['multiline'] * DEF_TEXT_INPUT_HEIGHT,
+                                                height=self.question_info['multiline'] *
+                                                DEF_TEXT_INPUT_HEIGHT,
                                                 save_log=False)
 
                                 tirec = Rectangle(color=(0.2, 0.2, 0.2, 1.0),
@@ -604,8 +619,8 @@ def Questionnaire(self,
                             tirec.height = tilb.height
                             self.new_bottom = tilb.top
                             self.height_count = self.height_count + \
-                                                tilb.height + \
-                                                tif.height + (2*MIN_MARG_DIST)
+                                tilb.height + \
+                                tif.height + (2*MIN_MARG_DIST)
 
                         with Elif(self.q_type == "CT"):
                             with fullp.insert() as ctinsert:
@@ -716,7 +731,7 @@ def Questionnaire(self,
                 with Loop(self.LI_refs[question.current['answers_index']]) as li_loop_ref:
                     self.li_temp_answers_list = self.li_temp_answers_list + [{"ans": li_loop_ref.current.but_name,
                                                                               "value": li_loop_ref.current.state == 'down'}]
-                self.results = self.results + [{"question" :question.current['question'],
+                self.results = self.results + [{"question": question.current['question'],
                                                 "type": "LI", "index": question.current['index'],
                                                 "answers": self.li_temp_answers_list}]
 
