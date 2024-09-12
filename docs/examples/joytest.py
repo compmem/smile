@@ -13,7 +13,7 @@ import math
 
 
 # set up an experiment
-exp = Experiment(resolution=(1280, 1024))
+exp = Experiment()
 
 Wait(0.5)
 
