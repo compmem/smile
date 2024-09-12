@@ -1,5 +1,5 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
@@ -36,7 +36,7 @@ with Meanwhile():
                                                      jitter(0, 1)))
             exp.circs = exp.circs + [ins.first]
 
-# print out the locs we saved
+# print out the logs we saved
 with Loop(exp.circs, save_log=False) as c:
     Debug(i=c.i,
           center=c.current.center,

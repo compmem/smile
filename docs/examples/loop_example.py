@@ -1,5 +1,5 @@
-#emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-#ex: set sts=4 ts=4 sw=4 et:
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# ex: set sts=4 ts=4 sw=4 et:
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See the COPYING file distributed along with the smile package for the
@@ -16,14 +16,15 @@ exp = Experiment()
 # set up my list
 trials = [str(i) for i in range(5)]
 GOOD_RT = .5
-RESP_KEYS = ['J','K']
+RESP_KEYS = ['J', 'K']
 
 Wait(1.0)
 
 with Loop(trials) as trial:
     t = Label(text=trial.current, font_size=24)
     with UntilDone():
-        Wait(.2)
+        # Ensure `t.appear_time` is available by waiting until it exists
+        Wait(until=t.appear_time)
         key = KeyPress(keys=RESP_KEYS,
                        base_time=t.appear_time['time'])
 

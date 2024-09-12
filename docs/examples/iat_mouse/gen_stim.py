@@ -1,83 +1,134 @@
-import random as rm
-from config import instruct1,instruct2,instruct3,instruct4,instruct5,instruct6,instruct7
+import random as random
+from pathlib import Path
+from typing import List, Dict
+from config import instruct1, instruct2, instruct3, instruct4, instruct5, instruct6, instruct7
 
-# WORDLISTS FROM Greenwald et al. 1998
-filenameI = "pools/insects.txt"
-filenameF = "pools/flowers.txt"
-filenameP = "pools/positives.txt"
-filenameN = "pools/negatives.txt"
+# Define file paths using Pathlib for robustness across platforms
+BASE_DIR = Path(__file__).parent.absolute()
+POOLS_DIR = BASE_DIR / "pools"
 
-I = open(filenameI)
-F = open(filenameF)
-P = open(filenameP)
-N = open(filenameN)
+# Paths to the text files
+# Word lists from Greenwald et al. 1998
+FILE_INSECTS = POOLS_DIR / "insects.txt"
+FILE_FLOWERS = POOLS_DIR / "flowers.txt"
+FILE_POSITIVES = POOLS_DIR / "positives.txt"
+FILE_NEGATIVES = POOLS_DIR / "negatives.txt"
 
-stimListI = I.read().split('\n')
-stimListF = F.read().split('\n')
-stimListP = P.read().split('\n')
-stimListN = N.read().split('\n')
 
-#pop off the trailing line
-stimListI.pop(len(stimListI)-1)
-stimListF.pop(len(stimListF)-1)
-stimListP.pop(len(stimListP)-1)
-stimListN.pop(len(stimListN)-1)
+def load_words_from_file(filename: Path) -> List[str]:
+    """Helper function to load and split words from a file."""
+    with filename.open("r") as f:
+        words = f.read().splitlines()
+    return words
 
-def gen_blocks(type):
 
-    sampI = rm.sample(stimListI, 10)
-    sampF = rm.sample(stimListF, 10)
-    sampP = rm.sample(stimListP, 10)
-    sampN = rm.sample(stimListN, 10)
+# Load the word lists
+stim_list_insects = load_words_from_file(FILE_INSECTS)
+stim_list_flowers = load_words_from_file(FILE_FLOWERS)
+stim_list_positives = load_words_from_file(FILE_POSITIVES)
+stim_list_negatives = load_words_from_file(FILE_NEGATIVES)
 
-    #Generate the blocks
-    list1 = {"left_word":"flower", "right_word":"insect", "instruct":instruct1,
-             "words":([{"correct":"right", "center_word":I} for I in sampI] +
-                      [{"correct":"left", "center_word":F} for F in sampF])}
 
-    list2 = {"left_word":"positive", "right_word":"negative", "instruct":instruct2,
-             "words":([{"correct":"left", "center_word":P} for P in sampP] +
-                      [{"correct":"right", "center_word":N} for N in sampN])}
+def generate_blocks(type: int) -> List[Dict[str, any]]:
+    """
+    Generate the blocks for the experiment.
 
-    list3 = {"left_word":"flower positive", "right_word":"insect negative", "instruct":instruct3,
-             "words":([{"correct":"right", "center_word":I} for I in rm.sample(sampI[:], 5)] +
-                      [{"correct":"left", "center_word":F} for F in rm.sample(sampF[:], 5)] +
-                      [{"correct":"left", "center_word":P} for P in rm.sample(sampP[:], 5)] +
-                      [{"correct":"right", "center_word":N} for N in rm.sample(sampN[:], 5)])}
+    Parameters:
+    type (int): Indicates whether to return the critical compatible lists (type 1) 
+                or critical incompatible lists (type 2).
 
-    list4 = {"left_word":"flower positive", "right_word":"insect negative", "instruct":instruct4,
-             "words":([{"correct":"right", "center_word":I} for I in sampI] +
-                      [{"correct":"left", "center_word":F} for F in sampF] +
-                      [{"correct":"left", "center_word":P} for P in sampP] +
-                      [{"correct":"right", "center_word":N} for N in sampN])}
+    Returns:
+    List[Dict]: A list of dictionaries representing blocks of word pairs with instructions.
+    """
 
-    list5 = {"left_word":"insect", "right_word":"flower", "instruct":instruct5,
-             "words":[{"correct":"left", "center_word":I} for I in sampI] + [{"correct":"right", "center_word":F} for F in sampF]}
+    # Sample 10 words from each list
+    sample_insects = random.sample(stim_list_insects, 10)
+    sample_flowers = random.sample(stim_list_flowers, 10)
+    sample_positives = random.sample(stim_list_positives, 10)
+    sample_negatives = random.sample(stim_list_negatives, 10)
 
-    list6 = {"left_word":"insect positive", "right_word":"flower negative", "instruct":instruct6,
-             "words":([{"correct":"left", "center_word":I} for I in rm.sample(sampI[:], 5)] +
-                      [{"correct":"right", "center_word":F} for F in rm.sample(sampF[:], 5)] +
-                      [{"correct":"left", "center_word":P} for P in rm.sample(sampP[:], 5)] +
-                      [{"correct":"right", "center_word":N} for N in rm.sample(sampN[:], 5)])}
+    # Block 1: Flower (left) vs Insect (right)
+    block1 = {
+        "left_word": "flower",
+        "right_word": "insect",
+        "instruct": instruct1,
+        "words": ([{"correct": "right", "center_word": I} for I in sample_insects] +
+                  [{"correct": "left", "center_word": F} for F in sample_flowers])
+    }
 
-    list7 = {"left_word":"insect positive", "right_word":"flower negative", "instruct":instruct7,
-             "words":([{"correct":"left", "center_word":I} for I in sampI] +
-                      [{"correct":"right", "center_word":F} for F in sampF] +
-                      [{"correct":"left", "center_word":P} for P in sampP] +
-                      [{"correct":"right", "center_word":N} for N in sampN])}
-    rm.shuffle(list1['words'])
-    rm.shuffle(list2['words'])
-    rm.shuffle(list3['words'])
-    rm.shuffle(list4['words'])
-    rm.shuffle(list5['words'])
-    rm.shuffle(list6['words'])
-    rm.shuffle(list7['words'])
+    # Block 2: Positive (left) vs Negative (right)
+    block2 = {
+        "left_word": "positive",
+        "right_word": "negative",
+        "instruct": instruct2,
+        "words": ([{"correct": "left", "center_word": P} for P in sample_positives] +
+                  [{"correct": "right", "center_word": N} for N in sample_negatives])
+    }
 
-    #If type 1, then do critical compatible lists
+    # Block 3: Flower Positive (left) vs Insect Negative (right) - 5 samples each
+    block3 = {
+        "left_word": "flower positive",
+        "right_word": "insect negative",
+        "instruct": instruct3,
+        "words": ([{"correct": "right", "center_word": I} for I in random.sample(sample_insects[:], 5)] +
+                  [{"correct": "left", "center_word": F} for F in random.sample(sample_flowers[:], 5)] +
+                  [{"correct": "left", "center_word": P} for P in random.sample(sample_positives[:], 5)] +
+                  [{"correct": "right", "center_word": N} for N in random.sample(sample_negatives[:], 5)])
+    }
+
+    # Block 4: Flower Positive (left) vs Insect Negative (right) - all 10 samples
+    block4 = {
+        "left_word": "flower positive",
+        "right_word": "insect negative",
+        "instruct": instruct4,
+        "words": ([{"correct": "right", "center_word": I} for I in sample_insects] +
+                  [{"correct": "left", "center_word": F} for F in sample_flowers] +
+                  [{"correct": "left", "center_word": P} for P in sample_positives] +
+                  [{"correct": "right", "center_word": N} for N in sample_negatives])
+    }
+
+    # Block 5: Insect (left) vs Flower (right)
+    block5 = {
+        "left_word": "insect",
+        "right_word": "flower",
+        "instruct": instruct5,
+        "words": ([{"correct": "left", "center_word": I} for I in sample_insects] +
+                  [{"correct": "right", "center_word": F} for F in sample_flowers])
+    }
+
+    # Block 6: Insect Positive (left) vs Flower Negative (right) - 5 samples each
+    block6 = {
+        "left_word": "insect positive",
+        "right_word": "flower negative",
+        "instruct": instruct6,
+        "words": ([{"correct": "left", "center_word": I} for I in random.sample(sample_insects[:], 5)] +
+                  [{"correct": "right", "center_word": F} for F in random.sample(sample_flowers[:], 5)] +
+                  [{"correct": "left", "center_word": P} for P in random.sample(sample_positives[:], 5)] +
+                  [{"correct": "right", "center_word": N} for N in random.sample(sample_negatives[:], 5)])
+    }
+
+    # Block 7: Insect Positive (left) vs Flower Negative (right) - all 10 samples
+    block7 = {
+        "left_word": "insect positive",
+        "right_word": "flower negative",
+        "instruct": instruct7,
+        "words": ([{"correct": "left", "center_word": I} for I in sample_insects] +
+                  [{"correct": "right", "center_word": F} for F in sample_flowers] +
+                  [{"correct": "left", "center_word": P} for P in sample_positives] +
+                  [{"correct": "right", "center_word": N} for N in sample_negatives])
+    }
+
+    # Shuffle the word blocks for randomization
+    for block in [block1, block2, block3, block4, block5, block6, block7]:
+        random.shuffle(block['words'])
+
+    # Return the blocks based on the type parameter
     if type == 1:
-        return [list1, list2, list3, list4, list5, list6, list7]
-    #if type 2, then do critical incompatible lists
+        # Critical compatible blocks
+        return [block1, block2, block3, block4, block5, block6, block7]
     else:
-        return [list5, list2, list6, list7, list1, list3, list4]
-#GenBlocks
-BLOCKS = gen_blocks(1)
+        # Critical incompatible blocks
+        return [block5, block2, block6, block7, block1, block3, block4]
+
+
+BLOCKS = generate_blocks(1)

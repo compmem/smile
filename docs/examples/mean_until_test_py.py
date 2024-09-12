@@ -36,7 +36,7 @@ with Loop(3):
 
 # UntilDone
 with Loop(3):
-    lblut = Label(text="This should be on the screen for exactly 1 second",
+    lblut = Label(text="This should be on the screen for exactly 2 second",
                   duration=2.)
     with UntilDone():
         Wait(until=lblut.appear_time)
