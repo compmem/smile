@@ -980,13 +980,16 @@ class UpdateWidget(VisualState):
 
     You call this state in your experiment if you want to change the parameters
     of a widget in experimental runtime. You can change anything that is a
-    property of the **VisualState**, or a property of the Kivy Widget.
-    **UpdateWidget** will call the *target* **VisualState**'s method called
+    property of the **WidgetState** or a property of the Kivy Widget.
+    **UpdateWidget** will call the *target* **WidgetState**'s method called
     *live_change* when the experiment clock calls *show*.
+    
+    Unlike **UpdateWidgetUntimed**, **UpdateWidget** inherits **VisualState** 
+    for timing and logging purposes.
 
     Parameters
     ----------
-    target : VisualState (a wrapped Kivy Widget)
+    target : WidgetState (a wrapped Kivy Widget)
         The target for the change set in motion by update widget.
     parent : ParentState
         The parent of this state, if None, it will be set automatically
@@ -997,7 +1000,7 @@ class UpdateWidget(VisualState):
     blocking : boolean (optional, default = True)
         If True, this state will prevent a *Parallel* state from ending. If
         False, this state will be canceled if its *ParallelParent* finishes
-        running. Only relevent if within a *ParallelParent*.
+        running. Only relevant if within a *ParallelParent*.
     kwargs : (keyword = argument)
         These keywords have to be parameters or properties of the Kivy
         widget passed in through *target*.
@@ -1017,6 +1020,11 @@ class UpdateWidget(VisualState):
     """
     def __init__(self, target, parent=None, save_log=True, name=None,
                  blocking=True, **kwargs):
+        
+        # Check if target is an instance of WidgetState
+        if not isinstance(target, WidgetState):
+            raise TypeError(f"Expected target to be an instance of WidgetState, got {type(target).__name__} instead.")
+        
         super(UpdateWidget, self).__init__(duration=0.0,
                                            parent=parent,
                                            save_log=save_log,

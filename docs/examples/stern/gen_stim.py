@@ -1,6 +1,6 @@
 import random
 from config import NUM_ITEMS, NUM_TRIALS, ITEMS
-# generate sternberg trial
+# generate Sternberg trial
 def stern_trial(nitems=2, lure_trial=False,):
     if lure_trial:
         condition = 'lure'
