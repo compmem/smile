@@ -4,6 +4,7 @@ to display the capabilities of the MovingDots stimulus.
 Here is the definition of our *MovingDots*:
 
 .. code-block:: python
+
     class _MovingDotsWidget(Widget):
         motion_props = ListProperty([{}])
         num_dots = NumericProperty(100)
@@ -188,6 +189,7 @@ remaining dots to be created (total dots - (coherent dots / total dots)). The do
 will be created in random directions. The Dots class is as follows:
 
 .. code-block:: python
+
     class Dot(object):
         def __init__(self, radius=100, scale=1.0,
                     color=[1.0, 1.0, 1.0, 1.0],
@@ -266,6 +268,7 @@ the dot surpassed its lifespan or has moved beyond the "holding" circle.
 Now the functions of the widget can be defined:
 
 .. code-block:: python
+
     def callback_motion_props(self, obj, value):
         # Grab the current default values for all of
         # our parameters
@@ -356,12 +359,15 @@ Now the functions of the widget can be defined:
         return 1.0 / self._dt_avg
 
 The main function of the widget clears the canvas and redraws the moving dots with
-`Point()`.
+Point().
 
 Examples of MovingDots
 ======================
 
-MovingDots()
+.. code-block:: python
+
+    MovingDots()
+
 When passing no parameters into the MovingDots widget, the return is defaults of
 the program. Mainly, 100 dots with 50% of them moving to the right while the other
 move randomly. The color is white, the scale is 4.0, and the radius is 200. More
@@ -372,7 +378,10 @@ information on the default variables can be seen above.
     :height: 448
     :align: center
 
-MovingDots(radius=500, color=[.5, 0., 1.], scale=10.0)
+.. code-block:: python
+
+    MovingDots(radius=500, color=[.5, 0., 1.], scale=10.0)
+
 When passing radius, color, and scale parameters, notice the size of the MovingDots
 widget gets larger, the color changed to blue, and the dots became larger:
 
@@ -381,15 +390,18 @@ widget gets larger, the color changed to blue, and the dots became larger:
     :height: 1032
     :align: center
 
-MovingDots(radius=300, scale=10,num_dots=4,
-           motion_props=[{"coherence": 0.25, "direction": 0,
-                          "direction_variance": 0},
-                         {"coherence": 0.25, "direction": 90,
-                          "direction_variance": 0},
-                         {"coherence": 0.25, "direction": 180,
-                          "direction_variance": 0},
-                         {"coherence": 0.25, "direction": 270,
-                          "direction_variance": 0}])
+.. code-block:: python
+
+    MovingDots(radius=300, scale=10,num_dots=4,
+               motion_props=[{"coherence": 0.25, "direction": 0,
+                              "direction_variance": 0},
+                             {"coherence": 0.25, "direction": 90,
+                              "direction_variance": 0},
+                             {"coherence": 0.25, "direction": 180,
+                              "direction_variance": 0},
+                             {"coherence": 0.25, "direction": 270,
+                              "direction_variance": 0}])
+
 This is example shows the utilization of motion_props to extend the functionality
 of the MovingDots. The radius, scale, and number of dots are set to 300, 10, and 4,
 respectively. What motion_props does is set 25% of the dots, or 1 dot to a direction
