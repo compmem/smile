@@ -26,10 +26,7 @@ with Loop(times) as time:
     w = Wait(time.current)
     db = Debug(cur_time=time.current)
     ResetClock(db.leave_time)
-    #Log(call_error=w['last_call_error'],
-    #    time=time.current,
-    #    start=w['start_time'],
-    #    call_time=w['last_call_time'])
+
 Wait(1.0)
 
 if __name__ == '__main__':
