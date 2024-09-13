@@ -11,7 +11,7 @@ complete this tutorial, you can read other documents that better explain the
 more advanced use cases for all of the different smile *States* as well as
 fully coded psychology experiments like the Flanker task and the Stroop task.
 
-For your conveniance, here is a table of contents for this document to better
+For your convenience, here is a table of contents for this document to better
 help you find the information you are looking for.
 
     - :ref:`Step 1: Hello, World!<hello_world>`_
@@ -25,6 +25,8 @@ help you find the information you are looking for.
     - :ref:`Step 5: Looping, References, and Animation<loops_ref>`_
 
     - :ref:`Step 6: If, Elif, Else, and Conditional Refs<conditional_refs>`_
+
+    - :ref:`Step 7: Logging and Good Timing Practices<timing_logging>`_
 
 Running a SMILE Experiment
 ==========================
@@ -56,6 +58,10 @@ SMILE. SMILE has 3 command line arguments.
 
     - *-c* : CSV, if -c is present, SMILE will save out all of its *.slog* data files as *.csv* data files as well. **Not Recommended**
 
+.. note::
+
+    If at any time while smile is running, you can hit the "shift+esc" keys to exit out of the experiment. Please don't try to exit a SMILE experiment another way. SMILE can only save out the data for your experiment if you press "shift+esc".
+
 Before you learn how to code SMILE experiments, it is important to understand
 a few things about how SMILE works. The next section goes over how SMILE
 first *builds* then *runs* experiments.
@@ -66,7 +72,7 @@ The Experiment Break-Down
 The following tutorial teaches you how to code a smile experiment, from showing
 you how to code up a basic experiment, to the best practices for timing user
 input and visual states. The experiment described below is a made up Priming
-Effect tutorial that presents the participant with a cirlce stimuli that is
+Effect tutorial that presents the participant with a circle stimuli that is
 on the left or the right side of the screen that is either red or green. After
 that, a green and a red rectangle appear on the left or right side of the screen.
 The participant will then need to indicate which side the screen the green rectangle
@@ -309,13 +315,13 @@ time of the state.
 For our experiment, we want to record a KeyPress while the rectangles are on
 the screen. In order to do this right, we need to use one of our Flow States
 called the :py:class:'~smile.state.Meanwhile' state. A Meanwhile is a Parent
-state that will run its children serially(one after the other) in parallel with
+state that will run its children serially (one after the other) in parallel with
 the previous state, and cancel its children when the previous state has ended.
 Earlier in the experiment we made use of the :py:class:`~smile.state.UntilDone`
 state when creating an instructions screen. An UntilDone is a Parent state that
-will run its children serially(one after the other) in parallel with the
+will run its children serially (one after the other) in parallel with the
 previous state, just like the Meanwhile, but once its children are done running
-it will cancel the previous state(the opposite of the Meanwhile). Both states
+it will cancel the previous state (the opposite of the Meanwhile). Both states
 will be useful in different situations but it takes some time to master when
 each one is the most useful.
 
@@ -323,13 +329,13 @@ each one is the most useful.
 
     A simple trick to figure out whether to use a Meanwhile state or an UntilDone state is to listen to the word you use when describing the situation. If you want to do something until something else is done, you would use the UntilDone state. If you want to do something while something else is happening, you would use the Meanwhile state.
 
-Pay attention to the Meanwhile in our above experiment. Meanwhiles, like the
+Pay attention to the Meanwhile in our above experiment. Meanwhile states, like the
 UntilDone states, will run their children in parallel of the previous state. In
 our case, the previous state is a Parallel with our Rectangles in it. This
 means you will be able to input a key for KeyPress as long as that Parallel
 hasn't ended. Since our experiment is a 2 choice task, we are able to set the
 *keys* parameter of KeyPress as 'F' and 'J'. We also want to set our correct
-response through the correct_resp parameter. Eventaully, our correct response
+response through the correct_resp parameter. Eventually, our correct response
 will be different depending on where we are in the experiment, but for now we
 just set the correct_resp to be 'J'.
 
@@ -408,14 +414,14 @@ or any value that isn't defined until the experiment is running during
 *Build Time*. *Ref*s are also recursive. If a Ref's *value* is another Ref, it
 will attempt to evaluate the value of that Ref before passing it into the
 *func*. For more information about Refs, including the ability to use normal
-opperators(+, -, *, /) on them and how they interact with lists, please refer
+operators (+, -, *, /) on them and how they interact with lists, please refer
 to the :ref:`SMILE References<setting_in_rt>`_ document in the Advanced SMILE
 section.
 
 Understanding Refs is important to understanding all of the more complicated
 states in SMILE. The :py:class:'~smile.state.Loop' state was introduced in this
 step. Loop will allow you to run chunks of your experiment multiple times. The
-ammount of times that a Loop will run can be set in many different ways. Above,
+amount of times that a Loop will run can be set in many different ways. Above,
 we pass in a list of dictionaries to our Loop that will tell the loop to run
 for as many times as the length of the list. Since *block* has a length of 100,
 our loop will run 100 times. You can also pass in an integer to the loop to
@@ -425,7 +431,7 @@ state, please look at the :ref:`SMILE States<smile_states>`_ document.
 
 If you understand the pythonic *with* and *as* statements, you know that when
 we write the line `with Loop(block) as trial:` the variable *trial* will
-containt the object created by *Loop(block)*. Since we do not have access to
+contain the object created by *Loop(block)*. Since we do not have access to
 the current item from *block* during build time, we use the *trial.current* Ref
 to reference the current value of each iteration of the loop. You can also
 reference the loop number with the Ref *trial.i*. You are able to treat
@@ -487,7 +493,7 @@ Step 6: If, Elif, Else, and Conditional Refs
         # will present a circle on a side of the screen that depends on which
         # trial of the Loop we are on.  The color of the circle will also
         # depend on the trial that we are on in the Loop. We use Ref.cond to
-        # make Ref's whos value will change depending on the value of the
+        # make Refs whose value will change depending on the value of the
         # conditional, true or false.
         exp.prime_center_x = Ref.cond(trial.current['prime_side'] == "LEFT",
                                       true_value=exp.screen.width/4.,
@@ -527,7 +533,7 @@ Step 6: If, Elif, Else, and Conditional Refs
 
         # Jitter allows you to create random duration waits that will last
         # duration and duration+jitter seconds.
-        Wait(INTER_TRIAL_INVERVAL, jitter=INTER_TRIAL_JITTER)
+        Wait(INTER_TRIAL_INTERVAL, jitter=INTER_TRIAL_JITTER)
 
     exp.run()
 
@@ -541,7 +547,7 @@ states of that *If* state will run. The same applies to the *Elif* state and its
  children. If all of the conditionals within the *If* state and the *Elif*
 states evaluate to False, then the children of the *Else* state will run.
 
-Refs also have the ability to be initialized with condtionals. We make use of
+Refs also have the ability to be initialized with conditionals. We make use of
 *Ref.cond* to create a ref that has one value if the conditional evaluates to
 True, and another value if it evaluates to False. You can make good use of
 *Ref.cond* if your experiment has many complex variables and conditionals.
@@ -663,21 +669,21 @@ Step 7: Logging and Good Timing Practices
         with Else():
             Label(text="INCORRECT!", color="RED", font_size=35, duration=2.)
 
-        Wait(INTER_TRIAL_INVERVAL, jitter=INTER_TRIAL_JITTER)
+        Wait(INTER_TRIAL_INTERVAL, jitter=INTER_TRIAL_JITTER)
 
     exp.run()
 
 In this section, we add in a few states that are vital for someone to
 analyze our experiment. The :py:class:`~smile.state.Log` state allows us to
-aggrigate all of the information important to analysis in one place, and the
-:py:class:`~smile.state.ResetClock` state allows us to garuntee the timing of
+aggregate all of the information important to analysis in one place, and the
+:py:class:`~smile.state.ResetClock` state allows us to guarantee the timing of
 certain states.
 
 The *ResetClock* state takes in a time and then bases the next state's end time
-on that time. In the case above, we used ResetClock to garuntee that our *Wait*
+on that time. In the case above, we used ResetClock to guarantee that our *Wait*
 between the priming stimulus and the testing stimulus ended exactly PRIME_ISI
 after the disappear_time of the *prime_ell*, not PRIME_ISI after the start of
-the wait. If timing is important to your expierment, you will want to use
+the wait. If timing is important to your experiment, you will want to use
 *ResetClock* every time you have a non_visual state that has a duration.
 *ResetClock* should also only have a time passed into it that is definite. The
 only times in SMILE that are the appear and disappear times of visual stimulus.
@@ -692,26 +698,26 @@ definite, please read the :ref:`Timing<advanced_timing>`_ section of
 The *Log* state allows you to save out specific information to a .slog file.
 SMILE, by default, saves out everything related to every state during your
 experiment. It saves these data into a directory, depending on your OS, that
-looks like *data/[experiemnt name]/[subject ID]/[log_file].slog*. The experiment
+looks like *data/[experiment name]/[subject ID]/[log_file].slog*. The experiment
 name can be passed into *Experiment* via the *name* parameter, and by default
 it is "Smile". SMILE will create a separate file for each kind of state that
 you use in your experiment. For example, each row in *state_Parallel.slog* will
-be a different instance of the *Parallel* state, containing each peice of
+be a different instance of the *Parallel* state, containing each piece of
 information about them in different columns. The kinds of things that get logged
 into the default state loggers are outlined in the docstrings of each state.
 Because it would be difficult and time consuming to slog (get it?) through all
 of those files, we created the *Log* state to allow you to just save out the
 information that you think is important to your analysis later. Each
-keyword arugment that you pass into the Log state will be a separate column in
+keyword argument that you pass into the Log state will be a separate column in
 your data.
 
 .. note::
 
-    A note about .slog files : each new line is compressed and writen to the end of the file during runtime. If you experiment, for whatever reason, crashes midway through running, you wont lose all of the data that you collected up until that point. All of that data will have already been saved out and you will be able to access it with our myriade of slog reading functions.
+    A note about .slog files : each new line is compressed and written to the end of the file during runtime. If you experiment, for whatever reason, crashes midway through running, you wont lose all of the data that you collected up until that point. All of that data will have already been saved out and you will be able to access it with our myriad of slog reading functions.
 
 Lastly, we used the *base_time* parameter in the KeyPress state. Every input
-state that cacluates a reaction time will be able to take a *base_time* as a
-parameter. The forumla for reaction time of an input is as follows :
+state that calculates a reaction time will be able to take a *base_time* as a
+parameter. The formula for reaction time of an input is as follows :
 
 .. code:: python
 
@@ -725,7 +731,7 @@ set to the appear_time of the rectangle.
 
 .. note::
 
-    *appear_time* and *disappear_time* are Events meaning they have a 'time' key and an 'error' key. 'error' will always be 0, so you need to pass *appear_time['time']* into basetime.
+    *appear_time* and *disappear_time* are Events meaning they have a 'time' key and an 'error' key. 'error' will always be 0, so you need to pass *appear_time['time']* into base_time.
 
 
 And there you go!
