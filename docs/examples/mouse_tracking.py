@@ -23,7 +23,7 @@ Wait(1.0)
 # your cursor is in the one that is on the bottom
 with Parallel():
     # Place a rectangle in the bottom-middle of the screen
-    rect = Rectangle(bottom=exp.screen.center_bottom,
+    rect = Rectangle(center_bottom=exp.screen.center_bottom,
                      color='white')
     # Place a rectangle in the top of the screen
     r2 = Rectangle(bottom=rect.top, color='purple')
