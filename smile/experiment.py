@@ -346,7 +346,7 @@ class Experiment(object):
         exp.SavedVariable = 10
         with Loop(10) as trial:
             exp.SavedVariable += trial.i
-        Label(text=exp.SavedVariable, duration=3)
+            Label(text=Ref(str, exp.SavedVariable), duration=1)
         exp.run()
 
     This example will set SavedVariable to 10, add the numbers 0 through 9 to
