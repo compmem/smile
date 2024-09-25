@@ -22,7 +22,9 @@ classifiers = [
 keywords = ["state machine", "experiments"]
 
 [project.optional-dependencies]
-audio = ["pyo"]
+full = ["pyo", "pyparallel"]
+pyo = ["pyo"]
+pyparallel = ["pyparallel"]
 
 [project.urls]
 Documentation = "https://smile-docs.readthedocs.io/en/latest/#"
